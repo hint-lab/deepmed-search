@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String?
+  image           String?
+  password        String
+  language        String           @default("en")
+  tenantId        String?
+  tenant          Tenant?          @relation(fields: [tenantId], references: [id])
+  dialogs         Dialog[]
+  messages        Message[]
+  systemTokens    SystemToken[]
+  langfuseConfig  LangfuseConfig?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Tenant {
+  id           String         @id @default(cuid())
+  name         String
+  embd_id      String?
+  llm_id       String?
+  asr_id       String?
+  parser_ids   String?
+  chat_id      String?
+  speech2text_id String?
+  tts_id       String?
+  users        User[]
+  knowledgeBases KnowledgeBase[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Dialog {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  messages    Message[]
+  relatedQuestions RelatedQuestion[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  role      String   @default("user")
+  dialogId  String
+  dialog    Dialog   @relation(fields: [dialogId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SystemStatus {
+  id        String   @id @default(cuid())
+  status    String
+  message   String?
+  updatedAt DateTime @updatedAt
+}
+
+model SystemToken {
+  id         String    @id @default(cuid())
+  name       String
+  token      String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+}
+
+model KnowledgeBase {
+  id                    String        @id @default(cuid())
+  name                  String
+  description           String?
+  avatar                String?
+  chunk_num             Int           @default(0)
+  create_date           DateTime
+  create_time           BigInt
+  created_by            String
+  doc_num               Int           @default(0)
+  parser_config         Json?
+  parser_id             String?
+  permission            String?
+  similarity_threshold  Float         @default(0.7)
+  status                String        @default("active")
+  tenant_id             String?
+  token_num             Int           @default(0)
+  update_date           DateTime
+  update_time           BigInt
+  vector_similarity_weight Float      @default(0.5)
+  embd_id               String?
+  nickname              String?
+  operator_permission   Int           @default(0)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  documents             Document[]
+  tags                  Tag[]
+  files                 KnowledgeFile[]
+  chunks                Chunk[]
+  tenant                Tenant?       @relation(fields: [tenant_id], references: [id])
+}
+
+model Document {
+  id             String        @id @default(cuid())
+  name           String
+  content        String?
+  knowledgeBase  KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  knowledgeBaseId String
+  tags           Tag[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Tag {
+  id             String        @id @default(cuid())
+  name           String
+  knowledgeBase  KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  knowledgeBaseId String
+  documents      Document[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model LangfuseConfig {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  publicKey  String
+  secretKey  String
+  host       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model KnowledgeFile {
+  id              String    @id @default(cuid())
+  name            String
+  location        String
+  size            Int
+  type            String
+  source_type     String
+  status          String    @default("enabled")
+  thumbnail       String?
+  chunk_num       Int       @default(0)
+  token_num       Int       @default(0)
+  progress        Int       @default(0)
+  progress_msg    String?
+  run             String    @default("pending")
+  process_begin_at DateTime?
+  process_duation Int       @default(0)
+  create_date     DateTime
+  create_time     BigInt
+  update_date     DateTime
+  update_time     BigInt
+  created_by      String
+  kb_id           String
+  parser_id       String?
+  parser_config   Json
+  knowledgeBase   KnowledgeBase @relation(fields: [kb_id], references: [id])
+  chunks          Chunk[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Chunk {
+  id                String    @id @default(cuid())
+  chunk_id          String    @unique
+  content_with_weight String
+  available_int     Int       @default(1)
+  doc_id            String
+  doc_name          String
+  img_id            String?
+  important_kwd     String[]
+  question_kwd      String[]
+  tag_kwd           String[]
+  positions         Json
+  tag_feas          Json?
+  kb_id             String
+  knowledgeBase     KnowledgeBase @relation(fields: [kb_id], references: [id])
+  file_id           String
+  file              KnowledgeFile @relation(fields: [file_id], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model RelatedQuestion {
+  id        String   @id @default(cuid())
+  question  String
+  dialogId  String
+  dialog    Dialog   @relation(fields: [dialogId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

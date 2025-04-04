@@ -1,0 +1,165 @@
+{
+    "common": {
+        "delete": "删除",
+        "deleteModalTitle": "确定要删除吗？",
+        "ok": "确定",
+        "cancel": "取消",
+        "total": "总计",
+        "rename": "重命名",
+        "name": "名称",
+        "save": "保存",
+        "namePlaceholder": "请输入名称",
+        "next": "下一步",
+        "create": "创建",
+        "edit": "编辑",
+        "upload": "上传",
+        "english": "英语",
+        "chinese": "简体中文",
+        "language": "语言",
+        "languageMessage": "请选择语言！",
+        "languagePlaceholder": "选择语言",
+        "copy": "复制",
+        "copied": "已复制",
+        "comingSoon": "即将推出",
+        "download": "下载",
+        "close": "关闭",
+        "preview": "预览",
+        "move": "移动",
+        "warn": "警告",
+        "action": "操作",
+        "pleaseSelect": "请选择",
+        "pleaseInput": "请输入",
+        "submit": "提交"
+    },
+    "sidebar": {
+        "navigation": "导航",
+        "knowledgeBase": "知识库",
+        "dataset": "数据集",
+        "settings": "设置"
+    },
+    "home": {
+        "title": "DeepMed Studio",
+        "subtitle": "您的智能文档助手，让文档处理更简单、更高效",
+        "getStarted": "开始使用",
+        "viewDocs": "查看文档",
+        "features": {
+            "title": "核心功能",
+            "documentProcessing": {
+                "title": "智能文档处理",
+                "description": "支持多种文档格式，自动识别和提取关键信息"
+            },
+            "documentQA": {
+                "title": "智能文档问答",
+                "description": "无论何种文档格式，自动解析文档内容，并进行智能问答"
+            },
+            "quickConversion": {
+                "title": "快速转换",
+                "description": "一键转换文档格式，保持原有格式和样式"
+            },
+            "dataAnalysis": {
+                "title": "数据分析",
+                "description": "智能分析文档内容，生成数据可视化报告"
+            }
+        },
+        "cta": {
+            "title": "准备好开始了吗？",
+            "subtitle": "加入我们，体验智能文档处理的未来",
+            "register": "立即注册"
+        }
+    },
+    "knowledgeBase": {
+        "title": "知识库",
+        "create": "创建知识库",
+        "import": "导入知识库",
+        "export": "导出知识库",
+        "delete": "删除知识库",
+        "edit": "编辑知识库",
+        "name": "知识库名称",
+        "description": "知识库描述",
+        "documents": "文档",
+        "createTime": "创建时间",
+        "updateTime": "更新时间",
+        "creator": "创建者",
+        "status": "状态",
+        "action": "操作",
+        "createSuccess": "创建成功",
+        "createError": "创建失败",
+        "deleteSuccess": "删除成功",
+        "deleteError": "删除失败",
+        "editSuccess": "编辑成功",
+        "editError": "编辑失败",
+        "namePlaceholder": "请输入知识库名称",
+        "descriptionPlaceholder": "请输入知识库描述",
+        "createKnowledgeBase": "创建新的知识库",
+        "createKnowledgeBaseDescription": "创建新的知识库来管理您的文档",
+        "createdAt": "创建于",
+        "updatedAt": "更新于",
+        "actions": "操作",
+        "confirmDelete": "确认删除",
+        "confirm": "确认",
+        "welcome": "欢迎",
+        "guest": "访客",
+        "searchKnowledgePlaceholder": "搜索知识库",
+        "noData": "暂无数据",
+        "noMoreData": "没有更多数据"
+    },
+    "login": {
+        "login": "登录",
+        "loginDescription": "欢迎回来！请登录您的账号。",
+        "loginWithGoogle": "使用 Google 登录",
+        "loginWithGithub": "使用 Github 登录",
+        "orContinueWith": "或继续使用",
+        "emailLabel": "邮箱",
+        "emailPlaceholder": "请输入邮箱",
+        "passwordLabel": "密码",
+        "passwordPlaceholder": "请输入密码",
+        "forgotPassword": "忘记密码？",
+        "noAccount": "没有账号？",
+        "signUp": "注册"
+    },
+    "dataset": {
+        "files": "文件列表",
+        "searchFiles": "搜索文件",
+        "uploadFile": "上传文件",
+        "noDatasetId": "未找到数据集 ID",
+        "name": "名称",
+        "uploadDate": "上传日期",
+        "chunkMethod": "分块方法",
+        "parsingStatus": "解析状态",
+        "action": "操作",
+        "noResults": "暂无数据"
+    },
+    "chat": {
+        "title": "聊天",
+        "searchPlaceholder": "搜索对话...",
+        "messagePlaceholder": "输入消息...",
+        "send": "发送",
+        "currentChat": "当前对话",
+        "newChat": "新对话",
+        "startNewChat": "开始新的对话...",
+        "justNow": "刚刚",
+        "delete": "删除",
+        "more": "更多"
+    },
+    "search": {
+        "title": "深度搜索",
+        "searchPlaceholder": "搜索...",
+        "searchDescription": "搜索文档、知识库等",
+        "searchResults": "搜索结果",
+        "noResults": "没有搜索结果"
+    },
+    "knowledgeConfiguration": {
+        "chunkMethod": "分块方法"
+    },
+    "upload": {
+        "uploadFile": "上传文件",
+        "uploadDescription": "上传文件描述",
+        "selectFile": "选择文件",
+        "cancel": "取消",
+        "upload": "上传",
+        "error": "错误",
+        "pleaseSelectFile": "请选择文件",
+        "uploadSuccess": "上传成功",
+        "uploadFailed": "上传失败"
+    }
+}

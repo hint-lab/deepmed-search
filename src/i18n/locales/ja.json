@@ -1,0 +1,147 @@
+{
+    "common": {
+        "delete": "削除",
+        "deleteModalTitle": "削除してもよろしいですか？",
+        "ok": "確認",
+        "cancel": "キャンセル",
+        "total": "合計",
+        "rename": "名前を変更",
+        "name": "名前",
+        "save": "保存",
+        "namePlaceholder": "名前を入力してください",
+        "next": "次へ",
+        "create": "作成",
+        "edit": "編集",
+        "upload": "アップロード",
+        "english": "英語",
+        "chinese": "簡体字中国語",
+        "language": "言語",
+        "languageMessage": "言語を選択してください！",
+        "languagePlaceholder": "言語を選択",
+        "copy": "コピー",
+        "copied": "コピーしました",
+        "comingSoon": "近日公開",
+        "download": "ダウンロード",
+        "close": "閉じる",
+        "preview": "プレビュー",
+        "move": "移動",
+        "warn": "警告",
+        "action": "操作",
+        "pleaseSelect": "選択してください",
+        "pleaseInput": "入力してください",
+        "submit": "送信"
+    },
+    "home": {
+        "title": "DeepMed Studio",
+        "subtitle": "あなたの知識ベースを管理するためのシンプルで効率的なツール",
+        "getStarted": "開始する",
+        "viewDocs": "ドキュメントを見る",
+        "features": {
+            "title": "コア機能",
+            "documentProcessing": {
+                "title": "ドキュメント処理",
+                "description": "複数のドキュメント形式をサポートし、キーワードを自動的に識別して抽出する"
+            },
+            "documentQA": {
+                "title": "ドキュメントQA",
+                "description": "どのようなドキュメント形式でも、ドキュメント内容を自動的に解析し、スマートな質問に答える"
+            },
+            "quickConversion": {
+                "title": "クイック変換",
+                "description": "ドキュメント形式を一瞬で変換し、元の形式とスタイルを維持する"
+            },
+            "dataAnalysis": {
+                "title": "データ分析",
+                "description": "ドキュメント内容をスマートに分析し、データの視覚化レポートを生成する"
+            }
+        },
+        "cta": {
+            "title": "準備はできていますか？",
+            "subtitle": "私たちに参加して、スマートなドキュメント処理の未来を体験してください",
+            "register": "新規登録"
+        }
+    },
+    "knowledgeBase": {
+        "title": "ナレッジベース",
+        "create": "ナレッジベースを作成",
+        "import": "ナレッジベースをインポート",
+        "export": "ナレッジベースをエクスポート",
+        "delete": "ナレッジベースを削除",
+        "edit": "ナレッジベースを編集",
+        "name": "ナレッジベース名",
+        "description": "ナレッジベースの説明",
+        "documents": "ドキュメント",
+        "createTime": "作成日時",
+        "updateTime": "更新日時",
+        "creator": "作成者",
+        "status": "ステータス",
+        "action": "操作",
+        "createSuccess": "作成に成功しました",
+        "createError": "作成に失敗しました",
+        "deleteSuccess": "削除に成功しました",
+        "deleteError": "削除に失敗しました",
+        "editSuccess": "編集に成功しました",
+        "editError": "編集に失敗しました",
+        "namePlaceholder": "ナレッジベース名を入力してください",
+        "descriptionPlaceholder": "ナレッジベースの説明を入力してください",
+        "createKnowledgeBase": "新しいナレッジベースを作成してドキュメントを管理",
+        "createKnowledgeBaseDescription": "新しいナレッジベースを作成してドキュメントを管理",
+        "createdAt": "作成日",
+        "updatedAt": "更新日",
+        "actions": "操作",
+        "confirmDelete": "削除の確認",
+        "confirm": "確認",
+        "welcome": "ようこそ",
+        "guest": "ゲスト",
+        "searchKnowledgePlaceholder": "ナレッジベースを検索",
+        "noData": "データがありません",
+        "noMoreData": "これ以上のデータはありません"
+    },
+    "login": {
+        "login": "ログイン",
+        "loginDescription": "お帰りなさい！アカウントにログインしてください。",
+        "loginWithGoogle": "Googleでログイン",
+        "loginWithGithub": "Githubでログイン",
+        "orContinueWith": "または次で続行",
+        "emailLabel": "メールアドレス",
+        "emailPlaceholder": "メールアドレスを入力してください",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワードを入力してください",
+        "forgotPassword": "パスワードをお忘れですか？",
+        "noAccount": "アカウントをお持ちでない方",
+        "signUp": "新規登録"
+    },
+    "dataset": {
+        "files": "ファイル一覧",
+        "searchFiles": "ファイルを検索",
+        "uploadFile": "ファイルをアップロード",
+        "noDatasetId": "データセットIDが見つかりません",
+        "name": "名前",
+        "uploadDate": "アップロード日",
+        "chunkMethod": "チャンク方式",
+        "parsingStatus": "解析状態",
+        "action": "操作",
+        "noResults": "データがありません"
+    },
+    "search": {
+        "title": "深度検索",
+        "searchPlaceholder": "検索...",
+        "searchDescription": "ドキュメント、ナレッジベース、その他を検索",
+        "searchResults": "検索結果",
+        "noResults": "検索結果がありません"
+    },
+    "knowledgeConfiguration": {
+        "chunkMethod": "分块方法"
+    },
+    "upload": {
+        "uploadFile": "ファイルをアップロード",
+        "uploadDescription": "ファイルのアップロード説明",
+        "selectFile": "ファイルを選択",
+        "cancel": "キャンセル",
+        "upload": "アップロード",
+        "error": "エラー",
+        "pleaseSelectFile": "ファイルを選択してください",
+        "uploadSuccess": "アップロードに成功しました",
+        "uploadFailed": "アップロードに失敗しました"
+    }
+}

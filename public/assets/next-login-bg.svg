@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- 定义渐变 -->
+    <defs>
+        <!-- 主背景渐变 -->
+        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#f0f9ff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#e0f2fe;stop-opacity:1" />
+        </linearGradient>
+        
+        <!-- 装饰元素渐变 -->
+        <linearGradient id="decorGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.1" />
+            <stop offset="100%" style="stop-color:#2563eb;stop-opacity:0.2" />
+        </linearGradient>
+        
+        <!-- 波浪图案 -->
+        <pattern id="waves" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+            <path d="M0 25C50 0 50 50 100 25C150 0 150 50 200 25V200H0" fill="rgba(59,130,246,0.03)" />
+        </pattern>
+    </defs>
+
+    <!-- 背景 -->
+    <rect width="1920" height="1080" fill="url(#bgGradient)" />
+    
+    <!-- 波浪图案背景 -->
+    <rect width="1920" height="1080" fill="url(#waves)" />
+
+    <!-- 左上角装饰 -->
+    <path d="M0,0 L400,0 C300,100 200,150 0,200 Z" fill="url(#decorGradient)" opacity="0.1" />
+    
+    <!-- 右下角装饰 -->
+    <path d="M1920,1080 L1520,1080 C1620,980 1720,930 1920,880 Z" fill="url(#decorGradient)" opacity="0.1" />
+
+    <!-- 圆形装饰元素 -->
+    <circle cx="200" cy="300" r="100" fill="url(#decorGradient)" opacity="0.05" />
+    <circle cx="1720" cy="780" r="100" fill="url(#decorGradient)" opacity="0.05" />
+    
+    <!-- 抽象线条 -->
+    <path d="M300,400 Q600,200 900,400 T1500,400" 
+          stroke="rgba(59,130,246,0.1)" 
+          stroke-width="2" 
+          fill="none" />
+    
+    <!-- 点阵装饰 -->
+    <g opacity="0.1">
+        <circle cx="100" cy="100" r="2" fill="#3b82f6" />
+        <circle cx="120" cy="100" r="2" fill="#3b82f6" />
+        <circle cx="140" cy="100" r="2" fill="#3b82f6" />
+        <circle cx="100" cy="120" r="2" fill="#3b82f6" />
+        <circle cx="120" cy="120" r="2" fill="#3b82f6" />
+        <circle cx="140" cy="120" r="2" fill="#3b82f6" />
+    </g>
+    
+    <g opacity="0.1" transform="translate(1700,900)">
+        <circle cx="100" cy="100" r="2" fill="#3b82f6" />
+        <circle cx="120" cy="100" r="2" fill="#3b82f6" />
+        <circle cx="140" cy="100" r="2" fill="#3b82f6" />
+        <circle cx="100" cy="120" r="2" fill="#3b82f6" />
+        <circle cx="120" cy="120" r="2" fill="#3b82f6" />
+        <circle cx="140" cy="120" r="2" fill="#3b82f6" />
+    </g>
+</svg> 

@@ -1,0 +1,147 @@
+{
+    "common": {
+        "delete": "Delete",
+        "deleteModalTitle": "Are you sure you want to delete?",
+        "ok": "OK",
+        "cancel": "Cancel",
+        "total": "Total",
+        "rename": "Rename",
+        "name": "Name",
+        "save": "Save",
+        "namePlaceholder": "Please enter name",
+        "next": "Next",
+        "create": "Create",
+        "edit": "Edit",
+        "upload": "Upload",
+        "english": "English",
+        "chinese": "Simplified Chinese",
+        "language": "Language",
+        "languageMessage": "Please select language!",
+        "languagePlaceholder": "Select language",
+        "copy": "Copy",
+        "copied": "Copied",
+        "comingSoon": "Coming Soon",
+        "download": "Download",
+        "close": "Close",
+        "preview": "Preview",
+        "move": "Move",
+        "warn": "Warning",
+        "action": "Action",
+        "pleaseSelect": "Please select",
+        "pleaseInput": "Please input",
+        "submit": "Submit"
+    },
+    "home": {
+        "title": "DeepMed Studio",
+        "subtitle": "Your intelligent document assistant, making document processing easier and more efficient",
+        "getStarted": "Get Started",
+        "viewDocs": "View Documents",
+        "features": {
+            "title": "Core Features",
+            "documentProcessing": {
+                "title": "Document Processing",
+                "description": "Support multiple document formats, automatically identify and extract key information"
+            },
+            "documentQA": {
+                "title": "Document QA",
+                "description": "Automatically parse document content and answer questions regardless of document format"
+            },
+            "quickConversion": {
+                "title": "Quick Conversion",
+                "description": "One-click convert document format, keep the original format and style"
+            },
+            "dataAnalysis": {
+                "title": "Data Analysis",
+                "description": "Analyze document content intelligently and generate data visualization reports"
+            }
+        },
+        "cta": {
+            "title": "Ready to start?",
+            "subtitle": "Join us to experience the future of intelligent document processing",
+            "register": "Sign up"
+        }
+    },
+    "knowledgeBase": {
+        "title": "Knowledge Base",
+        "create": "Create Knowledge Base",
+        "import": "Import Knowledge Base",
+        "export": "Export Knowledge Base",
+        "delete": "Delete Knowledge Base",
+        "edit": "Edit Knowledge Base",
+        "name": "Knowledge Base Name",
+        "description": "Knowledge Base Description",
+        "documents": "Documents",
+        "createTime": "Create Time",
+        "updateTime": "Update Time",
+        "creator": "Creator",
+        "status": "Status",
+        "action": "Action",
+        "createSuccess": "Created successfully",
+        "createError": "Creation failed",
+        "deleteSuccess": "Deleted successfully",
+        "deleteError": "Deletion failed",
+        "editSuccess": "Edited successfully",
+        "editError": "Edit failed",
+        "namePlaceholder": "Please enter knowledge base name",
+        "descriptionPlaceholder": "Please enter knowledge base description",
+        "createKnowledgeBase": "Create a new knowledge base",
+        "createKnowledgeBaseDescription": "Create a new knowledge base to manage your documents",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "actions": "Actions",
+        "confirmDelete": "Confirm Delete",
+        "confirm": "Confirm",
+        "welcome": "Welcome",
+        "guest": "Guest",
+        "searchKnowledgePlaceholder": "Search knowledge base",
+        "noData": "No data",
+        "noMoreData": "No more data"
+    },
+    "login": {
+        "login": "Login",
+        "loginDescription": "Welcome back! Please login to your account.",
+        "loginWithGoogle": "Login with Google",
+        "loginWithGithub": "Login with Github",
+        "orContinueWith": "Or continue with",
+        "emailLabel": "Email",
+        "emailPlaceholder": "Please enter email",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Please enter password",
+        "forgotPassword": "Forgot password?",
+        "noAccount": "Don't have an account?",
+        "signUp": "Sign up"
+    },
+    "dataset": {
+        "files": "File List",
+        "searchFiles": "Search Files",
+        "uploadFile": "Upload File",
+        "noDatasetId": "Dataset ID not found",
+        "name": "Name",
+        "uploadDate": "Upload Date",
+        "chunkMethod": "Chunk Method",
+        "parsingStatus": "Parsing Status",
+        "action": "Action",
+        "noResults": "No data"
+    },
+    "search": {
+        "title": "Deep Search",
+        "searchPlaceholder": "Search...",
+        "searchDescription": "Search for documents, knowledge bases, and more",
+        "searchResults": "Search Results",
+        "noResults": "No results found"
+    },
+    "knowledgeConfiguration": {
+        "chunkMethod": "Chunk Method"
+    },
+    "upload": {
+        "uploadFile": "Upload File",
+        "uploadDescription": "Upload File Description",
+        "selectFile": "Select File",
+        "cancel": "Cancel",
+        "upload": "Upload",
+        "error": "Error",
+        "pleaseSelectFile": "Please select file",
+        "uploadSuccess": "Upload success",
+        "uploadFailed": "Upload failed"
+    }
+}
