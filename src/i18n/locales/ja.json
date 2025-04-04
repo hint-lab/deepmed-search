@@ -31,8 +31,15 @@
         "pleaseInput": "入力してください",
         "submit": "送信"
     },
+    "nav": {
+        "knowledgeBase": "ナレッジベース",
+        "chat": "チャット",
+        "search": "検索",
+        "agent": "エージェント",
+        "fileManagement": "ファイル管理"
+    },
     "home": {
-        "title": "DeepMed Studio",
+        "title": "DeepMed Search",
         "subtitle": "あなたの知識ベースを管理するためのシンプルで効率的なツール",
         "getStarted": "開始する",
         "viewDocs": "ドキュメントを見る",

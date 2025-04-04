@@ -1,5 +1,26 @@
 'use client';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import en from '@/i18n/locales/en.json';
+import zh from '@/i18n/locales/zh.json';
+import ja from '@/i18n/locales/ja.json';
+
+// 初始化 i18next
+i18n
+    .use(initReactI18next)
+    .init({
+        resources: {
+            en: { translation: en },
+            zh: { translation: zh },
+            ja: { translation: ja }
+        },
+        lng: typeof window !== 'undefined' ? localStorage.getItem('language') || 'zh' : 'zh',
+        fallbackLng: 'zh',
+        interpolation: {
+            escapeValue: false
+        }
+    });
 
 /**
  * 使用指定命名空间前缀的翻译钩子
@@ -45,6 +66,6 @@ export const useLanguageSwitcher = () => {
     return {
         currentLanguage: i18n.language,
         changeLanguage,
-        languages: ['en', 'zh'] // 支持的语言列表
+        languages: ['en', 'zh', 'ja'] // 支持的语言列表
     };
 };

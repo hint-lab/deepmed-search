@@ -7,14 +7,14 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings, Sun, Moon, Monitor, Globe, Languages } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, Languages } from 'lucide-react';
+import { useLanguageSwitcher } from '@/hooks/use-language';
 
 export function SettingsMenu() {
     const { setTheme, theme } = useTheme();
-    const [language, setLanguage] = React.useState('zh');
+    const { currentLanguage, changeLanguage } = useLanguageSwitcher();
     const [mounted, setMounted] = React.useState(false);
 
     // 在组件挂载后再渲染，避免hydration错误
@@ -24,29 +24,32 @@ export function SettingsMenu() {
 
     return (
         <div className="flex items-center gap-2">
-
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="px-2">
-                        <span className="mr-2">语言</span>
+                        <span className="mr-2">
+                            {currentLanguage === 'zh' && '语言'}
+                            {currentLanguage === 'en' && 'Language'}
+                            {currentLanguage === 'ja' && '言語'}
+                        </span>
                         <Languages className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 z-50">
-                    <DropdownMenuItem onClick={() => setLanguage('zh')}>
+                    <DropdownMenuItem onClick={() => changeLanguage('zh')}>
                         🇨🇳
-                        <span>简体中文</span>
-                        {language === 'zh' && <span className="ml-auto">✓</span>}
+                        <span className="ml-2">简体中文</span>
+                        {currentLanguage === 'zh' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLanguage('en')}>
+                    <DropdownMenuItem onClick={() => changeLanguage('en')}>
                         🇺🇸
-                        <span>English</span>
-                        {language === 'en' && <span className="ml-auto">✓</span>}
+                        <span className="ml-2">English</span>
+                        {currentLanguage === 'en' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLanguage('ja')}>
+                    <DropdownMenuItem onClick={() => changeLanguage('ja')}>
                         🇯🇵
-                        <span>日本語</span>
-                        {language === 'ja' && <span className="ml-auto">✓</span>}
+                        <span className="ml-2">日本語</span>
+                        {currentLanguage === 'ja' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -72,24 +75,40 @@ export function SettingsMenu() {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="px-2">
-                        <span className="mr-2">设置</span>
+                        <span className="mr-2">
+                            {currentLanguage === 'zh' && '设置'}
+                            {currentLanguage === 'en' && 'Settings'}
+                            {currentLanguage === 'ja' && '設定'}
+                        </span>
                         <Settings className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 z-50">
                     <DropdownMenuItem onClick={() => setTheme('light')}>
                         <Sun className="mr-2 h-4 w-4" />
-                        <span>浅色主题</span>
+                        <span>
+                            {currentLanguage === 'zh' && '浅色主题'}
+                            {currentLanguage === 'en' && 'Light Theme'}
+                            {currentLanguage === 'ja' && 'ライトテーマ'}
+                        </span>
                         {mounted && theme === 'light' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('dark')}>
                         <Moon className="mr-2 h-4 w-4" />
-                        <span>深色主题</span>
+                        <span>
+                            {currentLanguage === 'zh' && '深色主题'}
+                            {currentLanguage === 'en' && 'Dark Theme'}
+                            {currentLanguage === 'ja' && 'ダークテーマ'}
+                        </span>
                         {mounted && theme === 'dark' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('system')}>
                         <Monitor className="mr-2 h-4 w-4" />
-                        <span>跟随系统</span>
+                        <span>
+                            {currentLanguage === 'zh' && '跟随系统'}
+                            {currentLanguage === 'en' && 'System'}
+                            {currentLanguage === 'ja' && 'システム'}
+                        </span>
                         {mounted && theme === 'system' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
                 </DropdownMenuContent>

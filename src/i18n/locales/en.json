@@ -31,8 +31,15 @@
         "pleaseInput": "Please input",
         "submit": "Submit"
     },
+    "nav": {
+        "knowledgeBase": "KnowledgeBase",
+        "chat": "Chat",
+        "search": "Search",
+        "agent": "Agent",
+        "fileManagement": "File Management"
+    },
     "home": {
-        "title": "DeepMed Studio",
+        "title": "DeepMed Search",
         "subtitle": "Your intelligent document assistant, making document processing easier and more efficient",
         "getStarted": "Get Started",
         "viewDocs": "View Documents",

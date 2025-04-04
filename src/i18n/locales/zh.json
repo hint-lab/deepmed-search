@@ -37,8 +37,15 @@
         "dataset": "数据集",
         "settings": "设置"
     },
+    "nav": {
+        "knowledgeBase": "知识库",
+        "chat": "聊天",
+        "search": "搜索",
+        "agent": "智能体",
+        "fileManagement": "文件管理"
+    },
     "home": {
-        "title": "DeepMed Studio",
+        "title": "DeepMed Search",
         "subtitle": "您的智能文档助手，让文档处理更简单、更高效",
         "getStarted": "开始使用",
         "viewDocs": "查看文档",
