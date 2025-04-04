@@ -31,7 +31,7 @@ export default function Header() {
             icon: <Cpu className="mr-2 h-5 w-5" />
         },
         {
-            name: t('dataset'),
+            name: t('fileManagement'),
             href: "/files",
             icon: <FolderOpen className="mr-2 h-5 w-5" />
         }
