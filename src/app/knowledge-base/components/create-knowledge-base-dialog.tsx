@@ -16,13 +16,15 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useTranslation } from "react-i18next";
 
 const formSchema = z.object({
-    name: z.string().min(1, "请输入知识库名称"),
+    name: z.string().min(1, "请输入知识库名称").max(50, "名称不能超过50个字符"),
+    description: z.string().max(200, "描述不能超过200个字符").optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -31,7 +33,7 @@ interface CreateKnowledgeBaseDialogProps {
     visible: boolean;
     hideDialog: () => void;
     loading: boolean;
-    onOk: (name: string) => void;
+    onOk: (values: FormValues) => void;
 }
 
 const CreateKnowledgeBaseDialog = ({
@@ -46,11 +48,12 @@ const CreateKnowledgeBaseDialog = ({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: "",
+            description: "",
         },
     });
 
     const onSubmit = (values: FormValues) => {
-        onOk(values.name);
+        onOk(values);
     };
 
     return (
@@ -72,6 +75,23 @@ const CreateKnowledgeBaseDialog = ({
                                     <FormLabel>{t("name")}</FormLabel>
                                     <FormControl>
                                         <Input placeholder={t("namePlaceholder")} {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t("description")}</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            placeholder={t("descriptionPlaceholder")}
+                                            className="resize-none"
+                                            {...field}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

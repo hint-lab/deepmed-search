@@ -26,16 +26,16 @@ export function SettingsMenu() {
         <div className="flex items-center gap-2">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="px-2">
-                        <span className="mr-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-9 lg:w-fit lg:px-2">
+                        <Languages className="h-4 w-4" />
+                        <span className="ml-2 hidden lg:inline">
                             {currentLanguage === 'zh' && '语言'}
                             {currentLanguage === 'en' && 'Language'}
                             {currentLanguage === 'ja' && '言語'}
                         </span>
-                        <Languages className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 z-50">
+                <DropdownMenuContent align="end" className="w-[180px] lg:w-[200px]">
                     <DropdownMenuItem onClick={() => changeLanguage('zh')}>
                         🇨🇳
                         <span className="ml-2">简体中文</span>
@@ -57,33 +57,34 @@ export function SettingsMenu() {
             <Button
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8 lg:h-9"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 aria-label="切换主题"
             >
                 {mounted ? (
                     theme === 'light' ? (
-                        <Sun className="h-5 w-5" />
+                        <Sun className="h-4 w-4" />
                     ) : (
-                        <Moon className="h-5 w-5" />
+                        <Moon className="h-4 w-4" />
                     )
                 ) : (
                     // 默认图标，防止hydration错误
-                    <div className="h-5 w-5" />
+                    <div className="h-4 w-4" />
                 )}
             </Button>
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="px-2">
-                        <span className="mr-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-9 lg:w-fit lg:px-2">
+                        <Settings className="h-4 w-4" />
+                        <span className="ml-2 hidden lg:inline">
                             {currentLanguage === 'zh' && '设置'}
                             {currentLanguage === 'en' && 'Settings'}
                             {currentLanguage === 'ja' && '設定'}
                         </span>
-                        <Settings className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 z-50">
+                <DropdownMenuContent align="end" className="w-[180px] lg:w-[200px]">
                     <DropdownMenuItem onClick={() => setTheme('light')}>
                         <Sun className="mr-2 h-4 w-4" />
                         <span>

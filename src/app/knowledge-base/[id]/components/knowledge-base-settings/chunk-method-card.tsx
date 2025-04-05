@@ -24,7 +24,7 @@ import Image from 'next/image';
 
 const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
   const parserList = useSelectParserList();
-  const { t } = useTranslate('knowledgeConfiguration');
+  const { t } = useTranslate('knowledgeBasePage');
 
   const item = useMemo(() => {
     const item = parserList.find((x: ParserItem) => x.value === chunkMethod);
@@ -66,7 +66,7 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
               {imageList.map((x: string) => (
                 <div key={x} className="relative aspect-[4/3]">
                   <Image
-                    src={`/chunk-method/${x}.png`}
+                    src={`/assets/svg/chunk-method/${x}.png`}
                     fill
                     className="object-contain"
                     alt={x}
@@ -88,7 +88,7 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
           <p className="text-sm text-muted-foreground">{t('methodEmpty')}</p>
           <div className="relative w-full max-w-md aspect-[16/9]">
             <Image
-              src="/assets/svg/chunk-method/chunk-empty.png"
+              src="/assets/svg/chunk-method/chunk-empty.svg"
               fill
               className="object-contain"
               alt="chunk-empty"

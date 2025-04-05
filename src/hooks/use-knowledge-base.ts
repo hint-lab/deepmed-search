@@ -320,8 +320,17 @@ export const useTestChunkRetrieval = () => {
         try {
             const result = await getKnowledgeBaseDetail(knowledgeBaseId);
             if (result.success) {
-                setData(result.data as ITestingResult);
-                return result.data;
+                const testingResult: ITestingResult = {
+                    chunks: [],
+                    documents: (result.data?.documents || []).map(doc => ({
+                        id: doc.id,
+                        name: doc.name,
+                        content: doc.content || ''
+                    })),
+                    total: result.data?.documents?.length || 0
+                };
+                setData(testingResult);
+                return testingResult;
             }
             throw new Error(result.error);
         } finally {
@@ -358,58 +367,12 @@ export const useSelectIsTestingSuccess = () => {
 //#endregion
 
 //#region tags
-export const useFetchTagList = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
-    const [list, setList] = useState<Array<[string, number]>>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const result = await listTag(knowledgeBaseId);
-                if (result.success) {
-                    setList(result.data || []);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [knowledgeBaseId]);
-
-    return { list, loading };
-};
-
-export const useDeleteTag = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
-    const { t } = useTranslation();
-    const [loading, setLoading] = useState(false);
-
-    const deleteTag = async (tags: string[]) => {
-        setLoading(true);
-        try {
-            const result = await removeTag(knowledgeBaseId, tags);
-            if (result.success) {
-                toast.success(t('message.deleted'));
-                return result.data;
-            }
-            throw new Error(result.error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return { loading, deleteTag };
-};
-
 export const useRenameTag = () => {
     const knowledgeBaseId = useKnowledgeBaseId();
     const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
 
-    const renameTag = async (params: IRenameTag) => {
+    const handleRenameTag = async (params: IRenameTag) => {
         setLoading(true);
         try {
             const result = await renameTag(knowledgeBaseId, params);
@@ -423,12 +386,41 @@ export const useRenameTag = () => {
         }
     };
 
-    return { loading, renameTag };
+    return { loading, handleRenameTag };
 };
 
-export const useTagIsRenaming = () => {
-    const [isRenaming, setIsRenaming] = useState(false);
-    return isRenaming;
+// 创建一个通用的标签列表获取函数
+const fetchTagListData = async (knowledgeBaseIds: string): Promise<Array<[string, number]>> => {
+    try {
+        const result = await listTag(knowledgeBaseIds);
+        if (result && 'success' in result && result.success) {
+            return result.data || [];
+        }
+        return [];
+    } catch (error) {
+        console.error('获取标签列表失败:', error);
+        return [];
+    }
+};
+
+export const useFetchTagList = () => {
+    const knowledgeBaseId = useKnowledgeBaseId();
+    const [list, setList] = useState<Array<[string, number]>>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const data = await fetchTagListData(knowledgeBaseId);
+                setList(data);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [knowledgeBaseId]);
+
+    return { list, loading };
 };
 
 export const useFetchTagListByKnowledgeIds = () => {
@@ -440,12 +432,8 @@ export const useFetchTagListByKnowledgeIds = () => {
         const fetchData = async () => {
             if (knowledgeIds.length === 0) return;
             try {
-                const result = await listTag(knowledgeIds.join(','));
-                if (result.success) {
-                    setList(result.data || []);
-                }
-            } catch (error) {
-                console.error(error);
+                const data = await fetchTagListData(knowledgeIds.join(','));
+                setList(data);
             } finally {
                 setLoading(false);
             }
@@ -468,7 +456,7 @@ export function useFetchKnowledgeGraph() {
             if (!knowledgeBaseId) return;
             try {
                 const result = await getKnowledgeGraph(knowledgeBaseId);
-                if (result.success) {
+                if (result && 'success' in result && result.success) {
                     setData(result.data);
                 }
             } catch (error) {

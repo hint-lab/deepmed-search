@@ -98,11 +98,62 @@
         "actions": "操作",
         "confirmDelete": "削除の確認",
         "confirm": "確認",
-        "welcome": "ようこそ",
+        "welcome": "ようこそ お帰りなさい！",
         "guest": "ゲスト",
         "searchKnowledgePlaceholder": "ナレッジベースを検索",
         "noData": "データがありません",
-        "noMoreData": "これ以上のデータはありません"
+        "noMoreData": "これ以上のデータはありません",
+        "files": "ファイル一覧",
+        "fileName": "ファイル名",
+        "fileSize": "ファイルサイズ",
+        "fileType": "ファイルタイプ",
+        "fileUploadDate": "ファイルアップロード日",
+        "fileUploader": "ファイルアップローダー",
+        "fileStatus": "ファイルステータス",
+        "fileProcessStage": "ファイル処理ステージ",
+        "fileAction": "ファイル操作",
+        "settings": {
+            "title": "設定",
+            "basicTitle": "基本設定",
+            "advancedTitle": "詳細設定"
+        },
+        "validation": {
+            "nameRequired": "ナレッジベース名を入力してください",
+            "languageRequired": "言語を選択してください",
+            "parserRequired": "分割方法を選択してください"
+        },
+        "form": {
+            "name": "ナレッジベース名",
+            "namePlaceholder": "ナレッジベース名を入力してください",
+            "nameDescription": "これはナレッジベースの一意の識別子となります",
+            "description": "説明",
+            "descriptionPlaceholder": "ナレッジベースの説明を入力してください",
+            "descriptionDescription": "このナレッジベースの目的を簡単に説明してください",
+            "language": "言語",
+            "languagePlaceholder": "ナレッジベースの言語を選択",
+            "languageDescription": "ナレッジベースのメイン言語を選択してください",
+            "saveSettings": "設定を保存",
+            "chunkSize": "チャンクサイズ",
+            "chunkSizeDescription": "各テキストブロックの最大文字数を設定（100-2000）",
+            "chunkOverlap": "チャンク重複",
+            "chunkOverlapDescription": "隣接するテキストブロック間の重複文字数を設定（0-1000）",
+            "separator": "区切り文字",
+            "separatorPlaceholder": "カスタム区切り文字を入力",
+            "separatorDescription": "テキスト分割のカスタム区切り文字（任意）",
+            "customRules": "カスタムルール",
+            "customRulesPlaceholder": "カスタム分割ルールを入力",
+            "customRulesDescription": "テキスト分割のカスタムルールを入力（任意）",
+            "applySettings": "設定を適用"
+        },
+        "chunkNum": "チャンク数",
+        "wordCount": "文字数",
+        "searchFiles": "ファイルを検索",
+        "uploadFile": "ファイルをアップロード",
+        "noDatasetId": "データベースIDが見つかりません",
+        "uploadDate": "アップロード日",
+        "chunkMethod": "チャンク方式",
+        "parsingStatus": "解析状態",
+        "noResults": "データがありません"
     },
     "login": {
         "login": "ログイン",
@@ -118,27 +169,12 @@
         "noAccount": "アカウントをお持ちでない方",
         "signUp": "新規登録"
     },
-    "dataset": {
-        "files": "ファイル一覧",
-        "searchFiles": "ファイルを検索",
-        "uploadFile": "ファイルをアップロード",
-        "noDatasetId": "データセットIDが見つかりません",
-        "name": "名前",
-        "uploadDate": "アップロード日",
-        "chunkMethod": "チャンク方式",
-        "parsingStatus": "解析状態",
-        "action": "操作",
-        "noResults": "データがありません"
-    },
     "search": {
         "title": "深度検索",
         "searchPlaceholder": "検索...",
         "searchDescription": "ドキュメント、ナレッジベース、その他を検索",
         "searchResults": "検索結果",
         "noResults": "検索結果がありません"
-    },
-    "knowledgeConfiguration": {
-        "chunkMethod": "分块方法"
     },
     "upload": {
         "uploadFile": "ファイルをアップロード",

@@ -1,7 +1,7 @@
 const getImageName = (prefix: string, length: number) =>
   new Array(length)
     .fill(0)
-    .map((x, idx) => `chunk-method/${prefix}-0${idx + 1}`);
+    .map((x, idx) => `/assets/svg/chunk-method/${prefix}-0${idx + 1}.svg`);
 
 export const ImageMap = {
   book: getImageName('book', 4),

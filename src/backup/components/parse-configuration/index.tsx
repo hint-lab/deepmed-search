@@ -1,6 +1,5 @@
 import { DocumentParserType } from '@/constants/knowledge';
-import { useTranslate } from '@/hooks/common-hooks';
-import { PlusOutlined } from '@ant-design/icons';
+import { useTranslate } from '@/hooks/use-language';
 import { Button, Flex, Form, Input, InputNumber, Slider, Switch } from 'antd';
 import random from 'lodash/random';
 

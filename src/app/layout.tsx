@@ -29,15 +29,17 @@ export default async function RootLayout({
     // const session = await auth();
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${inter.variable} font-sans`}>
+            <body className={`${inter.variable} font-sans antialiased h-screen overflow-hidden`}>
                 <SessionProvider>
                     <I18nProvider>
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
-                                <Header />
-                                <main className="flex flex-col overflow-y-auto size-full">
-                                    {children}
-                                </main>
+                                <div className="flex flex-col h-screen overflow-hidden">
+                                    <Header />
+                                    <main className="flex-1 overflow-auto pt-14 h-full">
+                                        {children}
+                                    </main>
+                                </div>
                             </TooltipProvider>
                         </NextThemeProvider>
                     </I18nProvider>

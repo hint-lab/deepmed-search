@@ -15,12 +15,14 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { formatDate } from '@/utils/date';
 import { useRouter } from 'next/navigation';
+import { useTranslate } from '@/hooks/use-language';
 interface IKnowledgeBaseCardProps {
     item: IKnowledgeBase;
 }
 
 export default function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
     const router = useRouter();
+    const { t } = useTranslate('knowledgeBase');
     const handleDelete = async () => {
         const result = await deleteKnowledgeBase(item.id);
         if (result.success) {
@@ -30,10 +32,10 @@ export default function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
         }
     };
     const handleClick = () => {
-        router.push(`/knowledge-base/dataset?id=${item.id}`);
+        router.push(`/knowledge-base/${item.id}`);
     };
     const handleConfiguration = () => {
-        router.push(`/knowledge/configuration?id=${item.id}`);
+        router.push(`/knowledge-base/${item.id}/settings`);
     };
     return (
         <Card className="w-[300px] h-[251px] flex flex-col justify-between cursor-pointer" onClick={handleClick}>
@@ -52,10 +54,10 @@ export default function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={handleDelete}>
-                                删除
+                                {t('delete')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleConfiguration}>
-                                配置
+                                {t('settings')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

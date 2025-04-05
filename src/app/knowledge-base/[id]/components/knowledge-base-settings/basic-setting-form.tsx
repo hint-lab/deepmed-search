@@ -24,19 +24,19 @@ import {
 } from '@/components/ui/select';
 import { useTranslate } from '@/hooks/use-language';
 
-const formSchema = z.object({
-  name: z.string().min(1, {
-    message: '请输入知识库名称',
-  }),
-  description: z.string(),
-  language: z.string().min(1, {
-    message: '请选择语言',
-  }),
-  tags: z.array(z.string()),
-});
-
 export default function BasicSettingForm() {
-  const { t } = useTranslate('knowledgeConfiguration');
+  const { t } = useTranslate('knowledgeBase');
+
+  const formSchema = z.object({
+    name: z.string().min(1, {
+      message: t('validation.nameRequired'),
+    }),
+    description: z.string(),
+    language: z.string().min(1, {
+      message: t('validation.languageRequired'),
+    }),
+    tags: z.array(z.string()),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,12 +60,12 @@ export default function BasicSettingForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>知识库名称</FormLabel>
+              <FormLabel>{t('form.name')}</FormLabel>
               <FormControl>
-                <Input placeholder="请输入知识库名称" {...field} />
+                <Input placeholder={t('form.namePlaceholder')} {...field} />
               </FormControl>
               <FormDescription>
-                这将作为你的知识库的唯一标识
+                {t('form.nameDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -77,12 +77,12 @@ export default function BasicSettingForm() {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>描述</FormLabel>
+              <FormLabel>{t('form.description')}</FormLabel>
               <FormControl>
-                <Input placeholder="请输入知识库描述" {...field} />
+                <Input placeholder={t('form.descriptionPlaceholder')} {...field} />
               </FormControl>
               <FormDescription>
-                简单描述这个知识库的用途
+                {t('form.descriptionDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -94,21 +94,21 @@ export default function BasicSettingForm() {
           name="language"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>语言</FormLabel>
+              <FormLabel>{t('form.language')}</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="选择知识库语言" />
+                    <SelectValue placeholder={t('form.languagePlaceholder')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="zh">中文</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ja">日本語</SelectItem>
+                  <SelectItem value="zh">{t('languages.chinese')}</SelectItem>
+                  <SelectItem value="en">{t('languages.english')}</SelectItem>
+                  <SelectItem value="ja">{t('languages.japanese')}</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
-                选择知识库的主要语言
+                {t('form.languageDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -116,7 +116,7 @@ export default function BasicSettingForm() {
         />
 
         <div className="flex justify-end">
-          <Button type="submit">保存设置</Button>
+          <Button type="submit">{t('form.saveSettings')}</Button>
         </div>
       </form>
     </Form>

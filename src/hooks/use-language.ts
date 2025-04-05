@@ -32,14 +32,6 @@ export const useTranslate = (keyPrefix: string) => {
 };
 
 /**
- * 使用'common'命名空间前缀的翻译钩子
- * @returns 翻译函数
- */
-export const useCommonTranslation = () => {
-    return useTranslation('translation', { keyPrefix: 'common' });
-};
-
-/**
  * 获取当前语言
  * @returns 当前使用的语言代码
  */

@@ -98,11 +98,62 @@
         "actions": "Actions",
         "confirmDelete": "Confirm Delete",
         "confirm": "Confirm",
-        "welcome": "Welcome",
+        "welcome": "Welcome back!",
         "guest": "Guest",
         "searchKnowledgePlaceholder": "Search knowledge base",
         "noData": "No data",
-        "noMoreData": "No more data"
+        "noMoreData": "No more data",
+        "files": "File List",
+        "fileName": "Filename",
+        "fileSize": "File Size",
+        "fileType": "File Type",
+        "fileUploadDate": "File Upload Date",
+        "fileUploader": "File Uploader",
+        "fileStatus": "File Status",
+        "fileProcessStage": "File Process Stage",
+        "fileAction": "File Action",
+        "chunkNum": "Chunk Number",
+        "wordCount": "Word Count",
+        "settings": {
+            "title": "Settings",
+            "basicTitle": "Basic Settings",
+            "advancedTitle": "Advanced Settings"
+        },
+        "validation": {
+            "nameRequired": "Please enter knowledge base name",
+            "languageRequired": "Please select language",
+            "parserRequired": "Please select chunk method"
+        },
+        "form": {
+            "name": "Knowledge Base Name",
+            "namePlaceholder": "Please enter knowledge base name",
+            "nameDescription": "This will be the unique identifier for your knowledge base",
+            "description": "Description",
+            "descriptionPlaceholder": "Please enter knowledge base description",
+            "descriptionDescription": "Briefly describe the purpose of this knowledge base",
+            "language": "Language",
+            "languagePlaceholder": "Select knowledge base language",
+            "languageDescription": "Select the primary language for the knowledge base",
+            "saveSettings": "Save Settings",
+            "chunkSize": "Chunk Size",
+            "chunkSizeDescription": "Set the maximum number of characters for each text block (100-2000)",
+            "chunkOverlap": "Chunk Overlap",
+            "chunkOverlapDescription": "Set the number of overlapping characters between adjacent text blocks (0-1000)",
+            "separator": "Separator",
+            "separatorPlaceholder": "Enter custom separator",
+            "separatorDescription": "Custom separator for text chunking (optional)",
+            "customRules": "Custom Rules",
+            "customRulesPlaceholder": "Enter custom chunking rules",
+            "customRulesDescription": "Enter custom text chunking rules (optional)",
+            "applySettings": "Apply Settings"
+        },
+        "searchFiles": "Search Files",
+        "uploadFile": "Upload File",
+        "noDatasetId": "Dataset ID not found",
+        "uploadDate": "Upload Date",
+        "chunkMethod": "Chunk Method",
+        "parsingStatus": "Parsing Status",
+        "noResults": "No data"
     },
     "login": {
         "login": "Login",
@@ -118,27 +169,12 @@
         "noAccount": "Don't have an account?",
         "signUp": "Sign up"
     },
-    "dataset": {
-        "files": "File List",
-        "searchFiles": "Search Files",
-        "uploadFile": "Upload File",
-        "noDatasetId": "Dataset ID not found",
-        "name": "Name",
-        "uploadDate": "Upload Date",
-        "chunkMethod": "Chunk Method",
-        "parsingStatus": "Parsing Status",
-        "action": "Action",
-        "noResults": "No data"
-    },
     "search": {
         "title": "Deep Search",
         "searchPlaceholder": "Search...",
         "searchDescription": "Search for documents, knowledge bases, and more",
         "searchResults": "Search Results",
         "noResults": "No results found"
-    },
-    "knowledgeConfiguration": {
-        "chunkMethod": "Chunk Method"
     },
     "upload": {
         "uploadFile": "Upload File",

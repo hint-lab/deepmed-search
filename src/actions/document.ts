@@ -99,7 +99,9 @@ export const uploadDocument = withAuth(async (session, kbId: string, files: File
             })
         );
 
-        revalidatePath(`/knowledge-base/${kbId}/dataset`);
+        // 强制重新验证路径
+        revalidatePath(`/knowledge-base/${kbId}`);
+
         return {
             success: true,
             data: {
@@ -132,7 +134,7 @@ export const changeDocumentParser = withAuth(async (
             }
         });
 
-        revalidatePath('/knowledge-base/[id]/dataset');
+        revalidatePath('/knowledge-base/[id]');
         return {
             success: true
         };
@@ -155,7 +157,7 @@ export const runDocument = withAuth(async (session, documentId: string, isRunnin
             }
         });
 
-        revalidatePath('/knowledge-base/[id]/dataset');
+        revalidatePath('/knowledge-base/[id]');
         return {
             success: true
         };
@@ -175,7 +177,7 @@ export const renameDocument = withAuth(async (session, documentId: string, name:
             data: { name }
         });
 
-        revalidatePath('/knowledge-base/[id]/dataset');
+        revalidatePath('/knowledge-base/[id]');
         return {
             success: true
         };
@@ -195,7 +197,7 @@ export const setDocumentMeta = withAuth(async (session, documentId: string, meta
             data: { parser_config: meta.meta as Prisma.InputJsonValue }
         });
 
-        revalidatePath('/knowledge-base/[id]/dataset');
+        revalidatePath('/knowledge-base/[id]');
         return {
             success: true
         };
@@ -214,7 +216,7 @@ export const deleteDocument = withAuth(async (session, documentId: string): Prom
             where: { id: documentId }
         });
 
-        revalidatePath('/knowledge-base/[id]/dataset');
+        revalidatePath('/knowledge-base/[id]');
         return {
             success: true
         };

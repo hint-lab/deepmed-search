@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useTranslate } from '@/hooks/use-language';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,19 +27,21 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import ChunkMethodCard from './chunk-method-card';
 
-const formSchema = z.object({
-  parser_id: z.string().min(1, {
-    message: '请选择分块方式',
-  }),
-  chunk_size: z.number().min(100).max(2000),
-  chunk_overlap: z.number().min(0).max(1000),
-  separator: z.string(),
-  custom_rules: z.string(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
 export default function AdvancedSettingForm() {
+  const { t } = useTranslate('knowledgeBase');
+
+  const formSchema = z.object({
+    parser_id: z.string().min(1, {
+      message: t('validation.parserRequired'),
+    }),
+    chunk_size: z.number().min(100).max(2000),
+    chunk_overlap: z.number().min(0).max(1000),
+    separator: z.string(),
+    custom_rules: z.string(),
+  });
+
+  type FormValues = z.infer<typeof formSchema>;
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -64,7 +67,7 @@ export default function AdvancedSettingForm() {
           name="chunk_size"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>分块大小</FormLabel>
+              <FormLabel>{t('form.chunkSize')}</FormLabel>
               <FormControl>
                 <Slider
                   min={100}
@@ -75,7 +78,7 @@ export default function AdvancedSettingForm() {
                 />
               </FormControl>
               <FormDescription>
-                设置每个文本块的最大字符数（100-2000）
+                {t('form.chunkSizeDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -87,7 +90,7 @@ export default function AdvancedSettingForm() {
           name="chunk_overlap"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>重叠大小</FormLabel>
+              <FormLabel>{t('form.chunkOverlap')}</FormLabel>
               <FormControl>
                 <Slider
                   min={0}
@@ -98,7 +101,7 @@ export default function AdvancedSettingForm() {
                 />
               </FormControl>
               <FormDescription>
-                设置相邻文本块之间的重叠字符数（0-1000）
+                {t('form.chunkOverlapDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -110,12 +113,12 @@ export default function AdvancedSettingForm() {
           name="separator"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>分隔符</FormLabel>
+              <FormLabel>{t('form.separator')}</FormLabel>
               <FormControl>
-                <Input placeholder="输入自定义分隔符" {...field} />
+                <Input placeholder={t('form.separatorPlaceholder')} {...field} />
               </FormControl>
               <FormDescription>
-                自定义文本分块的分隔符（可选）
+                {t('form.separatorDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -127,16 +130,16 @@ export default function AdvancedSettingForm() {
           name="custom_rules"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>自定义规则</FormLabel>
+              <FormLabel>{t('form.customRules')}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="输入自定义分块规则"
+                  placeholder={t('form.customRulesPlaceholder')}
                   className="min-h-[100px]"
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                输入自定义的文本分块规则（可选）
+                {t('form.customRulesDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -144,7 +147,7 @@ export default function AdvancedSettingForm() {
         />
 
         <div className="flex justify-end">
-          <Button type="submit">应用设置</Button>
+          <Button type="submit">{t('form.applySettings')}</Button>
         </div>
       </form>
     </Form>

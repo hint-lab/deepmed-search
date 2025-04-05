@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { useInfiniteFetchKnowledgeList, useSaveKnowledge } from '@/hooks/use-knowledge-base';
+import { useInfiniteFetchKnowledgeList } from '@/hooks/use-knowledge-base';
 import { useFetchUserInfo } from '@/hooks/use-user';
-import { useTranslation } from 'react-i18next';
+import { useTranslate } from '@/hooks/use-language';
 import KnowledgeBaseCard from './components/knowledge-base-card';
 import { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
@@ -16,16 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CreateKnowledgeBaseDialog from './components/create-knowledge-base-dialog';
+import { createKnowledgeBase } from '@/actions/knowledge';
+import { toast } from 'sonner';
+
 export default function KnowledgeBaseList() {
     const { data: userInfo } = useFetchUserInfo();
-    const { t } = useTranslation('translation', { keyPrefix: 'knowledgeBase' });
-    const {
-        visible,
-        hideDialog,
-        showDialog,
-        onCreateOk,
-        loading: creatingLoading,
-    } = useSaveKnowledge();
+    const { t } = useTranslate('knowledgeBase');
     const {
         fetchNextPage,
         data,
@@ -36,6 +32,7 @@ export default function KnowledgeBaseList() {
         scrollRef,
     } = useInfiniteFetchKnowledgeList();
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [creatingLoading, setCreatingLoading] = useState(false);
 
     const nextList = useMemo(() => {
         return data ?? [];
@@ -45,9 +42,24 @@ export default function KnowledgeBaseList() {
         return data?.length ?? 0;
     }, [data]);
 
-    const handleCreateKnowledgeBase = (name: string) => {
-        // TODO: 实现创建知识库的逻辑
-        console.log('Create knowledge base:', name);
+    const handleCreateKnowledgeBase = async (values: { name: string; description?: string }) => {
+        try {
+            setCreatingLoading(true);
+            const result = await createKnowledgeBase(values);
+            if (result.success) {
+                toast.success('知识库创建成功');
+                setDialogOpen(false);
+                // 重新获取列表
+                await fetchNextPage();
+            } else {
+                toast.error(result.error || '创建失败');
+            }
+        } catch (error) {
+            console.error('创建知识库失败:', error);
+            toast.error('创建失败，请稍后重试');
+        } finally {
+            setCreatingLoading(false);
+        }
     };
 
     return (
@@ -127,4 +139,4 @@ export default function KnowledgeBaseList() {
             />
         </div>
     );
-}; 
+} 

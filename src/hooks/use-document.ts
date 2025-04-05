@@ -50,10 +50,12 @@ export function useFetchDocumentList(kbId: string) {
     });
     const [loading, setLoading] = useState(false);
     const [searchString, setSearchString] = useState('');
+    const [error, setError] = useState<Error | null>(null);
 
     const fetchDocuments = useCallback(async (page: number = 1, pageSize: number = 10, keywords?: string) => {
         try {
             setLoading(true);
+            setError(null);
             const result = await getDocumentList(kbId, page, pageSize, keywords);
             if (result.success) {
                 setDocuments(result.data.docs);
@@ -62,8 +64,14 @@ export function useFetchDocumentList(kbId: string) {
                     pageSize,
                     total: result.data.total,
                 });
+                return result.data;
+            } else {
+                setError(new Error(result.error || '获取文档列表失败'));
+                return null;
             }
-            return result;
+        } catch (err) {
+            setError(err instanceof Error ? err : new Error('获取文档列表失败'));
+            return null;
         } finally {
             setLoading(false);
         }
@@ -78,14 +86,20 @@ export function useFetchDocumentList(kbId: string) {
         fetchDocuments(page, pagination.pageSize, searchString);
     }, [fetchDocuments, pagination.pageSize, searchString]);
 
+    const refreshData = useCallback(() => {
+        return fetchDocuments(pagination.current, pagination.pageSize, searchString);
+    }, [fetchDocuments, pagination.current, pagination.pageSize, searchString]);
+
     return {
         documents,
         pagination,
         loading,
+        error,
         searchString,
         handleSearch,
         handlePageChange,
         setPagination,
+        refreshData,
     };
 }
 
@@ -106,14 +120,21 @@ export function useUploadDocument(kbId: string) {
         setDocumentUploadVisible(false);
     }, []);
 
-    const onDocumentUploadOk = useCallback(async (files: File[]) => {
+    const onDocumentUploadOk = useCallback(async (file: File) => {
         setDocumentUploadLoading(true);
         try {
-            const result = await uploadDocument(kbId, files);
+            const result = await uploadDocument(kbId, [file]);
             if (result.success) {
-                hideDocumentUploadModal();
                 toast.success('上传成功');
+                hideDocumentUploadModal();
+                return result;
+            } else {
+                toast.error(result.error || '上传失败');
+                return null;
             }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : '上传失败');
+            return null;
         } finally {
             setDocumentUploadLoading(false);
         }

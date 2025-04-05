@@ -12,7 +12,7 @@ export default function ChatPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'chat' });
 
   return (
-    <div className="flex h-screen">
+    <div className="flex fixed w-full h-full">
       {/* 侧边栏 */}
       <div className="w-80 border-r bg-background">
         <div className="flex h-16 items-center border-b px-4">
@@ -49,7 +49,7 @@ export default function ChatPage() {
       </div>
 
       {/* 主聊天区域 */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-full">
         <div className="flex h-16 items-center border-b px-4">
           <h3 className="text-lg font-semibold">{t('currentChat')}</h3>
         </div>
@@ -71,6 +71,8 @@ export default function ChatPage() {
               isUser={false}
             />
           </div>
+
+
         </ScrollArea>
         <div className="border-t p-4">
           <div className="flex items-center space-x-2">

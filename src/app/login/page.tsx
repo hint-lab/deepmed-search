@@ -11,23 +11,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
+import { useTranslate } from '@/hooks/use-language';
 const formSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
 });
-
 const LeftPanel = () => {
+    const { t } = useTranslate('login');
     return (
         <div className="relative w-3/5 bg-gradient-to-br from-background via-background/95 to-background/90">
             <div className="relative flex flex-col items-center justify-center min-h-screen p-20">
                 <div className="w-full max-w-2xl space-y-8">
                     <div className="space-y-4 text-center">
                         <h1 className="text-4xl font-bold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-                            Welcome to DeepMed Search!
+                            {t('login')}
                         </h1>
                         <p className="text-xl text-muted-foreground">
-                            Your intelligent document processing platform
+                            {t('loginDescription')}
                         </p>
                     </div>
 
