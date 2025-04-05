@@ -2,7 +2,7 @@
 
 ## ER 图
 
-```mermaid
+```mermaid 
 erDiagram
     User ||--o{ Dialog : has
     User ||--o{ Message : has
