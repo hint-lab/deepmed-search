@@ -46,7 +46,7 @@ An intelligent document search and management system built with Next.js 14 and s
 ```bash
 git clone <repository-url>
 cd deepmed-search
-pnpm install
+yarn run install
 ```
 
 2. Configure environment variables:
@@ -71,14 +71,14 @@ NEXTAUTH_SECRET="your-secret-key"
 3. Initialize the database:
 
 ```bash
-pnpm db:generate  # Generate Prisma Client
-pnpm db:migrate   # Run database migrations
+yarn run db:generate  # Generate Prisma Client
+yarn run db:migrate   # Run database migrations
 ```
 
 4. Start the development server:
 
 ```bash
-pnpm dev
+yarn run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
@@ -105,18 +105,18 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the r
 
 ```bash
 # Development
-pnpm dev         # Start development server
-pnpm lint        # Run code linting
+yarn run dev         # Start development server
+yarn run lint        # Run code linting
 
 # Database
-pnpm db:generate # Generate Prisma Client
-pnpm db:migrate  # Run database migrations
-pnpm db:reset    # Reset database
-pnpm db:studio   # Start Prisma Studio
+yarn run db:generate # Generate Prisma Client
+yarn run db:migrate  # Run database migrations
+yarn run db:reset    # Reset database
+yarn run db:studio   # Start Prisma Studio
 
 # Build & Deploy
-pnpm build       # Build for production
-pnpm start       # Start production server
+yarn run build       # Build for production
+yarn run start       # Start production server
 ```
 
 ## UI Components
@@ -128,7 +128,7 @@ This project uses [shadcn/ui](https://ui.shadcn.com/) as the UI component librar
 Use the shadcn-ui CLI to add components:
 
 ```bash
-pnpm dlx shadcn-ui@latest add button
+yarn run dlx shadcn-ui@latest add button
 ```
 
 All components will be added to the `src/components/ui` directory, where you can customize them as needed.
@@ -172,7 +172,7 @@ For more deployment details, refer to the [Next.js Deployment Documentation](htt
 
 Pull requests and issues are welcome! Before submitting, please ensure:
 
-1. Code passes ESLint checks (`pnpm lint`)
+1. Code passes ESLint checks (`yarn run lint`)
 2. Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/) specification
 3. Documentation is updated accordingly
 
@@ -226,7 +226,7 @@ MIT
 ```bash
 git clone <repository-url>
 cd deepmed-search
-pnpm install
+yarn run install
 ```
 
 2. 配置环境变量：
@@ -251,14 +251,14 @@ NEXTAUTH_SECRET="your-secret-key"
 3. 初始化数据库：
 
 ```bash
-pnpm db:generate  # 生成 Prisma Client
-pnpm db:migrate   # 运行数据库迁移
+yarn run db:generate  # 生成 Prisma Client
+yarn run db:migrate   # 运行数据库迁移
 ```
 
 4. 运行开发服务器：
 
 ```bash
-pnpm dev
+yarn run dev
 ```
 
 在浏览器中打开 [http://localhost:3000](http://localhost:3000) 查看结果。
@@ -285,18 +285,18 @@ pnpm dev
 
 ```bash
 # 开发
-pnpm dev         # 启动开发服务器
-pnpm lint        # 运行代码检查
+yarn run dev         # 启动开发服务器
+yarn run lint        # 运行代码检查
 
 # 数据库
-pnpm db:generate # 生成 Prisma Client
-pnpm db:migrate  # 运行数据库迁移
-pnpm db:reset    # 重置数据库
-pnpm db:studio   # 启动 Prisma Studio
+yarn run db:generate # 生成 Prisma Client
+yarn run db:migrate  # 运行数据库迁移
+yarn run db:reset    # 重置数据库
+yarn run db:studio   # 启动 Prisma Studio
 
 # 构建和部署
-pnpm build       # 构建生产版本
-pnpm start       # 启动生产服务器
+yarn run build       # 构建生产版本
+yarn run start       # 启动生产服务器
 ```
 
 ## UI 组件
@@ -308,7 +308,7 @@ pnpm start       # 启动生产服务器
 使用 shadcn-ui CLI 添加组件：
 
 ```bash
-pnpm dlx shadcn-ui@latest add button
+yarn dlx shadcn-ui@latest add button
 ```
 
 所有组件都会被添加到 `src/components/ui` 目录下，你可以根据需要自定义这些组件。
@@ -352,7 +352,7 @@ npx tsx src/scripts/create-test-user.ts
 
 欢迎提交 Pull Request 和 Issue！在提交之前，请确保：
 
-1. 代码通过 ESLint 检查 (`pnpm lint`)
+1. 代码通过 ESLint 检查 (`yarn run lint`)
 2. 提交信息遵循 [约定式提交](https://www.conventionalcommits.org/zh-hans/) 规范
 3. 更新相关文档
 

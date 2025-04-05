@@ -11,7 +11,7 @@ export const getDocumentList = withAuth(async (session, kbId: string, page: numb
         const skip = (page - 1) * pageSize;
 
         const where: Prisma.DocumentWhereInput = {
-            kb_id: kbId,
+            knowledgeBaseId: kbId,
             ...(keywords ? {
                 name: {
                     contains: keywords,
@@ -21,8 +21,8 @@ export const getDocumentList = withAuth(async (session, kbId: string, page: numb
         };
 
         const [total, docs] = await Promise.all([
-            prisma.Document.count({ where }),
-            prisma.Document.findMany({
+            prisma.document.count({ where }),
+            prisma.document.findMany({
                 where,
                 skip,
                 take: pageSize,
@@ -35,7 +35,7 @@ export const getDocumentList = withAuth(async (session, kbId: string, page: numb
         return {
             success: true,
             data: {
-                docs: docs.map(doc => ({
+                docs: docs.map((doc: any) => ({
                     id: doc.id,
                     name: doc.name,
                     create_date: doc.create_date.toISOString(),
@@ -70,15 +70,14 @@ export const uploadDocument = withAuth(async (session, kbId: string, files: File
             throw new Error('未登录');
         }
 
-        // 这里需要实现文件上传逻辑
-        // 可以使用 S3 或其他存储服务
-        // 暂时返回模拟数据
         const uploadedFiles = await Promise.all(
             files.map(async (file) => {
-                const fileData = await prisma.Document.create({
+                const fileData = await prisma.document.create({
                     data: {
                         name: file.name,
-                        location: `uploads/${file.name}`, // 实际存储路径
+                        content: '',
+                        knowledgeBaseId: kbId,
+                        location: `uploads/${file.name}`,
                         size: file.size,
                         type: file.type,
                         source_type: 'file',
@@ -86,13 +85,16 @@ export const uploadDocument = withAuth(async (session, kbId: string, files: File
                         chunk_num: 0,
                         token_num: 0,
                         progress: 0,
+                        progress_msg: '',
                         run: 'pending',
+                        process_begin_at: null,
+                        process_duation: 0,
                         create_date: new Date(),
                         create_time: BigInt(Date.now()),
                         update_date: new Date(),
                         update_time: BigInt(Date.now()),
                         created_by: session.user.id,
-                        kb_id: kbId,
+                        parser_id: '',
                         parser_config: {}
                     }
                 });
@@ -100,7 +102,6 @@ export const uploadDocument = withAuth(async (session, kbId: string, files: File
             })
         );
 
-        // 强制重新验证路径
         revalidatePath(`/knowledge-base/${kbId}`);
 
         return {
@@ -127,7 +128,7 @@ export const changeDocumentParser = withAuth(async (
     parserConfig: IChangeParserConfigRequestBody
 ): Promise<APIResponse<any>> => {
     try {
-        await prisma.Document.update({
+        await prisma.document.update({
             where: { id: documentId },
             data: {
                 parser_id: parserId,
@@ -150,7 +151,7 @@ export const changeDocumentParser = withAuth(async (
 
 export const runDocument = withAuth(async (session, documentId: string, isRunning: boolean): Promise<APIResponse<any>> => {
     try {
-        await prisma.Document.update({
+        await prisma.document.update({
             where: { id: documentId },
             data: {
                 run: isRunning ? 'processing' : 'pending',
@@ -173,7 +174,7 @@ export const runDocument = withAuth(async (session, documentId: string, isRunnin
 
 export const renameDocument = withAuth(async (session, documentId: string, name: string): Promise<APIResponse<any>> => {
     try {
-        await prisma.Document.update({
+        await prisma.document.update({
             where: { id: documentId },
             data: { name }
         });
@@ -193,7 +194,7 @@ export const renameDocument = withAuth(async (session, documentId: string, name:
 
 export const setDocumentMeta = withAuth(async (session, documentId: string, meta: IDocumentMetaRequestBody): Promise<APIResponse<any>> => {
     try {
-        await prisma.Document.update({
+        await prisma.document.update({
             where: { id: documentId },
             data: { parser_config: meta.meta as Prisma.InputJsonValue }
         });
@@ -213,7 +214,7 @@ export const setDocumentMeta = withAuth(async (session, documentId: string, meta
 
 export const deleteDocument = withAuth(async (session, documentId: string): Promise<APIResponse<any>> => {
     try {
-        await prisma.Document.delete({
+        await prisma.document.delete({
             where: { id: documentId }
         });
 

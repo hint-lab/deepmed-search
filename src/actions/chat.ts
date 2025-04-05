@@ -28,11 +28,16 @@ export const createChatDialogAction = withAuth(async (session, data: {
     description?: string;
     knowledgeBaseId?: string;
 }): Promise<APIResponse<any>> => {
+    if (!session?.user?.id) {
+        return { success: false, error: '用户ID不存在' };
+    }
+
     const dialog = await prisma.dialog.create({
         data: {
             name: data.name,
-            description: data.description,
+            description: data.description || '',
             userId: session.user.id,
+            knowledgeBaseId: data.knowledgeBaseId
         },
     });
 

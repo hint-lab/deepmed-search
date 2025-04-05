@@ -6,7 +6,7 @@ export interface IDocumentInfo {
   create_time: string;
   created_by: string;
   id: string;
-  kb_id: string;
+  knowledgeBaseId: string;
   location: string;
   name: string;
   parser_config: IParserConfig;
@@ -33,33 +33,13 @@ export interface IDocumentInfo {
 }
 
 export interface IParserConfig {
-  delimiter?: string;
-  html4excel?: boolean;
-  layout_recognize?: boolean;
-  pages: any[];
-  raptor?: Raptor;
-  graphrag?: GraphRag;
-  chunk_size: number;
-  overlap: number;
   [key: string]: any;
-}
-
-interface Raptor {
-  use_raptor: boolean;
-}
-
-interface GraphRag {
-  community?: boolean;
-  entity_types?: string[];
-  method?: string;
-  resolution?: boolean;
-  use_graphrag?: boolean;
 }
 
 export interface IChangeParserConfigRequestBody {
-  chunk_size: number;
-  overlap: number;
-  [key: string]: any;
+  documentId: string;
+  parserId: string;
+  parserConfig: Record<string, any>;
 }
 
 export interface IDocumentMetaRequestBody {
