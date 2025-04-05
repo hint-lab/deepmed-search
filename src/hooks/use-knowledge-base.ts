@@ -13,33 +13,39 @@ import {
     ISearchKnowledgeParams,
     ISearchKnowledgeResult
 } from '@/types/db/knowledge-base';
-import { useTranslate } from 'react-i18next';
+import { useTranslate } from '@/hooks/use-language';
 import { useDebounce } from '@/hooks/use-debounce';
 import { usePagination } from '@/hooks/use-pagination';
 import {
-    createKnowledgeBase,
-    updateKnowledgeBase,
-    deleteKnowledgeBase,
-    getKnowledgeBase,
-    listKnowledgeBases,
-    getKnowledgeBaseDetail,
-    getKnowledgeList,
-    listTag,
-    removeTag,
-    renameTag,
-    getKnowledgeGraph,
-    getKnowledgeBaseList
+    createKnowledgeBaseAction,
+    updateKnowledgeBaseAction,
+    deleteKnowledgeBaseAction,
+    getKnowledgeBaseAction,
+    listKnowledgeBasesAction,
+    getKnowledgeBaseDetailAction,
+    getKnowledgeListAction,
+    listTagAction,
+    removeTagAction,
+    renameTagAction,
+    getKnowledgeGraphAction,
+    getKnowledgeBaseListAction
 } from '@/actions/knowledge-base';
 import { z } from 'zod';
 // import { i18n } from 'i18n';
 
+/**
+ * 知识库表单验证模式
+ */
 const formSchema = z.object({
     name: z.string().min(1, "请输入知识库名称"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-// 搜索知识
+/**
+ * 搜索知识库的 Hook
+ * @returns 搜索字符串和输入处理函数
+ */
 export const useSearchKnowledge = () => {
     const [searchString, setSearchString] = useState<string>('');
 
@@ -52,11 +58,52 @@ export const useSearchKnowledge = () => {
     };
 };
 
-// 保存知识     
-export const useSaveKnowledge = () => {
+/**
+ * 获取当前知识库 ID 的 Hook
+ * @returns 从 URL 参数中获取的知识库 ID
+ */
+export const useKnowledgeBaseId = (): string => {
+    const searchParams = useSearchParams();
+    return searchParams.get('id') || '';
+};
+
+/**
+ * 获取当前知识库 ID 的 Hook
+ * @returns 从 URL 参数中获取的知识库 ID
+ */
+export const useKnowledgeBaseInfo = () => {
+    const kbId = useKnowledgeBaseId();
+    const [data, setData] = useState<IKnowledgeBase | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!kbId) return;
+            try {
+                const result = await getKnowledgeBaseAction(kbId);
+                if (result.success) {
+                    setData(result.data as IKnowledgeBase);
+                }
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [kbId]);
+
+    return { data, loading };
+}
+
+/**
+ * 保存知识库的 Hook
+ * @returns 对话框状态、加载状态和创建知识库的处理函数
+ */
+export const useSaveKnowledgeBase = () => {
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { t } = useTranslation('translation', { keyPrefix: 'knowledgeList' });
+    const { t } = useTranslate('knowledgeList');
 
     const showDialog = useCallback(() => {
         setVisible(true);
@@ -69,7 +116,7 @@ export const useSaveKnowledge = () => {
     const onCreateOk = useCallback(async (name: string) => {
         try {
             setLoading(true);
-            await createKnowledgeBase({ name });
+            await createKnowledgeBaseAction({ name });
             toast.success(t('createSuccess'));
             hideDialog();
             // 重新验证路径以刷新数据
@@ -90,23 +137,20 @@ export const useSaveKnowledge = () => {
     };
 };
 
-// 获取知识库id
-export const useKnowledgeBaseId = (): string => {
-    const searchParams = useSearchParams();
-    return searchParams.get('id') || '';
-};
-
-// 获取知识库配置
+/**
+ * 获取知识库配置的 Hook
+ * @returns 知识库配置数据和加载状态
+ */
 export const useFetchKnowledgeBaseConfiguration = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
+    const kbId = useKnowledgeBaseId();
     const [data, setData] = useState<IKnowledgeBase | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!knowledgeBaseId) return;
+            if (!kbId) return;
             try {
-                const result = await getKnowledgeBase(knowledgeBaseId);
+                const result = await getKnowledgeBaseAction(kbId);
                 if (result.success) {
                     setData(result.data as IKnowledgeBase);
                 }
@@ -117,20 +161,23 @@ export const useFetchKnowledgeBaseConfiguration = () => {
             }
         };
         fetchData();
-    }, [knowledgeBaseId]);
+    }, [kbId]);
 
     return { data, loading };
 };
 
-// 获取知识库列表
-export const useFetchKnowledgeList = () => {
+/**
+ * 获取知识库列表的基础版本 Hook
+ * @returns 知识库列表和加载状态
+ */
+export const useFetchKnowledgeBaseList = () => {
     const [list, setList] = useState<IKnowledgeListItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const result = await listKnowledgeBases();
+                const result = await listKnowledgeBasesAction();
                 if (result.success) {
                     setList(result.data?.items || []);
                 }
@@ -146,8 +193,12 @@ export const useFetchKnowledgeList = () => {
     return { list, loading };
 };
 
+/**
+ * 获取知识库选项的 Hook
+ * @returns 用于下拉选择框的知识库选项列表
+ */
 export const useSelectKnowledgeOptions = () => {
-    const { list } = useFetchKnowledgeList();
+    const { list } = useFetchKnowledgeBaseList();
 
     const options = list?.map((item: IKnowledgeListItem) => ({
         label: item.name,
@@ -157,14 +208,19 @@ export const useSelectKnowledgeOptions = () => {
     return options;
 };
 
-export const useInfiniteFetchKnowledgeList = () => {
+/**
+ * 获取知识库列表的高级版本 Hook（带分页和搜索功能）
+ * @returns 知识库列表、加载状态、分页信息和搜索功能
+ */
+export const useFetchKnowledgeBaseListWithPagination = () => {
     const [searchString, setSearchString] = useState('');
     const [page, setPage] = useState(1);
-    const [data, setData] = useState<IKnowledgeListItem[]>([]);
+    const [list, setList] = useState<IKnowledgeListItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // 获取数据的回调函数
     const fetchData = useCallback(async (pageNum: number) => {
         try {
             setLoading(true);
@@ -173,14 +229,14 @@ export const useInfiniteFetchKnowledgeList = () => {
                 page: pageNum,
                 pageSize: 10
             };
-            const result = await listKnowledgeBases(params);
+            const result = await listKnowledgeBasesAction(params);
 
             if (result.success && result.data) {
                 const searchResult = result.data;
                 if (pageNum === 1) {
-                    setData(searchResult.items);
+                    setList(searchResult.items);
                 } else {
-                    setData(prev => [...prev, ...searchResult.items]);
+                    setList(prev => [...prev, ...searchResult.items]);
                 }
                 setHasNextPage(searchResult.items.length === searchResult.pageSize);
                 setPage(pageNum);
@@ -192,12 +248,14 @@ export const useInfiniteFetchKnowledgeList = () => {
         }
     }, [searchString]);
 
+    // 获取下一页数据的回调函数
     const fetchNextPage = useCallback(() => {
         if (!loading && hasNextPage) {
             fetchData(page + 1);
         }
     }, [fetchData, loading, hasNextPage, page]);
 
+    // 处理搜索输入变化的回调函数
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchString(e.target.value);
         setPage(1);
@@ -205,6 +263,7 @@ export const useInfiniteFetchKnowledgeList = () => {
         fetchData(1);
     }, [fetchData]);
 
+    // 监听滚动事件，实现无限加载
     useEffect(() => {
         const handleScroll = () => {
             if (!scrollRef.current || loading || !hasNextPage) return;
@@ -222,12 +281,13 @@ export const useInfiniteFetchKnowledgeList = () => {
         }
     }, [fetchNextPage, loading, hasNextPage]);
 
+    // 初始加载数据
     useEffect(() => {
         fetchData(1);
     }, [fetchData]);
 
     return {
-        data,
+        list,
         loading,
         hasNextPage,
         searchString,
@@ -237,16 +297,19 @@ export const useInfiniteFetchKnowledgeList = () => {
     };
 };
 
-// 创建知识库
-export const useCreateKnowledge = () => {
+/**
+ * 创建知识库的 Hook
+ * @returns 创建知识库的处理函数和加载状态
+ */
+export const useCreateKnowledgeBase = () => {
     const router = useRouter();
-    const { t } = useTranslate();
+    const { t } = useTranslate('knowledgeList');
     const [loading, setLoading] = useState(false);
 
-    const createKnowledge = async (params: ICreateKnowledgeParams) => {
+    const createKnowledgeBase = async (params: ICreateKnowledgeParams) => {
         setLoading(true);
         try {
-            const result = await createKnowledgeBase(params);
+            const result = await createKnowledgeBaseAction(params);
             if (result.success) {
                 toast.success(t('创建成功'));
                 router.push(`/knowledge/configuration?id=${result.data.id}`);
@@ -258,19 +321,23 @@ export const useCreateKnowledge = () => {
         }
     };
 
-    return { createKnowledge, loading };
+    return { createKnowledgeBase, loading };
 };
 
-// 更新知识库
-export const useUpdateKnowledge = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
-    const { t } = useTranslation();
+/**
+ * 更新知识库的 Hook
+ * @returns 更新知识库的处理函数和加载状态
+ */
+export const useUpdateKnowledgeBase = () => {
+    const kbId = useKnowledgeBaseId();
+    const { t } = useTranslate('knowledgeList');
     const [loading, setLoading] = useState(false);
 
-    const updateKnowledge = async (name: string) => {
+    const updateKnowledgeBase = async (params: IUpdateKnowledgeParams) => {
+        if (!kbId || !params.name) return;
         setLoading(true);
         try {
-            const result = await updateKnowledgeBase(knowledgeBaseId, name);
+            const result = await updateKnowledgeBaseAction(kbId, params.name);
             if (result.success) {
                 toast.success(t('更新成功'));
                 return result.data;
@@ -281,18 +348,21 @@ export const useUpdateKnowledge = () => {
         }
     };
 
-    return { updateKnowledge, loading };
+    return { updateKnowledgeBase, loading };
 };
 
-// 删除知识库
-export const useDeleteKnowledge = () => {
-    const { t } = useTranslation();
+/**
+ * 删除知识库的 Hook
+ * @returns 删除知识库的处理函数和加载状态
+ */
+export const useDeleteKnowledgeBase = () => {
+    const { t } = useTranslate('knowledgeBase');
     const [loading, setLoading] = useState(false);
 
-    const deleteKnowledge = async (id: string) => {
+    const deleteKnowledgeBase = async (id: string) => {
         setLoading(true);
         try {
-            const result = await deleteKnowledgeBase(id);
+            const result = await deleteKnowledgeBaseAction(id);
             if (result.success) {
                 toast.success(t('删除成功'));
             } else {
@@ -303,10 +373,14 @@ export const useDeleteKnowledge = () => {
         }
     };
 
-    return { deleteKnowledge, loading };
+    return { deleteKnowledgeBase, loading };
 };
 
 //#region Retrieval testing
+/**
+ * 测试知识块检索的 Hook
+ * @returns 测试结果数据和加载状态
+ */
 export const useTestChunkRetrieval = () => {
     const knowledgeBaseId = useKnowledgeBaseId();
     const { page, size: pageSize } = usePagination();
@@ -316,7 +390,7 @@ export const useTestChunkRetrieval = () => {
     const testChunk = async (values: any) => {
         setLoading(true);
         try {
-            const result = await getKnowledgeBaseDetail(knowledgeBaseId);
+            const result = await getKnowledgeBaseDetailAction(knowledgeBaseId);
             if (result.success) {
                 const testingResult: ITestingResult = {
                     chunks: [],
@@ -343,11 +417,19 @@ export const useTestChunkRetrieval = () => {
     };
 };
 
+/**
+ * 知识块测试状态的 Hook
+ * @returns 是否正在测试的状态
+ */
 export const useChunkIsTesting = () => {
     const [isTesting, setIsTesting] = useState(false);
     return isTesting;
 };
 
+/**
+ * 选择测试结果的 Hook
+ * @returns 测试结果数据
+ */
 export const useSelectTestingResult = (): ITestingResult => {
     const [result, setResult] = useState<ITestingResult>({
         chunks: [],
@@ -357,6 +439,10 @@ export const useSelectTestingResult = (): ITestingResult => {
     return result;
 };
 
+/**
+ * 测试是否成功的 Hook
+ * @returns 测试是否成功的状态
+ */
 export const useSelectIsTestingSuccess = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     return isSuccess;
@@ -365,15 +451,20 @@ export const useSelectIsTestingSuccess = () => {
 //#endregion
 
 //#region tags
+/**
+ * 重命名标签的 Hook
+ * @returns 重命名标签的处理函数和加载状态
+ */
 export const useRenameTag = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
-    const { t } = useTranslation();
+    const kbId = useKnowledgeBaseId();
+    const { t } = useTranslate('knowledgeList');
     const [loading, setLoading] = useState(false);
 
     const handleRenameTag = async (params: IRenameTag) => {
+        if (!kbId) return;
         setLoading(true);
         try {
-            const result = await renameTag(knowledgeBaseId, params);
+            const result = await renameTagAction(kbId, params);
             if (result.success) {
                 toast.success(t('message.modified'));
                 return result.data;
@@ -387,12 +478,16 @@ export const useRenameTag = () => {
     return { loading, handleRenameTag };
 };
 
-// 创建一个通用的标签列表获取函数
+/**
+ * 获取标签列表数据的通用函数
+ * @param knowledgeBaseIds 知识库 ID 字符串
+ * @returns 标签列表数据
+ */
 const fetchTagListData = async (knowledgeBaseIds: string): Promise<Array<[string, number]>> => {
     try {
-        const result = await listTag(knowledgeBaseIds);
-        if (result && 'success' in result && result.success) {
-            return result.data || [];
+        const result = await listTagAction(knowledgeBaseIds);
+        if (result && 'success' in result && result.success && 'data' in result) {
+            return Array.isArray(result.data) ? result.data : [];
         }
         return [];
     } catch (error) {
@@ -401,26 +496,35 @@ const fetchTagListData = async (knowledgeBaseIds: string): Promise<Array<[string
     }
 };
 
+/**
+ * 获取标签列表的 Hook
+ * @returns 标签列表和加载状态
+ */
 export const useFetchTagList = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
+    const kbId = useKnowledgeBaseId();
     const [list, setList] = useState<Array<[string, number]>>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!kbId) return;
             try {
-                const data = await fetchTagListData(knowledgeBaseId);
+                const data = await fetchTagListData(kbId);
                 setList(data);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [knowledgeBaseId]);
+    }, [kbId]);
 
     return { list, loading };
 };
 
+/**
+ * 根据知识库 ID 列表获取标签列表的 Hook
+ * @returns 标签列表、加载状态和设置知识库 ID 列表的函数
+ */
 export const useFetchTagListByKnowledgeIds = () => {
     const [knowledgeIds, setKnowledgeIds] = useState<string[]>([]);
     const [list, setList] = useState<Array<[string, number]>>([]);
@@ -444,18 +548,23 @@ export const useFetchTagListByKnowledgeIds = () => {
 
 //#endregion
 
+/**
+ * 获取知识图谱的 Hook
+ * @returns 知识图谱数据和加载状态
+ */
 export function useFetchKnowledgeGraph() {
-    const knowledgeBaseId = useKnowledgeBaseId();
+    const kbId = useKnowledgeBaseId();
     const [data, setData] = useState<IKnowledgeGraph>({ nodes: [], edges: [], graph: {}, mind_map: {} });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!knowledgeBaseId) return;
+            if (!kbId) return;
             try {
-                const result = await getKnowledgeGraph(knowledgeBaseId);
-                if (result && 'success' in result && result.success) {
-                    setData(result.data);
+                const result = await getKnowledgeGraphAction(kbId);
+                if (result && 'success' in result && result.success && 'data' in result) {
+                    const graphData = result.data as IKnowledgeGraph;
+                    setData(graphData);
                 }
             } catch (error) {
                 console.error(error);
@@ -464,11 +573,14 @@ export function useFetchKnowledgeGraph() {
             }
         };
         fetchData();
-    }, [knowledgeBaseId]);
+    }, [kbId]);
 
     return { data, loading };
 }
 
+/**
+ * 知识库接口定义
+ */
 export interface KnowledgeBase {
     id: string;
     name: string;
@@ -479,7 +591,8 @@ export interface KnowledgeBase {
 }
 
 /**
- * 获取知识库列表
+ * 获取知识库列表的 Hook
+ * @returns 知识库列表和加载状态
  */
 export function useKnowledgeBaseList() {
     const [data, setData] = useState<KnowledgeBase[]>([]);
@@ -488,7 +601,7 @@ export function useKnowledgeBaseList() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const result = await getKnowledgeBaseList();
+                const result = await getKnowledgeBaseListAction();
                 if (result.success) {
                     setData(result.data);
                 }

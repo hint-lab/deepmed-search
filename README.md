@@ -185,7 +185,7 @@ MIT
 <a name="中文"></a>
 # DeepMed Search
 
-这是一个基于 Next.js 14 和 shadcn/ui 构建的智能文档搜索和管理系统。
+这是一个基于 Next.js 14 和 shadcn/ui 构建的智能医学文档搜索和管理系统。
 
 ## 技术栈
 

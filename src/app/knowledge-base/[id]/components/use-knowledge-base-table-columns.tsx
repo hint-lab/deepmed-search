@@ -34,7 +34,7 @@ import { useTranslate } from '@/hooks/use-language';
 import { useChangeDocumentParser } from '@/hooks/use-change-document-parser';
 import { useDocumentNavigation } from '@/hooks/use-document-navigation';
 import { Badge } from '@/components/ui/badge';
-import { formatBytes } from '@/utils/format-util';
+import { formatBytes } from '@/utils/bytes';
 
 interface ColumnMeta {
   cellClassName?: string;

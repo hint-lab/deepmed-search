@@ -1,62 +1,53 @@
 {
-    // 使用 IntelliSense 了解相关属性。 
-    // 悬停以查看现有属性的描述。
-    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
             "name": "Next.js: debug server-side",
             "type": "node-terminal",
             "request": "launch",
-            "command": "npm run dev",
+            "command": "yarn run dev --turbopack",
             "skipFiles": [
                 "<node_internals>/**",
-                "node_modules/**",
-                ".next/**",
-                "dist/**",
-                "build/**"
+                "**/node_modules/**"
             ],
             "serverReadyAction": {
                 "pattern": "started server on .+, url: (https?://.+)",
                 "uriFormat": "%s",
-                "action": "debugWithChrome"
+                "action": "debugWithEdge"
             }
         },
         {
             "name": "Next.js: debug client-side",
-            "type": "chrome",
+            "type": "msedge",
             "request": "launch",
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}",
-            "sourceMapPathOverrides": {
-                "webpack://_N_E/*": "${webRoot}/*"
-            },
             "skipFiles": [
-                "<node_internals>/**",
-                "node_modules/**",
-                ".next/**",
-                "dist/**",
-                "build/**"
+                "**/node_modules/**"
+            ],
+            "runtimeArgs": [
+                "--remote-debugging-port=9230"
             ]
         },
         {
             "name": "Next.js: debug full stack",
-            "type": "node-terminal",
+            "type": "node",
             "request": "launch",
-            "command": "npm run dev",
+            "program": "${workspaceFolder}/node_modules/.bin/next",
+            "runtimeArgs": [
+                "--inspect=9230"
+            ],
             "skipFiles": [
                 "<node_internals>/**",
-                "node_modules/**",
-                ".next/**",
-                "dist/**",
-                "build/**"
+                "**/node_modules/**"
             ],
             "serverReadyAction": {
-                "pattern": "started server on .+, url: (https?://.+)",
+                "action": "debugWithEdge",
+                "killOnServerStop": true,
+                "pattern": "- Local:.+(https?://.+)",
                 "uriFormat": "%s",
-                "action": "debugWithChrome"
-            },
-            "console": "integratedTerminal"
+                "webRoot": "${workspaceFolder}"
+            }
         }
     ]
 }

@@ -20,7 +20,7 @@ export function KnowledgeBaseSettings({ kbId }: KnowledgeBaseSettingsProps) {
                         <CardTitle>{t('settings.basicTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <BasicSettingForm />
+                        <BasicSettingForm kbId={kbId} />
                     </CardContent>
                 </Card>
 

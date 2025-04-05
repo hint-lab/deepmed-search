@@ -1,5 +1,4 @@
 "use client"
-import { useFetchKnowledgeList } from "@/hooks/use-knowledge-base"
 import { ChevronRight, Folder, FolderOpen, PanelLeftClose, PanelLeftOpen, FileIcon } from "lucide-react"
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -8,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { useFetchKnowledgeBaseList } from '@/hooks/use-knowledge-base'
 
 interface IKnowledgeItem {
     id: string;
@@ -40,7 +40,7 @@ const SearchSidebar = ({
     checkedList,
     setCheckedList,
 }: IProps) => {
-    const { list, loading } = useFetchKnowledgeList()
+    const { list, loading } = useFetchKnowledgeBaseList()
     const [collapsed, setCollapsed] = useState(false)
     const [openItems, setOpenItems] = useState<string[]>([])
 

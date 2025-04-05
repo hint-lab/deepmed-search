@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { useInfiniteFetchKnowledgeList } from '@/hooks/use-knowledge-base';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslate } from '@/hooks/use-language';
-import KnowledgeBaseCard from './components/knowledge-base-card';
+import { KnowledgeBaseCard } from './components/knowledge-base-card';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
@@ -11,56 +10,39 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CreateKnowledgeBaseDialog from './components/create-knowledge-base-dialog';
-import { createKnowledgeBase } from '@/actions/knowledge-base';
 import { toast } from 'sonner';
+import { useUser } from '@/contexts/user-context';
+import { useFetchKnowledgeBaseListWithPagination, useCreateKnowledgeBase } from '@/hooks/use-knowledge-base'
 
 export default function KnowledgeBaseListPage() {
-    const { data: userInfo } = useFetchUserInfo();
     const { t } = useTranslate('knowledgeBase');
+    const { userInfo } = useUser();
     const {
+        list,
         fetchNextPage,
-        data,
         hasNextPage,
         searchString,
         handleInputChange,
         loading,
         scrollRef,
-    } = useInfiniteFetchKnowledgeList();
+    } = useFetchKnowledgeBaseListWithPagination();
+    const { createKnowledgeBase, loading: createLoading } = useCreateKnowledgeBase();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [creatingLoading, setCreatingLoading] = useState(false);
 
     const nextList = useMemo(() => {
-        return data ?? [];
-    }, [data]);
+        return list ?? [];
+    }, [list]);
 
     const total = useMemo(() => {
-        return data?.length ?? 0;
-    }, [data]);
+        return list?.length ?? 0;
+    }, [list]);
 
-    const handleCreateKnowledgeBase = async (values: { name: string; description?: string }) => {
-        try {
-            setCreatingLoading(true);
-            const result = await createKnowledgeBase(values);
-            if (result.success) {
-                toast.success('知识库创建成功');
-                setDialogOpen(false);
-                // 重新获取列表
-                await fetchNextPage();
-            } else {
-                toast.error(result.error || '创建失败');
-            }
-        } catch (error) {
-            console.error('创建知识库失败:', error);
-            toast.error('创建失败，请稍后重试');
-        } finally {
-            setCreatingLoading(false);
-        }
-    };
 
     return (
-        <div className="flex flex-col py-12 flex-1">
-            <div className="flex justify-between items-start px-[60px] pb-[72px]">
-                <div>
+        <div className="flex flex-col py-12 pt-14 flex-1">
+            <div className="flex justify-between items-start px-[60px] p-[72px]">
+                <div className='flex flex-col space-y-2 pl-2'>
                     <span className="font-inter text-[30px] font-semibold leading-[38px] text-primary">
                         {t('welcome')}, {userInfo?.name || t('guest')}
                     </span>
@@ -130,7 +112,7 @@ export default function KnowledgeBaseListPage() {
                 visible={dialogOpen}
                 hideDialog={() => setDialogOpen(false)}
                 loading={creatingLoading}
-                onOk={handleCreateKnowledgeBase}
+                onOk={createKnowledgeBase}
             />
         </div>
     );

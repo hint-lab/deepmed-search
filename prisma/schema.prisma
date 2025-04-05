@@ -114,6 +114,7 @@ model KnowledgeBase {
   vector_similarity_weight Float      @default(0.5)
   embd_id               String?
   nickname              String?
+  language              String?
   operator_permission   Int           @default(0)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt

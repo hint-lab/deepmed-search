@@ -40,7 +40,7 @@
     },
     "home": {
         "title": "DeepMed Search",
-        "subtitle": "Your intelligent document assistant, making document processing easier and more efficient",
+        "subtitle": "Your intelligent medical document assistant, making document processing easier and more efficient",
         "getStarted": "Get Started",
         "viewDocs": "View Documents",
         "features": {
@@ -76,7 +76,7 @@
         "delete": "Delete Knowledge Base",
         "edit": "Edit Knowledge Base",
         "name": "Knowledge Base Name",
-        "description": "Knowledge Base Description",
+        "description": "Which knowledge base do you want to use today?",
         "documents": "Documents",
         "createTime": "Create Time",
         "updateTime": "Update Time",
@@ -156,15 +156,53 @@
         "noResults": "No data"
     },
     "login": {
+        "title": "DeepMed Search",
+        "description": "RAG+Search Integrated Intelligent Medical Document Assistant, Simplify Document Processing",
+        "features": {
+            "ai": {
+                "title": "AI-Powered",
+                "description": "Advanced machine learning for accurate processing"
+            },
+            "security": {
+                "title": "Secure",
+                "description": "Enterprise-grade security and encryption"
+            },
+            "speed": {
+                "title": "Fast",
+                "description": "Lightning-fast processing and response times"
+            },
+            "reliability": {
+                "title": "Reliable",
+                "description": "99.9% uptime and consistent performance"
+            }
+        },
+        "form": {
+            "title": "Login",
+            "description": "Welcome back, please login to your account",
+            "googleSignIn": "Continue with Google",
+            "githubSignIn": "Continue with GitHub",
+            "orContinueWith": "or continue with",
+            "emailLabel": "Email",
+            "emailPlaceholder": "Enter your email",
+            "passwordLabel": "Password",
+            "passwordPlaceholder": "Enter your password",
+            "forgotPassword": "Forgot password?",
+            "submit": "Login",
+            "noAccount": "Don't have an account?",
+            "signUp": "Sign up"
+        },
+        "errors": {
+            "loginFailed": "Login failed"
+        },
         "login": "Login",
         "loginDescription": "Welcome back! Please login to your account.",
         "loginWithGoogle": "Login with Google",
         "loginWithGithub": "Login with Github",
-        "orContinueWith": "Or continue with",
+        "orContinueWith": "or continue with",
         "emailLabel": "Email",
-        "emailPlaceholder": "Please enter email",
+        "emailPlaceholder": "Enter your email",
         "passwordLabel": "Password",
-        "passwordPlaceholder": "Please enter password",
+        "passwordPlaceholder": "Enter your password",
         "forgotPassword": "Forgot password?",
         "noAccount": "Don't have an account?",
         "signUp": "Sign up"

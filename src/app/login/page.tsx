@@ -32,10 +32,10 @@ const LeftPanel = () => {
                 <div className="w-full max-w-2xl space-y-8">
                     <div className="space-y-4 text-center">
                         <h1 className="text-4xl font-bold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-                            {t('login')}
+                            {t('title')}
                         </h1>
                         <p className="text-xl text-muted-foreground">
-                            {t('loginDescription')}
+                            {t('description')}
                         </p>
                     </div>
 
@@ -46,8 +46,8 @@ const LeftPanel = () => {
                                     <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">AI-Powered</h3>
-                            <p className="text-sm text-muted-foreground/80">Advanced machine learning for accurate processing</p>
+                            <h3 className="font-semibold mb-2 text-primary">{t('features.ai.title')}</h3>
+                            <p className="text-sm text-muted-foreground/80">{t('features.ai.description')}</p>
                         </div>
                         <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
                             <div className="absolute -top-3 -left-3">
@@ -55,8 +55,8 @@ const LeftPanel = () => {
                                     <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">Secure</h3>
-                            <p className="text-sm text-muted-foreground/80">Enterprise-grade security and encryption</p>
+                            <h3 className="font-semibold mb-2 text-primary">{t('features.security.title')}</h3>
+                            <p className="text-sm text-muted-foreground/80">{t('features.security.description')}</p>
                         </div>
                         <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
                             <div className="absolute -top-3 -left-3">
@@ -64,8 +64,8 @@ const LeftPanel = () => {
                                     <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">Fast</h3>
-                            <p className="text-sm text-muted-foreground/80">Lightning-fast processing and response times</p>
+                            <h3 className="font-semibold mb-2 text-primary">{t('features.speed.title')}</h3>
+                            <p className="text-sm text-muted-foreground/80">{t('features.speed.description')}</p>
                         </div>
                         <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
                             <div className="absolute -top-3 -left-3">
@@ -73,8 +73,8 @@ const LeftPanel = () => {
                                     <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">Reliable</h3>
-                            <p className="text-sm text-muted-foreground/80">99.9% uptime and consistent performance</p>
+                            <h3 className="font-semibold mb-2 text-primary">{t('features.reliability.title')}</h3>
+                            <p className="text-sm text-muted-foreground/80">{t('features.reliability.description')}</p>
                         </div>
                     </div>
                 </div>
@@ -121,14 +121,15 @@ const Login = () => {
 
             // 登录成功后获取用户信息
             const response = await getUserInfo();
-            const session = response.data;
+            const user = response.data;
 
-            if (session?.user) {
+            if (user) {
                 // 将用户信息存储到 localStorage（可选）
                 localStorage.setItem('userInfo', JSON.stringify({
-                    name: session.user.name,
-                    email: session.user.email,
-                    image: session.user.image
+                    userId: user.id,
+                    name: user.name,
+                    email: user.email,
+                    image: user.image
                 }));
             }
 

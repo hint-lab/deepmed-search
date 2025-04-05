@@ -150,7 +150,7 @@ export default function ChatPage() {
         {dialogId ? (
           // Existing Chat View
           <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-            <div className="space-y-4 pb-4">
+            <div className="space-y-4">
               {isLoading && !currentMessages.length ? (
                 <div className="space-y-4">
                   <Skeleton className="h-16 w-3/4" />

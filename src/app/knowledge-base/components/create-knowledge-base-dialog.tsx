@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useTranslation } from "react-i18next";
+import { useTranslate } from "@/hooks/use-language";
 
 const formSchema = z.object({
     name: z.string().min(1, "请输入知识库名称").max(50, "名称不能超过50个字符"),
@@ -42,7 +42,7 @@ const CreateKnowledgeBaseDialog = ({
     loading,
     onOk,
 }: CreateKnowledgeBaseDialogProps) => {
-    const { t } = useTranslation('translation', { keyPrefix: 'knowledgeBase' });
+    const { t } = useTranslate('knowledgeBase');
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),

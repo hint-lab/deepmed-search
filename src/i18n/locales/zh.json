@@ -46,17 +46,17 @@
     },
     "home": {
         "title": "DeepMed Search",
-        "subtitle": "您的智能文档助手，让文档处理更简单、更高效",
+        "subtitle": "您的智能医学文档助手，让文档处理更简单、更高效",
         "getStarted": "开始使用",
         "viewDocs": "查看文档",
         "features": {
             "title": "核心功能",
             "documentProcessing": {
-                "title": "智能文档处理",
+                "title": "智能医学文档处理",
                 "description": "支持多种文档格式，自动识别和提取关键信息"
             },
             "documentQA": {
-                "title": "智能文档问答",
+                "title": "智能医学文档问答",
                 "description": "无论何种文档格式，自动解析文档内容，并进行智能问答"
             },
             "quickConversion": {
@@ -70,7 +70,7 @@
         },
         "cta": {
             "title": "准备好开始了吗？",
-            "subtitle": "加入我们，体验智能文档处理的未来",
+            "subtitle": "加入我们，体验智能医学文档处理的未来",
             "register": "立即注册"
         }
     },
@@ -82,7 +82,7 @@
         "delete": "删除知识库",
         "edit": "编辑知识库",
         "name": "知识库名称",
-        "description": "知识库描述",
+        "description": "您今天想使用哪一个知识库？",
         "documents": "文档",
         "createTime": "创建时间",
         "updateTime": "更新时间",
@@ -162,6 +162,44 @@
         "noResults": "暂无数据"
     },
     "login": {
+        "title": "DeepMed Search",
+        "description": "RAG+Search融合的智能医学文档助手，让文档处理更简单、更高效",
+        "features": {
+            "ai": {
+                "title": "AI驱动",
+                "description": "高度先进的机器学习技术，确保准确处理"
+            },
+            "security": {
+                "title": "安全",
+                "description": "企业级安全性和加密"
+            },
+            "speed": {
+                "title": "快速",
+                "description": "闪电般的处理速度和响应时间"
+            },
+            "reliability": {
+                "title": "可靠",
+                "description": "99.9% 稳定性和一致性"
+            }
+        },
+        "form": {
+            "title": "登录",
+            "description": "欢迎回来，请登录您的账号",
+            "googleSignIn": "继续使用 Google",
+            "githubSignIn": "继续使用 GitHub",
+            "orContinueWith": "或继续使用",
+            "emailLabel": "邮箱",
+            "emailPlaceholder": "请输入邮箱",
+            "passwordLabel": "密码",
+            "passwordPlaceholder": "请输入密码",
+            "forgotPassword": "忘记密码？",
+            "submit": "登录",
+            "noAccount": "没有账号？",
+            "signUp": "注册"
+        },
+        "errors": {
+            "loginFailed": "登录失败"
+        },
         "login": "登录",
         "loginDescription": "欢迎回来！请登录您的账号。",
         "loginWithGoogle": "使用 Google 登录",

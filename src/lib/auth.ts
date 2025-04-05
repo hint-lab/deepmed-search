@@ -109,7 +109,6 @@ export const authConfig = {
                 token.name = user.name;
                 token.email = user.email;
                 token.image = user.image;
-                token.emailVerified = user.emailVerified;
             }
             return token;
         },
@@ -119,7 +118,6 @@ export const authConfig = {
                 session.user.name = token.name;
                 session.user.email = token.email;
                 session.user.image = token.image;
-                session.user.emailVerified = token.emailVerified;
             }
             return session;
         },

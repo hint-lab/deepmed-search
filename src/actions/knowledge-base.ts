@@ -8,7 +8,7 @@ import { APIResponse } from '@/types/api';
 /**
  * 获取知识库列表
  */
-export async function getKnowledgeBaseList(): Promise<APIResponse<any>> {
+export async function getKnowledgeBaseListAction(): Promise<APIResponse<any>> {
     try {
         const kbs = await prisma.knowledgeBase.findMany({
             orderBy: {
@@ -33,7 +33,7 @@ export async function getKnowledgeBaseList(): Promise<APIResponse<any>> {
  * @param id 知识库ID
  * @returns 知识库详情数据
  */
-export const getKnowledgeBaseDetail = withAuth(async (session, id: string) => {
+export const getKnowledgeBaseDetailAction = withAuth(async (session, id: string) => {
     const kb = await prisma.knowledgeBase.findUnique({
         where: { id },
         include: {
@@ -54,7 +54,7 @@ export const getKnowledgeBaseDetail = withAuth(async (session, id: string) => {
  * @param params 查询参数
  * @returns 知识库列表数据
  */
-export const getKnowledgeList = withAuth(async (session, params?: { page?: number; pageSize?: number; keywords?: string }) => {
+export const getKnowledgeListAction = withAuth(async (session, params?: { page?: number; pageSize?: number; keywords?: string }) => {
     const { page = 1, pageSize = 10, keywords } = params || {};
     const where = keywords ? {
         name: {
@@ -76,21 +76,21 @@ export const getKnowledgeList = withAuth(async (session, params?: { page?: numbe
 });
 
 // 添加自定义序列化函数
-function serializeBigInt(obj: any): any {
+function serializeBigIntAction(obj: any): any {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'bigint') return obj.toString();
-    if (Array.isArray(obj)) return obj.map(serializeBigInt);
+    if (Array.isArray(obj)) return obj.map(serializeBigIntAction);
     if (typeof obj === 'object') {
         const result: any = {};
         for (const key in obj) {
-            result[key] = serializeBigInt(obj[key]);
+            result[key] = serializeBigIntAction(obj[key]);
         }
         return result;
     }
     return obj;
 }
 
-export const createKnowledgeBase = withAuth(async (session, params: { name: string, description?: string }) => {
+export const createKnowledgeBaseAction = withAuth(async (session, params: { name: string, description?: string }) => {
     try {
         const knowledgeBase = await prisma.knowledgeBase.create({
             data: {
@@ -104,34 +104,34 @@ export const createKnowledgeBase = withAuth(async (session, params: { name: stri
             },
         });
 
-        revalidatePath('/knowledge');
-        return { success: true, data: serializeBigInt(knowledgeBase) };
+        revalidatePath('/knowledge-base');
+        return { success: true, data: serializeBigIntAction(knowledgeBase) };
     } catch (error) {
         console.error('创建知识库失败:', error);
         return { success: false, error: '创建知识库失败' };
     }
 });
 
-export const updateKnowledgeBase = withAuth(async (session, id: string, name: string) => {
+export const updateKnowledgeBaseAction = withAuth(async (session, id: string, name: string) => {
     const knowledgeBase = await prisma.knowledgeBase.update({
         where: { id },
         data: { name },
     });
 
-    revalidatePath('/knowledge');
+    revalidatePath('/knowledge-base');
     return { success: true, data: knowledgeBase };
 });
 
-export const deleteKnowledgeBase = withAuth(async (session, id: string) => {
+export const deleteKnowledgeBaseAction = withAuth(async (session, id: string) => {
     await prisma.knowledgeBase.delete({
         where: { id },
     });
 
-    revalidatePath('/knowledge');
+    revalidatePath('/knowledge-base');
     return { success: true };
 });
 
-export const getKnowledgeBase = withAuth(async (session, id: string) => {
+export const getKnowledgeBaseAction = withAuth(async (session, id: string) => {
     const knowledgeBase = await prisma.knowledgeBase.findUnique({
         where: { id },
         include: {
@@ -144,10 +144,10 @@ export const getKnowledgeBase = withAuth(async (session, id: string) => {
         return { success: false, error: '知识库不存在' };
     }
 
-    return { success: true, data: serializeBigInt(knowledgeBase) };
+    return { success: true, data: serializeBigIntAction(knowledgeBase) };
 });
 
-export const listKnowledgeBases = withAuth(async (session, params?: {
+export const listKnowledgeBasesAction = withAuth(async (session, params?: {
     keyword?: string;
     page?: number;
     pageSize?: number;
@@ -194,7 +194,7 @@ export const listKnowledgeBases = withAuth(async (session, params?: {
     return {
         success: true,
         data: {
-            items: serializeBigInt(items),
+            items: serializeBigIntAction(items),
             total,
             page,
             pageSize
@@ -202,7 +202,7 @@ export const listKnowledgeBases = withAuth(async (session, params?: {
     };
 });
 
-export async function listTag(knowledgeBaseId: string) {
+export async function listTagAction(knowledgeBaseId: string) {
     return withAuth(async (session) => {
         const tags = await prisma.tag.findMany({
             where: {
@@ -227,7 +227,7 @@ export async function listTag(knowledgeBaseId: string) {
     });
 }
 
-export async function listTagByKnowledgeIds(knowledgeBaseIds: string) {
+export async function listTagByKnowledgeIdsAction(knowledgeBaseIds: string) {
     return withAuth(async (session) => {
         const ids = knowledgeBaseIds.split(',');
         const tags = await prisma.tag.findMany({
@@ -255,7 +255,7 @@ export async function listTagByKnowledgeIds(knowledgeBaseIds: string) {
     });
 }
 
-export const removeTag = withAuth(async (session, knowledgeBaseId: string, tagIds: string[]) => {
+export const removeTagAction = withAuth(async (session, knowledgeBaseId: string, tagIds: string[]) => {
     await prisma.tag.deleteMany({
         where: {
             knowledgeBaseId,
@@ -265,11 +265,11 @@ export const removeTag = withAuth(async (session, knowledgeBaseId: string, tagId
         },
     });
 
-    revalidatePath('/knowledge');
+    revalidatePath('/knowledge-base');
     return { success: true };
 });
 
-export const renameTag = withAuth(async (session, knowledgeBaseId: string, params: { oldName: string; newName: string }) => {
+export const renameTagAction = withAuth(async (session, knowledgeBaseId: string, params: { oldName: string; newName: string }) => {
     const tag = await prisma.tag.update({
         where: {
             id: params.oldName,
@@ -279,7 +279,7 @@ export const renameTag = withAuth(async (session, knowledgeBaseId: string, param
         },
     });
 
-    revalidatePath('/knowledge');
+    revalidatePath('/knowledge-base');
     return { success: true, data: tag };
 });
 
@@ -288,7 +288,7 @@ export const renameTag = withAuth(async (session, knowledgeBaseId: string, param
  * @param knowledgeBaseId 知识库ID
  * @returns 知识图谱数据
  */
-export async function getKnowledgeGraph(knowledgeBaseId: string) {
+export async function getKnowledgeGraphAction(knowledgeBaseId: string) {
     return withAuth(async (session) => {
         const documents = await prisma.document.findMany({
             where: {

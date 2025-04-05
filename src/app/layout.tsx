@@ -7,6 +7,7 @@ import { I18nProvider } from '@/providers/i18n-provider';
 import '@/styles/globals.css';
 import { Toaster } from "@/components/ui/sonner"
 import Header from '@/components/header';
+import { UserProvider } from '@/contexts/user-context';
 
 const inter = Inter({
     subsets: ['latin'],
@@ -34,12 +35,14 @@ export default async function RootLayout({
                     <I18nProvider>
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
-                                <div className="flex flex-col h-screen overflow-hidden">
-                                    <Header />
-                                    <main className="flex-1 overflow-auto pt-14 h-full">
-                                        {children}
-                                    </main>
-                                </div>
+                                <UserProvider>
+                                    <div className="flex flex-col h-screen overflow-hidden">
+                                        <Header />
+                                        <main className="flex-1 overflow-auto  h-full">
+                                            {children}
+                                        </main>
+                                    </div>
+                                </UserProvider>
                             </TooltipProvider>
                         </NextThemeProvider>
                     </I18nProvider>

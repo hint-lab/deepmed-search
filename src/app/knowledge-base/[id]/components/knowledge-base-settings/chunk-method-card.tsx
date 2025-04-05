@@ -24,7 +24,7 @@ import Image from 'next/image';
 
 const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
   const parserList = useSelectParserList();
-  const { t } = useTranslate('knowledgeBasePage');
+  const { t } = useTranslate('knowledgeBase');
 
   const item = useMemo(() => {
     const item = parserList.find((x: ParserItem) => x.value === chunkMethod);

@@ -36,7 +36,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useKnowledgeBaseList } from '@/hooks/use-knowledge-base';
 
 const CreateChatDialogFormSchema = (t: Function) => z.object({
     name: z.string().min(1, { message: t('validation.chatNameRequired', 'Chat name cannot be empty') }),
