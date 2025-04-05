@@ -1,25 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useInfiniteFetchKnowledgeList } from '@/hooks/use-knowledge-base';
-import { useFetchUserInfo } from '@/hooks/use-user';
 import { useTranslate } from '@/hooks/use-language';
 import KnowledgeBaseCard from './components/knowledge-base-card';
-import { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
-import { useState } from "react";
-
-// Shadcn UI 组件导入
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CreateKnowledgeBaseDialog from './components/create-knowledge-base-dialog';
-import { createKnowledgeBase } from '@/actions/knowledge';
+import { createKnowledgeBase } from '@/actions/knowledge-base';
 import { toast } from 'sonner';
 
-export default function KnowledgeBaseList() {
+export default function KnowledgeBaseListPage() {
     const { data: userInfo } = useFetchUserInfo();
     const { t } = useTranslate('knowledgeBase');
     const {

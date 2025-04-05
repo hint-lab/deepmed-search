@@ -47,15 +47,20 @@ model Tenant {
 }
 
 model Dialog {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  messages    Message[]
+  id              String      @id @default(cuid())
+  name            String
+  description     String?
+  userId          String
+  knowledgeBaseId String?
+  create_date     DateTime    @default(now())
+  update_date     DateTime    @updatedAt
+  messages        Message[]
+  user            User        @relation(fields: [userId], references: [id])
+  knowledgeBase   KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])
   relatedQuestions RelatedQuestion[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([knowledgeBaseId])
 }
 
 model Message {
@@ -116,6 +121,7 @@ model KnowledgeBase {
   tags                  Tag[]
   files                 KnowledgeFile[]
   chunks                Chunk[]
+  dialogs               Dialog[]
   tenant                Tenant?       @relation(fields: [tenant_id], references: [id])
 }
 

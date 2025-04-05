@@ -186,5 +186,61 @@
         "pleaseSelectFile": "Please select file",
         "uploadSuccess": "Upload success",
         "uploadFailed": "Upload failed"
+    },
+    "chat": {
+        "title": "Chat",
+        "searchPlaceholder": "Search conversation...",
+        "messagePlaceholder": "Enter message...",
+        "send": "Send",
+        "currentChat": "Current Chat",
+        "newChat": "New Chat",
+        "startNewChat": "Start new conversation...",
+        "justNow": "Just now",
+        "delete": "Delete",
+        "more": "More",
+        "noDescription": "No description",
+        "noConversations": "No conversations yet.",
+        "createChatTitle": "Create new chat",
+        "createChatDescription": "Give your new chat conversation a name.",
+        "chatNameLabel": "Name",
+        "chatNamePlaceholder": "Example: Project discussion",
+        "cancelButton": "Cancel",
+        "createButton": "Create",
+        "validation": {
+            "chatNameRequired": "Please enter chat name"
+        },
+        "errors": {
+            "sendMessageFailed": "Send message failed"
+        },
+        "welcomeTitle": "What can I help you with today?",
+        "startTypingPrompt": "Enter a message to start a new conversation.",
+        "examples": {
+            "heading": "Examples",
+            "title1": "Explanation of technical concepts",
+            "prompt1": "A simple explanation of quantum computing",
+            "title2": "Creative writing tips",
+            "prompt2": "Write a poem about the city's night view"
+        },
+        "capabilities": {
+            "heading": "Capabilities",
+            "title1": "Remember previous conversations",
+            "desc1": "I can remember what was said in previous conversations",
+            "title2": "Provide subsequent corrections",
+            "desc2": "Allow users to make corrections and ask questions based on my answers"
+        },
+        "limitations": {
+            "heading": "Limitations",
+            "title1": "Incorrect information may be generated",
+            "desc1": "I sometimes provide incorrect information or incorrect information",
+            "title2": "Knowledge expiration",
+            "desc2": "I have limited knowledge about the world and events after 2023"
+        },
+        "deleteDialogTitle": "Delete conversation",
+        "deleteDialogDescription": "Are you sure you want to delete this conversation? This action cannot be undone.",
+        "deleteSuccess": "Conversation deleted successfully",
+        "deleteError": "Failed to delete conversation",
+        "knowledgeBaseLabel": "Knowledge Base",
+        "selectKnowledgeBase": "Select Knowledge Base",
+        "noKnowledgeBase": "No Knowledge Base"
     }
 }

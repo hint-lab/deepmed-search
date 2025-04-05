@@ -12,10 +12,18 @@ import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTranslate } from '@/hooks/use-language';
+import { getUserInfo } from '@/actions/user';
+
+
+
 const formSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
 });
+
+
+
+
 const LeftPanel = () => {
     const { t } = useTranslate('login');
     return (
@@ -96,17 +104,38 @@ const Login = () => {
         },
     });
 
-    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const onLoginSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             setLoading(true);
-            await signIn('credentials', {
+            const result = await signIn('credentials', {
                 email: values.email.trim(),
                 password: values.password,
-                redirect: true,
+                redirect: false,
                 callbackUrl
             });
+
+            if (result?.error) {
+                console.error('登录失败:', result.error);
+                return;
+            }
+
+            // 登录成功后获取用户信息
+            const response = await getUserInfo();
+            const session = response.data;
+
+            if (session?.user) {
+                // 将用户信息存储到 localStorage（可选）
+                localStorage.setItem('userInfo', JSON.stringify({
+                    name: session.user.name,
+                    email: session.user.email,
+                    image: session.user.image
+                }));
+            }
+
+            // 重定向到目标页面
+            window.location.href = callbackUrl;
         } catch (error) {
-            console.error('Login failed:', error);
+            console.error('登录失败:', error);
         } finally {
             setLoading(false);
         }
@@ -176,7 +205,7 @@ const Login = () => {
                         </div>
 
                         <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            <form onSubmit={form.handleSubmit(onLoginSubmit)} className="space-y-4">
                                 <FormField
                                     control={form.control}
                                     name="email"

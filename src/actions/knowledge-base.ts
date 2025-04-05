@@ -3,6 +3,30 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
+import { APIResponse } from '@/types/api';
+
+/**
+ * 获取知识库列表
+ */
+export async function getKnowledgeBaseList(): Promise<APIResponse<any>> {
+    try {
+        const kbs = await prisma.knowledgeBase.findMany({
+            orderBy: {
+                create_date: 'desc'
+            }
+        });
+        return {
+            success: true,
+            data: kbs
+        };
+    } catch (error) {
+        console.error('Failed to get knowledge base list:', error);
+        return {
+            success: false,
+            error: '获取知识库列表失败'
+        };
+    }
+}
 
 /**
  * 获取知识库详情

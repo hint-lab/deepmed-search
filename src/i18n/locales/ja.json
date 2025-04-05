@@ -186,5 +186,61 @@
         "pleaseSelectFile": "ファイルを選択してください",
         "uploadSuccess": "アップロードに成功しました",
         "uploadFailed": "アップロードに失敗しました"
+    },
+    "chat": {
+        "title": "チャット",
+        "searchPlaceholder": "会話を検索...",
+        "messagePlaceholder": "メッセージを入力...",
+        "send": "送信",
+        "currentChat": "現在のチャット",
+        "newChat": "新しいチャット",
+        "startNewChat": "新しい会話を開始...",
+        "justNow": "今すぐ",
+        "delete": "削除",
+        "more": "もっと",
+        "noDescription": "説明がありません",
+        "noConversations": "まだ会話がありません。",
+        "createChatTitle": "新しいチャットを作成",
+        "createChatDescription": "新しいチャット会話の名前を付けてください。",
+        "chatNameLabel": "名称",
+        "chatNamePlaceholder": "例：プロジェクトの議論",
+        "cancelButton": "キャンセル",
+        "createButton": "作成",
+        "validation": {
+            "chatNameRequired": "チャット名を入力してください"
+        },
+        "errors": {
+            "sendMessageFailed": "メッセージの送信に失敗しました"
+        },
+        "welcomeTitle": "今日は何をお手伝いできますか？",
+        "startTypingPrompt": "新しい会話を開始するにはメッセージを入力してください。",
+        "examples": {
+            "heading": "例",
+            "title1": "技術概念の説明",
+            "prompt1": "量子計算の簡単な説明",
+            "title2": "クリエイティブライティングのヒント",
+            "prompt2": "都市の夜景についての詩を書いてください"
+        },
+        "capabilities": {
+            "heading": "能力",
+            "title1": "前の会話を覚える",
+            "desc1": "私は前の会話で言われたことを覚えることができます",
+            "title2": "後続の修正を提供する",
+            "desc2": "私の回答に基づいてユーザーが修正と質問をすることを許可します"
+        },
+        "limitations": {
+            "heading": "制限",
+            "title1": "不正確な情報が生成される可能性があります",
+            "desc1": "私は時々不正確な情報や誤った情報を提供することがあります",
+            "title2": "知識の期限",
+            "desc2": "私は2023年以降の世界と事件についての知識が限られています"
+        },
+        "deleteDialogTitle": "会話を削除",
+        "deleteDialogDescription": "この会話を削除しますか？この操作は元に戻すことができません。",
+        "deleteSuccess": "会話が削除されました",
+        "deleteError": "会話の削除に失敗しました",
+        "knowledgeBaseLabel": "ナレッジベース",
+        "selectKnowledgeBase": "ナレッジベースを選択",
+        "noKnowledgeBase": "ナレッジベースを使用しない"
     }
 }

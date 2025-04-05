@@ -1,14 +1,6 @@
 import { auth } from '@/lib/auth';
 import { Session } from 'next-auth';
-
-/**
- * 统一的响应格式
- */
-export type ActionResponse<T = any> = {
-    success: boolean;
-    data?: T;
-    error?: string;
-};
+import { APIResponse } from '@/types/api';
 
 /**
  * 高阶函数,用于处理需要认证的服务器动作
@@ -16,9 +8,9 @@ export type ActionResponse<T = any> = {
  * @returns 包装后的服务器动作函数
  */
 export function withAuth<T = any, P extends any[] = any[]>(
-    handler: (session: Session, ...args: P) => Promise<ActionResponse<T>>
+    handler: (session: Session, ...args: P) => Promise<APIResponse<T>>
 ) {
-    return async (...args: P): Promise<ActionResponse<T>> => {
+    return async (...args: P): Promise<APIResponse<T>> => {
         try {
             const session = await auth();
             if (!session?.user?.email) {

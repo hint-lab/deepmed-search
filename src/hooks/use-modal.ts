@@ -6,18 +6,18 @@ import { useEffect } from 'react';
 
 /**
  * 对话框状态管理 Hook
- * @returns {Object} 包含对话框显示状态和控制方法的对象
+ * @returns {Object} 包含Modal对话框显示状态和控制方法的对象
  */
-export const useSetDialogState = () => {
+export const useSetModalState = () => {
   const [visible, setVisible] = useState(false);
 
   // 显示对话框
-  const showDialog = useCallback(() => {
+  const showModal = useCallback(() => {
     setVisible(true);
   }, []);
 
   // 隐藏对话框
-  const hideDialog = useCallback(() => {
+  const hideModal = useCallback(() => {
     setVisible(false);
   }, []);
 
@@ -26,7 +26,7 @@ export const useSetDialogState = () => {
     setVisible(!visible);
   }, [visible]);
 
-  return { visible, showDialog, hideDialog, switchVisible };
+  return { visible, showModal, hideModal, switchVisible };
 };
 
 /**

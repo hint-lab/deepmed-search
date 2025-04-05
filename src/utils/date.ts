@@ -1,10 +1,14 @@
 import dayjs from 'dayjs';
 
-export function formatDate(date: any) {
-    if (!date) {
-        return '';
+export function formatDate(dateString: string | Date): string {
+    if (!dateString) {
+        return '-';
     }
-    return dayjs(date).format('DD/MM/YYYY HH:mm:ss');
+    const date = dayjs(dateString);
+    if (!date.isValid()) {
+        return '-';
+    }
+    return date.format('YYYY-MM-DD HH:mm');
 }
 
 export function formatTime(date: any) {
@@ -15,15 +19,15 @@ export function formatTime(date: any) {
 }
 
 export function today() {
-    return formatDate(dayjs());
+    return formatDate(dayjs().toString());
 }
 
 export function lastDay() {
-    return formatDate(dayjs().subtract(1, 'days'));
+    return formatDate(dayjs().subtract(1, 'days').toDate());
 }
 
 export function lastWeek() {
-    return formatDate(dayjs().subtract(1, 'weeks'));
+    return formatDate(dayjs().subtract(1, 'weeks').toDate());
 }
 
 export function formatPureDate(date: any) {

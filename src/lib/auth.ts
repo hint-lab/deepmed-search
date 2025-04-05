@@ -94,6 +94,7 @@ export const authConfig = {
             profile?: Profile;
             isNewUser?: boolean;
         }) {
+
             console.log("User: ", user);
             console.log("Account: ", account);
             console.log("Profile: ", profile);
@@ -105,12 +106,20 @@ export const authConfig = {
         async jwt({ token, user }: { token: any; user: User | null }) {
             if (user) {
                 token.id = user.id;
+                token.name = user.name;
+                token.email = user.email;
+                token.image = user.image;
+                token.emailVerified = user.emailVerified;
             }
             return token;
         },
         async session({ session, token }: { session: any; token: any }) {
             if (session.user) {
                 session.user.id = token.id as string;
+                session.user.name = token.name;
+                session.user.email = token.email;
+                session.user.image = token.image;
+                session.user.emailVerified = token.emailVerified;
             }
             return session;
         },

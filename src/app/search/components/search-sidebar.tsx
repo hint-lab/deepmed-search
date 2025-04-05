@@ -181,7 +181,7 @@ const SearchSidebar = ({
             className={cn(
                 "relative transition-all duration-300 ease-in-out",
                 collapsed ? "w-0 opacity-0" : "w-[300px] opacity-100",
-                isFirstRender && "bg-transparent"
+                isFirstRender && "bg-card"
             )}
         >
             <Button
@@ -197,11 +197,11 @@ const SearchSidebar = ({
                 )}
             </Button>
             <div className={cn(
-                "h-screen border-r bg-white",
+                "h-screen border-r bg-card",
                 collapsed && "hidden"
             )}>
                 <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold text-slate-900">知识库列表</h2>
+                    <h2 className="text-lg font-semibold">知识库列表</h2>
                 </div>
                 <ScrollArea className="h-[calc(100vh-65px)]">
                     <div className="p-4 space-y-4">

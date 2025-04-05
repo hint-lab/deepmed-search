@@ -633,6 +633,18 @@
     "@radix-ui/react-primitive" "2.0.2"
     "@radix-ui/react-use-controllable-state" "1.1.0"
 
+"@radix-ui/react-alert-dialog@^1.1.6":
+  version "1.1.6"
+  resolved "https://registry.npmmirror.com/@radix-ui/react-alert-dialog/-/react-alert-dialog-1.1.6.tgz#52187fdaa5110ed6749e75974e90c3505f788c5d"
+  integrity sha512-p4XnPqgej8sZAAReCAKgz1REYZEBLR8hU9Pg27wFnCWIMc8g1ccCs0FjBcy05V15VTu8pAePw/VDYeOm/uZ6yQ==
+  dependencies:
+    "@radix-ui/primitive" "1.1.1"
+    "@radix-ui/react-compose-refs" "1.1.1"
+    "@radix-ui/react-context" "1.1.1"
+    "@radix-ui/react-dialog" "1.1.6"
+    "@radix-ui/react-primitive" "2.0.2"
+    "@radix-ui/react-slot" "1.1.2"
+
 "@radix-ui/react-arrow@1.1.2":
   version "1.1.2"
   resolved "https://registry.npmmirror.com/@radix-ui/react-arrow/-/react-arrow-1.1.2.tgz#30c0d574d7bb10eed55cd7007b92d38b03c6b2ab"
@@ -698,7 +710,7 @@
   resolved "https://registry.npmmirror.com/@radix-ui/react-context/-/react-context-1.1.1.tgz#82074aa83a472353bb22e86f11bcbd1c61c4c71a"
   integrity sha512-UASk9zi+crv9WteK/NU4PLvOoL3OuE6BWVKNF6hPRBtYBDXQ2u5iu3O59zUlJiTVvkyuycnqrztsHVJwcK9K+Q==
 
-"@radix-ui/react-dialog@^1.1.6":
+"@radix-ui/react-dialog@1.1.6", "@radix-ui/react-dialog@^1.1.6":
   version "1.1.6"
   resolved "https://registry.npmmirror.com/@radix-ui/react-dialog/-/react-dialog-1.1.6.tgz#65b4465e99ad900f28a98eed9a94bb21ec644bf7"
   integrity sha512-/IVhJV5AceX620DUJ4uYVMymzsipdKBzo3edo+omeskCKGm9FRHM0ebIdbPnlQVJqyuHbuBltQUOG2mOTq2IYw==

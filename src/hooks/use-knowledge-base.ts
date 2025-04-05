@@ -1,7 +1,4 @@
 "use client";
-
-import { KnowledgeRouteKey } from '@/constants/knowledge';
-import { useSetDialogState } from '@/hooks/use-dialog';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -16,7 +13,7 @@ import {
     ISearchKnowledgeParams,
     ISearchKnowledgeResult
 } from '@/types/db/knowledge-base';
-import { useTranslation } from 'react-i18next';
+import { useTranslate } from 'react-i18next';
 import { useDebounce } from '@/hooks/use-debounce';
 import { usePagination } from '@/hooks/use-pagination';
 import {
@@ -30,8 +27,9 @@ import {
     listTag,
     removeTag,
     renameTag,
-    getKnowledgeGraph
-} from '@/actions/knowledge';
+    getKnowledgeGraph,
+    getKnowledgeBaseList
+} from '@/actions/knowledge-base';
 import { z } from 'zod';
 // import { i18n } from 'i18n';
 
@@ -242,7 +240,7 @@ export const useInfiniteFetchKnowledgeList = () => {
 // 创建知识库
 export const useCreateKnowledge = () => {
     const router = useRouter();
-    const { t } = useTranslation();
+    const { t } = useTranslate();
     const [loading, setLoading] = useState(false);
 
     const createKnowledge = async (params: ICreateKnowledgeParams) => {
@@ -469,4 +467,39 @@ export function useFetchKnowledgeGraph() {
     }, [knowledgeBaseId]);
 
     return { data, loading };
+}
+
+export interface KnowledgeBase {
+    id: string;
+    name: string;
+    description?: string;
+    userId: string;
+    create_date: Date;
+    update_date: Date;
+}
+
+/**
+ * 获取知识库列表
+ */
+export function useKnowledgeBaseList() {
+    const [data, setData] = useState<KnowledgeBase[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const result = await getKnowledgeBaseList();
+                if (result.success) {
+                    setData(result.data);
+                }
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    return { data, isLoading };
 }

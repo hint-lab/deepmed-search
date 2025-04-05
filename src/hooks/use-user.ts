@@ -1,66 +1,17 @@
 'use client';
 
-import { LanguageTranslationMap } from '@/constants/common';
 import { IUserInfo } from '@/types/db/user-setting';
-import { getUserInfo, updateUserSettings } from '@/actions/user';
-import { useState, useEffect } from 'react';
+import { updateUserSettings } from '@/actions/user';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ApiResponse } from '@/types/api';
 
 /**
- * 获取用户信息
- */
-export function useFetchUserInfo() {
-    const { i18n } = useTranslation();
-    const [data, setData] = useState<IUserInfo | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const result = await getUserInfo();
-                if (result.success && result.data) {
-                    i18n.changeLanguage(
-                        LanguageTranslationMap[
-                        result.data.language as keyof typeof LanguageTranslationMap
-                        ]
-                    );
-                    const userData = {
-                        ...result.data,
-                        access_token: '',
-                        color_schema: 'light',
-                        create_date: result.data.createdAt.toISOString(),
-                        create_time: result.data.createdAt.getTime(),
-                        update_date: result.data.updatedAt.toISOString(),
-                        update_time: result.data.updatedAt.getTime(),
-                        is_active: 'true',
-                        is_anonymous: 'false',
-                        is_authenticated: 'true',
-                        is_superuser: false,
-                        last_login_time: result.data.updatedAt.toISOString(),
-                        login_channel: 'web',
-                        nickname: result.data.name || '',
-                        password: '',
-                        status: 'active'
-                    } as IUserInfo;
-                    setData(userData);
-                }
-            } catch (error) {
-                console.error('获取用户信息失败:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [i18n]);
-
-    return { data, isLoading };
-}
-
-/**
- * 更新用户设置
+ * 更新用户设置 Hook
+ * @returns {
+ *   updateSettings: Function;  // 更新用户设置的函数
+ *   isPending: boolean;       // 更新状态
+ * }
  */
 export function useUpdateUserSettings() {
     const { t } = useTranslation();
@@ -84,7 +35,11 @@ export function useUpdateUserSettings() {
 }
 
 /**
- * 保存用户设置
+ * 保存用户设置 Hook
+ * @returns {
+ *   saveSetting: Function;    // 保存用户设置的函数
+ *   loading: boolean;         // 保存状态
+ * }
  */
 export const useSaveSetting = () => {
     const { t } = useTranslation();

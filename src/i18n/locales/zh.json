@@ -175,18 +175,6 @@
         "noAccount": "没有账号？",
         "signUp": "注册"
     },
-    "chat": {
-        "title": "聊天",
-        "searchPlaceholder": "搜索对话...",
-        "messagePlaceholder": "输入消息...",
-        "send": "发送",
-        "currentChat": "当前对话",
-        "newChat": "新对话",
-        "startNewChat": "开始新的对话...",
-        "justNow": "刚刚",
-        "delete": "删除",
-        "more": "更多"
-    },
     "search": {
         "title": "深度搜索",
         "searchPlaceholder": "搜索...",
@@ -204,5 +192,63 @@
         "pleaseSelectFile": "请选择文件",
         "uploadSuccess": "上传成功",
         "uploadFailed": "上传失败"
+    },
+    "chat": {
+        "title": "聊天",
+        "searchPlaceholder": "搜索会话...",
+        "messagePlaceholder": "输入消息...",
+        "send": "发送",
+        "currentChat": "当前聊天",
+        "newChat": "新聊天",
+        "startNewChat": "开始新对话...",
+        "justNow": "刚刚",
+        "delete": "删除",
+        "more": "更多",
+        "noDescription": "没有描述",
+        "noConversations": "还没有会话。",
+        "createChatTitle": "创建新聊天",
+        "createChatDescription": "给你的新聊天会话起个名字。",
+        "chatNameLabel": "名称",
+        "chatNamePlaceholder": "例如：项目讨论",
+        "cancelButton": "取消",
+        "createButton": "创建",
+        "validation": {
+            "chatNameRequired": "请输入聊天名称"
+        },
+        "errors": {
+            "sendMessageFailed": "发送消息失败",
+            "dialogNotFound": "对话不存在或已被删除",
+            "deleteFailed": "删除失败，请稍后重试"
+        },
+        "welcomeTitle": "今天有什么可以帮您？",
+        "startTypingPrompt": "发送消息以开始新的对话。",
+        "examples": {
+            "heading": "示例",
+            "title1": "解释技术概念",
+            "prompt1": "简要解释什么是量子计算",
+            "title2": "创意写作提示",
+            "prompt2": "写一首关于城市夜晚的诗"
+        },
+        "capabilities": {
+            "heading": "能力",
+            "title1": "记住之前的对话",
+            "desc1": "我可以记住我们在此次会话中早些时候说过的话",
+            "title2": "提供后续修正",
+            "desc2": "允许用户根据我的回答进行更正和追问"
+        },
+        "limitations": {
+            "heading": "限制",
+            "title1": "可能产生不准确信息",
+            "desc1": "我有时可能会提供不正确或误导性的信息",
+            "title2": "知识截止日期",
+            "desc2": "我对2023年之后的世界和事件了解有限"
+        },
+        "deleteDialogTitle": "删除对话",
+        "deleteDialogDescription": "确定要删除这个对话吗？此操作无法撤销。",
+        "deleteSuccess": "对话已删除",
+        "deleteError": "删除对话失败",
+        "knowledgeBaseLabel": "知识库",
+        "selectKnowledgeBase": "选择知识库",
+        "noKnowledgeBase": "不使用知识库"
     }
 }
