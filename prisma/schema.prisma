@@ -120,47 +120,15 @@ model KnowledgeBase {
   updatedAt             DateTime      @updatedAt
   documents             Document[]
   tags                  Tag[]
-  files                 KnowledgeFile[]
   chunks                Chunk[]
   dialogs               Dialog[]
   tenant                Tenant?       @relation(fields: [tenant_id], references: [id])
 }
 
 model Document {
-  id             String        @id @default(cuid())
-  name           String
-  content        String?
-  knowledgeBase  KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
-  knowledgeBaseId String
-  tags           Tag[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-}
-
-model Tag {
-  id             String        @id @default(cuid())
-  name           String
-  knowledgeBase  KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
-  knowledgeBaseId String
-  documents      Document[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-}
-
-model LangfuseConfig {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id])
-  publicKey  String
-  secretKey  String
-  host       String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model KnowledgeFile {
   id              String    @id @default(cuid())
   name            String
+  content         String?
   location        String
   size            Int
   type            String
@@ -183,10 +151,33 @@ model KnowledgeFile {
   parser_id       String?
   parser_config   Json
   knowledgeBase   KnowledgeBase @relation(fields: [kb_id], references: [id])
+  tags            Tag[]
   chunks          Chunk[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
+
+model Tag {
+  id             String        @id @default(cuid())
+  name           String
+  knowledgeBase  KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  knowledgeBaseId String
+  documents      Document[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model LangfuseConfig {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  publicKey  String
+  secretKey  String
+  host       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+ 
 
 model Chunk {
   id                String    @id @default(cuid())
@@ -203,8 +194,7 @@ model Chunk {
   tag_feas          Json?
   kb_id             String
   knowledgeBase     KnowledgeBase @relation(fields: [kb_id], references: [id])
-  file_id           String
-  file              KnowledgeFile @relation(fields: [file_id], references: [id])
+  document          Document      @relation(fields: [doc_id], references: [id])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

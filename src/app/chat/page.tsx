@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDialogList, useConversation, useSendMessage, useCreateDialog } from '@/hooks/use-chat';
+import { useChatDialogList, useConversation, useSendMessage, useCreateChatDialog } from '@/hooks/use-chat';
 import ChatSidebar from './components/chat-sidebar';
 import ChatMessages from './components/chat-messages';
 import { useTranslate } from '@/hooks/use-language';
@@ -31,10 +31,10 @@ export default function ChatPage() {
   const { t } = useTranslate('chat');
 
   // Hooks
-  const { data: dialogs, isLoading: isLoadingDialogs } = useDialogList();
+  const { data: dialogs, isLoading: isLoadingDialogs } = useChatDialogList();
   const { data: messages, isLoading: isLoadingMessages } = useConversation(dialogId || '');
   const { sendMessage, isPending: isSendingMessage } = useSendMessage();
-  const { createDialog, isPending: isCreatingDialog } = useCreateDialog();
+  const { createChatDialog, loading: isCreatingDialog } = useCreateChatDialog();
 
   // State
   const [inputValue, setInputValue] = useState('');
@@ -81,7 +81,7 @@ export default function ChatPage() {
       if (!currentDialogId) {
         setIsProcessingFirstMessage(true);
         const defaultName = messageToSend.split(' ').slice(0, 5).join(' ') || t('newChat');
-        const newDialog = await createDialog({ name: defaultName });
+        const newDialog = await createChatDialog({ name: defaultName });
 
         if (!newDialog?.id) {
           throw new Error("Failed to create dialog");

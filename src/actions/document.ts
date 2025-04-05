@@ -10,7 +10,7 @@ export const getDocumentList = withAuth(async (session, kbId: string, page: numb
     try {
         const skip = (page - 1) * pageSize;
 
-        const where: Prisma.KnowledgeFileWhereInput = {
+        const where: Prisma.DocumentWhereInput = {
             kb_id: kbId,
             ...(keywords ? {
                 name: {
@@ -21,8 +21,8 @@ export const getDocumentList = withAuth(async (session, kbId: string, page: numb
         };
 
         const [total, docs] = await Promise.all([
-            prisma.knowledgeFile.count({ where }),
-            prisma.knowledgeFile.findMany({
+            prisma.Document.count({ where }),
+            prisma.Document.findMany({
                 where,
                 skip,
                 take: pageSize,
@@ -75,7 +75,7 @@ export const uploadDocument = withAuth(async (session, kbId: string, files: File
         // 暂时返回模拟数据
         const uploadedFiles = await Promise.all(
             files.map(async (file) => {
-                const fileData = await prisma.knowledgeFile.create({
+                const fileData = await prisma.Document.create({
                     data: {
                         name: file.name,
                         location: `uploads/${file.name}`, // 实际存储路径
@@ -127,7 +127,7 @@ export const changeDocumentParser = withAuth(async (
     parserConfig: IChangeParserConfigRequestBody
 ): Promise<APIResponse<any>> => {
     try {
-        await prisma.knowledgeFile.update({
+        await prisma.Document.update({
             where: { id: documentId },
             data: {
                 parser_id: parserId,
@@ -150,7 +150,7 @@ export const changeDocumentParser = withAuth(async (
 
 export const runDocument = withAuth(async (session, documentId: string, isRunning: boolean): Promise<APIResponse<any>> => {
     try {
-        await prisma.knowledgeFile.update({
+        await prisma.Document.update({
             where: { id: documentId },
             data: {
                 run: isRunning ? 'processing' : 'pending',
@@ -173,7 +173,7 @@ export const runDocument = withAuth(async (session, documentId: string, isRunnin
 
 export const renameDocument = withAuth(async (session, documentId: string, name: string): Promise<APIResponse<any>> => {
     try {
-        await prisma.knowledgeFile.update({
+        await prisma.Document.update({
             where: { id: documentId },
             data: { name }
         });
@@ -193,7 +193,7 @@ export const renameDocument = withAuth(async (session, documentId: string, name:
 
 export const setDocumentMeta = withAuth(async (session, documentId: string, meta: IDocumentMetaRequestBody): Promise<APIResponse<any>> => {
     try {
-        await prisma.knowledgeFile.update({
+        await prisma.Document.update({
             where: { id: documentId },
             data: { parser_config: meta.meta as Prisma.InputJsonValue }
         });
@@ -213,7 +213,7 @@ export const setDocumentMeta = withAuth(async (session, documentId: string, meta
 
 export const deleteDocument = withAuth(async (session, documentId: string): Promise<APIResponse<any>> => {
     try {
-        await prisma.knowledgeFile.delete({
+        await prisma.Document.delete({
             where: { id: documentId }
         });
 

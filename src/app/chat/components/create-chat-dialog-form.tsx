@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useCreateDialog } from '@/hooks/use-chat';
+import { useCreateChatDialog } from '@/hooks/use-chat';
 import {
     Select,
     SelectContent,
@@ -36,17 +36,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-
+import { useKnowledgeBaseList } from '@/hooks/use-knowledge-base';
 const CreateChatDialogFormSchema = (t: Function) => z.object({
     name: z.string().min(1, { message: t('validation.chatNameRequired', 'Chat name cannot be empty') }),
     knowledgeBaseId: z.string().optional(),
+    description: z.string().optional(),
 });
 
 export function CreateChatDialogForm() {
     const { t } = useTranslate('chat');
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
-    const { createDialog, isPending } = useCreateDialog();
+    const { createChatDialog, loading } = useCreateChatDialog();
     const { data: knowledgeBases = [], isLoading: isLoadingKnowledgeBases } = useKnowledgeBaseList();
 
     const schema = CreateChatDialogFormSchema(t);
@@ -56,15 +57,17 @@ export function CreateChatDialogForm() {
         resolver: zodResolver(schema),
         defaultValues: {
             name: '',
-            knowledgeBaseId: undefined
+            knowledgeBaseId: undefined,
+            description: undefined,
         },
     });
 
     const onSubmit = async (values: CreateDialogFormValues) => {
         try {
-            const newDialog = await createDialog({
+            const newDialog = await createChatDialog({
                 name: values.name,
-                description: values.description
+                description: values.description,
+                knowledgeBaseId: values.knowledgeBaseId
             });
             if (newDialog?.id) {
                 setIsOpen(false);
@@ -105,7 +108,7 @@ export function CreateChatDialogForm() {
                                             id="name"
                                             placeholder={t('chatNamePlaceholder')}
                                             {...field}
-                                            disabled={isPending}
+                                            disabled={loading}
                                         />
                                     </FormControl>
                                     <FormMessage className="col-span-4 col-start-2" />
@@ -121,7 +124,7 @@ export function CreateChatDialogForm() {
                                         {t('knowledgeBaseLabel')}
                                     </Label>
                                     <Select
-                                        disabled={isPending || isLoadingKnowledgeBases}
+                                        disabled={loading || isLoadingKnowledgeBases}
                                         onValueChange={field.onChange}
                                         value={field.value}
                                     >
@@ -147,12 +150,12 @@ export function CreateChatDialogForm() {
                         />
                         <DialogFooter>
                             <DialogClose asChild>
-                                <Button type="button" variant="outline" disabled={isPending}>
+                                <Button type="button" variant="outline" disabled={loading}>
                                     {t('cancelButton')}
                                 </Button>
                             </DialogClose>
-                            <Button type="submit" disabled={isPending}>
-                                {isPending ? '...' : t('createButton')}
+                            <Button type="submit" disabled={loading}>
+                                {loading ? '...' : t('createButton')}
                             </Button>
                         </DialogFooter>
                     </form>

@@ -7,13 +7,13 @@ import { APIResponse } from '@/types/api';
 /**
  * 获取对话列表
  */
-export const getChatDialogList = withAuth(async (session): Promise<APIResponse<any>> => {
+export const getChatDialogListAction = withAuth(async (session): Promise<APIResponse<any>> => {
     const dialogs = await prisma.dialog.findMany({
         where: {
             userId: session.user.id,
         },
         orderBy: {
-            updatedAt: 'desc',
+            update_date: 'desc',
         },
     });
 
@@ -23,7 +23,7 @@ export const getChatDialogList = withAuth(async (session): Promise<APIResponse<a
 /**
  * 创建对话
  */
-export const createChatDialog = withAuth(async (session, data: {
+export const createChatDialogAction = withAuth(async (session, data: {
     name: string;
     description?: string;
     knowledgeBaseId?: string;
@@ -33,7 +33,6 @@ export const createChatDialog = withAuth(async (session, data: {
             name: data.name,
             description: data.description,
             userId: session.user.id,
-            knowledgeBaseId: data.knowledgeBaseId
         },
     });
 
@@ -44,7 +43,7 @@ export const createChatDialog = withAuth(async (session, data: {
 /**
  * 更新对话
  */
-export const updateChatDialog = withAuth(async (session, id: string, data: {
+export const updateChatDialogAction = withAuth(async (session, id: string, data: {
     name?: string;
     description?: string;
 }): Promise<APIResponse<any>> => {
@@ -63,7 +62,7 @@ export const updateChatDialog = withAuth(async (session, id: string, data: {
 /**
  * 删除对话
  */
-export const deleteChatDialog = withAuth(async (session, id: string): Promise<APIResponse<any>> => {
+export const deleteChatDialogAction = withAuth(async (session, id: string): Promise<APIResponse<any>> => {
     try {
         // 首先检查对话是否存在
         const existingDialog = await prisma.dialog.findFirst({
@@ -123,7 +122,7 @@ export const deleteChatDialog = withAuth(async (session, id: string): Promise<AP
 /**
  * 获取对话消息
  */
-export const getChatConversation = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
+export const getChatConversationAction = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
     const messages = await prisma.message.findMany({
         where: {
             dialogId,
@@ -140,7 +139,7 @@ export const getChatConversation = withAuth(async (session, dialogId: string): P
 /**
  * 删除消息
  */
-export const deleteChatMessage = withAuth(async (session, messageId: string): Promise<APIResponse<any>> => {
+export const deleteChatMessageAction = withAuth(async (session, messageId: string): Promise<APIResponse<any>> => {
     await prisma.message.delete({
         where: {
             id: messageId,
@@ -155,7 +154,7 @@ export const deleteChatMessage = withAuth(async (session, messageId: string): Pr
 /**
  * 发送消息
  */
-export const sendChatMessage = withAuth(async (session, dialogId: string, content: string): Promise<APIResponse<any>> => {
+export const sendChatMessageAction = withAuth(async (session, dialogId: string, content: string): Promise<APIResponse<any>> => {
     const message = await prisma.message.create({
         data: {
             content,
@@ -189,7 +188,7 @@ export const sendChatMessage = withAuth(async (session, dialogId: string, conten
 /**
  * 发送消息（SSE）
  */
-export const sendChatMessageWithSSE = async (dialogId: string, content: string): Promise<APIResponse<any>> => {
+export const sendChatMessageWithSSEAction = async (dialogId: string, content: string): Promise<APIResponse<any>> => {
     try {
         revalidatePath(`/chat/${dialogId}`);
         const response = await fetch('/api/chat/message/sse', {
@@ -215,7 +214,7 @@ export const sendChatMessageWithSSE = async (dialogId: string, content: string):
     }
 };
 
-export const getRelatedQuestions = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
+export const getRelatedQuestionsAction = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
     const relatedQuestions = await prisma.relatedQuestion.findMany({
         where: {
             dialogId,
@@ -228,7 +227,7 @@ export const getRelatedQuestions = withAuth(async (session, dialogId: string): P
 /**
  * 创建相关问题
  */
-export const createRelatedQuestion = withAuth(async (session, dialogId: string, question: string): Promise<APIResponse<any>> => {
+export const createRelatedQuestionAction = withAuth(async (session, dialogId: string, question: string): Promise<APIResponse<any>> => {
     const relatedQuestion = await prisma.relatedQuestion.create({
         data: {
             question,

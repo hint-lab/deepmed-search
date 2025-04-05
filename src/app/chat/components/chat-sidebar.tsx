@@ -14,7 +14,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
 import 'dayjs/locale/ja';
-import { useDeleteDialog } from '@/hooks/use-chat';
+import { useDeleteChatDialog } from '@/hooks/use-chat';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { IDialog } from '@/types/db/chat';
@@ -144,7 +144,7 @@ const createDialogFormSchema = (t: Function) => z.object({
 export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: ChatSidebarProps) {
   const { t } = useTranslate('chat');
   const router = useRouter();
-  const { deleteDialog } = useDeleteDialog();
+  const { deleteDialog } = useDeleteChatDialog();
 
   const handleDeleteDialog = async (dialogId: string) => {
     try {

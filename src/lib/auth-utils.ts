@@ -13,8 +13,8 @@ export function withAuth<T = any, P extends any[] = any[]>(
     return async (...args: P): Promise<APIResponse<T>> => {
         try {
             const session = await auth();
-            if (!session?.user?.email) {
-                return { success: false, error: '未登录' };
+            if (!session?.user?.email || !session?.user?.id) {
+                return { success: false, error: '未登录或用户信息不完整' };
             }
             return handler(session, ...args);
         } catch (error) {

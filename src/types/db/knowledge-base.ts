@@ -141,8 +141,8 @@ export interface Raptor {
   use_raptor: boolean;
 }
 
-// 知识库文件类型
-export interface IKnowledgeFile {
+// 知识库文档类型
+export interface IDocument {
   chunk_num: number;
   create_date: string;
   create_time: number;
@@ -165,11 +165,11 @@ export interface IKnowledgeFile {
   type: string;
   update_date: string;
   update_time: number;
-  parser_config: IKnowledgeFileParserConfig;
+  parser_config: IDocumentParserConfig;
 }
 
 // 知识库文件解析配置类型
-export interface IKnowledgeFileParserConfig {
+export interface IDocumentParserConfig {
   chunk_token_num: number;
   layout_recognize: boolean;
   pages: number[][];
@@ -278,14 +278,14 @@ export interface ParserConfig {
   topn_tags?: number;
 }
 
-export interface IKnowledgeFileParserConfig {
+export interface IDocumentParserConfig {
   chunk_token_num: number;
   layout_recognize: boolean;
   pages: number[][];
   task_page_size: number;
 }
 
-export interface IKnowledgeFile {
+export interface IDocument {
   chunk_num: number;
   create_date: string;
   create_time: number;
@@ -308,7 +308,7 @@ export interface IKnowledgeFile {
   type: string;
   update_date: string;
   update_time: number;
-  parser_config: IKnowledgeFileParserConfig;
+  parser_config: IDocumentParserConfig;
 }
 
 export interface ITenantInfo {

@@ -5,27 +5,27 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import {
-    getChatDialogList,
-    createChatDialog,
-    updateChatDialog,
-    deleteChatDialog,
-    getChatConversation,
-    sendChatMessage,
-    deleteChatMessage,
-    sendChatMessageWithSSE,
-    getRelatedQuestions
+    getChatDialogListAction,
+    createChatDialogAction,
+    updateChatDialogAction,
+    deleteChatDialogAction,
+    getChatConversationAction,
+    sendChatMessageAction,
+    deleteChatMessageAction,
+    sendChatMessageWithSSEAction,
+    getRelatedQuestionsAction
 } from '@/actions/chat';
 /**
  * 获取对话列表
  */
-export function useDialogList() {
+export function useChatDialogList() {
     const [data, setData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const result = await getChatDialogList();
+                const result = await getChatDialogListAction();
                 if (result.success) {
                     setData(result.data as any[]);
                 }
@@ -50,14 +50,14 @@ interface CreateDialogParams {
 /**
  * 创建对话
  */
-export function useCreateDialog() {
+export function useCreateChatDialog() {
     const [loading, setLoading] = useState(false);
     const { t } = useTranslation();
 
-    const createDialog = async (params: CreateDialogParams) => {
+    const createChatDialog = async (params: CreateDialogParams) => {
         setLoading(true);
         try {
-            const result = await createChatDialog(params);
+            const result = await createChatDialogAction(params);
             if (result.success) {
                 toast.success(t('createSuccess'));
                 return result.data;
@@ -68,17 +68,17 @@ export function useCreateDialog() {
         }
     };
 
-    return { createDialog, loading };
+    return { createChatDialog, loading };
 }
 
 /**
  * 更新对话
  */
-export function useUpdateDialog() {
+export function useUpdateChatDialog() {
     const { t } = useTranslation();
     const [isPending, setIsPending] = useState(false);
 
-    const updateDialog = async ({
+    const updateChatDialog = async ({
         id,
         data,
     }: {
@@ -87,7 +87,7 @@ export function useUpdateDialog() {
     }) => {
         setIsPending(true);
         try {
-            const result = await updateChatDialog(id, data);
+            const result = await updateChatDialogAction(id, data);
             if (result.success) {
                 toast.success(t('message.modified'));
                 return result.data;
@@ -98,20 +98,20 @@ export function useUpdateDialog() {
         }
     };
 
-    return { updateDialog, isPending };
+    return { updateChatDialog, isPending };
 }
 
 /**
  * 删除对话
  */
-export function useDeleteDialog() {
+export function useDeleteChatDialog() {
     const { t } = useTranslation();
     const [isPending, setIsPending] = useState(false);
 
     const deleteDialog = async (id: string): Promise<{ success: boolean; error?: string; data?: any }> => {
         setIsPending(true);
         try {
-            const result = await deleteChatDialog(id);
+            const result = await deleteChatDialogAction(id);
             if (!result.success) {
                 throw new Error(result.error || t('message.deleteFailed'));
             }
@@ -141,7 +141,7 @@ export function useConversation(dialogId: string) {
         const fetchData = async () => {
             if (!dialogId) return;
             try {
-                const result = await getChatConversation(dialogId);
+                const result = await getChatConversationAction(dialogId);
                 if (result.success) {
                     setData(result.data as any[]);
                 }
@@ -171,7 +171,7 @@ export function useSendMessage() {
         try {
             // 注意：sendChatMessage 内部调用 /api/chat/message,
             // 这个 API 需要负责生成并可能保存助手的响应
-            const result = await sendChatMessage(dialogId, content);
+            const result = await sendChatMessageAction(dialogId, content);
             if (result.success) {
                 // 假设 result.data 包含AI响应（如果API设计如此）
                 // toast.success(t('message.sent')); // 修正提示消息
@@ -200,7 +200,7 @@ export function useDeleteMessage() {
     const deleteMessage = async (messageId: string) => {
         setIsPending(true);
         try {
-            const result = await deleteChatMessage(messageId);
+            const result = await deleteChatMessageAction(messageId);
             if (result.success) {
                 toast.success(t('message.deleted'));
             } else {
@@ -224,7 +224,7 @@ export function useFetchRelatedQuestions(question: string) {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const result = await getRelatedQuestions(question);
+                const result = await getRelatedQuestionsAction(question);
                 if (result.success) {
                     setData(result.data as any[]);
                 }
@@ -245,7 +245,7 @@ export function useFetchRelatedQuestions(question: string) {
  */
 export function useSendMessageWithSSE() {
     const sendMessageWithSSE = async (dialogId: string, content: string) => {
-        const result = await sendChatMessageWithSSE(dialogId, content);
+        const result = await sendChatMessageWithSSEAction(dialogId, content);
         return result;
     };
 
