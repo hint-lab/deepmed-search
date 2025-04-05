@@ -132,7 +132,7 @@ export const changeDocumentParser = withAuth(async (
             where: { id: documentId },
             data: {
                 parser_id: parserId,
-                parser_config: parserConfig as Prisma.InputJsonValue
+                parser_config: parserConfig.parserConfig as Prisma.InputJsonValue
             }
         });
 
