@@ -4,6 +4,21 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
+import { agentManager } from '@/lib/agent-manager';
+import { Message } from '@/types/db/chat';
+import { MessageType } from '@/constants/chat';
+import { Message as PrismaMessage } from '@prisma/client';
+
+type DatabaseMessage = {
+    id: string;
+    content: string;
+    role: MessageType;
+    createdAt: Date;
+    updatedAt: Date;
+    userId: string;
+    dialogId: string;
+};
+
 /**
  * 获取对话列表
  */
@@ -28,21 +43,95 @@ export const createChatDialogAction = withAuth(async (session, data: {
     description?: string;
     knowledgeBaseId?: string;
 }): Promise<APIResponse<any>> => {
-    if (!session?.user?.id) {
-        return { success: false, error: '用户ID不存在' };
-    }
-
-    const dialog = await prisma.dialog.create({
-        data: {
+    try {
+        console.log('Creating dialog with session:', {
+            userId: session?.user?.id,
+            email: session?.user?.email,
             name: data.name,
-            description: data.description || '',
-            userId: session.user.id,
             knowledgeBaseId: data.knowledgeBaseId
-        },
-    });
+        });
 
-    revalidatePath('/chat');
-    return { success: true, data: dialog };
+        if (!session?.user?.id) {
+            console.error('User ID not found in session');
+            return {
+                success: false,
+                error: '用户ID不存在'
+            };
+        }
+
+        // 验证用户是否存在
+        const user = await prisma.user.findUnique({
+            where: {
+                id: session.user.id
+            },
+            select: {
+                id: true,
+                email: true,
+                name: true
+            }
+        });
+
+        console.log('User lookup result:', user);
+
+        if (!user) {
+            console.error('User not found in database:', {
+                userId: session.user.id,
+                email: session.user.email
+            });
+            return {
+                success: false,
+                error: '用户不存在，请重新登录'
+            };
+        }
+
+        // 如果提供了 knowledgeBaseId，验证知识库是否存在
+        if (data.knowledgeBaseId) {
+            const knowledgeBase = await prisma.knowledgeBase.findUnique({
+                where: {
+                    id: data.knowledgeBaseId
+                }
+            });
+
+            if (!knowledgeBase) {
+                console.error('Knowledge base not found:', data.knowledgeBaseId);
+                return {
+                    success: false,
+                    error: '知识库不存在'
+                };
+            }
+        }
+
+        const dialog = await prisma.dialog.create({
+            data: {
+                name: data.name,
+                description: data.description || '',
+                userId: session.user.id,
+                knowledgeBaseId: data.knowledgeBaseId
+            },
+        });
+
+        console.log('Dialog created successfully:', {
+            dialogId: dialog.id,
+            userId: dialog.userId,
+            knowledgeBaseId: dialog.knowledgeBaseId
+        });
+
+        revalidatePath('/chat');
+        return { success: true, data: dialog };
+    } catch (error) {
+        console.error('Error creating dialog:', {
+            error,
+            session: {
+                userId: session?.user?.id,
+                email: session?.user?.email
+            },
+            data
+        });
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '创建对话失败'
+        };
+    }
 });
 
 /**
@@ -107,6 +196,9 @@ export const deleteChatDialogAction = withAuth(async (session, id: string): Prom
             return dialog;
         });
 
+        // 清理 agent 实例
+        agentManager.removeAgent(id);
+
         // 在事务成功完成后调用 revalidatePath
         revalidatePath('/chat');
         revalidatePath('/chat/[id]', 'page');
@@ -157,67 +249,83 @@ export const deleteChatMessageAction = withAuth(async (session, messageId: strin
 });
 
 /**
- * 发送消息
+ * 发送消息 (仅非流式)
  */
 export const sendChatMessageAction = withAuth(async (session, dialogId: string, content: string): Promise<APIResponse<any>> => {
-    const message = await prisma.message.create({
-        data: {
-            content,
-            role: 'user',
-            dialogId,
-            userId: session.user.id,
-        },
-    });
-
-    revalidatePath(`/chat/${dialogId}`);
-
-    const response = await fetch('/api/chat/message', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            dialogId,
-            content,
-        }),
-    });
-
-    if (!response.ok) {
-        throw new Error('发送消息失败');
-    }
-
-    const result = await response.json();
-    return { success: true, data: result.data };
-});
-
-/**
- * 发送消息（SSE）
- */
-export const sendChatMessageWithSSEAction = async (dialogId: string, content: string): Promise<APIResponse<any>> => {
     try {
-        revalidatePath(`/chat/${dialogId}`);
-        const response = await fetch('/api/chat/message/sse', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                dialogId,
+        console.log('开始发送消息 (非流式):', { dialogId, content });
+
+        // 创建用户消息
+        const userMessage = await prisma.message.create({
+            data: {
                 content,
-            }),
+                role: MessageType.User,
+                dialogId,
+                userId: session.user.id,
+            },
+        }) as unknown as DatabaseMessage;
+
+        console.log('用户消息创建成功:', { messageId: userMessage.id });
+
+        // 获取对话信息
+        const dialog = await prisma.dialog.findUnique({
+            where: { id: dialogId },
+            include: {
+                knowledgeBase: true
+            }
         });
 
-        if (!response.ok) {
-            throw new Error('发送消息失败');
+        if (!dialog) {
+            throw new Error('对话不存在');
         }
 
-        const result = await response.json();
-        return { success: true, data: result.data };
+        console.log('获取对话信息成功:', {
+            dialogId,
+            userId: dialog.userId,
+            knowledgeBaseId: dialog.knowledgeBaseId
+        });
+
+        // 获取或创建 agent
+        const agent = agentManager.getAgent(dialogId, dialog.knowledgeBase);
+        console.log('Agent 获取成功');
+
+        // 使用普通处理 (非流式)
+        const response = await agent.process(content);
+
+        // 创建助手消息
+        const assistantMessage = await prisma.message.create({
+            data: {
+                content: response.content,
+                role: MessageType.Assistant,
+                dialogId,
+                userId: session.user.id,
+            },
+        }) as unknown as DatabaseMessage;
+
+        console.log('助手消息创建成功:', { messageId: assistantMessage.id });
+
+        revalidatePath(`/chat/${dialogId}`);
+
+        return {
+            success: true,
+            data: {
+                userMessage,
+                assistantMessage
+            }
+        };
     } catch (error) {
-        console.error('发送消息失败:', error);
-        return { success: false, error: '发送消息失败' };
+        console.error('发送消息失败 (非流式):', {
+            error,
+            dialogId,
+            userId: session?.user?.id,
+            content
+        });
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '发送消息失败'
+        };
     }
-};
+});
 
 export const getRelatedQuestionsAction = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
     const relatedQuestions = await prisma.relatedQuestion.findMany({

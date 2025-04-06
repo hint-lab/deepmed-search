@@ -179,7 +179,7 @@ const SearchSidebar = ({
     return (
         <aside
             className={cn(
-                "relative transition-all duration-300 ease-in-out",
+                "relative transition-all duration-300 ease-in-out h-screen",
                 collapsed ? "w-0 opacity-0" : "w-[300px] opacity-100",
                 isFirstRender && "bg-card"
             )}

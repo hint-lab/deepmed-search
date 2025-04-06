@@ -5,10 +5,11 @@ import { cn } from '@/lib/utils';
 import { useTranslate } from '@/hooks/use-language';
 import { Message } from '@prisma/client';
 import dayjs from 'dayjs';
+import { MessageType } from '@/constants/chat';
 
 // Define the local message type again here or import it
 // For simplicity, defining it here, ensure it matches ChatPage
-type LocalMessage = Partial<Message> & { id: string; content: string; role: string; createdAt: Date };
+type LocalMessage = Partial<Message> & { id: string; content: string; role: MessageType; createdAt: Date };
 
 interface ChatMessageItemProps {
     // Accept LocalMessage type
@@ -18,7 +19,7 @@ interface ChatMessageItemProps {
 function ChatMessageItem({ message }: ChatMessageItemProps) {
     const { t } = useTranslate('chat');
     // Access properties directly from LocalMessage
-    const isUser = message.role === 'user';
+    const isUser = message.role === MessageType.User;
     const createdAt = message.createdAt;
     const content = message.content;
     const messageId = message.id;
@@ -61,7 +62,7 @@ interface ChatMessagesProps {
 
 export default function ChatMessages({ messages }: ChatMessagesProps) {
     return (
-        <div className="space-y-4 pt-12">
+        <div className="space-y-4 pt-12 mt-6">
             {messages.map((msg) => (
                 <ChatMessageItem key={msg.id} message={msg} />
             ))}

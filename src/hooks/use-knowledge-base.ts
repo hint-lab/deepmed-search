@@ -312,7 +312,7 @@ export const useCreateKnowledgeBase = () => {
             const result = await createKnowledgeBaseAction(params);
             if (result.success) {
                 toast.success(t('创建成功'));
-                router.push(`/knowledge/configuration?id=${result.data.id}`);
+                router.push(`/knowledge-base/${result.data.id}?tab=settings`);
                 return result.data;
             }
             throw new Error(result.error);

@@ -1,0 +1,80 @@
+---
+config:
+  theme: redux
+---
+flowchart LR
+ subgraph subGraph0["User Interaction Layer"]
+        UI["User Interface Web/App"]
+  end
+ subgraph subGraph1["Application Service Layer"]
+        Orchestrator["Query Orchestrator"]
+        API["API Gateway"]
+  end
+ subgraph subGraph2["Retrieval Module"]
+        QueryPreprocessor["Query Preprocessor"]
+        HybridSearcher["Hybrid Searcher"]
+        VectorDB[("Vector Database Milvus")]
+        KeywordIndex[("Keyword Index Elasticsearch")]
+  end
+ subgraph subGraph3["Generation Module"]
+        PromptBuilder["Prompt Builder"]
+        LLM["Large Language Model OpenAI GPT"]
+        AnswerProcessor["Answer Post-Processor and Tracing"]
+  end
+ subgraph subGraph4["Core Engine Layer"]
+        subGraph2
+        subGraph3
+  end
+ subgraph subGraph5["Data Processing Pipeline"]
+        DocLoaderParser["Document Loader and Parser Zerox Unstructured Data Processing"]
+        DocInput["Medical Document Input PDF DOCX TXT etc."]
+        TextChunker["Text Chunker"]
+        MetadataExtractor["Metadata Extractor"]
+        Embeddings["Embedding Model OpenAI_Text_Emebedding"]
+        TextForKeyword["Text Processing for Keywords"]
+        DocStore[("Raw Text Blocks and Metadata Storage")]
+  end
+    DocInput --> DocLoaderParser
+    DocLoaderParser --> TextChunker
+    TextChunker --> MetadataExtractor
+    MetadataExtractor --> Embeddings & TextForKeyword & DocStore
+    Embeddings --> VectorDB
+    TextForKeyword --> KeywordIndex
+    UI -- User Query --> API
+    API -- Query --> Orchestrator
+    Orchestrator -- Processed Query --> QueryPreprocessor
+    QueryPreprocessor -- Preprocessed Query --> HybridSearcher
+    HybridSearcher -- Vector Query --> VectorDB
+    HybridSearcher -- Keyword Query --> KeywordIndex
+    VectorDB -- Similar Block IDs --> HybridSearcher
+    KeywordIndex -- Relevant Block IDs --> HybridSearcher
+    HybridSearcher -- "Merge and Re-rank Block IDs" --> Orchestrator
+    Orchestrator -- Request Raw Blocks --> DocStore
+    DocStore -- Raw Text and Metadata --> Orchestrator
+    Orchestrator -- Query Context --> PromptBuilder
+    PromptBuilder -- Final Prompt --> LLM
+    LLM -- Initial Answer --> AnswerProcessor
+    AnswerProcessor -- Format Answer and References --> Orchestrator
+    Orchestrator -- Final Answer --> API
+    API -- Answer --> UI
+     UI:::user
+     Orchestrator:::app
+     API:::app
+     QueryPreprocessor:::core
+     HybridSearcher:::core
+     VectorDB:::core
+     KeywordIndex:::core
+     PromptBuilder:::core
+     LLM:::core
+     AnswerProcessor:::core
+     DocInput:::data
+     DocLoaderParser:::data
+     TextChunker:::data
+     MetadataExtractor:::data
+     Embeddings:::data
+     TextForKeyword:::data
+     DocStore:::data
+    classDef core fill:#f9f,stroke:#333,stroke-width:2px
+    classDef data fill:#ccf,stroke:#333,stroke-width:2px
+    classDef app fill:#cfc,stroke:#333,stroke-width:2px
+    classDef user fill:#ff9,stroke:#333,stroke-width:2px

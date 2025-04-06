@@ -14,6 +14,8 @@ import SearchSidebar from "./components/search-sidebar"
 import MarkdownContent from "@/components/markdown-content"
 import RetrievalDocuments from "./components/retrieval-documents"
 import { Badge } from "@/components/ui/badge"
+import { VectorSearch } from '@/components/search-vector'
+import { useTranslate } from '@/hooks/use-language'
 
 import { IReference } from "@/types/db/chat"
 import { isEmpty } from "lodash"
@@ -21,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 export default function SearchPage() {
-    const { t } = useTranslation()
+    const { t } = useTranslate('search')
     const [checkedList, setCheckedList] = useState<string[]>([])
     const [isFirstRender, setIsFirstRender] = useState(true)
     const [mindMapVisible, setMindMapVisible] = useState(false)
@@ -52,151 +54,26 @@ export default function SearchPage() {
     }
 
     return (
-        <div className="flex h-screen">
-            <SearchSidebar
-                isFirstRender={isFirstRender}
-                checkedList={checkedList}
-                setCheckedList={setCheckedList}
-            />
+        <div className="container mx-auto py-8 px-4">
+            <div className="max-w-3xl mx-auto">
+                <h1 className="text-2xl font-bold mb-8 text-center">
+                    {t('title', '医疗知识搜索')}
+                </h1>
+                <p className="text-muted-foreground mb-8 text-center">
+                    {t('description', '使用向量搜索快速找到相关的医疗信息和文档')}
+                </p>
 
-            <div className={cn(
-                "flex-1 overflow-auto",
-                isFirstRender ? "flex mt-36 justify-center" : "p-6"
-            )}>
-                <div className="mx-auto max-w-5xl space-y-6">
-                    {isFirstRender ? (
-                        <div className="text-center space-y-4">
-                            <h1 className="text-3xl font-bold">{t("search.title")}</h1>
-                            <p className="text-muted-foreground">{t("search.searchDescription")}</p>
-                            <div className="w-[600px]">
-                                <div className="flex items-center space-x-2">
-                                    <Input
-                                        value={searchStr}
-                                        onChange={handleSearchStrChange}
-                                        placeholder={t("search.searchPlaceholder")}
-                                        className="h-10"
-                                    />
-                                    <Button variant="outline" size="icon" onClick={handleSearch}>
-                                        <Search className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="sticky top-0 z-50">
-                                <div className="flex items-center space-x-2">
-                                    <Input
-                                        value={searchStr}
-                                        onChange={handleSearchStrChange}
-                                        placeholder={t("search.searchPlaceholder")}
-                                        className="h-10"
-                                    />
-                                    {sendingLoading ? (
-                                        <Button variant="outline" size="icon" onClick={stopOutputMessage}>
-                                            <CircleStop className="h-4 w-4" />
-                                        </Button>
-                                    ) : (
-                                        <Button variant="outline" size="icon" onClick={handleSearch}>
-                                            <SendHorizontal className="h-4 w-4 " />
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
+                <VectorSearch />
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center space-x-2">
-                                        <img src="/logo.svg" alt="" className="h-5 w-5" />
-                                        <span>{t("chat.answerTitle")}</span>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {isEmpty(answer) && sendingLoading ? (
-                                        <div className="space-y-4">
-                                            <Skeleton className="h-32" />
-                                            <p className="text-muted-foreground text-center">正在思考中...</p>
-                                        </div>
-                                    ) : (
-                                        answer.answer && (
-                                            <MarkdownContent
-                                                loading={sendingLoading}
-                                                content={answer.answer}
-                                                reference={answer.reference ?? ({} as IReference)}
-                                            />
-                                        )
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            <Separator />
-
-                            <RetrievalDocuments
-                                selectedDocumentIds={selectedDocumentIds}
-                                setSelectedDocumentIds={setSelectedDocumentIds}
-                                onTesting={handleTestChunk}
-                            />
-
-                            <Separator />
-
-                            {relatedQuestions?.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>{t("chat.relatedQuestion")}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-muted-foreground mb-4">您可能还想了解以下问题：</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {relatedQuestions?.map((question: string, idx: number) => (
-                                                <Badge
-                                                    key={idx}
-                                                    variant="secondary"
-                                                    className="cursor-pointer hover:bg-secondary/80"
-                                                    onClick={handleClickRelatedQuestion(question)}
-                                                >
-                                                    {question}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </>
-                    )}
+                <div className="mt-12 text-sm text-muted-foreground">
+                    <h2 className="font-medium mb-2">{t('tips.title', '搜索提示')}</h2>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>{t('tips.specific', '使用具体的医学术语获得更准确的结果')}</li>
+                        <li>{t('tips.question', '可以直接提问，如"什么是2型糖尿病？"')}</li>
+                        <li>{t('tips.symptoms', '描述症状以找到相关疾病信息')}</li>
+                    </ul>
                 </div>
             </div>
-
-            {!isFirstRender && !isSearchStrEmpty && !isEmpty(checkedList) && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="fixed right-8 top-1/4 h-12 w-12"
-                                onClick={showMindMapModal}
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                                    />
-                                </svg>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{t("chunk.mind")}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
         </div>
     )
 } 

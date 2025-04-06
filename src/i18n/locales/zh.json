@@ -158,8 +158,26 @@
         "noDatasetId": "未找到数据集 ID",
         "uploadDate": "上传日期",
         "chunkMethod": "分块方法",
+        "selectChunkMethod": "选择分块方法",
         "parsingStatus": "解析状态",
-        "noResults": "暂无数据"
+        "noResults": "暂无数据",
+        "docParser": {
+            "methodTitle": "配置",
+            "presentation": "演示文稿",
+            "methodExamples": "示例",
+            "methodExamplesDescription": "示例",
+            "dialogueExamplesTitle": "示例",
+            "methodEmpty": "缺省",
+            "book": "书籍",
+            "laws": "法律",
+            "manual": "说明书",
+            "picture": "说明书",
+            "paper": "论文",
+            "resume": "简历",
+            "table": "表格",
+            "one": "单文档",
+            "knowledgeGraph": "知识图谱"
+        }
     },
     "login": {
         "title": "DeepMed Search",

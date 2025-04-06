@@ -5,7 +5,145 @@
 <a name="english"></a>
 # DeepMed Search
 
-An intelligent document search and management system built with Next.js 14 and shadcn/ui.
+DeepMed Search 是一个基于 Next.js 构建的医疗搜索和聊天应用程序，提供实时流式聊天体验和智能搜索功能。
+
+## 技术架构
+
+- **前端**: Next.js, React, TailwindCSS
+- **后端**: Next.js API Routes 和 Server Actions
+- **数据库**: PostgreSQL (结构化数据)
+- **向量数据库**: Milvus (知识库和语义搜索)
+- **流式传输**: Server-Sent Events (SSE) 实现打字机效果
+
+## 快速开始
+
+### 使用 Docker Compose 启动依赖服务
+
+```bash
+# 启动所有服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+```
+
+### 服务访问地址
+
+启动后，可以通过以下地址访问各服务：
+
+- **PostgreSQL**: `localhost:5432`
+  - 用户名: `postgres`
+  - 密码: `postgres`
+  - 数据库: `deepmed`
+
+- **Milvus**: `localhost:19530`
+
+- **MinIO**: 
+  - API: `localhost:9000`
+  - Web 控制台: `localhost:9001`
+  - 用户名: `minioadmin`
+  - 密码: `minioadmin`
+
+- **PgAdmin (PostgreSQL 管理工具)**: `http://localhost:5050`
+  - 用户名: `admin@deepmed.tech`
+  - 密码: `admin`
+
+- **Attu (Milvus 管理工具)**: `http://localhost:8000`
+
+### 开发环境设置
+
+1. 安装依赖
+```bash
+npm install
+```
+
+2. 设置环境变量
+```bash
+cp .env.example .env.local
+```
+然后编辑 `.env.local` 文件，填写以下关键配置：
+- 数据库连接信息 (`DATABASE_URL`)
+- NextAuth 认证密钥 (`NEXTAUTH_SECRET`)
+- AI 服务 API 密钥 (`AI_API_KEY` 和 `OPENAI_API_KEY`)
+- OAuth 提供商信息（如果启用）
+
+3. 启动开发服务器
+```bash
+npm run dev
+```
+
+4. 访问应用
+```
+http://localhost:3000
+```
+
+## 开发指南
+
+### 数据库迁移
+
+使用 Prisma 进行数据库迁移：
+
+```bash
+# 生成迁移
+npx prisma migrate dev --name <migration-name>
+
+# 应用迁移
+npx prisma migrate deploy
+```
+
+### Milvus 连接
+
+在应用中连接 Milvus：
+
+```typescript
+import { MilvusClient } from '@zilliz/milvus2-sdk-node';
+
+// 使用环境变量配置连接
+const milvusClient = new MilvusClient({
+  address: `${process.env.MILVUS_HOST}:${process.env.MILVUS_PORT}`,
+});
+
+// 示例：创建集合
+async function createCollection() {
+  try {
+    const collectionName = 'medical_documents';
+    const dim = 1536; // 向量维度，取决于你使用的嵌入模型
+
+    await milvusClient.createCollection({
+      collection_name: collectionName,
+      fields: [
+        {
+          name: 'id',
+          data_type: 5, // DataType.Int64
+          is_primary_key: true,
+          autoID: true,
+        },
+        {
+          name: 'content',
+          data_type: 21, // DataType.VarChar
+          max_length: 65535,
+        },
+        {
+          name: 'vector',
+          data_type: 101, // DataType.FloatVector
+          dim,
+        },
+      ],
+    });
+    
+    console.log(`Collection ${collectionName} created successfully`);
+  } catch (error) {
+    console.error('Failed to create collection:', error);
+  }
+}
+```
+
+## 项目特点
+
+- **流式聊天**: 使用 SSE 实现实时打字机效果
+- **向量搜索**: 使用 Milvus 进行高效相似度搜索
+- **知识库管理**: 支持创建和管理专业知识库
+- **多语言支持**: 内置多语言翻译功能
 
 ## Tech Stack
 
@@ -89,7 +227,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the r
 .
 ├── src/                    # Source Code
 │   ├── app/               # Next.js App Router Routes
-│   ├── components/        # React Components
 │   │   ├── ui/           # shadcn/ui Components
 │   │   └── ...           # Custom Components
 │   ├── hooks/            # React Hooks
@@ -131,231 +268,4 @@ Use the shadcn-ui CLI to add components:
 yarn run dlx shadcn-ui@latest add button
 ```
 
-All components will be added to the `src/components/ui` directory, where you can customize them as needed.
-
-### Theme Customization
-
-Theme configuration files are located at:
-- `app/globals.css` - Global styles
-- `components/ui/themes.ts` - Theme configuration
-- `tailwind.config.js` - Tailwind configuration
-
-## Internationalization
-
-The project uses i18next for internationalization, supporting English, Chinese, and Japanese:
-
-```typescript
-// Language switching
-const { changeLanguage } = useLanguageSwitcher();
-changeLanguage('en'); // Switch to English
-```
-
-Translation files are located in the `src/i18n/locales/` directory.
-
-## Test Account
-
-Create a test account:
-
-```bash
-npx tsx src/scripts/create-test-user.ts
-```
-
-## Deployment
-
-The project can be deployed to Vercel:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/deepmed-search)
-
-For more deployment details, refer to the [Next.js Deployment Documentation](https://nextjs.org/docs/app/building-your-application/deploying).
-
-## Contributing
-
-Pull requests and issues are welcome! Before submitting, please ensure:
-
-1. Code passes ESLint checks (`yarn run lint`)
-2. Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/) specification
-3. Documentation is updated accordingly
-
-## License
-
-MIT
-
----
-
-<a name="中文"></a>
-# DeepMed Search
-
-这是一个基于 Next.js 14 和 shadcn/ui 构建的智能医学文档搜索和管理系统。
-
-## 技术栈
-
-### 核心框架
-- [Next.js 14](https://nextjs.org/) - React 框架
-- [React 19](https://react.dev/) - 用户界面库
-- [TypeScript](https://www.typescriptlang.org/) - 类型安全的 JavaScript
-
-### 数据库
-- [Prisma](https://www.prisma.io/) - 下一代 ORM
-- [PostgreSQL](https://www.postgresql.org/) - 关系型数据库
-
-### UI/样式
-- [shadcn/ui](https://ui.shadcn.com/) - 高质量 UI 组件库
-- [Radix UI](https://www.radix-ui.com/) - 无样式组件库
-- [Tailwind CSS](https://tailwindcss.com/) - CSS 框架
-- [Lucide Icons](https://lucide.dev/) - 图标库
-
-### 状态管理与数据获取
-- [React Query](https://tanstack.com/query/latest) - 服务端状态管理
-- [React Hook Form](https://react-hook-form.com/) - 表单管理
-- [Zod](https://zod.dev/) - 类型验证
-
-### 功能组件
-- [react-pdf-highlighter](https://github.com/agentcooper/react-pdf-highlighter) - PDF 高亮功能
-- [react-dropzone](https://react-dropzone.js.org/) - 文件拖拽上传
-- [react-markdown](https://remarkjs.github.io/react-markdown/) - Markdown 渲染
-
-### 开发工具
-- [ESLint](https://eslint.org/) - 代码检查
-- [Prettier](https://prettier.io/) - 代码格式化
-- [Husky](https://typicode.github.io/husky/) - Git Hooks
-
-## 开始使用
-
-1. 克隆项目并安装依赖：
-
-```bash
-git clone <repository-url>
-cd deepmed-search
-yarn run install
-```
-
-2. 配置环境变量：
-
-```bash
-cp .env.example .env.local
-```
-
-编辑 `.env.local` 文件，填写必要的环境变量：
-
-```env
-# 数据库配置
-DATABASE_URL="postgresql://user:password@localhost:5432/deepmed"
-
-# Next Auth 配置
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key"
-
-# 其他配置...
-```
-
-3. 初始化数据库：
-
-```bash
-yarn run db:generate  # 生成 Prisma Client
-yarn run db:migrate   # 运行数据库迁移
-```
-
-4. 运行开发服务器：
-
-```bash
-yarn run dev
-```
-
-在浏览器中打开 [http://localhost:3000](http://localhost:3000) 查看结果。
-
-## 项目结构
-
-```
-.
-├── src/                    # 源代码目录
-│   ├── app/               # Next.js App Router 路由
-│   ├── components/        # React 组件
-│   │   ├── ui/           # shadcn/ui 组件
-│   │   └── ...           # 自定义组件
-│   ├── hooks/            # React Hooks
-│   ├── lib/              # 工具函数
-│   ├── types/            # TypeScript 类型定义
-│   └── i18n/             # 国际化文件
-├── prisma/               # Prisma 配置和迁移
-├── public/              # 静态资源
-└── scripts/             # 工具脚本
-```
-
-## 可用脚本
-
-```bash
-# 开发
-yarn run dev         # 启动开发服务器
-yarn run lint        # 运行代码检查
-
-# 数据库
-yarn run db:generate # 生成 Prisma Client
-yarn run db:migrate  # 运行数据库迁移
-yarn run db:reset    # 重置数据库
-yarn run db:studio   # 启动 Prisma Studio
-
-# 构建和部署
-yarn run build       # 构建生产版本
-yarn run start       # 启动生产服务器
-```
-
-## UI 组件
-
-本项目使用 [shadcn/ui](https://ui.shadcn.com/) 作为 UI 组件库。这是一个基于 Radix UI 和 Tailwind CSS 构建的高质量组件集合。
-
-### 添加新组件
-
-使用 shadcn-ui CLI 添加组件：
-
-```bash
-yarn dlx shadcn-ui@latest add button
-```
-
-所有组件都会被添加到 `src/components/ui` 目录下，你可以根据需要自定义这些组件。
-
-### 主题定制
-
-主题配置文件位于：
-- `app/globals.css` - 全局样式
-- `components/ui/themes.ts` - 主题配置
-- `tailwind.config.js` - Tailwind 配置
-
-## 国际化
-
-项目使用 i18next 进行国际化，支持中文、英文和日文：
-
-```typescript
-// 切换语言
-const { changeLanguage } = useLanguageSwitcher();
-changeLanguage('zh'); // 切换到中文
-```
-
-翻译文件位于 `src/i18n/locales/` 目录下。
-
-## 测试账号
-
-创建测试账号：
-
-```bash
-npx tsx src/scripts/create-test-user.ts
-```
-
-## 部署
-
-项目可以部署到 Vercel 平台：
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/deepmed-search)
-
-更多部署细节请参考 [Next.js 部署文档](https://nextjs.org/docs/app/building-your-application/deploying)。
-
-## 贡献
-
-欢迎提交 Pull Request 和 Issue！在提交之前，请确保：
-
-1. 代码通过 ESLint 检查 (`yarn run lint`)
-2. 提交信息遵循 [约定式提交](https://www.conventionalcommits.org/zh-hans/) 规范
-3. 更新相关文档
-
-## 许可证
-
-MIT
+All components will be added to the `src/components/ui`

@@ -77,8 +77,8 @@ export default function FilesPage() {
 
     return (
         <div className="container mx-auto py-6 space-y-4">
-            <div className="flex justify-between items-center">
-                <div className="relative w-[300px]">
+            <div className="flex justify-between items-center mt-12">
+                <div className="flex w-[300px]">
                     <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         placeholder="搜索文件"

@@ -50,7 +50,7 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold mb-2">
-              "{item.title}" {t('methodTitle')}
+              "{item.title}" {t('docParser.methodTitle')}
             </h3>
             <p className="text-sm text-muted-foreground">
               {item.description}
@@ -59,9 +59,9 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
 
           <div>
             <h3 className="text-lg font-semibold mb-2">
-              "{item.title}" {t('methodExamples')}
+              "{item.title}" {t('docParser.methodExamples')}
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">{t('methodExamplesDescription')}</p>
+            <p className="text-sm text-muted-foreground mb-4">{t('docParser.methodExamplesDescription')}</p>
             <div className="grid grid-cols-2 gap-4">
               {imageList.map((x: string) => (
                 <div key={x} className="relative aspect-[4/3]">
@@ -78,14 +78,14 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
 
           <div>
             <h3 className="text-lg font-semibold mb-2">
-              {item.title} {t('dialogueExamplesTitle')}
+              {item.title} {t('docParser.dialogueExamplesTitle')}
             </h3>
             <Separator />
           </div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-full space-y-4">
-          <p className="text-sm text-muted-foreground">{t('methodEmpty')}</p>
+          <p className="text-sm text-muted-foreground">{t('docParser.methodEmpty')}</p>
           <div className="relative w-full max-w-md aspect-[16/9]">
             <Image
               src="/assets/svg/chunk-method/chunk-empty.svg"
@@ -101,7 +101,7 @@ const CategoryPanel = ({ chunkMethod }: { chunkMethod: string }) => {
 };
 
 export default function ChunkMethodCard() {
-  const { t } = useTranslate('knowledgeConfiguration');
+  const { t } = useTranslate('knowledgeBase');
   const form = useFormContext();
   const parserList = useSelectParserList();
 

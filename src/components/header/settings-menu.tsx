@@ -7,20 +7,29 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings, Sun, Moon, Monitor, Languages } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, Languages, LogOut } from 'lucide-react';
 import { useLanguageSwitcher } from '@/hooks/use-language';
+import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export function SettingsMenu() {
     const { setTheme, theme } = useTheme();
     const { currentLanguage, changeLanguage } = useLanguageSwitcher();
     const [mounted, setMounted] = React.useState(false);
+    const router = useRouter();
 
     // 在组件挂载后再渲染，避免hydration错误
     React.useEffect(() => {
         setMounted(true);
     }, []);
+
+    const handleSignOut = async () => {
+        await signOut({ redirect: false });
+        router.push('/auth/login');
+    };
 
     return (
         <div className="flex items-center gap-2">
@@ -111,6 +120,15 @@ export function SettingsMenu() {
                             {currentLanguage === 'ja' && 'システム'}
                         </span>
                         {mounted && theme === 'system' && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>
+                            {currentLanguage === 'zh' && '退出登录'}
+                            {currentLanguage === 'en' && 'Sign Out'}
+                            {currentLanguage === 'ja' && 'ログアウト'}
+                        </span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

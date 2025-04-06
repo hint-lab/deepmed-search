@@ -30,7 +30,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/extensions/alert-dialog";
 import { toast } from 'sonner';
-import { ChatDialogItem } from './chat-dialog-item';
 import { CreateChatDialogForm } from './create-chat-dialog-form';
 dayjs.extend(relativeTime);
 
@@ -169,8 +168,8 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
   };
 
   return (
-    <div className="w-80 border-r bg-background flex flex-col h-full">
-      <div className="flex h-14 items-center border-b px-4">
+    <div className="w-80 border-r bg-background flex flex-col pt-16 h-screen">
+      <div className="flex h-14 items-center border-b px-4 ">
         <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
         <CreateChatDialogForm />
       </div>
@@ -196,7 +195,7 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
             <p className="text-sm text-muted-foreground text-center py-4">{t('noConversations')}</p>
           ) : (
             dialogs.map((dialog: IDialog) => (
-              <ChatDialogItem
+              <ChatSidebarItem
                 key={dialog.id}
                 dialog={dialog}
                 isActive={dialog.id === currentDialogId}

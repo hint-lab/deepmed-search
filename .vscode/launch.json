@@ -39,7 +39,9 @@
             ],
             "skipFiles": [
                 "<node_internals>/**",
-                "**/node_modules/**"
+                "**/node_modules/**",
+                "**/dist/**",
+                "**/.next/**"
             ],
             "serverReadyAction": {
                 "action": "debugWithEdge",

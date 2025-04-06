@@ -23,7 +23,7 @@ export const useUserInfo = () => {
         // 如果 session 中有用户信息，更新到 localStorage
         if (session?.user) {
             const newUserInfo = {
-                userId: session.user.id,
+                id: session.user.id,
                 name: session.user.name,
                 email: session.user.email,
                 image: session.user.image

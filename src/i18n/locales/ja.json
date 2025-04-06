@@ -149,11 +149,29 @@
         "wordCount": "文字数",
         "searchFiles": "ファイルを検索",
         "uploadFile": "ファイルをアップロード",
-        "noDatasetId": "データベースIDが見つかりません",
+        "noDatasetId": "データセットIDが見つかりません",
         "uploadDate": "アップロード日",
-        "chunkMethod": "チャンク方式",
+        "chunkMethod": "チャンク分割方法",
+        "selectChunkMethod": "チャンク分割方法を選択",
         "parsingStatus": "解析状態",
-        "noResults": "データがありません"
+        "noResults": "データがありません",
+        "docParser": {
+            "methodTitle": "設定",
+            "presentation": "プレゼンテーション",
+            "methodExamples": "例",
+            "methodExamplesDescription": "例",
+            "dialogueExamplesTitle": "例",
+            "methodEmpty": "デフォルト",
+            "book": "書籍",
+            "laws": "法律",
+            "manual": "マニュアル",
+            "picture": "画像",
+            "paper": "論文",
+            "resume": "履歴書",
+            "table": "表",
+            "one": "単一ドキュメント",
+            "knowledgeGraph": "ナレッジグラフ"
+        }
     },
     "login": {
         "title": "DeepMed Search",

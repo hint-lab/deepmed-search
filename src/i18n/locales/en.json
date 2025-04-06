@@ -2,13 +2,13 @@
     "common": {
         "delete": "Delete",
         "deleteModalTitle": "Are you sure you want to delete?",
-        "ok": "OK",
+        "ok": "Confirm",
         "cancel": "Cancel",
         "total": "Total",
         "rename": "Rename",
         "name": "Name",
         "save": "Save",
-        "namePlaceholder": "Please enter name",
+        "namePlaceholder": "Enter name",
         "next": "Next",
         "create": "Create",
         "edit": "Edit",
@@ -16,7 +16,7 @@
         "english": "English",
         "chinese": "Simplified Chinese",
         "language": "Language",
-        "languageMessage": "Please select language!",
+        "languageMessage": "Please select a language!",
         "languagePlaceholder": "Select language",
         "copy": "Copy",
         "copied": "Copied",
@@ -32,7 +32,7 @@
         "submit": "Submit"
     },
     "nav": {
-        "knowledgeBase": "KnowledgeBase",
+        "knowledgeBase": "Knowledge Base",
         "chat": "Chat",
         "search": "Search",
         "agent": "Agent",
@@ -40,32 +40,32 @@
     },
     "home": {
         "title": "DeepMed Search",
-        "subtitle": "Your intelligent medical document assistant, making document processing easier and more efficient",
+        "subtitle": "A simple and efficient tool for managing your knowledge base",
         "getStarted": "Get Started",
-        "viewDocs": "View Documents",
+        "viewDocs": "View Documentation",
         "features": {
             "title": "Core Features",
             "documentProcessing": {
                 "title": "Document Processing",
-                "description": "Support multiple document formats, automatically identify and extract key information"
+                "description": "Supports multiple document formats and automatically identifies and extracts keywords"
             },
             "documentQA": {
-                "title": "Document QA",
-                "description": "Automatically parse document content and answer questions regardless of document format"
+                "title": "Document Q&A",
+                "description": "Automatically parses document content and answers smart questions regardless of document format"
             },
             "quickConversion": {
                 "title": "Quick Conversion",
-                "description": "One-click convert document format, keep the original format and style"
+                "description": "Convert document formats instantly while maintaining original form and style"
             },
             "dataAnalysis": {
                 "title": "Data Analysis",
-                "description": "Analyze document content intelligently and generate data visualization reports"
+                "description": "Smartly analyze document content and generate data visualization reports"
             }
         },
         "cta": {
-            "title": "Ready to start?",
-            "subtitle": "Join us to experience the future of intelligent document processing",
-            "register": "Sign up"
+            "title": "Ready to get started?",
+            "subtitle": "Join us and experience the future of smart document processing",
+            "register": "Register"
         }
     },
     "knowledgeBase": {
@@ -76,23 +76,23 @@
         "delete": "Delete Knowledge Base",
         "edit": "Edit Knowledge Base",
         "name": "Knowledge Base Name",
-        "description": "Which knowledge base do you want to use today?",
+        "description": "Which knowledge base would you like to use today?",
         "documents": "Documents",
-        "createTime": "Create Time",
-        "updateTime": "Update Time",
+        "createTime": "Created At",
+        "updateTime": "Updated At",
         "creator": "Creator",
         "status": "Status",
         "action": "Action",
         "createSuccess": "Created successfully",
-        "createError": "Creation failed",
+        "createError": "Failed to create",
         "deleteSuccess": "Deleted successfully",
-        "deleteError": "Deletion failed",
+        "deleteError": "Failed to delete",
         "editSuccess": "Edited successfully",
-        "editError": "Edit failed",
-        "namePlaceholder": "Please enter knowledge base name",
-        "descriptionPlaceholder": "Please enter knowledge base description",
-        "createKnowledgeBase": "Create a new knowledge base",
-        "createKnowledgeBaseDescription": "Create a new knowledge base to manage your documents",
+        "editError": "Failed to edit",
+        "namePlaceholder": "Enter knowledge base name",
+        "descriptionPlaceholder": "Enter knowledge base description",
+        "createKnowledgeBase": "Create a new knowledge base to manage documents",
+        "createKnowledgeBaseDescription": "Create a new knowledge base to manage documents",
         "createdAt": "Created At",
         "updatedAt": "Updated At",
         "actions": "Actions",
@@ -104,16 +104,14 @@
         "noData": "No data",
         "noMoreData": "No more data",
         "files": "File List",
-        "fileName": "Filename",
+        "fileName": "File Name",
         "fileSize": "File Size",
         "fileType": "File Type",
         "fileUploadDate": "File Upload Date",
         "fileUploader": "File Uploader",
         "fileStatus": "File Status",
-        "fileProcessStage": "File Process Stage",
+        "fileProcessStage": "File Processing Stage",
         "fileAction": "File Action",
-        "chunkNum": "Chunk Number",
-        "wordCount": "Word Count",
         "settings": {
             "title": "Settings",
             "basicTitle": "Basic Settings",
@@ -121,71 +119,91 @@
         },
         "validation": {
             "nameRequired": "Please enter knowledge base name",
-            "languageRequired": "Please select language",
-            "parserRequired": "Please select chunk method"
+            "languageRequired": "Please select a language",
+            "parserRequired": "Please select a parsing method"
         },
         "form": {
             "name": "Knowledge Base Name",
-            "namePlaceholder": "Please enter knowledge base name",
-            "nameDescription": "This will be the unique identifier for your knowledge base",
+            "namePlaceholder": "Enter knowledge base name",
+            "nameDescription": "This will be the unique identifier for the knowledge base",
             "description": "Description",
-            "descriptionPlaceholder": "Please enter knowledge base description",
+            "descriptionPlaceholder": "Enter knowledge base description",
             "descriptionDescription": "Briefly describe the purpose of this knowledge base",
             "language": "Language",
             "languagePlaceholder": "Select knowledge base language",
-            "languageDescription": "Select the primary language for the knowledge base",
+            "languageDescription": "Select the main language for the knowledge base",
             "saveSettings": "Save Settings",
             "chunkSize": "Chunk Size",
-            "chunkSizeDescription": "Set the maximum number of characters for each text block (100-2000)",
+            "chunkSizeDescription": "Set maximum characters per text block (100-2000)",
             "chunkOverlap": "Chunk Overlap",
-            "chunkOverlapDescription": "Set the number of overlapping characters between adjacent text blocks (0-1000)",
+            "chunkOverlapDescription": "Set overlapping characters between adjacent text blocks (0-1000)",
             "separator": "Separator",
             "separatorPlaceholder": "Enter custom separator",
-            "separatorDescription": "Custom separator for text chunking (optional)",
+            "separatorDescription": "Custom separator for text splitting (optional)",
             "customRules": "Custom Rules",
-            "customRulesPlaceholder": "Enter custom chunking rules",
-            "customRulesDescription": "Enter custom text chunking rules (optional)",
+            "customRulesPlaceholder": "Enter custom splitting rules",
+            "customRulesDescription": "Enter custom rules for text splitting (optional)",
             "applySettings": "Apply Settings"
         },
+        "chunkNum": "Chunk Count",
+        "wordCount": "Word Count",
         "searchFiles": "Search Files",
         "uploadFile": "Upload File",
         "noDatasetId": "Dataset ID not found",
         "uploadDate": "Upload Date",
-        "chunkMethod": "Chunk Method",
+        "chunkMethod": "Chunking Method",
+        "selectChunkMethod": "Select Chunking Method",
         "parsingStatus": "Parsing Status",
-        "noResults": "No data"
+        "noResults": "No data",
+        "docParser": {
+            "methodTitle": "Settings",
+            "presentation": "Presentation",
+            "methodExamples": "Examples",
+            "methodExamplesDescription": "Examples",
+            "dialogueExamplesTitle": "Examples",
+            "methodEmpty": "Default",
+            "book": "Book",
+            "laws": "Laws",
+            "manual": "Manual",
+            "picture": "Image",
+            "paper": "Paper",
+            "resume": "Resume",
+            "table": "Table",
+            "one": "Single Document",
+            "knowledgeGraph": "Knowledge Graph"
+        }
     },
     "login": {
         "title": "DeepMed Search",
-        "description": "RAG+Search Integrated Intelligent Medical Document Assistant, Simplify Document Processing",
+        "description": "RAG+Search Integrated Medical Document Assistant",
         "features": {
             "ai": {
-                "title": "AI-Powered",
-                "description": "Advanced machine learning for accurate processing"
+                "title": "AI-Driven",
+                "description": "Accurate processing through advanced machine learning"
             },
             "security": {
                 "title": "Secure",
-                "description": "Enterprise-grade security and encryption"
+                "description": "Enterprise-level security and encryption"
             },
             "speed": {
                 "title": "Fast",
-                "description": "Lightning-fast processing and response times"
+                "description": "Ultra-fast processing and response times"
             },
             "reliability": {
                 "title": "Reliable",
-                "description": "99.9% uptime and consistent performance"
+                "description": "99.9% uptime and stable performance"
             }
         },
         "form": {
             "title": "Login",
             "description": "Welcome back, please login to your account",
-            "googleSignIn": "Continue with Google",
-            "githubSignIn": "Continue with GitHub",
-            "orContinueWith": "or continue with",
+            "googleSignIn": "Sign in with Google",
+            "githubSignIn": "Sign in with GitHub",
+            "orContinueWith": "Or continue with",
             "emailLabel": "Email",
-            "emailPlaceholder": "Enter your email",
+            "emailPlaceholder": "Enter email",
             "passwordLabel": "Password",
-            "passwordPlaceholder": "Enter your password",
+            "passwordPlaceholder": "Enter password",
             "forgotPassword": "Forgot password?",
             "submit": "Login",
             "noAccount": "Don't have an account?",
@@ -196,13 +214,13 @@
         },
         "login": "Login",
         "loginDescription": "Welcome back! Please login to your account.",
-        "loginWithGoogle": "Login with Google",
-        "loginWithGithub": "Login with Github",
-        "orContinueWith": "or continue with",
+        "loginWithGoogle": "Sign in with Google",
+        "loginWithGithub": "Sign in with GitHub",
+        "orContinueWith": "Or continue with",
         "emailLabel": "Email",
-        "emailPlaceholder": "Enter your email",
+        "emailPlaceholder": "Enter email",
         "passwordLabel": "Password",
-        "passwordPlaceholder": "Enter your password",
+        "passwordPlaceholder": "Enter password",
         "forgotPassword": "Forgot password?",
         "noAccount": "Don't have an account?",
         "signUp": "Sign up"
@@ -210,75 +228,75 @@
     "search": {
         "title": "Deep Search",
         "searchPlaceholder": "Search...",
-        "searchDescription": "Search for documents, knowledge bases, and more",
+        "searchDescription": "Search documents, knowledge bases, and more",
         "searchResults": "Search Results",
-        "noResults": "No results found"
+        "noResults": "No search results"
     },
     "upload": {
         "uploadFile": "Upload File",
-        "uploadDescription": "Upload File Description",
+        "uploadDescription": "File upload description",
         "selectFile": "Select File",
         "cancel": "Cancel",
         "upload": "Upload",
         "error": "Error",
-        "pleaseSelectFile": "Please select file",
-        "uploadSuccess": "Upload success",
+        "pleaseSelectFile": "Please select a file",
+        "uploadSuccess": "Upload successful",
         "uploadFailed": "Upload failed"
     },
     "chat": {
         "title": "Chat",
-        "searchPlaceholder": "Search conversation...",
-        "messagePlaceholder": "Enter message...",
+        "searchPlaceholder": "Search conversations...",
+        "messagePlaceholder": "Type a message...",
         "send": "Send",
         "currentChat": "Current Chat",
         "newChat": "New Chat",
-        "startNewChat": "Start new conversation...",
+        "startNewChat": "Start a new conversation...",
         "justNow": "Just now",
         "delete": "Delete",
         "more": "More",
         "noDescription": "No description",
         "noConversations": "No conversations yet.",
-        "createChatTitle": "Create new chat",
+        "createChatTitle": "Create New Chat",
         "createChatDescription": "Give your new chat conversation a name.",
         "chatNameLabel": "Name",
-        "chatNamePlaceholder": "Example: Project discussion",
+        "chatNamePlaceholder": "Example: Project Discussion",
         "cancelButton": "Cancel",
         "createButton": "Create",
         "validation": {
             "chatNameRequired": "Please enter chat name"
         },
         "errors": {
-            "sendMessageFailed": "Send message failed"
+            "sendMessageFailed": "Failed to send message"
         },
-        "welcomeTitle": "What can I help you with today?",
-        "startTypingPrompt": "Enter a message to start a new conversation.",
+        "welcomeTitle": "How can I help you today?",
+        "startTypingPrompt": "Type a message to start a new conversation.",
         "examples": {
             "heading": "Examples",
-            "title1": "Explanation of technical concepts",
-            "prompt1": "A simple explanation of quantum computing",
-            "title2": "Creative writing tips",
-            "prompt2": "Write a poem about the city's night view"
+            "title1": "Technical Concept Explanation",
+            "prompt1": "Simple explanation of quantum computing",
+            "title2": "Creative Writing Tips",
+            "prompt2": "Write a poem about city nightscape"
         },
         "capabilities": {
             "heading": "Capabilities",
-            "title1": "Remember previous conversations",
+            "title1": "Remember Previous Conversations",
             "desc1": "I can remember what was said in previous conversations",
-            "title2": "Provide subsequent corrections",
-            "desc2": "Allow users to make corrections and ask questions based on my answers"
+            "title2": "Allow Follow-up Corrections",
+            "desc2": "I allow users to make corrections and ask questions based on my responses"
         },
         "limitations": {
             "heading": "Limitations",
-            "title1": "Incorrect information may be generated",
-            "desc1": "I sometimes provide incorrect information or incorrect information",
-            "title2": "Knowledge expiration",
-            "desc2": "I have limited knowledge about the world and events after 2023"
+            "title1": "May Generate Incorrect Information",
+            "desc1": "I may occasionally provide incorrect or false information",
+            "title2": "Knowledge Cutoff",
+            "desc2": "My knowledge of the world and events after 2023 is limited"
         },
-        "deleteDialogTitle": "Delete conversation",
+        "deleteDialogTitle": "Delete Conversation",
         "deleteDialogDescription": "Are you sure you want to delete this conversation? This action cannot be undone.",
-        "deleteSuccess": "Conversation deleted successfully",
+        "deleteSuccess": "Conversation deleted",
         "deleteError": "Failed to delete conversation",
         "knowledgeBaseLabel": "Knowledge Base",
         "selectKnowledgeBase": "Select Knowledge Base",
-        "noKnowledgeBase": "No Knowledge Base"
+        "noKnowledgeBase": "Don't use knowledge base"
     }
 }

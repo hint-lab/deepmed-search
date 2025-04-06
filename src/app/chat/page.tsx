@@ -1,21 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent } from '@/components/ui/card';
+import { Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
+import { useTranslate } from '@/hooks/use-language';
+import ChatSidebar from './components/chat-sidebar';
+import { useChatDialogList, useCreateChatDialog } from '@/hooks/use-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useChatDialogList, useConversation, useSendMessage, useCreateChatDialog } from '@/hooks/use-chat';
-import ChatSidebar from './components/chat-sidebar';
-import ChatMessages from './components/chat-messages';
-import { useTranslate } from '@/hooks/use-language';
-import { Message } from '@prisma/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
-
-// Define a type for local message state, allowing partial data for optimistic updates
-type LocalMessage = Partial<Message> & { id: string; content: string; role: string; createdAt: Date };
+import { useUser } from '@/contexts/user-context';
 
 // Define a type for the initial prompt examples
 interface PromptExample {
@@ -25,84 +19,37 @@ interface PromptExample {
 }
 
 export default function ChatPage() {
-  const params = useParams();
   const router = useRouter();
-  const dialogId = params.id as string | undefined;
   const { t } = useTranslate('chat');
-
-  // Hooks
   const { data: dialogs, isLoading: isLoadingDialogs } = useChatDialogList();
-  const { data: messages, isLoading: isLoadingMessages } = useConversation(dialogId || '');
-  const { sendMessage, isPending: isSendingMessage } = useSendMessage();
   const { createChatDialog, loading: isCreatingDialog } = useCreateChatDialog();
-
-  // State
+  const { userInfo } = useUser();
   const [inputValue, setInputValue] = useState('');
-  const [currentMessages, setCurrentMessages] = useState<LocalMessage[]>([]);
-  const [isProcessingFirstMessage, setIsProcessingFirstMessage] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  // Effect to update local messages when fetched data changes
-  useEffect(() => {
-    if (messages) {
-      setCurrentMessages(messages as LocalMessage[]);
-    } else if (!dialogId) {
-      // Clear messages when navigating to the base chat page
-      setCurrentMessages([]);
-    }
-  }, [messages, dialogId]);
-
-  // Effect to scroll down when new messages are added
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [currentMessages]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const messageToSend = inputValue;
-    const tempUserMessageId = `temp-${Date.now()}`;
-
-    const optimisticUserMessage: LocalMessage = {
-      id: tempUserMessageId,
-      content: messageToSend,
-      role: 'user',
-      createdAt: new Date(),
-    };
-
-    setCurrentMessages(prev => [...prev, optimisticUserMessage]);
     setInputValue('');
-
-    let currentDialogId = dialogId;
+    setIsProcessing(true);
 
     try {
-      if (!currentDialogId) {
-        setIsProcessingFirstMessage(true);
-        const defaultName = messageToSend.split(' ').slice(0, 5).join(' ') || t('newChat');
-        const newDialog = await createChatDialog({ name: defaultName });
-
-        if (!newDialog?.id) {
-          throw new Error("Failed to create dialog");
-        }
-        currentDialogId = newDialog.id;
-        router.push(`/chat/${currentDialogId}`, { scroll: false });
-        setCurrentMessages(prev => prev.map(msg =>
-          msg.id === tempUserMessageId ? { ...msg, dialogId: currentDialogId } : msg
-        ));
+      if (!userInfo?.id) {
+        throw new Error("用户未登录");
       }
+      const defaultName = messageToSend.split(' ').slice(0, 5).join(' ') || t('newChat');
+      const newDialog = await createChatDialog({ name: defaultName, userId: userInfo.id });
 
-      const aiResponse = await sendMessage(currentDialogId!, messageToSend);
-      setCurrentMessages(prev => prev.filter(msg => msg.id !== tempUserMessageId));
-      router.refresh();
-
+      if (!newDialog?.id) {
+        throw new Error("Failed to create dialog");
+      }
+      router.push(`/chat/${newDialog.id}`);
     } catch (error) {
-      console.error("Failed to send message or create dialog:", error);
-      setCurrentMessages(prev => prev.filter(msg => msg.id !== tempUserMessageId));
+      console.error("Failed to create dialog:", error);
       setInputValue(messageToSend);
     } finally {
-      setIsProcessingFirstMessage(false);
+      setIsProcessing(false);
     }
   };
 
@@ -121,12 +68,14 @@ export default function ChatPage() {
   const handleExampleClick = (promptKey: string) => {
     const promptText = t(promptKey);
     setInputValue(promptText);
-    // Optionally, trigger send immediately?
-    // handleSendMessage(); // Uncomment to send immediately
+    // 在输入框中自动聚焦，以便用户可以直接按 Enter 发送
+    setTimeout(() => {
+      const inputElement = document.querySelector('input[placeholder="' + t('messagePlaceholder') + '"]');
+      if (inputElement instanceof HTMLInputElement) {
+        inputElement.focus();
+      }
+    }, 100);
   };
-
-  const isLoading = isLoadingMessages || isLoadingDialogs;
-  const isSending = isSendingMessage || isProcessingFirstMessage;
 
   // Define example prompts/capabilities
   const examples: PromptExample[] = [
@@ -143,105 +92,84 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      <ChatSidebar dialogs={dialogs} isLoading={isLoadingDialogs} currentDialogId={dialogId} />
+    <div className="flex h-screen">
+      <ChatSidebar dialogs={dialogs} isLoading={isLoadingDialogs} currentDialogId={undefined} />
       <div className="flex flex-col flex-1 bg-muted/30">
-        {/* Main chat area or initial screen */}
-        {dialogId ? (
-          // Existing Chat View
-          <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
-              {isLoading && !currentMessages.length ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-16 w-3/4" />
-                  <Skeleton className="h-16 w-3/4 self-end bg-primary/10" />
-                  <Skeleton className="h-16 w-1/2" />
-                </div>
-              ) : (
-                <ChatMessages messages={currentMessages} />
-              )}
-            </div>
-          </ScrollArea>
-        ) : (
-          // Initial Screen when no dialog is selected
-          <div className="flex flex-col items-center justify-center flex-1 p-8 overflow-auto">
-            <div className="max-w-4xl w-full">
-              <h1 className="text-2xl lg:text-3xl font-semibold text-center mb-10">
-                {t('welcomeTitle', 'How can I help you today?')}
-              </h1>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                {/* Examples */}
-                <div className="space-y-4">
-                  <h2 className="text-center font-medium text-lg">{t('examples.heading', 'Examples')}</h2>
-                  {examples.map((ex, i) => {
-                    const Icon = ex.icon;
-                    return (
-                      <Card key={`ex-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <Icon className="w-5 h-5 mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium mb-1">{t(ex.titleKey)}</p>
-                            <p className="text-xs text-muted-foreground">{t(ex.promptKey)}</p>
-                          </div>
+        <div className="flex flex-col items-center justify-center flex-1 p-8 overflow-auto">
+          <div className="max-w-4xl w-full">
+            <h1 className="text-2xl lg:text-3xl font-semibold text-center mb-10">
+              {t('welcomeTitle', 'How can I help you today?')}
+            </h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {/* Examples */}
+              <div className="space-y-4">
+                <h2 className="text-center font-medium text-lg">{t('examples.heading', 'Examples')}</h2>
+                {examples.map((ex, i) => {
+                  const Icon = ex.icon;
+                  return (
+                    <Card key={`ex-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors cursor-pointer" onClick={() => handleExampleClick(ex.promptKey)}>
+                      <div className="flex items-start gap-3">
+                        <Icon className="w-5 h-5 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium mb-1">{t(ex.titleKey)}</p>
+                          <p className="text-xs text-muted-foreground">{t(ex.promptKey)}</p>
                         </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-                {/* Capabilities */}
-                <div className="space-y-4">
-                  <h2 className="text-center font-medium text-lg">{t('capabilities.heading', 'Capabilities')}</h2>
-                  {capabilities.map((cap, i) => {
-                    const Icon = cap.icon;
-                    return (
-                      <Card key={`cap-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <Icon className="w-5 h-5 mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium mb-1">{t(cap.titleKey)}</p>
-                            <p className="text-xs text-muted-foreground">{t(cap.promptKey)}</p>
-                          </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+              {/* Capabilities */}
+              <div className="space-y-4">
+                <h2 className="text-center font-medium text-lg">{t('capabilities.heading', 'Capabilities')}</h2>
+                {capabilities.map((cap, i) => {
+                  const Icon = cap.icon;
+                  return (
+                    <Card key={`cap-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <Icon className="w-5 h-5 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium mb-1">{t(cap.titleKey)}</p>
+                          <p className="text-xs text-muted-foreground">{t(cap.promptKey)}</p>
                         </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-                {/* Limitations */}
-                <div className="space-y-4">
-                  <h2 className="text-center font-medium text-lg">{t('limitations.heading', 'Limitations')}</h2>
-                  {limitations.map((lim, i) => {
-                    const Icon = lim.icon;
-                    return (
-                      <Card key={`lim-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <Icon className="w-5 h-5 mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium mb-1">{t(lim.titleKey)}</p>
-                            <p className="text-xs text-muted-foreground">{t(lim.promptKey)}</p>
-                          </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+              {/* Limitations */}
+              <div className="space-y-4">
+                <h2 className="text-center font-medium text-lg">{t('limitations.heading', 'Limitations')}</h2>
+                {limitations.map((lim, i) => {
+                  const Icon = lim.icon;
+                  return (
+                    <Card key={`lim-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <Icon className="w-5 h-5 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium mb-1">{t(lim.titleKey)}</p>
+                          <p className="text-xs text-muted-foreground">{t(lim.promptKey)}</p>
                         </div>
-                      </Card>
-                    );
-                  })}
-                </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           </div>
-        )}
-
-        {/* Input Area - Always visible */}
-        <div className="border-t p-4 bg-background shadow-inner mt-auto"> {/* Ensure input is at bottom */}
-          <div className="flex items-center space-x-2 max-w-4xl mx-auto"> {/* Center input area */}
+        </div>
+        <div className="border-t p-4 bg-background shadow-inner">
+          <div className="flex items-center space-x-2 max-w-4xl mx-auto">
             <Input
               placeholder={t('messagePlaceholder')}
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              disabled={isSending}
+              disabled={isProcessing}
               className="flex-1 resize-none"
             />
-            <Button onClick={handleSendMessage} disabled={isSending || !inputValue.trim()} aria-label={t('send')}>
-              {isSending ? (
+            <Button onClick={handleSendMessage} disabled={isProcessing || !inputValue.trim()} aria-label={t('send')}>
+              {isProcessing ? (
                 <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent text-white rounded-full" role="status" aria-label="loading"></span>
               ) : t('send')}
             </Button>

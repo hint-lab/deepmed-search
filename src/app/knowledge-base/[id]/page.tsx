@@ -89,11 +89,11 @@ export default function KnowledgeBasePage() {
                 />
             </div>
             {/* 主内容区域 - 自适应宽度 */}
-            <div className="flex-1 w-full lg:w-[calc(100%-16rem)] pt-6">
+            <div className="flex-1 w-full lg:w-[calc(100%-16rem)] pt-2 ">
                 <div className="space-y-6 p-4 lg:p-8">
                     {/* 主要内容卡片 */}
-                    <Card className={cn("border-none shadow-none mt-6")}>
-                        <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0 pb-2">
+                    <Card className={cn("border-none shadow-none mt-6 bg-transparent")}>
+                        <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0 pb-2 ">
                             {/* 标题区域 */}
                             <CardTitle className="text-xl lg:text-2xl font-bold">
                                 {currentView === 'settings' ? t('settings.title') : t('files')}

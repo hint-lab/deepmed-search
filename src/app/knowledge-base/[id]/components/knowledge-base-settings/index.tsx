@@ -14,7 +14,7 @@ export function KnowledgeBaseSettings({ kbId }: KnowledgeBaseSettingsProps) {
 
     return (
         <ScrollArea className="h-[calc(100vh-4rem)]">
-            <div className=" p-6 space-y-8">
+            <div className="space-y-8">
                 <Card>
                     <CardHeader>
                         <CardTitle>{t('settings.basicTitle')}</CardTitle>
