@@ -8,7 +8,6 @@ import '@/styles/globals.css';
 import { Toaster } from "@/components/ui/sonner"
 import Header from '@/components/header';
 import { UserProvider } from '@/contexts/user-context';
-
 const inter = Inter({
     subsets: ['latin'],
     display: 'swap',

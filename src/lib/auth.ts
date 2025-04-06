@@ -76,32 +76,12 @@ export const authConfig = {
     ],
     session: {
         strategy: "jwt" as const,
+        maxAge: 30 * 24 * 60 * 60, // 30 days
     },
-    // 自定义页面配置
     pages: {
         signIn: "/login",
         error: "/error",
     },
-    // 添加默认重定向路径
-    redirects: {
-        signIn: "/knowledge-base",
-    },
-
-    events: {
-        signIn({ user, account, profile, isNewUser }: {
-            user: User;
-            account: Account | null;
-            profile?: Profile;
-            isNewUser?: boolean;
-        }) {
-
-            console.log("User: ", user);
-            console.log("Account: ", account);
-            console.log("Profile: ", profile);
-            console.log("isNewUser: ", isNewUser);
-        },
-    },
-
     callbacks: {
         async jwt({ token, user }: { token: any; user: User | null }) {
             if (user) {
@@ -122,6 +102,7 @@ export const authConfig = {
             return session;
         },
     },
+    secret: process.env.NEXTAUTH_SECRET,
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

@@ -1,4 +1,4 @@
-'use client';
+"use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,12 +16,6 @@ import RetrievalDocuments from "./components/retrieval-documents"
 import { Badge } from "@/components/ui/badge"
 import { VectorSearch } from '@/components/search-vector'
 import { useTranslate } from '@/hooks/use-language'
-
-import { IReference } from "@/types/db/chat"
-import { isEmpty } from "lodash"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
-
 export default function SearchPage() {
     const { t } = useTranslate('search')
     const [checkedList, setCheckedList] = useState<string[]>([])
@@ -54,23 +48,21 @@ export default function SearchPage() {
     }
 
     return (
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-8 px-4 mt-20 pt-20">
             <div className="max-w-3xl mx-auto">
-                <h1 className="text-2xl font-bold mb-8 text-center">
-                    {t('title', '医疗知识搜索')}
-                </h1>
-                <p className="text-muted-foreground mb-8 text-center">
-                    {t('description', '使用向量搜索快速找到相关的医疗信息和文档')}
+                <h1 className="text-3xl font-bold mb-4">{t("title", "医疗知识搜索")}</h1>
+                <p className="text-muted-foreground mb-8">
+                    {t("description", "使用向量搜索快速找到相关的医疗信息和文档")}
                 </p>
-
-                <VectorSearch />
-
-                <div className="mt-12 text-sm text-muted-foreground">
-                    <h2 className="font-medium mb-2">{t('tips.title', '搜索提示')}</h2>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li>{t('tips.specific', '使用具体的医学术语获得更准确的结果')}</li>
-                        <li>{t('tips.question', '可以直接提问，如"什么是2型糖尿病？"')}</li>
-                        <li>{t('tips.symptoms', '描述症状以找到相关疾病信息')}</li>
+                <div className="bg-card/50 rounded-xl p-6">
+                    <VectorSearch />
+                </div>
+                <div className="mt-8">
+                    <h2 className="text-xl font-semibold mb-4">{t("searchTips", "搜索技巧")}</h2>
+                    <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                        <li>{t("tip1", "使用具体的医疗术语")}</li>
+                        <li>{t("tip2", "直接描述你的问题")}</li>
+                        <li>{t("tip3", "描述症状以找到相关信息")}</li>
                     </ul>
                 </div>
             </div>

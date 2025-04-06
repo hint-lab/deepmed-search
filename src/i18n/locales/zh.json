@@ -268,6 +268,7 @@
         "chatNamePlaceholder": "例如：项目讨论",
         "cancelButton": "取消",
         "createButton": "创建",
+        "cancelStream": "取消发送",
         "validation": {
             "chatNameRequired": "请输入聊天名称"
         },

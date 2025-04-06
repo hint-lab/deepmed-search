@@ -59,7 +59,7 @@ export function VectorSearch() {
     };
 
     return (
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full max-w-3xl mx-auto bg-card/50 rounded-xl p-6 shadow-sm">
             <div className="flex items-center space-x-2 mb-6">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -85,19 +85,27 @@ export function VectorSearch() {
             {results.length > 0 ? (
                 <div className="space-y-4">
                     {results.map((result) => (
-                        <Card key={result.id}>
-                            <CardHeader>
-                                <CardTitle className="text-base">
+                        <Card key={result.id} className="hover:shadow-md transition-shadow duration-200">
+                            <CardHeader className="py-3 px-4 bg-muted/30">
+                                <CardTitle className="text-base flex items-center">
                                     {result.metadata?.title || t('resultTitle', '搜索结果')}
+                                    {result.metadata?.category && (
+                                        <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                            {result.metadata.category}
+                                        </span>
+                                    )}
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="py-3 px-4">
                                 <p className="text-sm text-muted-foreground">{result.content}</p>
                             </CardContent>
-                            <CardFooter className="text-xs text-muted-foreground">
-                                <span className="mr-2">
-                                    {t('relevance', '相关度')}: {Math.round(result.score * 100)}%
-                                </span>
+                            <CardFooter className="text-xs py-2 px-4 border-t bg-muted/10 flex justify-between">
+                                <div className="flex items-center">
+                                    <span className="flex items-center">
+                                        <span className="h-2 w-2 rounded-full bg-primary/60 mr-1.5"></span>
+                                        {t('relevance', '相关度')}: {Math.round(result.score * 100)}%
+                                    </span>
+                                </div>
                                 {result.metadata?.source && (
                                     <span>{t('source', '来源')}: {result.metadata.source}</span>
                                 )}
@@ -106,9 +114,22 @@ export function VectorSearch() {
                     ))}
                 </div>
             ) : query && !isSearching ? (
-                <p className="text-center text-muted-foreground py-8">
-                    {t('noResults', '没有找到相关结果')}
-                </p>
+                <div className="text-center py-10 bg-muted/20 rounded-lg">
+                    <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm mb-2">
+                        {t('noResults', '没有找到相关结果')}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                        {t('tryDifferent', '请尝试不同的搜索词或更准确的描述')}
+                    </p>
+                </div>
+            ) : !query ? (
+                <div className="text-center py-8">
+                    <Search className="h-8 w-8 text-primary/30 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                        {t('initialPrompt', '输入关键词开始搜索医疗知识')}
+                    </p>
+                </div>
             ) : null}
         </div>
     );

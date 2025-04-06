@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +9,6 @@ import { useChatDialogList, useCreateChatDialog } from '@/hooks/use-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/user-context';
-
 // Define a type for the initial prompt examples
 interface PromptExample {
   titleKey: string;
@@ -19,9 +17,10 @@ interface PromptExample {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
+
   const { t } = useTranslate('chat');
   const { data: dialogs, isLoading: isLoadingDialogs } = useChatDialogList();
+  const router = useRouter();
   const { createChatDialog, loading: isCreatingDialog } = useCreateChatDialog();
   const { userInfo } = useUser();
   const [inputValue, setInputValue] = useState('');

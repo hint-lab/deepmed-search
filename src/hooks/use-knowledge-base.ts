@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import {
     IKnowledgeBase,
@@ -63,8 +63,8 @@ export const useSearchKnowledge = () => {
  * @returns 从 URL 参数中获取的知识库 ID
  */
 export const useKnowledgeBaseId = (): string => {
-    const searchParams = useSearchParams();
-    return searchParams.get('id') || '';
+    const params = useParams();
+    return params?.id as string || '';
 };
 
 /**

@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
         // 获取请求体
         const { query, limit = 5, collection = 'medical_documents', userId } = await req.json();
 
-        if (!query || typeof query !== 'string' || !userId) {
-            return NextResponse.json({ error: '查询参数无效或未提供用户ID' }, { status: 400 });
+        if (!query || typeof query !== 'string') {
+            return NextResponse.json({ error: '查询参数无效' }, { status: 400 });
         }
 
         // 获取查询的嵌入向量
