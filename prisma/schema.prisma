@@ -150,6 +150,11 @@ model Document {
   knowledgeBaseId String
   parser_id       String?
   parser_config   Json
+  markdown_content String?
+  summary         String?
+  metadata        Json?
+  processing_status String  @default("pending")
+  processing_error String?
   knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
   tags            Tag[]
   chunks          Chunk[]

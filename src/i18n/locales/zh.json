@@ -115,7 +115,6 @@
         "fileType": "文件类型",
         "fileUploadDate": "文件上传日期",
         "fileUploader": "文件上传者",
-        "fileStatus": "文件状态",
         "fileProcessStage": "文件处理阶段",
         "fileAction": "文件操作",
         "settings": {
@@ -161,6 +160,28 @@
         "selectChunkMethod": "选择分块方法",
         "parsingStatus": "解析状态",
         "noResults": "暂无数据",
+        "processChunks": "处理分块",
+        "processing": "处理中",
+        "error": "错误",
+        "completed": "完成",
+        "processingError": "处理错误",
+        "copyId": "复制 ID",
+        "changeChunkMethod": "更改分块方法",
+        "rename": "重命名",
+        "fileStatus": {
+            "title": "文件状态",
+            "processing": "处理中",
+            "error": "错误",
+            "success": "成功",
+            "pending": "待处理"
+        },
+        "processingStatus": {
+            "title": "处理状态",
+            "processing": "处理中",
+            "error": "错误",
+            "pending": "待处理",
+            "completed": "完成"
+        },
         "docParser": {
             "methodTitle": "配置",
             "presentation": "演示文稿",

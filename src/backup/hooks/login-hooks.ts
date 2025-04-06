@@ -1,10 +1,8 @@
 import { Authorization } from '@/constants/authorization';
-import userService from '@/services/user-service';
-import authorizationUtil, { redirectToLogin } from '@/utils/authorization-util';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 export interface ILoginRequestBody {
   email: string;
   password: string;

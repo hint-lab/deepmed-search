@@ -28,11 +28,12 @@ import { useFetchDocumentList } from '@/hooks/use-document';
 import { IDocumentInfo } from '@/types/db/document';
 import { getExtension } from '@/utils/document-util';
 import { useMemo } from 'react';
-import { useKnowledgeBaseTableColumns } from './use-knowledge-base-table-columns';
+import { useKnowledgeBaseTableColumns } from './use-table-columns';
 import { useTranslate } from '@/hooks/use-language';
 import { useSelectedRecord } from '@/hooks/use-selected-record';
 import { useChangeDocumentParser } from '@/hooks/use-change-document-parser';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface KnowledgeBaseTableProps {
   kbId: string;
@@ -85,6 +86,48 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     useEffect(() => {
       refreshData();
     }, [kbId, refreshKey]);
+
+    // 处理文档状态变更
+    const handleStatusChange = async (documentId: string, newStatus: string) => {
+      try {
+        const response = await fetch(`/api/documents/${documentId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        if (!response.ok) {
+          throw new Error('状态更新失败');
+        }
+
+        toast.success(t('statusUpdatedSuccess'));
+
+        refreshData();
+      } catch (error) {
+        toast.error(t('statusUpdateFailed'));
+      }
+    };
+
+    // 处理文档删除
+    const handleDelete = async (documentId: string) => {
+      try {
+        const response = await fetch(`/api/documents/${documentId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('删除失败');
+        }
+
+        toast.success(t('deleteSuccess'));
+
+        refreshData();
+      } catch (error) {
+        toast.error(t('deleteFailed'));
+      }
+    };
 
     const table = useReactTable({
       data: documents,
@@ -222,7 +265,7 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
         {changeParserVisible && (
           <ChunkMethodDialog
             documentId={currentRecord.id}
-            parserId={currentRecord.parser_id}
+            parserId={currentRecord.parser_id || ''}
             parserConfig={currentRecord.parser_config}
             documentExtension={getExtension(currentRecord.name)}
             onOk={onChangeParserOk}

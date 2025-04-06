@@ -1,35 +1,37 @@
 import { RunningStatus } from '@/constants/knowledge';
 
 export interface IDocumentInfo {
-  chunk_num: number;
-  create_date: string;
-  create_time: string;
-  created_by: string;
   id: string;
-  knowledgeBaseId: string;
-  location: string;
   name: string;
-  parser_config: IParserConfig;
-  parser_id: string;
+  content?: string;
+  location: string;
+  size: number;
+  type: string;
+  source_type: string;
+  status: 'enabled' | 'disabled';
+  thumbnail?: string;
+  chunk_num: number;
+  token_num: number;
+  progress: number;
+  progress_msg?: string;
+  run: 'pending' | 'processing' | 'error';
   process_begin_at?: string;
   process_duation: number;
-  progress: number;
-  progress_msg: string;
-  run: RunningStatus;
-  size: number;
-  source_type: string;
-  status: 'completed' | 'processing' | 'failed';
-  thumbnail: string;
-  token_num: number;
-  type: string;
+  create_date: string;
+  create_time: number;
   update_date: string;
   update_time: number;
-  meta_fields?: Record<string, any>;
-  error_message?: string;
-  extension: string;
-  page_count?: number;
-  word_count?: number;
-  chunk_count?: number;
+  created_by: string;
+  knowledgeBaseId: string;
+  parser_id?: string;
+  parser_config: any;
+  markdown_content?: string;
+  summary?: string;
+  metadata?: any;
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  processing_error?: string;
+  tags: any[];
+  chunks: any[];
 }
 
 export interface IParserConfig {

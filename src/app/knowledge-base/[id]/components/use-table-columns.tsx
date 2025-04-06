@@ -27,7 +27,10 @@ import {
   FileText,
   File,
   Image as ImageIcon,
-  FileType
+  FileType,
+  Play,
+  Pause,
+  RefreshCw
 } from 'lucide-react';
 import { useCallback } from 'react';
 import { useTranslate } from '@/hooks/use-language';
@@ -35,16 +38,12 @@ import { useChangeDocumentParser } from '@/hooks/use-change-document-parser';
 import { useDocumentNavigation } from '@/hooks/use-document-navigation';
 import { Badge } from '@/components/ui/badge';
 import { formatBytes } from '@/utils/bytes';
+import { ColumnMeta } from '@/types/columnMeta';
 
-interface ColumnMeta {
-  cellClassName?: string;
-}
-
-type UseKnowledgeBaseTableColumnsType = Pick<
-  ReturnType<typeof useChangeDocumentParser>,
-  'showChangeParserModal'
-> & { setCurrentRecord: (record: IDocumentInfo) => void };
-
+export type UseKnowledgeBaseTableColumnsType = {
+  showChangeParserModal: () => void;
+  setCurrentRecord: (record: IDocumentInfo) => void;
+};
 // 根据文件扩展名获取对应的图标
 const getFileIcon = (extension: string) => {
   switch (extension.toLowerCase()) {
@@ -83,6 +82,31 @@ export function useKnowledgeBaseTableColumns({
   );
 
   const { navigateToChunkParsedResult } = useDocumentNavigation();
+
+  // 添加处理 chunk 的回调函数
+  const handleProcessChunks = useCallback(async (document: IDocumentInfo) => {
+    try {
+      const response = await fetch(`/api/documents/${document.id}/process-chunks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          documentId: document.id,
+          knowledgeBaseId: document.knowledgeBaseId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('处理失败');
+      }
+
+      // 刷新数据
+      window.location.reload();
+    } catch (error) {
+      console.error('处理文档 chunks 失败:', error);
+    }
+  }, []);
 
   const columns: ColumnDef<IDocumentInfo>[] = [
     {
@@ -134,12 +158,11 @@ export function useKnowledgeBaseTableColumns({
             <TooltipTrigger asChild>
               <div
                 className="flex gap-2 cursor-pointer items-center"
-                onClick={navigateToChunkParsedResult(
+                onClick={() => navigateToChunkParsedResult(
                   row.original.id,
-                  row.original.kb_id,
+                  row.original.knowledgeBaseId
                 )}
               >
-                {/* 使用动态图标组件代替 Image */}
                 {getFileIcon(extension)}
                 <span className={cn('truncate font-medium')}>{name}</span>
               </div>
@@ -183,30 +206,102 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'run',
-      header: t('fileStatus'),
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          {t('fileStatus.title')}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
-        const runStatus = row.getValue('run') as string;
+        const runStatus = (row.getValue('run') as string) || 'pending';
         let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
         if (runStatus === 'processing') badgeVariant = 'default';
         if (runStatus === 'error') badgeVariant = 'destructive';
-        return <Badge variant={badgeVariant}>{t(runStatus) || runStatus}</Badge>;
+        return (
+          <div
+            className="cursor-pointer"
+            onClick={() => navigateToChunkParsedResult(
+              row.original.id,
+              row.original.knowledgeBaseId
+            )}
+          >
+            <Badge variant={badgeVariant}>{t(`fileStatus.${runStatus}`) || runStatus}</Badge>
+          </div>
+        );
       },
       meta: {
         cellClassName: 'w-32',
       } as ColumnMeta,
     },
     {
-      accessorKey: 'status',
-      header: t('fileProcessStage'),
+      accessorKey: 'processing_status',
+      header: t('processingStatus.title'),
       cell: ({ row }) => {
-        const status = row.getValue('status') as string;
+        const status = (row.getValue('processing_status') as string) || 'pending';
+        const document = row.original;
         let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
-        if (status === 'enabled') badgeVariant = 'default';
-        if (status === 'error') badgeVariant = 'destructive';
-        return <Badge variant={badgeVariant}>{t(status) || status}</Badge>;
+        let icon = null;
+
+        switch (status) {
+          case 'processing':
+            badgeVariant = 'default';
+            icon = <RefreshCw className="h-4 w-4 animate-spin mr-1" />;
+            break;
+          case 'completed':
+            badgeVariant = 'default';
+            icon = <Play className="h-4 w-4 text-green-500 mr-1" />;
+            break;
+          case 'failed':
+            badgeVariant = 'destructive';
+            icon = <Pause className="h-4 w-4 text-red-500 mr-1" />;
+            break;
+          default:
+            badgeVariant = 'secondary';
+            icon = <Pause className="h-4 w-4 mr-1" />;
+        }
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center cursor-pointer">
+                {icon}
+                <Badge variant={badgeVariant}>{t(`processingStatus.${status}`) || status}</Badge>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+              {status === 'completed' && document.chunk_num === 0 && (
+                <DropdownMenuItem onClick={() => handleProcessChunks(document)}>
+                  {t('processChunks')}
+                </DropdownMenuItem>
+              )}
+              {status === 'failed' && (
+                <DropdownMenuItem onClick={() => handleProcessChunks(document)}>
+                  {t('retry')}
+                </DropdownMenuItem>
+              )}
+              {status === 'processing' && (
+                <DropdownMenuItem onClick={() => handleProcessChunks(document)}>
+                  {t('cancel')}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => navigateToChunkParsedResult(
+                  document.id,
+                  document.knowledgeBaseId
+                )}
+              >
+                {t('viewDetails')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
       },
       meta: {
-        cellClassName: 'w-48',
+        cellClassName: 'w-32',
       } as ColumnMeta,
     },
     {
@@ -248,24 +343,42 @@ export function useKnowledgeBaseTableColumns({
       enableHiding: false,
       cell: ({ row }) => {
         const document = row.original;
+        const isProcessing = document.processing_status === 'processing';
+        const canProcessChunks = document.processing_status === 'completed' && document.chunk_num === 0;
 
         return (
           <section className="flex gap-2 items-center">
-            <Switch id="airplane-mode" className="scale-75" />
+            <Switch
+              id={`status-${document.id}`}
+              className="scale-75"
+              checked={document.status === 'enabled'}
+              disabled={isProcessing}
+            />
             <Button
               size="icon"
               variant="ghost"
               className="h-8 w-8"
               onClick={onShowChangeParserModal(document)}
+              disabled={isProcessing}
             >
               <Wrench className="h-4 w-4" />
             </Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              disabled={isProcessing}
+            >
               <Pencil className="h-4 w-4" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  disabled={isProcessing}
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -273,6 +386,7 @@ export function useKnowledgeBaseTableColumns({
                 <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() => navigator.clipboard.writeText(document.id)}
+                  disabled={isProcessing}
                 >
                   {t('copyId')}
                 </DropdownMenuItem>
@@ -282,11 +396,24 @@ export function useKnowledgeBaseTableColumns({
                     setCurrentRecord(document);
                     showChangeParserModal();
                   }}
+                  disabled={isProcessing}
                 >
                   {t('changeChunkMethod')}
                 </DropdownMenuItem>
-                <DropdownMenuItem>{t('rename')}</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                <DropdownMenuItem disabled={isProcessing}>
+                  {t('rename')}
+                </DropdownMenuItem>
+                {canProcessChunks && (
+                  <DropdownMenuItem
+                    onClick={() => handleProcessChunks(document)}
+                  >
+                    {t('processChunks')}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  disabled={isProcessing}
+                >
                   {t('delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -301,4 +428,4 @@ export function useKnowledgeBaseTableColumns({
   ];
 
   return columns;
-}
+} 
