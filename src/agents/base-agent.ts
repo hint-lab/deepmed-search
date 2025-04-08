@@ -1,5 +1,4 @@
 import { z } from "zod"
-
 // 定义基础消息类型
 export interface Message {
     role: "user" | "assistant" | "system"

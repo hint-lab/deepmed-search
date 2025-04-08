@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { changeDocumentParser } from '@/actions/document';
+import { changeDocumentParserAction } from '@/actions/document';
 import { toast } from 'sonner';
 
 /**
@@ -24,7 +24,7 @@ export function useChangeDocumentParser(documentId: string) {
         if (!documentId) return;
         setChangeParserLoading(true);
         try {
-            const result = await changeDocumentParser(documentId, config.parserId, config.parserConfig);
+            const result = await changeDocumentParserAction(documentId, config.parserId, config.parserConfig);
             if (result.success) {
                 hideChangeParserModal();
                 toast.success('修改成功');

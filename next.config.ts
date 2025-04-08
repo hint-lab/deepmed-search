@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   experimental: {
     turbo: {
     },
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
 };
 

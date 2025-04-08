@@ -65,7 +65,7 @@ export function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
     };
 
     const handleClick = () => {
-        router.push(`/knowledge-base/${item.id}?tab=documents`);
+        router.push(`/knowledge-base/${item.id}?tab=files`);
     };
 
     return (

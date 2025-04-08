@@ -262,10 +262,10 @@ This project uses [shadcn/ui](https://ui.shadcn.com/) as the UI component librar
 
 ### Adding New Components
 
-Use the shadcn-ui CLI to add components:
+Use the shadcn CLI to add components:
 
 ```bash
-yarn run dlx shadcn-ui@latest add button
+npx shadcn@latest add button
 ```
 
 All components will be added to the `src/components/ui`

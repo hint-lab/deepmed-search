@@ -31,9 +31,11 @@ import { useMemo } from 'react';
 import { useKnowledgeBaseTableColumns } from './use-table-columns';
 import { useTranslate } from '@/hooks/use-language';
 import { useSelectedRecord } from '@/hooks/use-selected-record';
-import { useChangeDocumentParser } from '@/hooks/use-change-document-parser';
+import { useChangeDocumentParser } from '@/hooks/use-document-parser';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useDeleteDocument } from '@/hooks/use-document';
+
 
 interface KnowledgeBaseTableProps {
   kbId: string;
@@ -55,7 +57,7 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
       handlePageChange,
       refreshData,
     } = useFetchDocumentList(kbId);
-
+    const { deleteDocument } = useDeleteDocument();
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -87,47 +89,8 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
       refreshData();
     }, [kbId, refreshKey]);
 
-    // 处理文档状态变更
-    const handleStatusChange = async (documentId: string, newStatus: string) => {
-      try {
-        const response = await fetch(`/api/documents/${documentId}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status: newStatus }),
-        });
 
-        if (!response.ok) {
-          throw new Error('状态更新失败');
-        }
 
-        toast.success(t('statusUpdatedSuccess'));
-
-        refreshData();
-      } catch (error) {
-        toast.error(t('statusUpdateFailed'));
-      }
-    };
-
-    // 处理文档删除
-    const handleDelete = async (documentId: string) => {
-      try {
-        const response = await fetch(`/api/documents/${documentId}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error('删除失败');
-        }
-
-        toast.success(t('deleteSuccess'));
-
-        refreshData();
-      } catch (error) {
-        toast.error(t('deleteFailed'));
-      }
-    };
 
     const table = useReactTable({
       data: documents,

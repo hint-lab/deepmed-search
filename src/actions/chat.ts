@@ -286,7 +286,7 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
         });
 
         // 获取或创建 agent
-        const agent = agentManager.getAgent(dialogId, dialog.knowledgeBase);
+        const agent = agentManager.getChatAgent(dialogId, dialog.knowledgeBase);
         console.log('Agent 获取成功');
 
         // 使用普通处理 (非流式)

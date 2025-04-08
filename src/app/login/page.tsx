@@ -13,6 +13,7 @@ import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTranslate } from '@/hooks/use-language';
 import { getUserInfo } from '@/actions/user';
+import { toast } from 'sonner';
 
 
 
@@ -115,7 +116,9 @@ const Login = () => {
             });
 
             if (result?.error) {
-                console.error('登录失败:', result.error);
+                toast.error("登录失败", {
+                    description: "邮箱或密码错误",
+                });
                 return;
             }
 
@@ -137,6 +140,9 @@ const Login = () => {
             window.location.href = callbackUrl;
         } catch (error) {
             console.error('登录失败:', error);
+            toast.error("登录失败", {
+                description: "服务器错误，请稍后重试",
+            });
         } finally {
             setLoading(false);
         }

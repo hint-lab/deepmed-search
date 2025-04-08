@@ -13,7 +13,7 @@ import Sidebar from './components/sidebar';
 import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useParams, useSearchParams } from 'next/navigation';
-
+import { toast } from 'sonner';
 // 定义视图类型
 type ViewType = 'files' | 'settings';
 
@@ -61,9 +61,11 @@ export default function KnowledgeBasePage() {
         const result = await onDocumentUploadOk(file);
         if (result?.success) {
             // 上传成功后刷新表格数据
+            toast.success(t('uploadSuccess'));
             tableRef.current?.refresh();
         }
         // 错误处理和关闭模态框已在 useUploadDocument hook 中完成
+        toast.error(t('uploadError'));
     };
 
     // 如果没有知识库ID，显示错误提示

@@ -6,9 +6,10 @@ import { IChunk } from '@/types/db/knowledge-base';
 import { useCallback, useMemo, useState } from 'react';
 import { IHighlight } from 'react-pdf-highlighter';
 import { toast } from 'sonner';
-import { getDocumentList, uploadDocument, changeDocumentParser, runDocument, renameDocument, deleteDocument, setDocumentMeta as setDocumentMetaAction } from '@/actions/document';
+import { getDocumentListAction, uploadDocumentAction, changeDocumentParserAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction, convertToMarkdownAction, processDocumentToChunksAction } from '@/actions/document';
 import { buildChunkHighlights } from '@/utils/document-util';
-import { ActionResponse } from '@/lib/auth-utils';
+import { useRouter } from 'next/navigation';
+import { Row } from '@tanstack/react-table';
 
 /**
  * 用于生成文档高亮显示的 hook
@@ -37,6 +38,81 @@ export const useGetChunkHighlights = (
 };
 
 /**
+ * 处理文档分块的 Hook
+ * @returns 处理文档分块的方法和加载状态
+ */
+export const useProcessDocumentChunks = () => {
+    const [isProcessingDocumentToChunks, setIsProcessingDocumentToChunks] = useState(false);
+
+    const startProcessingDocumentToChunks = useCallback(async (document: IDocumentInfo) => {
+        try {
+            setIsProcessingDocumentToChunks(true);
+            const result = await processDocumentToChunksAction(document.id);
+
+            if (result.success) {
+                toast.success('文档分块处理已完成');
+            } else {
+                toast.error(result.error || '文档分块处理失败');
+            }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : '文档分块处理失败');
+        } finally {
+            setIsProcessingDocumentToChunks(false);
+        }
+    }, []);
+
+    const cancelProcessingDocumentToChunks = useCallback(async (document: IDocumentInfo) => {
+        try {
+            setIsProcessingDocumentToChunks(true);
+            // TODO: 实现取消处理的 API
+            toast.success('已取消处理');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : '取消处理失败');
+        } finally {
+            setIsProcessingDocumentToChunks(false);
+        }
+    }, []);
+
+    const retryProcessingDocumentToChunks = useCallback(async (document: IDocumentInfo) => {
+        try {
+            setIsProcessingDocumentToChunks(true);
+            const result = await processDocumentToChunksAction(document.id);
+
+            if (result.success) {
+                toast.success('重新处理成功');
+            } else {
+                toast.error(result.error || '重新处理失败');
+            }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : '重新处理失败');
+        } finally {
+            setIsProcessingDocumentToChunks(false);
+        }
+    }, []);
+
+    return {
+        startProcessingDocumentToChunks,
+        cancelProcessingDocumentToChunks,
+        retryProcessingDocumentToChunks,
+        isProcessingDocumentToChunks,
+    };
+};
+
+/**
+ * 调用zerox将其他格式如pdf转换为markdown
+ * @param file 文件
+ * @returns 转换后的文件
+ */
+export const useZeroxConvertToMarkdown = () => {
+    const convertAnyToMarkdown = useCallback(async (documentId: string) => {
+        const result = await convertToMarkdownAction(documentId);
+        return result;
+    }, []);
+
+    return { convertAnyToMarkdown };
+}
+
+/**
  * 获取文档列表的 hook
  * @param kbId 知识库 ID
  * @returns 文档列表、分页信息、搜索和翻页方法
@@ -56,7 +132,7 @@ export function useFetchDocumentList(kbId: string) {
         try {
             setLoading(true);
             setError(null);
-            const result = await getDocumentList(kbId, page, pageSize, keywords);
+            const result = await getDocumentListAction(kbId, page, pageSize, keywords);
             if (result.success) {
                 setDocuments(result.data.docs);
                 setPagination({
@@ -123,7 +199,7 @@ export function useUploadDocument(kbId: string) {
     const onDocumentUploadOk = useCallback(async (file: File) => {
         setDocumentUploadLoading(true);
         try {
-            const result = await uploadDocument(kbId, [file]);
+            const result = await uploadDocumentAction(kbId, [file]);
             if (result.success) {
                 toast.success('上传成功');
                 hideDocumentUploadModal();
@@ -170,7 +246,7 @@ export function useChangeDocumentParser(documentId: string) {
         if (!documentId) return;
         setChangeParserLoading(true);
         try {
-            const result = await changeDocumentParser(documentId, config.parserId, config.parserConfig);
+            const result = await changeDocumentParserAction(documentId, config.parserId, config.parserConfig);
             if (result.success) {
                 hideChangeParserModal();
                 toast.success('修改成功');
@@ -201,7 +277,7 @@ export function useRunDocument(documentId: string) {
         if (!documentId) return;
         setRunLoading(true);
         try {
-            const result = await runDocument(documentId, isRunning);
+            const result = await runDocumentAction(documentId, isRunning);
             if (result.success) {
                 toast.success('运行成功');
             }
@@ -221,52 +297,53 @@ export function useRunDocument(documentId: string) {
  * @param documentId 文档 ID
  * @returns 重命名加载状态和重命名方法
  */
-export function useRenameDocument(documentId: string) {
+export function useRenameDocument() {
     const [renameLoading, setRenameLoading] = useState(false);
 
-    const rename = useCallback(async (name: string) => {
-        if (!documentId) return;
+    const renameDocument = useCallback(async (documentId: string, name: string) => {
         setRenameLoading(true);
         try {
-            const result = await renameDocument(documentId, name);
+            const result = await renameDocumentAction(documentId, name);
             if (result.success) {
                 toast.success('重命名成功');
             }
         } finally {
             setRenameLoading(false);
         }
-    }, [documentId]);
+    }, []);
 
     return {
         renameLoading,
-        rename,
+        renameDocument,
     };
 }
 
 /**
  * 删除文档的 hook
- * @param documentId 文档 ID
  * @returns 删除加载状态和删除方法
  */
-export function useDeleteDocument(documentId: string) {
+export function useDeleteDocument() {
     const [deleteLoading, setDeleteLoading] = useState(false);
 
-    const deleteDoc = useCallback(async () => {
-        if (!documentId) return;
+    const deleteDocument = useCallback(async (documentId: string) => {
         setDeleteLoading(true);
         try {
-            const result = await deleteDocument(documentId);
+            const result = await deleteDocumentAction(documentId);
             if (result.success) {
                 toast.success('删除成功');
+                return result.data;
+            } else {
+                toast.error(result.error || '删除失败');
+                return null;
             }
         } finally {
             setDeleteLoading(false);
         }
-    }, [documentId]);
+    }, []);
 
     return {
         deleteLoading,
-        deleteDoc,
+        deleteDocument,
     };
 }
 
