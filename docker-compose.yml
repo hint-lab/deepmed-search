@@ -24,7 +24,7 @@ services:
     container_name: deepmed-milvus
     command: [ "milvus", "run", "standalone" ]
     environment:
-      ETCD_CFG.ENDPOINTS: ${MILVUS_HOST}:2380
+      ETCD_ENDPOINTS: deepmed-etcd:2379
       MINIO_ADDRESS: ${MINIO_ENDPOINT}:${MINIO_PORT}
     volumes:
       - milvus-data:/var/lib/milvus
@@ -76,15 +76,18 @@ services:
       - ETCD_AUTO_COMPACTION_RETENTION=1000
       - ETCD_QUOTA_BACKEND_BYTES=4294967296
       - ETCD_SNAPSHOT_COUNT=50000
-      - ETCD_AUTH=true
-      - ETCD_AUTH_TOKEN=JWT
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
+      - ETCD_INITIAL_CLUSTER=default=http://0.0.0.0:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
     volumes:
       - etcd-data:/etcd
     ports:
       - "2379:2379"
       - "2380:2380"
-    command: etcd -advertise-client-urls=http://0.0.0.0:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd --auth
-    user: "etcd"
     healthcheck:
       test: [ "CMD", "etcdctl", "endpoint", "health" ]
       interval: 30s
