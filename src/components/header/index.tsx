@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useTranslate } from "@/hooks/use-language";
-import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload } from "lucide-react";
+import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,26 +56,26 @@ export default function Header() {
             dropdown: [
                 {
                     name: "队列测试",
-                    href: "/queue-test",
+                    href: "/dev-tools/queue-test",
                     icon: <ListTodo className="h-4 w-4" />
                 },
                 {
                     name: "上传测试",
-                    href: "/upload-test",
+                    href: "/dev-tools/upload-test",
                     icon: <Upload className="h-4 w-4" />
                 },
                 {
                     name: "大模型测试",
-                    href: "/model-test",
-                    icon: <Upload className="h-4 w-4" />
+                    href: "/dev-tools/model-test",
+                    icon: <Cpu className="h-4 w-4" />
                 },
                 {
                     name: "MCP测试",
-                    href: "/mcp-test",
-                    icon: <Upload className="h-4 w-4" />
+                    href: "/dev-tools/mcp-test",
+                    icon: <ServerCrash className="h-4 w-4" />
                 }
             ]
-        }
+        },
     ];
 
     return (

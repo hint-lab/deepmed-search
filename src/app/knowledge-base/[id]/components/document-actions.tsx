@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IDocumentInfo } from '@/types/db/document';
 import { useTranslate } from '@/hooks/use-language';
-import { Wrench, Pencil, MoreHorizontal } from 'lucide-react';
+import { Wrench, Pencil, MoreHorizontal, Trash2, CopyCheck } from 'lucide-react';
 import { RenameDocumentDialog } from './rename-document-dialog';
 import { useState, useCallback } from 'react';
 import { useDeleteDocument } from '@/hooks/use-document';
@@ -72,7 +72,7 @@ export function DocumentActions({
                             onClick={() => navigator.clipboard.writeText(document.id)}
                             disabled={isProcessing}
                         >
-                            {t('copyId')}
+                            <CopyCheck className="h-4 w-4" />{t('copyId')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -102,7 +102,7 @@ export function DocumentActions({
                             disabled={isProcessing}
                             onClick={() => deleteDocument(document.id)}
                         >
-                            {t('delete')}
+                            <Trash2 className="h-4 w-4" />{t('delete')}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

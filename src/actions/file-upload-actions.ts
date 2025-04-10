@@ -2,7 +2,6 @@
 
 import { Readable } from 'stream';
 import { uploadFileStream, ensureBucketExists } from '@/lib/minio';
-import { getFileUrl } from '@/lib/minio-client';
 import { nanoid } from 'nanoid';
 
 /**
@@ -42,17 +41,23 @@ export async function uploadFileToMinio(formData: FormData) {
         // 上传文件
         await uploadFileStream(bucketName, objectName, stream, buffer.length, metaData);
 
-        // 生成文件URL
-        const fileUrl = getFileUrl(bucketName, objectName);
+        // 不再调用客户端函数生成URL
+        // 而是返回URL构建所需的信息，让客户端自己构建
+        const minioEndpoint = process.env.NEXT_PUBLIC_MINIO_ENDPOINT || 'localhost';
+        const minioPort = process.env.NEXT_PUBLIC_MINIO_PORT || '9000';
 
         return {
             success: true,
             filename: file.name,
             size: file.size,
             type: file.type,
-            fileUrl,
+            // 返回构建URL所需的所有信息
             objectName,
             bucketName,
+            minioEndpoint,
+            minioPort,
+            // 同时也返回构建好的URL字符串，但不使用客户端函数
+            fileUrl: `http://${minioEndpoint}:${minioPort}/${bucketName}/${objectName}`,
             timestamp: new Date().toISOString()
         };
     } catch (error) {

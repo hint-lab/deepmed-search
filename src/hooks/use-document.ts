@@ -3,10 +3,11 @@
 import { IReferenceChunk } from '@/types/db/chat';
 import { IDocumentInfo, IDocumentMetaRequestBody } from '@/types/db/document';
 import { IChunk } from '@/types/db/knowledge-base';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { IHighlight } from 'react-pdf-highlighter';
 import { getDocumentListAction, uploadDocumentAction, changeDocumentParserAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction, convertToMarkdownAction, processDocumentToChunksAction } from '@/actions/document';
 import { buildChunkHighlights } from '@/utils/document-util';
+import { addJobToQueue, getAllQueueStatus } from '@/actions/queue-actions';
 /**
  * 用于生成文档高亮显示的 hook
  * @param selectedChunk 选中的文本块
@@ -97,12 +98,144 @@ export const useProcessDocumentChunks = () => {
  * @returns 转换后的文件
  */
 export const useZeroxConvertToMarkdown = () => {
+    const [jobId, setJobId] = useState<string | null>(null);
+    const [jobStatus, setJobStatus] = useState<'waiting' | 'processing' | 'completed' | 'failed' | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // 使用队列进行异步转换
     const convertAnyToMarkdown = useCallback(async (documentId: string) => {
-        const result = await convertToMarkdownAction(documentId);
-        return result;
+        try {
+            setIsLoading(true);
+            setJobStatus('processing');
+
+            // 尝试使用Server Action添加转换任务到文档转换队列
+            try {
+                const result = await addJobToQueue('DOCUMENT_CONVERT_TO_MARKDOWN', {
+                    documentId,
+                    timestamp: Date.now()
+                });
+
+                if (result.success && result.jobId) {
+                    setJobId(result.jobId);
+                    setJobStatus('waiting');
+                    return {
+                        success: true,
+                        jobId: result.jobId,
+                        message: '文档转换任务已加入队列，将在后台处理'
+                    };
+                } else if (result.error && result.error.includes('无效的队列名称')) {
+                    // 队列系统可能未启用，直接调用转换操作
+                    console.log('队列系统未启用，直接执行转换操作');
+
+                    // 直接调用server action
+                    const directResult = await convertToMarkdownAction(documentId);
+
+                    if (directResult.success) {
+                        setJobStatus('completed');
+                        return {
+                            success: true,
+                            message: '文档转换完成'
+                        };
+                    } else {
+                        setJobStatus('failed');
+                        return {
+                            success: false,
+                            error: directResult.error || '文档转换失败'
+                        };
+                    }
+                } else {
+                    setJobStatus('failed');
+                    return {
+                        success: false,
+                        error: result.error || '添加转换任务到队列失败'
+                    };
+                }
+            } catch (error) {
+                // 队列系统可能不可用，直接调用转换操作
+                if (error instanceof Error && error.message.includes('队列')) {
+                    console.log('队列系统异常，直接执行转换操作:', error);
+
+                    // 直接调用server action
+                    const directResult = await convertToMarkdownAction(documentId);
+
+                    if (directResult.success) {
+                        setJobStatus('completed');
+                        return {
+                            success: true,
+                            message: '文档转换完成（直接模式）'
+                        };
+                    } else {
+                        setJobStatus('failed');
+                        return {
+                            success: false,
+                            error: directResult.error || '文档转换失败'
+                        };
+                    }
+                }
+
+                // 其他错误直接抛出
+                throw error;
+            }
+        } catch (error) {
+            setJobStatus('failed');
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : '添加转换任务失败'
+            };
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
 
-    return { convertAnyToMarkdown };
+    // 获取任务状态
+    const checkJobStatus = useCallback(async () => {
+        if (!jobId) return null;
+
+        try {
+            // 使用Server Action获取队列状态
+            const statusResult = await getAllQueueStatus();
+
+            if (statusResult.success && statusResult.queues) {
+                // 查找文档转换队列
+                const convertQueue = statusResult.queues.find(q => q.name === 'document-convert-to-markdown');
+
+                if (convertQueue && 'active' in convertQueue) {
+                    // 只有当队列对象有这些属性时才使用它们
+                    if (convertQueue.active > 0) {
+                        setJobStatus('processing');
+                    } else if (convertQueue.completed > 0) {
+                        setJobStatus('completed');
+                    } else if (convertQueue.failed > 0) {
+                        setJobStatus('failed');
+                    } else {
+                        setJobStatus('waiting');
+                    }
+                }
+
+                return statusResult;
+            }
+            return null;
+        } catch (error) {
+            console.error('检查队列任务状态失败:', error);
+            return null;
+        }
+    }, [jobId]);
+
+    // 在组件挂载后自动检查任务状态
+    useEffect(() => {
+        if (jobId && jobStatus !== 'completed' && jobStatus !== 'failed') {
+            const interval = setInterval(checkJobStatus, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [jobId, jobStatus, checkJobStatus]);
+
+    return {
+        convertAnyToMarkdown,
+        jobId,
+        jobStatus,
+        isLoading,
+        checkJobStatus
+    };
 }
 
 /**

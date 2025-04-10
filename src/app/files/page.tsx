@@ -17,10 +17,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileUploadDialog } from '@/components/file-upload-dialog';
 import { useState } from 'react';
 import { MoreHorizontal, Search, Upload, FolderIcon } from 'lucide-react';
-import { formatBytes, formatDate } from '@/lib/utils';
+import { formatDate } from '@/utils/date';
+import { formatBytes } from '@/utils/bytes';
 
 interface FileItem {
     id: string;

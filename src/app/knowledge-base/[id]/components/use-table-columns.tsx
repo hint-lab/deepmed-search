@@ -1,15 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Switch } from '@/components/ui/switch';
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -27,7 +18,9 @@ import {
   FileType,
   Play,
   Pause,
-  RefreshCw
+  RefreshCw,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslate } from '@/hooks/use-language';
@@ -35,8 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentActions } from './document-actions';
-import { useProcessDocumentChunks } from '@/hooks/use-document';
-import { useZeroxConvertToMarkdown } from '@/hooks/use-document';
+import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
 import { useRouter } from 'next/navigation';
 
 export type UseKnowledgeBaseTableColumnsType = {
@@ -71,7 +63,12 @@ export function useKnowledgeBaseTableColumns({
   setCurrentRecord,
 }: UseKnowledgeBaseTableColumnsType) {
   const { t } = useTranslate('knowledgeBase.table');
-  const { convertAnyToMarkdown } = useZeroxConvertToMarkdown()
+  const {
+    convertAnyToMarkdown,
+    jobId,
+    jobStatus,
+    isLoading
+  } = useZeroxConvertToMarkdown();
   const { startProcessingDocumentToChunks, cancelProcessingDocumentToChunks,
     retryProcessingDocumentToChunks, isProcessingDocumentToChunks } = useProcessDocumentChunks();
 
@@ -93,24 +90,36 @@ export function useKnowledgeBaseTableColumns({
       case 'pending':
         startProcessingDocumentToChunks(document);
         break;
-      case 'completed':
-        if (document.chunk_num === 0) {
-          startProcessingDocumentToChunks(document);
-        }
-        break;
-      case 'failed':
-        retryProcessingDocumentToChunks(document);
-        break;
-      case 'processing':
-        // TODO: 实现取消处理
-        cancelProcessingDocumentToChunks(document);
-        break;
+      // case 'completed':
+      //   if (document.chunk_num === 0) {
+      //     startProcessingDocumentToChunks(document);
+      //   }
+      //   break;
+      // case 'failed':
+      //   retryProcessingDocumentToChunks(document);
+      //   break;
+      // case 'processing':
+      //   // TODO: 实现取消处理
+      //   cancelProcessingDocumentToChunks(document);
+      //   break;
     }
   }
 
   const navigateToChunkParsedResult = useCallback((documentId: string, knowledgeBaseId: string) => {
     router.push(`/knowledge-base/${knowledgeBaseId}/document/${documentId}/chunks`);
   }, [router]);
+
+  // 记录当前正在转换的文档ID
+  const [convertingDocId, setConvertingDocId] = useState<string | null>(null);
+
+  const handleConvertToMarkdown = async (documentId: string) => {
+    setConvertingDocId(documentId);
+    const result = await convertAnyToMarkdown(documentId);
+    if (!result.success) {
+      // 如果失败，清除正在转换的文档ID
+      setConvertingDocId(null);
+    }
+  };
 
   const columns: ColumnDef<IDocumentInfo>[] = [
     {
@@ -216,46 +225,18 @@ export function useKnowledgeBaseTableColumns({
         const document = row.original;
         let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
         let icon = null;
-        if (!document.markdown_converted) {
-          return (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size={"sm"}
-                onClick={() => convertAnyToMarkdown(document.id)}
-                className='hover:curosr text-xs'
-              >
-                {t('convertToMarkdown')}
-              </Button>
-            </div>
-          );
-        }
-        switch (status) {
-          case 'processing':
-            badgeVariant = 'default';
-            icon = <RefreshCw className="h-4 w-4 animate-spin mr-1" />;
-            break;
-          case 'pending':
-            badgeVariant = 'default';
-            icon = <Play className="h-4 w-4 text-green-500 mr-1" />;
-            break;
-          case 'failed':
-            badgeVariant = 'destructive';
-            icon = <Pause className="h-4 w-4 text-red-500 mr-1" />;
-            break;
-          default:
-            badgeVariant = 'secondary';
-            icon = <Pause className="h-4 w-4 mr-1" />;
-        }
+
 
         return (
           <div className="flex items-center gap-2">
-            <Badge variant={badgeVariant}
-              onClick={() => handleProcessBadge(document, status)}
+            <Button
+              variant="outline"
+              size={"sm"}
+              onClick={() => handleConvertToMarkdown(document.id)}
+              className='hover:cursor-pointer text-xs'
             >
-              {icon}
-              {t(`fileProcessingStatus.${status}`) || status}
-            </Badge>
+              {t('convertToMarkdown')}
+            </Button>
           </div>
         );
       },
@@ -307,17 +288,14 @@ export function useKnowledgeBaseTableColumns({
 
         return (
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateToChunkParsedResult(
-                document.id,
-                document.knowledgeBaseId
-              )}
-            >
-              {t('viewDetails')}
-            </Button>
-          </div>
+            <DocumentActions
+              document={document}
+              onShowChangeParserModal={onShowChangeParserModal}
+              onProcessChunks={() => handleProcessBadge(document, 'processing')}
+              setCurrentRecord={setCurrentRecord}
+              showChangeParserModal={showChangeParserModal}
+            />
+          </div >
         );
       },
       meta: {

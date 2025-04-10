@@ -117,7 +117,7 @@ const documentParseTool: Tool = {
         prompt,
         schema,
     }) => {
-        let tempFilePath: string | null = null
+        let tempFilePath: string | null = null;
 
         try {
             // 从 MinIO 获取文件
@@ -126,16 +126,16 @@ const documentParseTool: Tool = {
                 objectName,
                 fileName,
                 model,
-            })
-            tempFilePath = await getFileFromMinio(bucketName, objectName, tempDir)
+            });
+            tempFilePath = await getFileFromMinio(bucketName, objectName, tempDir);
 
-            const { zerox } = await import("zerox")
+            const { zerox } = await import("zerox");
 
             console.log('Tesseract Paths:', {
                 worker: process.env.TESS_WORKER_PATH,
                 core: process.env.TESS_CORE_PATH,
                 dataPrefix: process.env.TESSDATA_PREFIX
-            })
+            });
 
             // console.log('Calling zerox with maxTesseractWorkers: 0 to disable internal OCR');
 
@@ -164,8 +164,9 @@ const documentParseTool: Tool = {
                 prompt,
                 schema,
                 maxTesseractWorkers: -1,
-            }) as ZeroxOutput
+            }) as ZeroxOutput;
 
+            // 返回解析结果，不进行数据库操作
             return {
                 content: result.pages.map(page => page.content || "").join("\n"),
                 metadata: {
@@ -178,15 +179,16 @@ const documentParseTool: Tool = {
                         content: page.content || "",
                         contentLength: page.contentLength || 0,
                     })),
+                    // 不再返回数据库相关信息
                 },
-            }
+            };
         } finally {
             // 清理临时文件
             if (cleanup && tempFilePath) {
                 try {
-                    await unlink(tempFilePath)
+                    await unlink(tempFilePath);
                 } catch (error) {
-                    console.error("清理临时文件失败:", error)
+                    console.error("清理临时文件失败:", error);
                 }
             }
         }

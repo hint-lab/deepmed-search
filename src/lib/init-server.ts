@@ -20,7 +20,7 @@ export async function initializeServer() {
     try {
         console.log('🚀 初始化服务器端服务...');
 
-        // 初始化队列系统
+        // 始终初始化队列系统
         console.log('📋 初始化队列系统...');
         await Promise.resolve(initQueueSystem());
 

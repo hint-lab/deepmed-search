@@ -331,6 +331,16 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
             throw new Error('文档不存在');
         }
 
+        // 首先更新文档状态为处理中
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                processing_status: 'processing',
+                update_date: new Date(),
+                update_time: BigInt(Date.now())
+            }
+        });
+
         // 获取文档处理代理
         const agent = agentManager.getDocumentAgent(documentId);
         console.log("convertToMarkdownAction", document)
@@ -340,38 +350,135 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
             document.name,
             {
                 model: ModelOptions.OPENAI_GPT_4O,
-                outputDir: path.join(process.cwd(), "output"),
                 maintainFormat: true,
                 cleanup: true,
                 concurrency: 10
             }
         );
 
+        const content = parseResponse.content;
+
+        // 为页面内容创建摘要
+        const summary = `文档 ${document.name} 包含 ${parseResponse.metadata.pages.length} 页，共 ${parseResponse.metadata.inputTokens} 个标记`;
+
+        // 准备元数据
+        const metadata = {
+            completionTime: parseResponse.metadata.completionTime,
+            inputTokens: parseResponse.metadata.inputTokens,
+            outputTokens: parseResponse.metadata.outputTokens,
+            pageCount: parseResponse.metadata.pages.length,
+            modelName: ModelOptions.OPENAI_GPT_4O,
+        };
+
+        // 获取知识库ID
+        const knowledgeBaseId = document.knowledgeBaseId;
+
+        if (!knowledgeBaseId) {
+            throw new Error("未找到有效的知识库");
+        }
+
         // 更新文档内容和元数据
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                content: parseResponse.content,
+                content: content,
                 processing_status: 'completed',
                 chunk_num: parseResponse.metadata.pages.length,
-                token_num: parseResponse.metadata.outputTokens,
+                token_num: parseResponse.metadata.inputTokens,
+                progress: 100,
+                progress_msg: "解析完成",
+                run: "completed",
+                process_duation: parseResponse.metadata.completionTime,
+                update_date: new Date(),
+                update_time: BigInt(Date.now()),
+                markdown_content: content,
+                summary: summary,
+                metadata: metadata
+            }
+        });
+
+        // 删除旧的分块（如果有）
+        await prisma.chunk.deleteMany({
+            where: {
+                doc_id: documentId
+            }
+        });
+
+        // 保存每一页作为单独的块
+        for (const page of parseResponse.metadata.pages) {
+            const pageContent = page.content || "";
+
+            if (pageContent.trim().length > 0) {
+                // 为每个块生成唯一ID
+                const chunkId = `${documentId}-page-${page.pageNumber}`;
+
+                await prisma.chunk.create({
+                    data: {
+                        chunk_id: chunkId,
+                        content_with_weight: pageContent,
+                        available_int: 1,
+                        doc_id: documentId,
+                        doc_name: document.name,
+                        positions: { page: page.pageNumber },
+                        important_kwd: [],
+                        question_kwd: [],
+                        tag_kwd: [],
+                        kb_id: knowledgeBaseId
+                    }
+                });
+            }
+        }
+
+        // 更新知识库的chunk_num和doc_num
+        await prisma.knowledgeBase.update({
+            where: {
+                id: knowledgeBaseId
+            },
+            data: {
+                chunk_num: {
+                    increment: parseResponse.metadata.pages.length
+                },
+                token_num: {
+                    increment: parseResponse.metadata.inputTokens
+                },
                 update_date: new Date(),
                 update_time: BigInt(Date.now())
             }
         });
 
-        // 重新验证知识库页面
-        revalidatePath('/knowledge-base/[id]');
+        // 重新验证知识库页面 - 使用更精确的路径以减少不必要的刷新
+        revalidatePath(`/knowledge-base/${knowledgeBaseId}/document/${documentId}`);
+
         return {
             success: true,
             data: {
-                content: parseResponse.content,
-                metadata: parseResponse.metadata
+                content: content,
+                metadata: {
+                    ...parseResponse.metadata,
+                    documentId: documentId,
+                    savedToDatabase: true
+                }
             }
         };
 
     } catch (error) {
         console.error('转换为markdown失败:', error);
+
+        // 更新文档状态为失败
+        try {
+            await prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    processing_status: 'failed',
+                    progress_msg: error instanceof Error ? error.message : '转换失败',
+                    update_date: new Date(),
+                    update_time: BigInt(Date.now())
+                }
+            });
+        } catch (updateError) {
+            console.error('更新文档状态失败:', updateError);
+        }
+
         return {
             success: false,
             error: error instanceof Error ? error.message : '转换失败'
@@ -398,40 +505,124 @@ export async function processDocumentToChunksAction(documentId: string): Promise
             };
         }
 
-        // 解析文档并处理分块
-        console.log(document.location,)
+        // 解析文档，不进行数据库操作
+        console.log(document.location)
         const parseResponse = await agentManager.getDocumentAgent(documentId).parseDocument(
             document.location,
             document.name,
             {
                 model: ModelOptions.OPENAI_GPT_4O_MINI,
-                outputDir: path.join(process.cwd(), "output"),
                 maintainFormat: true,
                 cleanup: true,
                 concurrency: 10
             }
         );
 
-        // 更新文档内容和元数据
+        // 直接在server action中处理数据库操作
+        const content = parseResponse.content;
+        const markdown_content = true ? content : null; // 保持格式
+
+        // 为页面内容创建摘要
+        const summary = `文档 ${document.name} 包含 ${parseResponse.metadata.pages.length} 页，共 ${parseResponse.metadata.inputTokens} 个标记`;
+
+        // 准备元数据
+        const metadata = {
+            completionTime: parseResponse.metadata.completionTime,
+            inputTokens: parseResponse.metadata.inputTokens,
+            outputTokens: parseResponse.metadata.outputTokens,
+            pageCount: parseResponse.metadata.pages.length,
+            modelName: ModelOptions.OPENAI_GPT_4O_MINI,
+        };
+
+        // 获取知识库ID
+        const knowledgeBaseId = document.knowledgeBaseId;
+
+        if (!knowledgeBaseId) {
+            throw new Error("未找到有效的知识库");
+        }
+
+        // 更新文档信息
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                content: parseResponse.content,
-                processing_status: 'completed',
+                content: content,
+                status: "enabled",
                 chunk_num: parseResponse.metadata.pages.length,
-                token_num: parseResponse.metadata.outputTokens,
+                token_num: parseResponse.metadata.inputTokens,
+                progress: 100,
+                progress_msg: "解析完成",
+                run: "completed",
+                process_duation: parseResponse.metadata.completionTime,
+                update_date: new Date(),
+                update_time: BigInt(Date.now()),
+                markdown_content: markdown_content,
+                summary: summary,
+                metadata: metadata,
+                processing_status: "completed"
+            }
+        });
+
+        // 删除旧的分块（如果有）
+        await prisma.chunk.deleteMany({
+            where: {
+                doc_id: documentId
+            }
+        });
+
+        // 保存每一页作为单独的块
+        for (const page of parseResponse.metadata.pages) {
+            const pageContent = page.content || "";
+
+            if (pageContent.trim().length > 0) {
+                // 为每个块生成唯一ID
+                const chunkId = `${documentId}-page-${page.pageNumber}`;
+
+                await prisma.chunk.create({
+                    data: {
+                        chunk_id: chunkId,
+                        content_with_weight: pageContent,
+                        available_int: 1,
+                        doc_id: documentId,
+                        doc_name: document.name,
+                        positions: { page: page.pageNumber },
+                        important_kwd: [],
+                        question_kwd: [],
+                        tag_kwd: [],
+                        kb_id: knowledgeBaseId
+                    }
+                });
+            }
+        }
+
+        // 更新知识库的chunk_num和doc_num
+        await prisma.knowledgeBase.update({
+            where: {
+                id: knowledgeBaseId
+            },
+            data: {
+                chunk_num: {
+                    increment: parseResponse.metadata.pages.length
+                },
+                token_num: {
+                    increment: parseResponse.metadata.inputTokens
+                },
                 update_date: new Date(),
                 update_time: BigInt(Date.now())
             }
         });
 
-        // 重新验证知识库页面
-        revalidatePath('/knowledge-base/[id]');
+        // 重新验证知识库页面 - 使用更精确的路径以减少不必要的刷新
+        revalidatePath(`/knowledge-base/${knowledgeBaseId}/document/${documentId}`);
+
         return {
             success: true,
             data: {
-                content: parseResponse.content,
-                metadata: parseResponse.metadata
+                content: content,
+                metadata: {
+                    ...parseResponse.metadata,
+                    documentId: documentId,
+                    savedToDatabase: true
+                }
             }
         };
 

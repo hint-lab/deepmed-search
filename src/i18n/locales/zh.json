@@ -114,6 +114,7 @@
             "fileName": "文件名",
             "fileUploadDate": "文件上传日期",
             "fileType": "文件类型",
+            "delete": "删除",
             "fileSize": "文件大小",
             "fileUploader": "文件上传者",
             "fileAction": "文件操作",
