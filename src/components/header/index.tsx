@@ -1,14 +1,13 @@
 'use client';
 
-import { SettingsMenu } from "./settings-menu";
-import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { useTranslate } from "@/hooks/use-language";
+import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useTranslate } from "@/hooks/use-language";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useSession, signOut } from "next-auth/react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,10 +16,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usePathname } from "next/navigation";
+import { SettingsMenu } from "./settings-menu";
 
 export default function Header() {
     const { t } = useTranslate('nav');
     const session = useSession();
+    const pathname = usePathname();
 
     const navItems = [
         {
@@ -47,6 +49,32 @@ export default function Header() {
             name: t('fileManagement'),
             href: "/files",
             icon: <FolderOpen className="h-5 w-5" />
+        },
+        {
+            name: "开发工具",
+            icon: <Beaker className="h-5 w-5" />,
+            dropdown: [
+                {
+                    name: "队列测试",
+                    href: "/queue-test",
+                    icon: <ListTodo className="h-4 w-4" />
+                },
+                {
+                    name: "上传测试",
+                    href: "/upload-test",
+                    icon: <Upload className="h-4 w-4" />
+                },
+                {
+                    name: "大模型测试",
+                    href: "/model-test",
+                    icon: <Upload className="h-4 w-4" />
+                },
+                {
+                    name: "MCP测试",
+                    href: "/mcp-test",
+                    icon: <Upload className="h-4 w-4" />
+                }
+            ]
         }
     ];
 
@@ -60,23 +88,58 @@ export default function Header() {
                             <Menu className="h-5 w-5" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-64">
-                        <nav className="flex flex-col space-y-2 mt-6">
-                            {navItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center px-3 py-2 text-sm font-medium rounded-md",
-                                        "hover:bg-accent hover:text-accent-foreground",
-                                        "transition-colors"
-                                    )}
-                                >
-                                    {item.icon}
-                                    <span className="ml-2">{item.name}</span>
-                                </Link>
-                            ))}
-                        </nav>
+                    <SheetContent side="left" className="w-60 sm:w-72">
+                        <div className="mb-4 py-4">
+                            {/* Logo or other content */}
+                        </div>
+                        <div className="flex flex-col space-y-4">
+                            <nav className="flex flex-col space-y-2 mt-6">
+                                {navItems.map((item, index) => (
+                                    item.dropdown ? (
+                                        <DropdownMenu key={`mobile-dropdown-${index}`}>
+                                            <DropdownMenuTrigger asChild>
+                                                <div className={cn(
+                                                    "flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                    pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                                                )}>
+                                                    {item.icon}
+                                                    <span className="ml-2">{item.name}</span>
+                                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                                </div>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {item.dropdown.map((subItem, i) => (
+                                                    <DropdownMenuItem key={`mobile-dropdown-item-${index}-${i}`} asChild>
+                                                        <Link
+                                                            href={subItem.href}
+                                                            className={cn(
+                                                                "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground",
+                                                                pathname === subItem.href ? "bg-accent text-accent-foreground" : ""
+                                                            )}
+                                                        >
+                                                            {subItem.icon}
+                                                            <span className="ml-2">{subItem.name}</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    ) : (
+                                        <Link
+                                            key={`mobile-link-${index}`}
+                                            href={item.href}
+                                            className={cn(
+                                                "flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground",
+                                                pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                                            )}
+                                        >
+                                            {item.icon}
+                                            <span className="ml-2">{item.name}</span>
+                                        </Link>
+                                    )
+                                ))}
+                            </nav>
+                        </div>
                     </SheetContent>
                 </Sheet>
 
@@ -89,19 +152,49 @@ export default function Header() {
 
                 {/* 桌面端导航 */}
                 <nav className="hidden lg:flex items-center ml-6 space-x-4">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center px-3 py-2 text-sm font-medium rounded-md",
-                                "hover:bg-accent hover:text-accent-foreground",
-                                "transition-colors"
-                            )}
-                        >
-                            {item.icon}
-                            <span className="ml-2">{item.name}</span>
-                        </Link>
+                    {navItems.map((item, index) => (
+                        item.dropdown ? (
+                            <DropdownMenu key={`dropdown-${index}`}>
+                                <DropdownMenuTrigger asChild>
+                                    <div className={cn(
+                                        "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                        pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                                    )}>
+                                        {item.icon}
+                                        <span className="ml-3">{item.name}</span>
+                                        <ChevronDown className="ml-2 h-4 w-4" />
+                                    </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {item.dropdown.map((subItem, i) => (
+                                        <DropdownMenuItem key={`dropdown-item-${index}-${i}`} asChild>
+                                            <Link
+                                                href={subItem.href}
+                                                className={cn(
+                                                    "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground",
+                                                    pathname === subItem.href ? "bg-accent text-accent-foreground" : ""
+                                                )}
+                                            >
+                                                {subItem.icon}
+                                                <span className="ml-2">{subItem.name}</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground",
+                                    pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                                )}
+                            >
+                                {item.icon}
+                                <span className="ml-3">{item.name}</span>
+                            </Link>
+                        )
                     ))}
                 </nav>
 

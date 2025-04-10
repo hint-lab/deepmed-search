@@ -8,6 +8,12 @@ import '@/styles/globals.css';
 import { Toaster } from "@/components/ui/sonner"
 import Header from '@/components/header';
 import { UserProvider } from '@/contexts/user-context';
+import { initializeServer } from '@/lib/init-server';
+
+// 初始化服务器端服务
+// 这只会在服务器端执行一次
+initializeServer();
+
 const inter = Inter({
     subsets: ['latin'],
     display: 'swap',

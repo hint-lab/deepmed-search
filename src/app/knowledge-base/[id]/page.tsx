@@ -1,11 +1,8 @@
 'use client';
 
-import { FileUploadDialog } from '@/components/file-upload-dialog';
-import { Upload, Filter } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import { KnowledgeBaseTable, KnowledgeBaseTableRef } from './components/knowledge-base-table';
 import { KnowledgeBaseSettings } from './components/knowledge-base-settings/index';
-import { useUploadDocument } from '@/hooks/use-document';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslate } from '@/hooks/use-language';
@@ -13,6 +10,7 @@ import Sidebar from './components/sidebar';
 import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useParams, useSearchParams } from 'next/navigation';
+import { FileUploader } from '@/components/file-uploader';
 import { toast } from 'sonner';
 // 定义视图类型
 type ViewType = 'files' | 'settings';
@@ -33,18 +31,8 @@ export default function KnowledgeBasePage() {
     // 表格组件的引用，用于刷新数据
     const tableRef = useRef<KnowledgeBaseTableRef>(null);
 
-    // 使用文档上传相关的hook
-    const {
-        documentUploadVisible,    // 上传对话框显示状态
-        hideDocumentUploadModal,  // 隐藏上传对话框
-        showDocumentUploadModal,  // 显示上传对话框
-        onDocumentUploadOk,       // 处理文件上传确认
-        documentUploadLoading,    // 上传加载状态
-    } = useUploadDocument(id);
-
     // 使用多语言翻译hook
     const { t } = useTranslate('knowledgeBase');
-
     /**
      * 处理侧边栏选择事件
      * @param type 选择的视图类型
@@ -53,20 +41,6 @@ export default function KnowledgeBasePage() {
         setCurrentView(type);
     };
 
-    /**
-     * 处理文件上传
-     * @param file 要上传的文件
-     */
-    const handleUploadFile = async (file: File) => {
-        const result = await onDocumentUploadOk(file);
-        if (result?.success) {
-            // 上传成功后刷新表格数据
-            toast.success(t('uploadSuccess'));
-            tableRef.current?.refresh();
-        }
-        // 错误处理和关闭模态框已在 useUploadDocument hook 中完成
-        toast.error(t('uploadError'));
-    };
 
     // 如果没有知识库ID，显示错误提示
     if (!id) {
@@ -112,15 +86,15 @@ export default function KnowledgeBasePage() {
                                         />
                                     </div>
                                     {/* 上传文件按钮 */}
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={showDocumentUploadModal}
+                                    <FileUploader
+                                        kbId={id}
+                                        onSuccess={() => {
+                                            tableRef.current?.refresh();
+                                        }}
+                                        onError={() => { }}
+                                        disabled={false}
                                         className="w-full lg:w-auto"
-                                    >
-                                        <Upload className="mr-2 h-4 w-4" />
-                                        {t('uploadFile')}
-                                    </Button>
+                                    />
                                 </div>
                             )}
                         </CardHeader>
@@ -133,15 +107,6 @@ export default function KnowledgeBasePage() {
                             )}
                         </CardContent>
                     </Card>
-                    {/* 文件上传对话框 */}
-                    {currentView === 'files' && documentUploadVisible && (
-                        <FileUploadDialog
-                            hideModal={hideDocumentUploadModal}
-                            onOk={handleUploadFile}
-                            loading={documentUploadLoading}
-                            kbId={id}
-                        />
-                    )}
                 </div>
             </div>
         </div>

@@ -36,8 +36,8 @@ import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentActions } from './document-actions';
 import { useProcessDocumentChunks } from '@/hooks/use-document';
+import { useZeroxConvertToMarkdown } from '@/hooks/use-document';
 import { useRouter } from 'next/navigation';
-import { Row } from '@tanstack/react-table';
 
 export type UseKnowledgeBaseTableColumnsType = {
   showChangeParserModal: () => void;
@@ -70,9 +70,11 @@ export function useKnowledgeBaseTableColumns({
   showChangeParserModal,
   setCurrentRecord,
 }: UseKnowledgeBaseTableColumnsType) {
-  const { t } = useTranslate('knowledgeBase');
+  const { t } = useTranslate('knowledgeBase.table');
+  const { convertAnyToMarkdown } = useZeroxConvertToMarkdown()
   const { startProcessingDocumentToChunks, cancelProcessingDocumentToChunks,
     retryProcessingDocumentToChunks, isProcessingDocumentToChunks } = useProcessDocumentChunks();
+
   const router = useRouter();
 
   const onShowChangeParserModal = useCallback(
@@ -197,7 +199,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'parser_id',
-      header: t('chunkMethod'),
+      header: t('fileChunkMethod'),
       cell: ({ row }) => {
         const parserId = row.getValue('parser_id') as string;
         return <div>{parserId || '-'}</div>;
@@ -208,13 +210,26 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'processing_status',
-      header: t('processingStatus.title'),
+      header: t('fileProcessingStatus.title'),
       cell: ({ row }) => {
         const status = (row.getValue('processing_status') as string) || 'pending';
         const document = row.original;
         let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
         let icon = null;
-
+        if (!document.markdown_converted) {
+          return (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size={"sm"}
+                onClick={() => convertAnyToMarkdown(document.id)}
+                className='hover:curosr text-xs'
+              >
+                {t('convertToMarkdown')}
+              </Button>
+            </div>
+          );
+        }
         switch (status) {
           case 'processing':
             badgeVariant = 'default';
@@ -239,7 +254,7 @@ export function useKnowledgeBaseTableColumns({
               onClick={() => handleProcessBadge(document, status)}
             >
               {icon}
-              {t(`processingStatus.${status}`) || status}
+              {t(`fileProcessingStatus.${status}`) || status}
             </Badge>
           </div>
         );
@@ -250,7 +265,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'chunk_num',
-      header: t('chunkNum'),
+      header: t('fileChunkNum'),
       cell: ({ row }) => {
         const count = row.getValue('chunk_num') as number;
         return <div className="text-right">{count}</div>;
@@ -261,7 +276,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'token_num',
-      header: t('wordCount'),
+      header: t('fileWordCount'),
       cell: ({ row }) => {
         const count = row.getValue('token_num') as number;
         return <div className="text-right">{count}</div>;
@@ -283,7 +298,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       id: 'actions',
-      header: t('actions'),
+      header: t('fileAction'),
       enableHiding: false,
       cell: ({ row }) => {
         const document = row.original;

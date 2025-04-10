@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useFetchDocumentList } from '@/hooks/use-document';
 import { IDocumentInfo } from '@/types/db/document';
 import { getExtension } from '@/utils/document-util';
@@ -64,7 +65,7 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     const [rowSelection, setRowSelection] = useState({});
 
     const { currentRecord, setRecord } = useSelectedRecord<IDocumentInfo>();
-    const { t } = useTranslate('knowledgeBase');
+    const { t } = useTranslate('knowledgeBase.table');
 
     const {
       changeParserLoading,
@@ -129,7 +130,42 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     });
 
     if (loading) {
-      return <div>Loading...</div>;
+      return (
+        <div className="w-full">
+          <div className="rounded-md border bg-card shadow-sm">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {columns.map((column, index) => (
+                    <TableHead key={index} className="h-12 px-4">
+                      <Skeleton className="h-4 w-[100px]" />
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {columns.map((_, colIndex) => (
+                      <TableCell key={colIndex} className="p-4">
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-between space-x-2 py-4">
+            <Skeleton className="h-4 w-[150px]" />
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-8 w-[80px]" />
+              <Skeleton className="h-4 w-[100px]" />
+              <Skeleton className="h-8 w-[80px]" />
+            </div>
+          </div>
+        </div>
+      );
     }
 
     if (error) {

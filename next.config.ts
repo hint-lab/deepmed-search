@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  serverExternalPackages: ['tesseract.js', 'zerox'],
 };
 
 export default nextConfig;

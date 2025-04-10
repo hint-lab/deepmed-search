@@ -5,7 +5,7 @@ import { ServerActionResponse } from '@/types/actions';
 import { IChangeParserConfigRequestBody, IDocumentMetaRequestBody } from '@/types/db/document';
 import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { agentManager } from '@/lib/agent-manager';
-import { minioClient, uploadFileStream, fileExists } from '@/lib/minio';
+import { uploadFileStream, fileExists } from '@/lib/minio';
 import path from 'path';
 import { Prisma } from '@prisma/client';
 import { Readable } from 'stream';
@@ -101,12 +101,15 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                 // 生成唯一的文件名
                 const timestamp = Date.now();
                 const uniqueFileName = `${timestamp}-${file.name}`;
-                const filePath = `uploads/${kbId}/${uniqueFileName}`;
+                const bucketName = process.env.MINIO_BUCKET_NAME || 'documents';
+                const objectName = `${kbId}/${uniqueFileName}`;
+                const filePath = `${bucketName}/${objectName}`;
+                // 这个名字最好改一下
 
                 // 检查文件是否已存在
                 const exists = await fileExists(
-                    process.env.MINIO_BUCKET_NAME || 'documents',
-                    filePath
+                    bucketName,
+                    objectName
                 );
 
                 if (exists) {
@@ -117,15 +120,18 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                 const buffer = Buffer.from(await file.arrayBuffer());
                 const stream = Readable.from(buffer);
 
+                // 清理文件名，移除无效字符
+                const sanitizedFileName = file.name.replace(/[^\x20-\x7E]/g, '');
+
                 // 上传文件到 MinIO S3
                 await uploadFileStream(
-                    process.env.MINIO_BUCKET_NAME || 'documents',
-                    filePath,
+                    bucketName,
+                    objectName,
                     stream,
                     file.size,
                     {
                         'Content-Type': file.type,
-                        'x-amz-meta-filename': file.name,
+                        'x-amz-meta-filename': sanitizedFileName,
                         'x-amz-meta-kbid': kbId,
                         'x-amz-meta-upload-date': new Date().toISOString()
                     }
@@ -327,10 +333,10 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
 
         // 获取文档处理代理
         const agent = agentManager.getDocumentAgent(documentId);
+        console.log("convertToMarkdownAction", document)
 
-        // 解析文档并转换为Markdown
         const parseResponse = await agent.parseDocument(
-            path.join(process.cwd(), document.location),
+            document.location,
             document.name,
             {
                 model: ModelOptions.OPENAI_GPT_4O,
@@ -393,11 +399,12 @@ export async function processDocumentToChunksAction(documentId: string): Promise
         }
 
         // 解析文档并处理分块
+        console.log(document.location,)
         const parseResponse = await agentManager.getDocumentAgent(documentId).parseDocument(
-            path.join(process.cwd(), document.location),
+            document.location,
             document.name,
             {
-                model: ModelOptions.OPENAI_GPT_4O,
+                model: ModelOptions.OPENAI_GPT_4O_MINI,
                 outputDir: path.join(process.cwd(), "output"),
                 maintainFormat: true,
                 cleanup: true,

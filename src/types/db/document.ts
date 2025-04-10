@@ -30,6 +30,7 @@ export interface IDocumentInfo {
   metadata?: any;
   processing_status: 'pending' | 'processing' | 'completed' | 'failed';
   processing_error?: string;
+  markdown_converted: boolean;
   tags: any[];
   chunks: any[];
 }

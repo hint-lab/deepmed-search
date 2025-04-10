@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // 需要认证的路由
@@ -66,6 +65,6 @@ export const config = {
         '/login',
         '/register',
         // 匹配根路径
-        '/'
+        '/',
     ]
 }; 

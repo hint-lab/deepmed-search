@@ -18,6 +18,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis 服务 - 用于队列或者缓存系统
+  redis:
+    image: redis:alpine
+    container_name: deepmed-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Milvus 向量数据库服务 (使用独立模式)
   milvus:
     image: milvusdb/milvus:v2.3.3
@@ -121,3 +137,4 @@ volumes:
   pgadmin-data:
   etcd-data:
   minio-data:
+  redis-data:
