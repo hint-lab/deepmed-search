@@ -1,6 +1,6 @@
 'use server';
 
-import { queues, QUEUE_NAMES } from '@/lib/bullmq';
+import { queues, QUEUE_NAMES } from '@/lib/queue-init';
 
 /**
  * 检查队列系统状态

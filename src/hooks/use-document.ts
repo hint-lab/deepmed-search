@@ -7,7 +7,8 @@ import { useCallback, useMemo, useState, useEffect } from 'react';
 import { IHighlight } from 'react-pdf-highlighter';
 import { getDocumentListAction, uploadDocumentAction, changeDocumentParserAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction, convertToMarkdownAction, processDocumentToChunksAction } from '@/actions/document';
 import { buildChunkHighlights } from '@/utils/document-util';
-import { addJobToQueue, getAllQueueStatus } from '@/actions/queue-actions';
+import { addTaskAction, getTaskStatusAction } from '@/actions/queue';
+import { TASK_TYPES } from '@/lib/queue-constants';
 /**
  * 用于生成文档高亮显示的 hook
  * @param selectedChunk 选中的文本块
@@ -110,7 +111,7 @@ export const useZeroxConvertToMarkdown = () => {
 
             // 尝试使用Server Action添加转换任务到文档转换队列
             try {
-                const result = await addJobToQueue('DOCUMENT_CONVERT_TO_MARKDOWN', {
+                const result = await addTaskAction(TASK_TYPES.DOCUMENT_CONVERT, {
                     documentId,
                     timestamp: Date.now()
                 });
@@ -193,11 +194,12 @@ export const useZeroxConvertToMarkdown = () => {
 
         try {
             // 使用Server Action获取队列状态
-            const statusResult = await getAllQueueStatus();
+            const statusResult = await getTaskStatusAction(jobId);
 
-            if (statusResult.success && statusResult.queues) {
+            if (statusResult.success) {
+                const result = statusResult as { success: true; result: { queues?: any[] } };
                 // 查找文档转换队列
-                const convertQueue = statusResult.queues.find(q => q.name === 'document-convert-to-markdown');
+                const convertQueue = result.result.queues?.find((queue: any) => queue.name === 'document-convert');
 
                 if (convertQueue && 'active' in convertQueue) {
                     // 只有当队列对象有这些属性时才使用它们

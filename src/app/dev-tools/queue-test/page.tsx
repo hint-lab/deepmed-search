@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addJobToQueue, getAllQueueStatus, testQueueHealth } from '@/actions/queue-actions';
 import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { addTaskAction, getTaskStatusAction } from '@/actions/queue';
+import { TASK_TYPES, TaskType } from '@/lib/queue-constants';
 
 export default function QueueTestPage() {
     const [queueName, setQueueName] = useState('PDF_PROCESSING');
@@ -21,10 +22,13 @@ export default function QueueTestPage() {
     const [healthResult, setHealthResult] = useState<any>(null);
     const [isTestingHealth, setIsTestingHealth] = useState(false);
     const [activeTab, setActiveTab] = useState('add');
+    const [jobId, setJobId] = useState<string | null>(null);
 
     const fetchStatus = async () => {
+        if (!jobId) return;
+
         try {
-            const data = await getAllQueueStatus();
+            const data = await getTaskStatusAction(jobId);
             setStatus(data);
         } catch (error) {
             console.error('获取状态失败:', error);
@@ -32,11 +36,13 @@ export default function QueueTestPage() {
     };
 
     useEffect(() => {
-        fetchStatus();
-        // 每5秒刷新一次状态
-        const interval = setInterval(fetchStatus, 5000);
-        return () => clearInterval(interval);
-    }, []);
+        if (jobId) {
+            fetchStatus();
+            // 每5秒刷新一次状态
+            const interval = setInterval(fetchStatus, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [jobId]);
 
     const handleSubmit = async () => {
         setIsLoading(true);
@@ -44,17 +50,31 @@ export default function QueueTestPage() {
 
         try {
             let data;
+            let taskType: TaskType;
 
-            if (queueName === 'PDF_PROCESSING') {
-                data = { filename };
-            } else if (queueName === 'DOCUMENT_INDEXING') {
-                data = { documentId };
-            } else if (queueName === 'DOCUMENT_CONVERT_TO_MARKDOWN') {
-                data = { documentId };
+            switch (queueName) {
+                case 'PDF_PROCESSING':
+                    taskType = TASK_TYPES.PDF_PROCESS;
+                    data = { filename };
+                    break;
+                case 'DOCUMENT_INDEXING':
+                    taskType = TASK_TYPES.DOCUMENT_INDEX;
+                    data = { documentId };
+                    break;
+                case 'DOCUMENT_CONVERT_TO_MARKDOWN':
+                    taskType = TASK_TYPES.DOCUMENT_CONVERT;
+                    data = { documentId };
+                    break;
+                default:
+                    throw new Error('不支持的队列类型');
             }
 
-            const result = await addJobToQueue(queueName, data);
+            const result = await addTaskAction(taskType, data);
             setResult(result);
+
+            if (result.success && result.jobId) {
+                setJobId(result.jobId);
+            }
 
             // 刷新状态
             fetchStatus();
@@ -71,10 +91,22 @@ export default function QueueTestPage() {
         setHealthResult(null);
 
         try {
-            const result = await testQueueHealth();
-            setHealthResult(result);
+            // 添加一个测试任务来检查系统健康状态
+            const result = await addTaskAction(TASK_TYPES.SYSTEM_TASK, {
+                action: 'health_check',
+                timestamp: Date.now()
+            });
+
+            setHealthResult({
+                success: result.success,
+                jobId: result.jobId,
+                timestamp: new Date().toISOString()
+            });
+
             // 刷新状态
-            fetchStatus();
+            if (result.success && result.jobId) {
+                setJobId(result.jobId);
+            }
         } catch (error) {
             console.error('健康测试失败:', error);
             setHealthResult({

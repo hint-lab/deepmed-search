@@ -34,6 +34,49 @@ services:
       timeout: 5s
       retries: 5
 
+  # 队列服务
+  queue-service:
+    build:
+      context: ./queue-service
+      dockerfile: Dockerfile
+    container_name: deepmed-queue
+    restart: always
+    ports:
+      - "${QUEUE_SERVICE_PORT:-3000}:3000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=0
+      - PORT=3000
+      - NODE_ENV=${NODE_ENV:-production}
+      - QUEUE_PREFIX=deepmed
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # 文档处理服务
+  document-processor-service:
+    build:
+      context: ./document-processor-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      - QUEUE_PREFIX=bullmq
+      - STORAGE_PATH=/app/storage
+      - LOG_LEVEL=info
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+
   # Milvus 向量数据库服务 (使用独立模式)
   milvus:
     image: milvusdb/milvus:v2.3.3
