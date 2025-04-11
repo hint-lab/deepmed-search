@@ -9,7 +9,7 @@
         "dev": "nodemon --exec ts-node src/index.ts",
         "test": "jest",
         "docker:build": "docker build -t document-processor-service .",
-        "docker:run": "docker run -p 3001:3001 document-processor-service",
+        "docker:run": "docker run -p 5001:5001 document-processor-service",
         "docker:compose:up": "docker-compose up",
         "docker:compose:down": "docker-compose down",
         "docker:compose:build": "docker-compose build",

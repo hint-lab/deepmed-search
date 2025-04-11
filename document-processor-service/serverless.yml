@@ -19,9 +19,9 @@ provider:
 
 custom:
   serverless-offline:
-    httpPort: 3000
+    httpPort: 5001
     noPrependStageInUrl: true
-    lambdaPort: 3002
+    lambdaPort: 5002
 
 functions:
   uploadDocument:

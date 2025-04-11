@@ -11,3 +11,10 @@
 .env
 /.env
 /node_modules
+
+**/dist
+**/dist/**
+**/dist/**/**
+**/dist/**/**/**
+**/dist/**/**/**/**
+**/dist/**/**/**/**/**

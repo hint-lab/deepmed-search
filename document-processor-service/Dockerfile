@@ -34,7 +34,7 @@ RUN mkdir -p /app/storage && \
 RUN yarn build
 
 # 暴露端口
-EXPOSE 3001
+EXPOSE 5001
 
 # 启动命令
 CMD ["yarn", "start"] 

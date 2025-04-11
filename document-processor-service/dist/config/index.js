@@ -13,7 +13,7 @@ fs_extra_1.default.ensureDirSync(storagePath);
 // Configuration object
 const config = {
     // Service configuration
-    port: parseInt(process.env.PORT || '3001', 10),
+    port: parseInt(process.env.PORT || '5001', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
     // Redis configuration
     redis: {
