@@ -1,4 +1,4 @@
-/node_modules
+**/node_modules
 /.env.local
 /.umirc.local.ts
 /config/config.local.ts
@@ -10,3 +10,4 @@
 .swc
 .env
 /.env
+/node_modules
