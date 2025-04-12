@@ -31,18 +31,13 @@
         "pleaseInput": "请输入",
         "submit": "提交"
     },
-    "sidebar": {
-        "navigation": "导航",
-        "knowledgeBase": "知识库",
-        "dataset": "数据集",
-        "settings": "设置"
-    },
     "nav": {
         "knowledgeBase": "知识库",
         "chat": "聊天",
         "search": "搜索",
         "agent": "智能体",
-        "fileManagement": "文件管理"
+        "fileManagement": "文件管理",
+        "development-tools": "开发工具"
     },
     "home": {
         "title": "DeepMed Search",
@@ -109,26 +104,27 @@
         "searchKnowledgePlaceholder": "搜索知识库",
         "noData": "暂无数据",
         "noMoreData": "没有更多数据",
-        "files": "文件列表",
+        "documentTable": "文档列表",
         "table": {
-            "fileName": "文件名",
-            "fileUploadDate": "文件上传日期",
-            "fileType": "文件类型",
+            "documentName": "文档名",
+            "documentUploadDate": "上传日期",
+            "documentType": "文档类型",
             "delete": "删除",
-            "fileSize": "文件大小",
-            "fileUploader": "文件上传者",
-            "fileAction": "文件操作",
-            "fileProcessStage": "文件处理阶段",
-            "fileChunkMethod": "分块方法",
-            "fileChunkNum": "分块数",
-            "fileWordCount": "字数",
+            "documentSize": "文档大小",
+            "documentUploader": "上传者",
+            "documentAction": "文件操作",
+            "noResults": "暂无数据",
+            "documentProcessStage": "文件处理阶段",
+            "documentChunkMethod": "分块方法",
+            "documentChunkNum": "分块数",
+            "documentWordCount": "字数",
             "selected": "已选择",
             "total": "总计",
             "page": "页",
             "totalPages": "总页数",
             "currentPage": "当前页",
             "convertToMarkdown": "转换为Markdown",
-            "fileProcessingStatus": {
+            "documentProcessingStatus": {
                 "title": "处理状态",
                 "processing": "处理中",
                 "error": "错误",
@@ -170,8 +166,6 @@
             "customRulesDescription": "输入自定义的文本分块规则（可选）",
             "applySettings": "应用设置"
         },
-        "chunkNum": "分块数",
-        "wordCount": "字数",
         "searchFiles": "搜索文件",
         "noDatasetId": "未找到数据集 ID",
         "uploadDate": "上传日期",

@@ -21,17 +21,17 @@ export default function DocumentChunksPage() {
         <div className="container mx-auto py-6">
             <h1 className="text-2xl font-bold mb-6">{t('chunks')}</h1>
 
-            <Tabs defaultValue="files" value={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue="table" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-4">
-                    <TabsTrigger value="files">{t('files')}</TabsTrigger>
+                    <TabsTrigger value="table">{t('documentTable')}</TabsTrigger>
                     <TabsTrigger value="settings">{t('settings')}</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="files">
+                <TabsContent value="table">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{t('files')}</CardTitle>
-                            <CardDescription>{t('filesDescription')}</CardDescription>
+                            <CardTitle>{t('documentTable')}</CardTitle>
+                            <CardDescription>{t('documentTableDescription')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ChunkList knowledgeBaseId={id as string} />

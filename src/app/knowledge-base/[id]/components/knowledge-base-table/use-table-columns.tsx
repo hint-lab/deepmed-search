@@ -5,7 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { IDocumentInfo } from '@/types/db/document';
+import { IDocumentInfo } from '@/types/db/d';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/date';
 import { getExtension } from '@/utils/document-util';
@@ -27,8 +27,8 @@ import { useTranslate } from '@/hooks/use-language';
 import { Badge } from '@/components/ui/badge';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
-import { DocumentActions } from './document-actions';
-import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
+import { DocumentOptions } from './document-options';
+// import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
 import { useRouter } from 'next/navigation';
 
 export type UseKnowledgeBaseTableColumnsType = {
@@ -63,14 +63,14 @@ export function useKnowledgeBaseTableColumns({
   setCurrentRecord,
 }: UseKnowledgeBaseTableColumnsType) {
   const { t } = useTranslate('knowledgeBase.table');
-  const {
-    convertAnyToMarkdown,
-    jobId,
-    jobStatus,
-    isLoading
-  } = useZeroxConvertToMarkdown();
-  const { startProcessingDocumentToChunks, cancelProcessingDocumentToChunks,
-    retryProcessingDocumentToChunks, isProcessingDocumentToChunks } = useProcessDocumentChunks();
+  // const {
+  //   convertAnyToMarkdown,
+  //   jobId,
+  //   jobStatus,
+  //   isLoading
+  // } = useZeroxConvertToMarkdown();
+  // const { startProcessingDocumentToChunks, cancelProcessingDocumentToChunks,
+  //   retryProcessingDocumentToChunks, isProcessingDocumentToChunks } = useProcessDocumentChunks();
 
   const router = useRouter();
 
@@ -83,12 +83,12 @@ export function useKnowledgeBaseTableColumns({
   );
 
   const handleProcessBadge = (document: IDocumentInfo, status: string) => {
-    console.log('handleProcessBadge', document, status, isProcessingDocumentToChunks);
-    if (isProcessingDocumentToChunks) return;
+    console.log('handleProcessBadge', document, status);
+    // if (isProcessingDocumentToChunks) return;
 
     switch (status) {
       case 'pending':
-        startProcessingDocumentToChunks(document);
+        // startProcessingDocumentToChunks(document);
         break;
       // case 'completed':
       //   if (document.chunk_num === 0) {
@@ -156,7 +156,7 @@ export function useKnowledgeBaseTableColumns({
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          {t('fileName')}
+          {t('documentName')}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -194,7 +194,7 @@ export function useKnowledgeBaseTableColumns({
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          {t('fileUploadDate')}
+          {t('documentUploadDate')}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -208,7 +208,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'parser_id',
-      header: t('fileChunkMethod'),
+      header: t('documentChunkMethod'),
       cell: ({ row }) => {
         const parserId = row.getValue('parser_id') as string;
         return <div>{parserId || '-'}</div>;
@@ -219,7 +219,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'processing_status',
-      header: t('fileProcessingStatus.title'),
+      header: t('documentProcessingStatus.title'),
       cell: ({ row }) => {
         const status = (row.getValue('processing_status') as string) || 'pending';
         const document = row.original;
@@ -246,10 +246,11 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'chunk_num',
-      header: t('fileChunkNum'),
+      header: t('documentChunkNum'),
       cell: ({ row }) => {
-        const count = row.getValue('chunk_num') as number;
-        return <div className="text-right">{count}</div>;
+        console.log(row)
+        const chunk_count = row.getValue('chunk_num') as number;
+        return <div className="text-right">{chunk_count === undefined ? "-" : chunk_count}</div>;
       },
       meta: {
         cellClassName: 'w-48',
@@ -257,10 +258,10 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'token_num',
-      header: t('fileWordCount'),
+      header: t('documentWordCount'),
       cell: ({ row }) => {
         const count = row.getValue('token_num') as number;
-        return <div className="text-right">{count}</div>;
+        return <div className="text-right">{count === undefined ? "-" : count}</div>;
       },
       meta: {
         cellClassName: 'w-48',
@@ -268,9 +269,10 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'size',
-      header: t('fileSize'),
+      header: t('documentSize'),
       cell: ({ row }) => {
         const size = row.getValue('size') as number;
+
         return <div className="text-right">{formatBytes(size)}</div>;
       },
       meta: {
@@ -279,7 +281,7 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       id: 'actions',
-      header: t('fileAction'),
+      header: t('documentAction'),
       enableHiding: false,
       cell: ({ row }) => {
         const document = row.original;
@@ -288,7 +290,7 @@ export function useKnowledgeBaseTableColumns({
 
         return (
           <div className="flex items-center gap-2">
-            <DocumentActions
+            <DocumentOptions
               document={document}
               onShowChangeParserModal={onShowChangeParserModal}
               onProcessChunks={() => handleProcessBadge(document, 'processing')}

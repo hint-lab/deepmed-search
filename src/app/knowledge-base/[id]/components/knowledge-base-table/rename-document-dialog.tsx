@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { IDocumentInfo } from "@/types/db/document";
 import { useTranslate } from "@/hooks/use-language";
-import { useRenameDocument } from "@/hooks/use-document";
+import { useRenameDocument } from "@/hooks/use-document"
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 

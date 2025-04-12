@@ -14,7 +14,8 @@ import { Wrench, Pencil, MoreHorizontal, Trash2, CopyCheck } from 'lucide-react'
 import { RenameDocumentDialog } from './rename-document-dialog';
 import { useState, useCallback } from 'react';
 import { useDeleteDocument } from '@/hooks/use-document';
-interface DocumentActionsProps {
+
+interface DocumentOptionsProps {
     document: IDocumentInfo;
     onShowChangeParserModal: (document: IDocumentInfo) => void;
     onProcessChunks: (document: IDocumentInfo) => void;
@@ -22,13 +23,13 @@ interface DocumentActionsProps {
     showChangeParserModal: () => void;
 }
 
-export function DocumentActions({
+export function DocumentOptions({
     document,
     onShowChangeParserModal,
     onProcessChunks,
     setCurrentRecord,
     showChangeParserModal,
-}: DocumentActionsProps) {
+}: DocumentOptionsProps) {
     const { t } = useTranslate('knowledgeBase');
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const { deleteDocument } = useDeleteDocument();
@@ -37,13 +38,9 @@ export function DocumentActions({
 
     const handleRenameClick = useCallback(() => {
         setRenameDialogOpen(true);
-        // 刷新数据
-        window.location.reload();
     }, []);
 
     const handleRenameSuccess = useCallback(() => {
-        window.location.reload();
-
     }, []);
 
     return (

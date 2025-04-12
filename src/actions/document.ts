@@ -6,7 +6,7 @@ import { IChangeParserConfigRequestBody, IDocumentMetaRequestBody } from '@/type
 import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { agentManager } from '@/lib/agent-manager';
 import { Prisma } from '@prisma/client';
-import { uploadFileAction } from './file-upload';
+import { uploadFileAction, deleteUploadFileAction } from './file-upload';
 
 /**
  * 获取文档列表
@@ -177,10 +177,37 @@ export async function setDocumentMetaAction(documentId: string, meta: IDocumentM
  */
 export async function deleteDocumentAction(documentId: string): Promise<ServerActionResponse<any>> {
     try {
+        // 查找文档记录
+        const document = await prisma.document.findUnique({
+            where: { id: documentId }
+        });
+
+        if (!document) {
+            return {
+                success: false,
+                error: '文档不存在',
+            };
+        }
+
+        // 保存上传文件ID，以便在删除文档后删除文件
+        const uploadFileId = document.uploadFileId;
+
         // 删除文档记录
         await prisma.document.delete({
             where: { id: documentId }
         });
+
+        // 如果文档有关联的上传文件，则删除该文件
+        if (uploadFileId) {
+            try {
+                // 导入删除上传文件的函数
+                const { deleteUploadFileAction } = await import('./file-upload');
+                await deleteUploadFileAction(uploadFileId);
+            } catch (error) {
+                console.error('删除关联的上传文件失败:', error);
+                // 继续执行，即使删除上传文件失败，文档记录已经被删除
+            }
+        }
 
         // 重新验证知识库页面
         revalidatePath('/knowledge-base/[id]');
@@ -225,8 +252,17 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
         const agent = agentManager.getDocumentAgent(documentId);
         console.log("convertToMarkdownAction", document)
 
+        // 获取上传文件信息
+        const uploadFile = document.uploadFileId ? await prisma.uploadFile.findUnique({
+            where: { id: document.uploadFileId }
+        }) : null;
+
+        if (!uploadFile) {
+            throw new Error('未找到上传文件信息');
+        }
+
         const parseResponse = await agent.parseDocument(
-            document.location,
+            uploadFile.location,
             document.name,
             {
                 model: ModelOptions.OPENAI_GPT_4O,
@@ -385,10 +421,22 @@ export async function processDocumentToChunksAction(documentId: string): Promise
             };
         }
 
+        // 获取上传文件信息
+        const uploadFile = document.uploadFileId ? await prisma.uploadFile.findUnique({
+            where: { id: document.uploadFileId }
+        }) : null;
+
+        if (!uploadFile) {
+            return {
+                success: false,
+                error: '未找到上传文件信息',
+            };
+        }
+
         // 解析文档，不进行数据库操作
-        console.log(document.location)
+        console.log(uploadFile.location)
         const parseResponse = await agentManager.getDocumentAgent(documentId).parseDocument(
-            document.location,
+            uploadFile.location,
             document.name,
             {
                 model: ModelOptions.OPENAI_GPT_4O_MINI,
@@ -529,6 +577,19 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
     };
 
     try {
+        // 检查知识库是否存在
+        const knowledgeBase = await prisma.knowledgeBase.findUnique({
+            where: { id: kbId }
+        });
+
+        if (!knowledgeBase) {
+            return {
+                success: false,
+                error: `知识库不存在: ${kbId}`,
+                data: results
+            };
+        }
+
         // 并行处理所有文件上传
         const uploadPromises = files.map(async (file) => {
             try {
@@ -547,7 +608,6 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                         name: file.name,
                         content: '',
                         knowledgeBaseId: kbId,
-                        location: uploadFile.location,
                         size: file.size,
                         type: file.type,
                         source_type: 'file',

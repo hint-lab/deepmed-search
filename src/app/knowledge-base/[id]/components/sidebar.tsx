@@ -7,15 +7,15 @@ import { Button } from '@/components/ui/button'
 
 interface SidebarProps {
     className?: string;
-    onSelect?: (type: 'files' | 'settings') => void;
-    currentView?: 'files' | 'settings';
+    onSelect?: (type: 'table' | 'settings') => void;
+    currentView?: 'table' | 'settings';
     kbId?: string;
 }
 
-export default function Sidebar({ className, onSelect, currentView = 'files', kbId }: SidebarProps) {
+export default function Sidebar({ className, onSelect, currentView = 'table', kbId }: SidebarProps) {
     const { t } = useTranslate('knowledgeBase');
 
-    const handleClick = (type: 'files' | 'settings') => {
+    const handleClick = (type: 'table' | 'settings') => {
         onSelect?.(type);
     };
 
@@ -26,14 +26,14 @@ export default function Sidebar({ className, onSelect, currentView = 'files', kb
                     variant="ghost"
                     className={cn(
                         'flex justify-start items-center px-4 py-2 text-sm font-medium rounded-md cursor-pointer w-full',
-                        currentView === 'files'
+                        currentView === 'table'
                             ? 'bg-primary/10 text-primary'
                             : 'text-muted-foreground hover:bg-muted'
                     )}
-                    onClick={() => handleClick('files')}
+                    onClick={() => handleClick('table')}
                 >
                     <FileText className="mr-3 h-4 w-4" />
-                    {t('files')}
+                    {t('documentTable')}
                 </Button>
                 <Button
                     variant="ghost"

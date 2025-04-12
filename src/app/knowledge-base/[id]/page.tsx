@@ -10,10 +10,10 @@ import Sidebar from './components/sidebar';
 import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useParams, useSearchParams } from 'next/navigation';
-import { FileUploader } from '@/components/file-uploader';
+import { DocumentUploader } from './components/document-uploader';
 import { toast } from 'sonner';
 // 定义视图类型
-type ViewType = 'files' | 'settings';
+type ViewType = 'table' | 'settings';
 
 /**
  * 知识库详情页面组件
@@ -24,7 +24,7 @@ export default function KnowledgeBasePage() {
     const params = useParams();
     const id = params?.id as string;
     const searchParams = useSearchParams();
-    const tab = searchParams.get('tab'); // 'settings' 或 'documents'
+    const tab = searchParams.get('tab'); // 'settings' 或 'table'
 
     // 当前视图状态：文件列表或设置
     const [currentView, setCurrentView] = useState<ViewType>(tab as ViewType);
@@ -60,7 +60,7 @@ export default function KnowledgeBasePage() {
                 <Sidebar
                     className="h-full"
                     onSelect={handleSidebarSelect}
-                    currentView={currentView}
+                    currentView={currentView as "settings" | "table"}
                     kbId={id}
                 />
             </div>
@@ -72,10 +72,10 @@ export default function KnowledgeBasePage() {
                         <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0 pb-2 ">
                             {/* 标题区域 */}
                             <CardTitle className="text-xl lg:text-2xl font-bold">
-                                {currentView === 'settings' ? t('settings.title') : t('files')}
+                                {currentView === 'settings' ? t('settings.title') : t('documentTable')}
                             </CardTitle>
                             {/* 文件视图下的操作按钮区域 */}
-                            {currentView === 'files' && (
+                            {currentView === 'table' && (
                                 <div className="flex flex-col lg:flex-row items-start lg:items-center space-y-2 lg:space-y-0 lg:space-x-2 w-full lg:w-auto">
                                     {/* 搜索输入框 */}
                                     <div className="relative w-full lg:w-[200px]">
@@ -86,7 +86,7 @@ export default function KnowledgeBasePage() {
                                         />
                                     </div>
                                     {/* 上传文件按钮 */}
-                                    <FileUploader
+                                    <DocumentUploader
                                         kbId={id}
                                         onSuccess={() => {
                                             tableRef.current?.refresh();

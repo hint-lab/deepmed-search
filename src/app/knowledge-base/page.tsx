@@ -64,7 +64,7 @@ export default function KnowledgeBaseListPage() {
                         </div>
                         <Button onClick={() => setDialogOpen(true)}>
                             <Plus className="mr-2 h-4 w-4" />
-                            {t("create", "创建知识库")}
+                            {t("create")}
                         </Button>
                     </div>
                 </div>

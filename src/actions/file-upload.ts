@@ -104,3 +104,62 @@ export async function uploadFileAction(
         };
     }
 }
+
+/**
+ * 删除上传文件
+ * 
+ * @param fileId - 要删除的文件ID
+ * @returns 删除结果
+ */
+export async function deleteUploadFileAction(
+    fileId: string
+): Promise<ServerActionResponse<any>> {
+    try {
+        // 查找文件记录
+        const uploadFile = await prisma.uploadFile.findUnique({
+            where: { id: fileId }
+        });
+
+        if (!uploadFile) {
+            return {
+                success: false,
+                error: '文件不存在',
+            };
+        }
+
+        // 从 MinIO 删除文件
+        const minio = await getMinioClient();
+        const bucketName = DEFAULT_BUCKET;
+
+        try {
+            // 从 location 中提取对象名称
+            const locationParts = uploadFile.location.split('/');
+            const objectName = locationParts.slice(1).join('/');
+
+            await minio.removeObject(bucketName, objectName);
+        } catch (err) {
+            console.error('从 MinIO 删除文件失败:', err);
+            // 继续执行，即使 MinIO 删除失败，我们也应该删除数据库记录
+        }
+
+        // 删除数据库记录
+        await prisma.uploadFile.delete({
+            where: { id: fileId }
+        });
+
+        return {
+            success: true,
+            data: {
+                id: fileId,
+                name: uploadFile.name,
+                deleted: true
+            }
+        };
+    } catch (error) {
+        console.error('删除上传文件失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '删除文件失败',
+        };
+    }
+}
