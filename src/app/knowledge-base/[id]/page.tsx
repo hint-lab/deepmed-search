@@ -60,7 +60,7 @@ export default function KnowledgeBasePage() {
                 <Sidebar
                     className="h-full"
                     onSelect={handleSidebarSelect}
-                    currentView={currentView as "settings" | "table"}
+                    currentView={currentView}
                     kbId={id}
                 />
             </div>

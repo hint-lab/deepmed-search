@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Upload, Loader2 } from 'lucide-react';
 import { uploadDocumentAction } from '@/actions/document';
 import { toast } from 'sonner';
+import { FailedFile } from '@/types/db/document';
+import { ServerActionResponse } from '@/types/actions';
 
 interface DocumentUploaderProps {
   kbId?: string;
@@ -13,12 +15,6 @@ interface DocumentUploaderProps {
   buttonText?: string;
   className?: string;
   disabled?: boolean;
-}
-
-// 定义失败文件的接口
-interface FailedFile {
-  name: string;
-  error: string;
 }
 
 export function DocumentUploader({
@@ -59,36 +55,20 @@ export function DocumentUploader({
       const uploadResult = await uploadDocumentAction(kbId, [file]);
       console.log('上传结果:', uploadResult);
 
-      // 调用成功回调
-      if (uploadResult.success && onSuccess) {
-        onSuccess(uploadResult.data);
-
-        // 检查上传结果中的成功计数
-        if (uploadResult.data.success_count > 0) {
-          // 显示成功toast
-          toast.success('文件上传成功', {
-            description: `文件 ${uploadResult.data.name || file.name} 已成功上传到知识库`
-          });
-        } else {
-          // 显示部分成功或失败的toast
-          toast.warning('文件上传部分成功', {
-            description: `成功: ${uploadResult.data.success_count}, 失败: ${uploadResult.data.failed_count}`
-          });
-
-          // 如果有失败的文件，显示详细信息
-          if (uploadResult.data.failed_files && uploadResult.data.failed_files.length > 0) {
-            console.error('上传失败的文件:', uploadResult.data.failed_files);
-            toast.error('部分文件上传失败', {
-              description: uploadResult.data.failed_files.map((f: FailedFile) => `${f.name}: ${f.error}`).join(', ')
-            });
-          }
-        }
-      } else {
-        // 显示错误toast
-        toast.error('上传失败', {
-          description: uploadResult.error || '未知错误'
-        });
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || '上传失败');
       }
+
+      // 调用成功回调
+      if (onSuccess) {
+        onSuccess(uploadResult.data);
+      }
+
+      // 显示成功toast
+      toast.success('文件上传成功', {
+        description: `文件 ${file.name} 已成功上传到知识库`
+      });
+
     } catch (error) {
       console.error('上传失败:', error);
 

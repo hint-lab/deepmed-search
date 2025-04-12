@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Upload, Loader2, X } from 'lucide-react';
-import { uploadFileAction, DocumentType, getFileUrlAction } from '@/actions/file-upload';
-
+import { uploadFileAction, DocumentType } from '@/actions/file-upload';
+import { getFileUrlAction } from '@/actions/minio';
 import { Download } from 'lucide-react';
 
 interface FileUploaderProps {

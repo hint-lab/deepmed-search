@@ -131,6 +131,7 @@
                 "pending": "待处理",
                 "completed": "完成"
             },
+            "documentEnable": "启用",
             "viewDetails": "查看详情"
         },
         "settings": {

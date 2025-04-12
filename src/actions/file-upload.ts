@@ -2,7 +2,7 @@
 import { getMinioClient, ensureBucketExists, DEFAULT_BUCKET, DOCUMENT_TYPES } from '@/lib/minio';
 import { prisma } from '@/lib/prisma';
 import { ServerActionResponse } from '@/types/actions';
-import { FileStatus, ProcessingStatus } from '@prisma/client';
+import { FileUploadStatus } from '@prisma/client';
 
 /**
  * 文档类型
@@ -19,6 +19,8 @@ import { FileStatus, ProcessingStatus } from '@prisma/client';
  * - 可能会被索引和检索
  */
 export type DocumentType = keyof typeof DOCUMENT_TYPES;
+
+
 
 /**
  * 上传单个文件到MinIO的指定存储桶
@@ -75,13 +77,12 @@ export async function uploadFileAction(
                 location: `${bucketName}/${uniqueFileName}`,
                 size: file.size,
                 type: file.type,
-                source_type: documentType === 'KB' ? 'kb' : 'upload',
-                status: FileStatus.UNPROCESSED,
+                status: FileUploadStatus.UPLOADED,
+                upload_progress: 100,
                 create_date: new Date(),
                 create_time: BigInt(timestamp),
                 created_by: 'system',
                 parser_config: {},
-                processing_status: ProcessingStatus.PENDING,
             }
         });
         return {

@@ -5,57 +5,29 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { IDocumentInfo } from '@/types/db/d';
+import { IDocument } from '@/types/db/document';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/date';
 import { getExtension } from '@/utils/document-util';
 import { ColumnDef } from '@tanstack/react-table';
-import {
-  ArrowUpDown,
-  FileText,
-  File,
-  Image as ImageIcon,
-  FileType,
-  Play,
-  Pause,
-  RefreshCw,
-  Check,
-  AlertCircle
-} from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowUpDown } from 'lucide-react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslate } from '@/hooks/use-language';
 import { Badge } from '@/components/ui/badge';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentOptions } from './document-options';
+import { DocumentProcessingStatus } from '@/types/db/enums';
+import { useToggleDocumentEnabled } from '@/hooks/use-document';
+import { FileIcon } from '@/components/file-icon';
 // import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export type UseKnowledgeBaseTableColumnsType = {
   showChangeParserModal: () => void;
-  setCurrentRecord: (record: IDocumentInfo) => void;
-};
-// 根据文件扩展名获取对应的图标
-const getFileIcon = (extension: string) => {
-  switch (extension.toLowerCase()) {
-    case 'pdf':
-      return <FileType className="h-5 w-5 text-red-500" />;
-    case 'png':
-    case 'jpg':
-    case 'jpeg':
-    case 'gif':
-    case 'svg':
-      return <ImageIcon className="h-5 w-5 text-blue-500" />;
-    case 'js':
-    case 'ts':
-    case 'jsx':
-    case 'tsx':
-    case 'html':
-    case 'css':
-      return <File className="h-5 w-5 text-yellow-500" />;
-    default:
-      return <FileText className="h-5 w-5 text-gray-500" />;
-  }
+  setCurrentRecord: (record: IDocument) => void;
 };
 
 export function useKnowledgeBaseTableColumns({
@@ -73,16 +45,22 @@ export function useKnowledgeBaseTableColumns({
   //   retryProcessingDocumentToChunks, isProcessingDocumentToChunks } = useProcessDocumentChunks();
 
   const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { loading: toggleLoading, toggleDocumentEnabled } = useToggleDocumentEnabled();
+
+  const refreshData = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
   const onShowChangeParserModal = useCallback(
-    (record: IDocumentInfo) => () => {
+    (record: IDocument) => () => {
       setCurrentRecord(record);
       showChangeParserModal();
     },
     [setCurrentRecord, showChangeParserModal],
   );
 
-  const handleProcessBadge = (document: IDocumentInfo, status: string) => {
+  const handleProcessBadge = (document: IDocument, status: string) => {
     console.log('handleProcessBadge', document, status);
     // if (isProcessingDocumentToChunks) return;
 
@@ -112,16 +90,40 @@ export function useKnowledgeBaseTableColumns({
   // 记录当前正在转换的文档ID
   const [convertingDocId, setConvertingDocId] = useState<string | null>(null);
 
+  // 注释掉未定义的函数调用
   const handleConvertToMarkdown = async (documentId: string) => {
     setConvertingDocId(documentId);
-    const result = await convertAnyToMarkdown(documentId);
-    if (!result.success) {
-      // 如果失败，清除正在转换的文档ID
-      setConvertingDocId(null);
-    }
+    // 暂时注释掉未定义的函数调用
+    // const result = await convertAnyToMarkdown(documentId);
+    // if (!result.success) {
+    //   // 如果失败，清除正在转换的文档ID
+    //   setConvertingDocId(null);
+    // }
+    // 临时实现
+    console.log('转换文档为Markdown:', documentId);
+    setConvertingDocId(null);
   };
 
-  const columns: ColumnDef<IDocumentInfo>[] = [
+  const handleToggle = useCallback(async (document: IDocument, newEnabled: boolean) => {
+    const success = await toggleDocumentEnabled(
+      document.id,
+      newEnabled,
+      (enabled) => {
+        // 更新本地状态
+        document.enabled = enabled;
+        // 触发表格刷新
+        refreshData();
+      }
+    );
+
+    if (success) {
+      toast.success(newEnabled ? '文档已启用' : '文档已禁用');
+    } else {
+      toast.error('操作失败');
+    }
+  }, [toggleDocumentEnabled, refreshData]);
+
+  const columns: ColumnDef<IDocument>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -176,7 +178,7 @@ export function useKnowledgeBaseTableColumns({
                   row.original.knowledgeBaseId
                 )}
               >
-                {getFileIcon(extension)}
+                <FileIcon extension={extension} />
                 <span className={cn('truncate font-medium')}>{name}</span>
               </div>
             </TooltipTrigger>
@@ -274,6 +276,38 @@ export function useKnowledgeBaseTableColumns({
         const size = row.getValue('size') as number;
 
         return <div className="text-right">{formatBytes(size)}</div>;
+      },
+      meta: {
+        cellClassName: 'w-48',
+      } as ColumnMeta,
+    },
+    {
+      id: 'enable',
+      header: t('documentEnable'),
+      enableHiding: false,
+      cell: ({ row }) => {
+        const document = row.original;
+        const [localEnabled, setLocalEnabled] = useState(document.enabled);
+
+        // 当 document.enabled 变化时更新本地状态
+        useEffect(() => {
+          setLocalEnabled(document.enabled);
+        }, [document.enabled]);
+
+        return (
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`status-${document.id}`}
+              className="scale-75"
+              checked={localEnabled}
+              disabled={toggleLoading || document.processing_status === DocumentProcessingStatus.PROCESSING}
+              onCheckedChange={(checked) => {
+                setLocalEnabled(checked);
+                handleToggle(document, checked);
+              }}
+            />
+          </div>
+        );
       },
       meta: {
         cellClassName: 'w-48',

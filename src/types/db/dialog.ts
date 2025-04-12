@@ -6,6 +6,8 @@ export interface IDialog {
     knowledgeBaseId?: string;
     create_date: Date;
     update_date: Date;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface IMessage {

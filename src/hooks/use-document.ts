@@ -1,8 +1,8 @@
 'use client';
 
-import { IDocumentMetaRequestBody } from '@/types/db/document';
 import { useCallback, useState } from 'react';
 import { getDocumentListAction, changeDocumentParserAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction } from '@/actions/document';
+import { IDocumentMetaRequestBody } from '@/types/db/document';
 
 /**
  * 获取文档列表的 hook
@@ -178,3 +178,41 @@ export const useSetDocumentMeta = () => {
 
     return { setDocumentMeta, loading };
 };
+
+/**
+ * 切换文档启用状态
+ * @param documentId - 文档ID
+ * @param enabled - 是否启用
+ * @param onSuccess - 成功回调函数
+ * @returns 切换结果
+ */
+export function useToggleDocumentEnabled() {
+    const [loading, setLoading] = useState(false);
+    const toggleDocumentEnabled = useCallback(async (documentId: string, enabled: boolean, onSuccess?: (newEnabled: boolean) => void) => {
+        try {
+            setLoading(true);
+            const result = await setDocumentMetaAction(documentId, {
+                documentId,
+                meta: JSON.stringify({ enabled })
+            });
+
+            if (result.success) {
+                if (onSuccess) {
+                    onSuccess(enabled);
+                }
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('切换文档启用状态失败:', error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return {
+        loading,
+        toggleDocumentEnabled
+    };
+}

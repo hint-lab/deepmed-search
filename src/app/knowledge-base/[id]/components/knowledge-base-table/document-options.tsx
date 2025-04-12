@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -8,18 +7,18 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { IDocumentInfo } from '@/types/db/document';
+import { IDocument } from '@/types/db/document';
 import { useTranslate } from '@/hooks/use-language';
 import { Wrench, Pencil, MoreHorizontal, Trash2, CopyCheck } from 'lucide-react';
 import { RenameDocumentDialog } from './rename-document-dialog';
 import { useState, useCallback } from 'react';
 import { useDeleteDocument } from '@/hooks/use-document';
-
+import { DocumentProcessingStatus } from '@/types/db/enums';
 interface DocumentOptionsProps {
-    document: IDocumentInfo;
-    onShowChangeParserModal: (document: IDocumentInfo) => void;
-    onProcessChunks: (document: IDocumentInfo) => void;
-    setCurrentRecord: (record: IDocumentInfo) => void;
+    document: IDocument;
+    onShowChangeParserModal: (document: IDocument) => void;
+    onProcessChunks: (document: IDocument) => void;
+    setCurrentRecord: (record: IDocument) => void;
     showChangeParserModal: () => void;
 }
 
@@ -33,8 +32,8 @@ export function DocumentOptions({
     const { t } = useTranslate('knowledgeBase');
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const { deleteDocument } = useDeleteDocument();
-    const isProcessing = document.processing_status === 'processing';
-    const canProcessChunks = document.processing_status === 'completed' && document.chunk_num === 0;
+    const isProcessing = document.processing_status === DocumentProcessingStatus.PROCESSING;
+    const canProcessChunks = document.processing_status === DocumentProcessingStatus.PROCESSED && document.chunk_num === 0;
 
     const handleRenameClick = useCallback(() => {
         setRenameDialogOpen(true);
@@ -46,12 +45,7 @@ export function DocumentOptions({
     return (
         <>
             <section className="flex gap-2 items-center">
-                <Switch
-                    id={`status-${document.id}`}
-                    className="scale-75"
-                    checked={document.status === 'enabled'}
-                    disabled={isProcessing}
-                />
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button

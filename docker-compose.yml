@@ -56,9 +56,9 @@ services:
         condition: service_healthy
 
   # 文档处理服务
-  document-processor-service:
+  document-parser-service:
     build:
-      context: ./document-processor-service
+      context: ./document-parser-service
       dockerfile: Dockerfile
     ports:
       - "5001:5001"

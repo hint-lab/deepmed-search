@@ -2,11 +2,13 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { ServerActionResponse } from '@/types/actions';
-import { IChangeParserConfigRequestBody, IDocumentMetaRequestBody } from '@/types/db/document';
+import { IChangeParserConfigRequestBody } from '@/types/parser-config';
+import { IDocumentMetaRequestBody } from '@/types/db/document';
 import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { agentManager } from '@/lib/agent-manager';
 import { Prisma } from '@prisma/client';
 import { uploadFileAction, deleteUploadFileAction } from './file-upload';
+import { DocumentProcessingStatus } from '@/types/db/enums';
 
 /**
  * 获取文档列表
@@ -64,7 +66,9 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
                     size: doc.size,
                     page_count: doc.chunk_num || 0,
                     word_count: doc.token_num || 0,
-                    chunk_count: doc.chunk_num || 0
+                    chunk_count: doc.chunk_num || 0,
+                    enabled: doc.enabled,
+                    processing_status: doc.processing_status
                 })),
                 total
             }
@@ -96,7 +100,7 @@ export async function changeDocumentParserAction(
             where: { id: documentId },
             data: {
                 parser_id: parserId,
-                parser_config: parserConfig.parserConfig as Prisma.InputJsonValue
+                parser_config: parserConfig as unknown as Prisma.InputJsonValue
             }
         });
 
@@ -150,10 +154,21 @@ export async function renameDocumentAction(documentId: string, name: string): Pr
  */
 export async function setDocumentMetaAction(documentId: string, meta: IDocumentMetaRequestBody): Promise<ServerActionResponse<any>> {
     try {
+        // 解析元数据字符串
+        const metaData = JSON.parse(meta.meta);
+
+        // 准备更新数据
+        const updateData: any = {};
+
+        // 如果元数据中包含 enabled 字段，则更新 enabled 字段
+        if (metaData.enabled !== undefined) {
+            updateData.enabled = metaData.enabled;
+        }
+
         // 更新文档元数据
         await prisma.document.update({
             where: { id: documentId },
-            data: { parser_config: meta.meta as Prisma.InputJsonValue }
+            data: updateData
         });
 
         // 重新验证知识库页面
@@ -242,7 +257,7 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                processing_status: 'processing',
+                processing_status: DocumentProcessingStatus.PROCESSING,
                 update_date: new Date(),
                 update_time: BigInt(Date.now())
             }
@@ -298,12 +313,11 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
             where: { id: documentId },
             data: {
                 content: content,
-                processing_status: 'completed',
+                processing_status: DocumentProcessingStatus.PROCESSED,
                 chunk_num: parseResponse.metadata.pages.length,
                 token_num: parseResponse.metadata.inputTokens,
                 progress: 100,
                 progress_msg: "解析完成",
-                run: "completed",
                 process_duation: parseResponse.metadata.completionTime,
                 update_date: new Date(),
                 update_time: BigInt(Date.now()),
@@ -385,7 +399,7 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
             await prisma.document.update({
                 where: { id: documentId },
                 data: {
-                    processing_status: 'failed',
+                    processing_status: DocumentProcessingStatus.FAILED,
                     progress_msg: error instanceof Error ? error.message : '转换失败',
                     update_date: new Date(),
                     update_time: BigInt(Date.now())
@@ -474,19 +488,17 @@ export async function processDocumentToChunksAction(documentId: string): Promise
             where: { id: documentId },
             data: {
                 content: content,
-                status: "enabled",
+                processing_status: DocumentProcessingStatus.PROCESSED,
                 chunk_num: parseResponse.metadata.pages.length,
                 token_num: parseResponse.metadata.inputTokens,
                 progress: 100,
                 progress_msg: "解析完成",
-                run: "completed",
                 process_duation: parseResponse.metadata.completionTime,
                 update_date: new Date(),
                 update_time: BigInt(Date.now()),
                 markdown_content: markdown_content,
                 summary: summary,
-                metadata: metadata,
-                processing_status: "completed"
+                metadata: metadata
             }
         });
 
@@ -573,7 +585,8 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
     const results = {
         success_count: 0,
         failed_count: 0,
-        failed_files: [] as Array<{ name: string; error: string }>
+        failed_documents: [] as Array<{ name: string; error: string }>,
+        documents: [] as Array<any>  // 添加文档数组
     };
 
     try {
@@ -611,26 +624,36 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                         size: file.size,
                         type: file.type,
                         source_type: 'file',
-                        status: 'enabled',
+                        processing_status: DocumentProcessingStatus.UNPROCESSED,
                         chunk_num: 0,
                         token_num: 0,
                         progress: 0,
                         progress_msg: '文件上传成功',
-                        run: 'pending',
                         process_begin_at: null,
                         process_duation: 0,
                         create_date: new Date(),
                         create_time: BigInt(Date.now()),
                         update_date: new Date(),
                         update_time: BigInt(Date.now()),
-                        created_by: 'system',
-                        parser_id: '',
-                        parser_config: {},
+                        created_by: knowledgeBase.created_by,
+                        parser_id: knowledgeBase.parser_id || '',
+                        parser_config: knowledgeBase.parser_config || {},
                         uploadFileId: uploadFile.id
                     }
                 });
 
+                // 更新知识库的文档数量
+                await prisma.knowledgeBase.update({
+                    where: { id: kbId },
+                    data: {
+                        doc_num: {
+                            increment: 1
+                        }
+                    }
+                });
+
                 results.success_count++;
+                results.documents.push(document);  // 将文档添加到结果中
                 return document;
             } catch (error) {
                 results.failed_count++;
@@ -645,9 +668,6 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
 
         // 等待所有上传完成
         await Promise.all(uploadPromises);
-
-        // // 重新验证知识库页面
-        // revalidatePath(`/knowledge-base/${kbId}`);
 
         return {
             success: true,

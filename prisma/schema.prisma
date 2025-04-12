@@ -128,6 +128,7 @@ model KnowledgeBase {
   embd_id               String?       // 嵌入模型ID 
   language              String?       // 语言设置
   operator_permission   Int           @default(0)  // 操作权限
+  visible               Boolean       @default(true)  // 知识库可见性
   createdAt             DateTime      @default(now())  // 创建时间
   updatedAt             DateTime      @updatedAt       // 更新时间
   documents             Document[]    // 文档列表
@@ -170,7 +171,7 @@ model Document {
   size            Int       // 文档大小（字节）
   type            String    // 文档类型（如 pdf, docx 等）
   source_type     String    // 来源类型（如 upload, url 等）
-  status          DocumentProcessingStatus @default(UNPROCESSED)  // 文档处理状态
+  processing_status DocumentProcessingStatus @default(UNPROCESSED)  // 处理状态
   thumbnail       String?   // 文档缩略图URL
   chunk_num       Int       @default(0)  // 文档分块数量
   token_num       Int       @default(0)  // 文档token数量
@@ -189,8 +190,8 @@ model Document {
   markdown_content String?  // Markdown格式内容
   summary         String?   // 文档摘要
   metadata        Json?     // 元数据
-  processing_status DocumentProcessingStatus @default(UNPROCESSED)  // 处理状态
   processing_error String?  // 处理错误信息
+  enabled          Boolean   @default(true)  // 是否启用
   knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])  // 知识库关联
   tags            Tag[]     // 标签列表
   chunks          Chunk[]   // 分块列表
@@ -237,8 +238,6 @@ model Tag {
   createdAt      DateTime      @default(now())  // 创建时间
   updatedAt      DateTime      @updatedAt       // 更新时间
 }
-
-
 
 /// 文档分块模型
 /// 存储文档的分块内容

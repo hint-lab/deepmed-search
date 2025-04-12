@@ -14,6 +14,7 @@ import {
 import * as React from 'react';
 import { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 
+
 import { ChunkMethodDialog } from '@/components/chunk-method-dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFetchDocumentList } from '@/hooks/use-document';
-import { IDocumentInfo } from '@/types/db/document';
+import { IDocument } from '@/types/db/document';
 import { getExtension } from '@/utils/document-util';
 import { useMemo } from 'react';
 import { useKnowledgeBaseTableColumns } from './use-table-columns';
@@ -48,6 +49,8 @@ export interface KnowledgeBaseTableRef {
 
 const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableProps>(
   ({ kbId }, ref) => {
+    const [showChangeParserModal, setShowChangeParserModal] = useState(false);
+    const [currentRecord, setCurrentRecord] = useState<IDocument | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const {
       documents,
@@ -64,7 +67,6 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = useState({});
 
-    const { currentRecord, setRecord } = useSelectedRecord<IDocumentInfo>();
     const { t } = useTranslate('knowledgeBase.table');
 
     const {
@@ -72,12 +74,12 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
       onChangeParserOk,
       changeParserVisible,
       hideChangeParserModal,
-      showChangeParserModal,
-    } = useChangeDocumentParser(currentRecord.id);
+      showChangeParserModal: internalShowChangeParserModal,
+    } = useChangeDocumentParser(currentRecord?.id || '');
 
     const columns = useKnowledgeBaseTableColumns({
-      showChangeParserModal,
-      setCurrentRecord: setRecord,
+      showChangeParserModal: () => setShowChangeParserModal(true),
+      setCurrentRecord,
     });
 
     useImperativeHandle(ref, () => ({
@@ -89,9 +91,6 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     useEffect(() => {
       refreshData();
     }, [kbId, refreshKey]);
-
-
-
 
     const table = useReactTable({
       data: documents,
@@ -261,15 +260,15 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
             </Button>
           </div>
         </div>
-        {changeParserVisible && (
+        {showChangeParserModal && currentRecord && (
           <ChunkMethodDialog
             documentId={currentRecord.id}
             parserId={currentRecord.parser_id || ''}
             parserConfig={currentRecord.parser_config}
             documentExtension={getExtension(currentRecord.name)}
             onOk={onChangeParserOk}
-            visible={changeParserVisible}
-            hideModal={hideChangeParserModal}
+            visible={showChangeParserModal}
+            hideModal={() => setShowChangeParserModal(false)}
             loading={changeParserLoading}
           />
         )}

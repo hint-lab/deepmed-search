@@ -1,20 +1,16 @@
 "use client";
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { toast } from 'sonner';
+import { useRouter, useParams } from 'next/navigation';
 import {
     IKnowledgeBase,
-    IKnowledgeGraph,
     ITestingResult,
-    IRenameTag,
     IKnowledgeListItem,
     ICreateKnowledgeParams,
     IUpdateKnowledgeParams,
     ISearchKnowledgeParams,
     ISearchKnowledgeResult
 } from '@/types/db/knowledge-base';
-import { useTranslate } from '@/hooks/use-language';
-import { useDebounce } from '@/hooks/use-debounce';
+import { IRenameTag } from '@/types/db/tag';
 import { usePagination } from '@/hooks/use-pagination';
 import {
     createKnowledgeBaseAction,
@@ -31,7 +27,6 @@ import {
     getKnowledgeBaseListAction
 } from '@/actions/knowledge-base';
 import { z } from 'zod';
-// import { i18n } from 'i18n';
 
 /**
  * 知识库表单验证模式
@@ -103,7 +98,6 @@ export const useKnowledgeBaseInfo = () => {
 export const useSaveKnowledgeBase = () => {
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { t } = useTranslate('knowledgeList');
 
     const showDialog = useCallback(() => {
         setVisible(true);
@@ -116,17 +110,19 @@ export const useSaveKnowledgeBase = () => {
     const onCreateOk = useCallback(async (name: string) => {
         try {
             setLoading(true);
-            await createKnowledgeBaseAction({ name });
-            toast.success(t('createSuccess'));
-            hideDialog();
-            // 重新验证路径以刷新数据
-            window.location.reload();
+            const result = await createKnowledgeBaseAction({ name });
+            if (result.success) {
+                hideDialog();
+                window.location.reload();
+            }
+            return result;
         } catch (error) {
-            toast.error(t('createError'));
+            console.error(error);
+            return { success: false, error: '创建失败' };
         } finally {
             setLoading(false);
         }
-    }, [hideDialog, t]);
+    }, [hideDialog]);
 
     return {
         visible,
@@ -303,7 +299,6 @@ export const useFetchKnowledgeBaseListWithPagination = () => {
  */
 export const useCreateKnowledgeBase = () => {
     const router = useRouter();
-    const { t } = useTranslate('knowledgeList');
     const [loading, setLoading] = useState(false);
 
     const createKnowledgeBase = async (params: ICreateKnowledgeParams) => {
@@ -311,7 +306,6 @@ export const useCreateKnowledgeBase = () => {
         try {
             const result = await createKnowledgeBaseAction(params);
             if (result.success) {
-                toast.success(t('创建成功'));
                 router.push(`/knowledge-base/${result.data.id}?tab=settings`);
                 return result.data;
             }
@@ -330,7 +324,6 @@ export const useCreateKnowledgeBase = () => {
  */
 export const useUpdateKnowledgeBase = () => {
     const kbId = useKnowledgeBaseId();
-    const { t } = useTranslate('knowledgeList');
     const [loading, setLoading] = useState(false);
 
     const updateKnowledgeBase = async (params: IUpdateKnowledgeParams) => {
@@ -339,7 +332,6 @@ export const useUpdateKnowledgeBase = () => {
         try {
             const result = await updateKnowledgeBaseAction(kbId, params.name);
             if (result.success) {
-                toast.success(t('更新成功'));
                 return result.data;
             }
             throw new Error(result.error);
@@ -356,18 +348,13 @@ export const useUpdateKnowledgeBase = () => {
  * @returns 删除知识库的处理函数和加载状态
  */
 export const useDeleteKnowledgeBase = () => {
-    const { t } = useTranslate('knowledgeBase');
     const [loading, setLoading] = useState(false);
 
     const deleteKnowledgeBase = async (id: string) => {
         setLoading(true);
         try {
             const result = await deleteKnowledgeBaseAction(id);
-            if (result.success) {
-                toast.success(t('删除成功'));
-            } else {
-                throw new Error(result.error);
-            }
+            return result;
         } finally {
             setLoading(false);
         }
@@ -376,68 +363,6 @@ export const useDeleteKnowledgeBase = () => {
     return { deleteKnowledgeBase, loading };
 };
 
-//#region Retrieval testing
-/**
- * 测试知识块检索的 Hook
- * @returns 测试结果数据和加载状态
- */
-export const useTestChunkRetrieval = () => {
-    const knowledgeBaseId = useKnowledgeBaseId();
-    const { page, size: pageSize } = usePagination();
-    const [data, setData] = useState<ITestingResult>({ chunks: [], documents: [], total: 0 });
-    const [loading, setLoading] = useState(false);
-
-    const testChunk = async (values: any) => {
-        setLoading(true);
-        try {
-            const result = await getKnowledgeBaseDetailAction(knowledgeBaseId);
-            if (result.success) {
-                const testingResult: ITestingResult = {
-                    chunks: [],
-                    documents: (result.data?.documents || []).map(doc => ({
-                        id: doc.id,
-                        name: doc.name,
-                        content: doc.content || ''
-                    })),
-                    total: result.data?.documents?.length || 0
-                };
-                setData(testingResult);
-                return testingResult;
-            }
-            throw new Error(result.error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return {
-        data,
-        loading,
-        testChunk,
-    };
-};
-
-/**
- * 知识块测试状态的 Hook
- * @returns 是否正在测试的状态
- */
-export const useChunkIsTesting = () => {
-    const [isTesting, setIsTesting] = useState(false);
-    return isTesting;
-};
-
-/**
- * 选择测试结果的 Hook
- * @returns 测试结果数据
- */
-export const useSelectTestingResult = (): ITestingResult => {
-    const [result, setResult] = useState<ITestingResult>({
-        chunks: [],
-        documents: [],
-        total: 0,
-    });
-    return result;
-};
 
 /**
  * 测试是否成功的 Hook
@@ -457,7 +382,6 @@ export const useSelectIsTestingSuccess = () => {
  */
 export const useRenameTag = () => {
     const kbId = useKnowledgeBaseId();
-    const { t } = useTranslate('knowledgeList');
     const [loading, setLoading] = useState(false);
 
     const handleRenameTag = async (params: IRenameTag) => {
@@ -466,7 +390,6 @@ export const useRenameTag = () => {
         try {
             const result = await renameTagAction(kbId, params);
             if (result.success) {
-                toast.success(t('message.modified'));
                 return result.data;
             }
             throw new Error(result.error);
@@ -548,35 +471,6 @@ export const useFetchTagListByKnowledgeIds = () => {
 
 //#endregion
 
-/**
- * 获取知识图谱的 Hook
- * @returns 知识图谱数据和加载状态
- */
-export function useFetchKnowledgeGraph() {
-    const kbId = useKnowledgeBaseId();
-    const [data, setData] = useState<IKnowledgeGraph>({ nodes: [], edges: [], graph: {}, mind_map: {} });
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!kbId) return;
-            try {
-                const result = await getKnowledgeGraphAction(kbId);
-                if (result && 'success' in result && result.success && 'data' in result) {
-                    const graphData = result.data as IKnowledgeGraph;
-                    setData(graphData);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [kbId]);
-
-    return { data, loading };
-}
 
 /**
  * 知识库接口定义
