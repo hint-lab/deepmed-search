@@ -852,6 +852,13 @@
   dependencies:
     "@types/koa" "*"
 
+"@types/marked@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.npmmirror.com/@types/marked/-/marked-6.0.0.tgz#4dbc7df4add578ef87eb6ca2c6927c97b0531abf"
+  integrity sha512-jmjpa4BwUsmhxcfsgUit/7A9KbrC48Q0q8KvnY107ogcjGgTFDlIL3RpihNpx2Mu1hM4mdFQjoVc4O6JoGKHsA==
+  dependencies:
+    marked "*"
+
 "@types/mime@^1":
   version "1.3.5"
   resolved "https://registry.npmmirror.com/@types/mime/-/mime-1.3.5.tgz#1ef302e01cf7d2b5a0fa526790c9123bf1d06690"
@@ -2647,6 +2654,11 @@ mammoth@^1.6.0:
     path-is-absolute "^1.0.0"
     underscore "^1.13.1"
     xmlbuilder "^10.0.0"
+
+marked@*, marked@^15.0.8:
+  version "15.0.8"
+  resolved "https://registry.npmmirror.com/marked/-/marked-15.0.8.tgz#39873a3fdf91a520111e48aeb2ef3746d58d7166"
+  integrity sha512-rli4l2LyZqpQuRve5C0rkn6pj3hT8EWPC+zkAxFTAJLxRbENfTAhEQq9itrmf1Y81QtAX5D/MYlGlIomNgj9lA==
 
 math-intrinsics@^1.1.0:
   version "1.1.0"

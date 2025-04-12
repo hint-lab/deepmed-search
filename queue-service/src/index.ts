@@ -1,6 +1,7 @@
 import Koa from 'koa';
 import Router from 'koa-router';
 import bodyParser from 'koa-bodyparser';
+import cors from '@koa/cors';
 import { config } from 'dotenv';
 import { createQueue, createWorker, processTask } from './queue';
 
@@ -11,6 +12,14 @@ const app = new Koa();
 const router = new Router();
 
 // 中间件
+app.use(cors({
+    origin: '*',  // 允许所有来源
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposeHeaders: ['Content-Length', 'Date', 'X-Request-Id'],
+    maxAge: 5  // 预检请求结果缓存5秒
+}));
+
 app.use(bodyParser());
 
 // 创建队列实例
@@ -63,6 +72,35 @@ router.get('/tasks/:jobId', async (ctx: Koa.Context) => {
         ctx.status = 500;
         ctx.body = {
             success: false,
+            error: error instanceof Error ? error.message : '未知错误'
+        };
+    }
+});
+
+// 健康检查端点
+router.get('/health', async (ctx: Koa.Context) => {
+    try {
+        // 获取队列状态
+        const jobCounts = await taskQueue.getJobCounts('waiting', 'active', 'completed', 'failed');
+
+        // 返回健康状态
+        ctx.body = {
+            status: 'healthy',
+            queues: {
+                'pdf-processing': { status: 'healthy', details: jobCounts },
+                'document-convert': { status: 'healthy', details: jobCounts },
+                'document-index': { status: 'healthy', details: jobCounts },
+                'system-task': { status: 'healthy', details: jobCounts }
+            },
+            redis: {
+                status: 'connected',
+                details: `Redis连接: ${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
+            }
+        };
+    } catch (error) {
+        ctx.status = 500;
+        ctx.body = {
+            status: 'error',
             error: error instanceof Error ? error.message : '未知错误'
         };
     }

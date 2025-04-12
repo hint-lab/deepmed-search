@@ -160,6 +160,49 @@ model Document {
   chunks          Chunk[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  uploadFile      UploadFile? @relation(fields: [uploadFileId], references: [id])
+  uploadFileId    String?    @unique
+}
+
+enum FileStatus {
+  UNPROCESSED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model UploadFile {
+  id              String    @id @default(cuid())
+  name            String    @db.VarChar(255)
+  location        String    @db.VarChar(500)
+  size            Int
+  type            String    @db.VarChar(100)
+  source_type     String    @default("upload") @db.VarChar(50)
+  status          FileStatus @default(UNPROCESSED)
+  thumbnail       String?   @db.VarChar(500)
+  create_date     DateTime
+  create_time     BigInt
+  created_by      String    @db.VarChar(100)
+  parser_id       String?   @db.VarChar(100)
+  parser_config   Json
+  summary         String?   @db.Text
+  metadata        Json?
+  processing_status ProcessingStatus @default(PENDING)
+  processing_error String?  @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  document        Document?
+
+  @@index([status])
+  @@index([processing_status])
+  @@index([createdAt])
 }
 
 model Tag {

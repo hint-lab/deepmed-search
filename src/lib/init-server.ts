@@ -1,7 +1,7 @@
 // 服务器端初始化文件
 // 这个文件用于初始化所有服务器端服务
 
-import { initQueueSystem } from './queue-init';
+import { initQueueSystem } from './queue';
 import { initMinio } from './minio';
 
 // 状态变量，确保只初始化一次
@@ -20,12 +20,10 @@ export async function initializeServer() {
     try {
         console.log('🚀 初始化服务器端服务...');
 
-        // 始终初始化队列系统
-        console.log('📋 初始化队列系统...');
-        await Promise.resolve(initQueueSystem());
+        // 初始化队列系统
+        await initQueueSystem();
 
         // 初始化MinIO
-        console.log('📦 初始化MinIO存储...');
         await initMinio();
 
         // 标记初始化完成

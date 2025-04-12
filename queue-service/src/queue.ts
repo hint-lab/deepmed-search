@@ -57,6 +57,14 @@ async function processJobData(data: any) {
     switch (data.type) {
         case 'example':
             return await handleExampleTask(data);
+        case 'system-task':
+            return await handleSystemTask(data);
+        case 'pdf-process':
+            return await handlePdfProcessTask(data);
+        case 'document-convert':
+            return await handleDocumentConvertTask(data);
+        case 'document-index':
+            return await handleDocumentIndexTask(data);
         default:
             throw new Error(`未知的任务类型: ${data.type}`);
     }
@@ -68,5 +76,46 @@ async function handleExampleTask(data: any) {
     return {
         processed: true,
         data
+    };
+}
+
+// 系统任务处理函数
+async function handleSystemTask(data: any) {
+    // 这里实现系统任务处理逻辑
+    return {
+        processed: true,
+        timestamp: Date.now(),
+        action: data.action || 'unknown',
+        status: 'success'
+    };
+}
+
+// PDF处理任务处理函数
+async function handlePdfProcessTask(data: any) {
+    // 这里实现PDF处理任务逻辑
+    return {
+        processed: true,
+        filename: data.filename || 'unknown',
+        status: 'success'
+    };
+}
+
+// 文档转换任务处理函数
+async function handleDocumentConvertTask(data: any) {
+    // 这里实现文档转换任务逻辑
+    return {
+        processed: true,
+        documentId: data.documentId || 'unknown',
+        status: 'success'
+    };
+}
+
+// 文档索引任务处理函数
+async function handleDocumentIndexTask(data: any) {
+    // 这里实现文档索引任务逻辑
+    return {
+        processed: true,
+        documentId: data.documentId || 'unknown',
+        status: 'success'
     };
 }

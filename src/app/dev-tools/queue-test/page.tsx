@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { addTaskAction, getTaskStatusAction } from '@/actions/queue';
-import { TASK_TYPES, TaskType } from '@/lib/queue-constants';
+import { addTaskAction, getTaskStatusAction, checkQueueHealthAction } from '@/actions/queue';
+import { TASK_TYPES, TaskType } from '@/lib/queue';
 
 export default function QueueTestPage() {
     const [queueName, setQueueName] = useState('PDF_PROCESSING');
@@ -23,6 +23,24 @@ export default function QueueTestPage() {
     const [isTestingHealth, setIsTestingHealth] = useState(false);
     const [activeTab, setActiveTab] = useState('add');
     const [jobId, setJobId] = useState<string | null>(null);
+    const [queueServiceUrl, setQueueServiceUrl] = useState<string>('http://localhost:5000');
+    const [showConfig, setShowConfig] = useState<boolean>(false);
+    const [isTestingConnection, setIsTestingConnection] = useState<boolean>(false);
+    const [connectionTestResult, setConnectionTestResult] = useState<any>(null);
+
+    // 保存队列服务URL到localStorage
+    useEffect(() => {
+        const savedUrl = localStorage.getItem('queueServiceUrl');
+        if (savedUrl) {
+            setQueueServiceUrl(savedUrl);
+        }
+    }, []);
+
+    const saveQueueServiceUrl = () => {
+        localStorage.setItem('queueServiceUrl', queueServiceUrl);
+        // 显示成功消息
+        alert('队列服务URL已更新，新的请求将使用此URL');
+    };
 
     const fetchStatus = async () => {
         if (!jobId) return;
@@ -91,17 +109,44 @@ export default function QueueTestPage() {
         setHealthResult(null);
 
         try {
+            console.log('开始健康测试，队列服务URL:', queueServiceUrl);
+
+            // 使用Server Action检查队列健康状态
+            console.log('正在请求健康状态...');
+            const healthResult = await checkQueueHealthAction();
+            console.log('健康状态结果:', healthResult);
+
+            if (!healthResult.success) {
+                throw new Error(healthResult.error || '获取队列健康状态失败');
+            }
+
             // 添加一个测试任务来检查系统健康状态
+            console.log('正在添加系统任务...');
             const result = await addTaskAction(TASK_TYPES.SYSTEM_TASK, {
                 action: 'health_check',
                 timestamp: Date.now()
             });
+            console.log('系统任务添加结果:', result);
 
-            setHealthResult({
+            // 合并健康状态和任务结果
+            const finalHealthResult = {
                 success: result.success,
                 jobId: result.jobId,
-                timestamp: new Date().toISOString()
-            });
+                timestamp: new Date().toISOString(),
+                duration: Date.now() - new Date(healthResult.timestamp || Date.now()).getTime(),
+                overallStatus: healthResult.status || 'unknown',
+                redis: healthResult.redis || { status: 'unknown' },
+                queues: healthResult.queues || {},
+                performance: healthResult.performance || {
+                    totalJobs: 0,
+                    activeJobs: 0,
+                    completedJobs: 0,
+                    failedJobs: 0
+                }
+            };
+
+            console.log('设置健康测试结果:', finalHealthResult);
+            setHealthResult(finalHealthResult);
 
             // 刷新状态
             if (result.success && result.jobId) {
@@ -112,7 +157,8 @@ export default function QueueTestPage() {
             setHealthResult({
                 success: false,
                 error: '健康测试失败',
-                details: (error as Error).message
+                details: error instanceof Error ? error.message : '未知错误',
+                timestamp: new Date().toISOString()
             });
         } finally {
             setIsTestingHealth(false);
@@ -153,9 +199,107 @@ export default function QueueTestPage() {
         }
     };
 
+    // 测试队列服务连接
+    const testQueueConnection = async () => {
+        setIsTestingConnection(true);
+        setConnectionTestResult(null);
+
+        try {
+            // 使用 API 路由而不是直接访问队列服务
+            const response = await fetch('/api/queue-health');
+
+            if (!response.ok) {
+                throw new Error(`连接失败: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setConnectionTestResult({
+                success: true,
+                data,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error('连接测试失败:', error);
+            setConnectionTestResult({
+                success: false,
+                error: error instanceof Error ? error.message : '未知错误',
+                timestamp: new Date().toISOString()
+            });
+        } finally {
+            setIsTestingConnection(false);
+        }
+    };
+
     return (
         <div className="pt-24 mx-auto container max-w-3xl py-10">
             <h1 className="text-2xl font-bold mb-6">队列系统测试 (Server Actions)</h1>
+
+            {/* 队列服务配置 */}
+            <Card className="mb-6">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle>队列服务配置</CardTitle>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowConfig(!showConfig)}
+                        >
+                            {showConfig ? '隐藏配置' : '显示配置'}
+                        </Button>
+                    </div>
+                    <CardDescription>配置队列服务的连接信息</CardDescription>
+                </CardHeader>
+                {showConfig && (
+                    <CardContent>
+                        <div className="grid gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="queueServiceUrl">队列服务URL</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="queueServiceUrl"
+                                        value={queueServiceUrl}
+                                        onChange={(e) => setQueueServiceUrl(e.target.value)}
+                                        placeholder="http://localhost:5000"
+                                    />
+                                    <Button onClick={saveQueueServiceUrl}>保存</Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={testQueueConnection}
+                                        disabled={isTestingConnection}
+                                    >
+                                        {isTestingConnection ? '测试中...' : '测试连接'}
+                                    </Button>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    当前队列服务: {queueServiceUrl}
+                                </p>
+
+                                {/* 连接测试结果 */}
+                                {connectionTestResult && (
+                                    <div className={`mt-2 p-3 rounded-md ${connectionTestResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                                        <div className="font-medium">
+                                            {connectionTestResult.success ? '连接成功' : '连接失败'}
+                                        </div>
+                                        {connectionTestResult.success ? (
+                                            <div className="text-sm mt-1">
+                                                <div>状态: {connectionTestResult.data.status || '正常'}</div>
+                                                <div>版本: {connectionTestResult.data.version || '未知'}</div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm mt-1">
+                                                错误: {connectionTestResult.error}
+                                            </div>
+                                        )}
+                                        <div className="text-xs mt-1 opacity-70">
+                                            测试时间: {new Date(connectionTestResult.timestamp).toLocaleString()}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
                 <TabsList className="grid w-full grid-cols-2">
@@ -208,6 +352,18 @@ export default function QueueTestPage() {
                                         />
                                     </div>
                                 )}
+
+                                {queueName === 'DOCUMENT_CONVERT_TO_MARKDOWN' && (
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="documentId">文档ID</Label>
+                                        <Input
+                                            id="documentId"
+                                            placeholder="doc-123"
+                                            value={documentId}
+                                            onChange={(e) => setDocumentId(e.target.value)}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                         <CardFooter>
@@ -234,8 +390,8 @@ export default function QueueTestPage() {
                 <TabsContent value="health" className="mt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>队列健康测试</CardTitle>
-                            <CardDescription>测试Redis连接和Bullmq队列系统健康状态</CardDescription>
+                            <CardTitle>健康测试</CardTitle>
+                            <CardDescription>测试队列服务的健康状态</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <p className="mb-4 text-sm text-muted-foreground">
@@ -286,7 +442,7 @@ export default function QueueTestPage() {
                                                         {healthResult.redis.details}
                                                     </div>
                                                 )}
-                                                {healthResult.redis.error && (
+                                                {healthResult.redis.error && healthResult.redis.status !== 'connected' && (
                                                     <div className="text-sm text-red-500">
                                                         错误: {healthResult.redis.error}
                                                     </div>
@@ -337,11 +493,41 @@ export default function QueueTestPage() {
                                     </div>
                                 )}
 
+                                {/* 性能统计 */}
+                                {healthResult.performance && (
+                                    <div className="mt-4">
+                                        <h3 className="text-sm font-medium mb-2">性能统计</h3>
+                                        <div className="bg-muted rounded-md p-3">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-muted-foreground">总任务数</span>
+                                                    <span className="text-xl font-bold">{healthResult.performance.totalJobs || 0}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-muted-foreground">活动任务</span>
+                                                    <span className="text-xl font-bold">{healthResult.performance.activeJobs || 0}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-muted-foreground">完成任务</span>
+                                                    <span className="text-xl font-bold">{healthResult.performance.completedJobs || 0}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-muted-foreground">失败任务</span>
+                                                    <span className="text-xl font-bold">{healthResult.performance.failedJobs || 0}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* 错误信息 */}
                                 {healthResult.error && (
                                     <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-md">
                                         <h3 className="font-medium mb-1">测试失败</h3>
                                         <p className="text-sm">{healthResult.error}</p>
+                                        {healthResult.details && (
+                                            <p className="text-sm mt-2">{healthResult.details}</p>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>
@@ -367,29 +553,35 @@ export default function QueueTestPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4">
-                            {status.queues && status.queues.map((queue: any) => (
-                                <div key={queue.name} className="border rounded-md p-4">
-                                    <h3 className="font-medium mb-2">{queue.name}</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-muted-foreground">等待中</span>
-                                            <span className="text-2xl font-bold">{queue.waiting || 0}</span>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-muted-foreground">处理中</span>
-                                            <span className="text-2xl font-bold">{queue.active || 0}</span>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-muted-foreground">已完成</span>
-                                            <span className="text-2xl font-bold">{queue.completed || 0}</span>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-muted-foreground">失败</span>
-                                            <span className="text-2xl font-bold">{queue.failed || 0}</span>
+                            {status.queues && typeof status.queues === 'object' && Object.keys(status.queues).length > 0 ? (
+                                Object.entries(status.queues).map(([queueName, queueInfo]: [string, any]) => (
+                                    <div key={queueName} className="border rounded-md p-4">
+                                        <h3 className="font-medium mb-2">{queueName}</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-muted-foreground">等待中</span>
+                                                <span className="text-2xl font-bold">{queueInfo.details?.jobCounts?.waiting || 0}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-muted-foreground">处理中</span>
+                                                <span className="text-2xl font-bold">{queueInfo.details?.jobCounts?.active || 0}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-muted-foreground">已完成</span>
+                                                <span className="text-2xl font-bold">{queueInfo.details?.jobCounts?.completed || 0}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-muted-foreground">失败</span>
+                                                <span className="text-2xl font-bold">{queueInfo.details?.jobCounts?.failed || 0}</span>
+                                            </div>
                                         </div>
                                     </div>
+                                ))
+                            ) : (
+                                <div className="text-center p-4 text-muted-foreground">
+                                    暂无队列数据，请先运行健康测试
                                 </div>
-                            ))}
+                            )}
                         </div>
                         <div className="mt-4 text-sm text-muted-foreground">
                             更新时间: {new Date(status.timestamp || Date.now()).toLocaleString()}

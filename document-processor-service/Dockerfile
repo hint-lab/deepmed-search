@@ -15,7 +15,11 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --no-cache \
     make \
     g++ \
-    redis
+    redis \
+    libreoffice \
+    pandoc \
+    poppler-utils \
+    ghostscript
 
 # 复制 package.json 和 yarn.lock
 COPY package.json yarn.lock ./

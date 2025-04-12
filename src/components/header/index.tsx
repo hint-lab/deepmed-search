@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useTranslate } from "@/hooks/use-language";
-import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash } from "lucide-react";
+import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash, File } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,6 +73,11 @@ export default function Header() {
                     name: "MCP测试",
                     href: "/dev-tools/mcp-test",
                     icon: <ServerCrash className="h-4 w-4" />
+                },
+                {
+                    name: "文件处理测试",
+                    href: "/dev-tools/document-test",
+                    icon: <File className="h-4 w-4" />
                 }
             ]
         },

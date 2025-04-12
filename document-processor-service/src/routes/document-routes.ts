@@ -16,4 +16,7 @@ router.get('/:documentId/content', documentController.getDocumentContent);
 // 获取文档分块
 router.get('/:documentId/chunks', documentController.getDocumentChunks);
 
+// 转换文档格式
+router.get('/:documentId/convert', documentController.convertDocument);
+
 export default router; 

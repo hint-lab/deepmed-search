@@ -5,9 +5,16 @@ import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import config from '../config';
 import logger from '../utils/logger';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 // Document types
-export type DocumentType = 'pdf' | 'docx' | 'doc' | 'txt' | 'md';
+export type DocumentType = 'pdf' | 'docx' | 'doc' | 'txt' | 'md' | 'html' | 'epub';
+
+// Output format types
+export type OutputFormat = 'pdf' | 'docx' | 'txt' | 'md' | 'html' | 'epub';
 
 // PDF parse result type
 interface PdfParseResult {
@@ -28,6 +35,8 @@ export interface ProcessResult {
         pageCount?: number;
         wordCount?: number;
         processingTime?: number;
+        originalFormat?: DocumentType;
+        outputFormat?: OutputFormat;
     };
 }
 
@@ -63,6 +72,10 @@ export function getFileType(filePath: string): DocumentType {
             return 'txt';
         case '.md':
             return 'md';
+        case '.html':
+            return 'html';
+        case '.epub':
+            return 'epub';
         default:
             throw new Error(`Unsupported file type: ${ext}`);
     }
@@ -329,4 +342,188 @@ export async function findDocumentChunks(documentId: string): Promise<DocumentCh
     }
 
     return chunks.sort((a, b) => a.index - b.index);
+}
+
+/**
+ * Convert document to different format
+ */
+export async function convertDocument(filePath: string, outputFormat: OutputFormat): Promise<ProcessResult> {
+    const startTime = Date.now();
+    const documentId = uuidv4();
+    const fileType = getFileType(filePath);
+    const outputDir = path.join(config.storage.path, 'converted');
+
+    // Ensure output directory exists
+    await fs.ensureDir(outputDir);
+
+    const outputFileName = `${documentId}.${outputFormat}`;
+    const outputPath = path.join(outputDir, outputFileName);
+
+    try {
+        // Check if conversion is supported
+        if (!isConversionSupported(fileType, outputFormat)) {
+            throw new Error(`Conversion from ${fileType} to ${outputFormat} is not supported`);
+        }
+
+        // Perform conversion based on file type and output format
+        if (fileType === 'pdf') {
+            if (outputFormat === 'txt') {
+                // PDF to TXT
+                const dataBuffer = await fs.readFile(filePath);
+                const data = await pdfParse(dataBuffer);
+                await fs.writeFile(outputPath, data.text);
+            } else if (outputFormat === 'html') {
+                // PDF to HTML using pdf2htmlEX if available
+                try {
+                    await execAsync(`pdf2htmlEX ${filePath} ${outputPath}`);
+                } catch (error) {
+                    logger.warn('pdf2htmlEX not available, falling back to basic conversion', { error });
+                    // Fallback to basic conversion
+                    const dataBuffer = await fs.readFile(filePath);
+                    const data = await pdfParse(dataBuffer);
+                    const htmlContent = `<html><body><pre>${data.text}</pre></body></html>`;
+                    await fs.writeFile(outputPath, htmlContent);
+                }
+            } else {
+                throw new Error(`Conversion from PDF to ${outputFormat} is not supported`);
+            }
+        } else if (fileType === 'docx' || fileType === 'doc') {
+            if (outputFormat === 'pdf') {
+                // DOCX/DOC to PDF using LibreOffice if available
+                try {
+                    await execAsync(`soffice --headless --convert-to pdf --outdir ${outputDir} ${filePath}`);
+                    // LibreOffice creates a file with the same name but .pdf extension
+                    const convertedFileName = `${path.basename(filePath, path.extname(filePath))}.pdf`;
+                    const convertedPath = path.join(outputDir, convertedFileName);
+                    await fs.rename(convertedPath, outputPath);
+                } catch (error) {
+                    logger.warn('LibreOffice not available, conversion failed', { error });
+                    throw new Error('LibreOffice is required for DOCX/DOC to PDF conversion');
+                }
+            } else if (outputFormat === 'txt') {
+                // DOCX/DOC to TXT
+                const result = await mammoth.extractRawText({ path: filePath });
+                await fs.writeFile(outputPath, result.value);
+            } else if (outputFormat === 'html') {
+                // DOCX/DOC to HTML
+                const result = await mammoth.convertToHtml({ path: filePath });
+                await fs.writeFile(outputPath, result.value);
+            } else {
+                throw new Error(`Conversion from ${fileType} to ${outputFormat} is not supported`);
+            }
+        } else if (fileType === 'txt') {
+            if (outputFormat === 'pdf') {
+                // TXT to PDF using LibreOffice if available
+                try {
+                    await execAsync(`soffice --headless --convert-to pdf --outdir ${outputDir} ${filePath}`);
+                    // LibreOffice creates a file with the same name but .pdf extension
+                    const convertedFileName = `${path.basename(filePath, path.extname(filePath))}.pdf`;
+                    const convertedPath = path.join(outputDir, convertedFileName);
+                    await fs.rename(convertedPath, outputPath);
+                } catch (error) {
+                    logger.warn('LibreOffice not available, conversion failed', { error });
+                    throw new Error('LibreOffice is required for TXT to PDF conversion');
+                }
+            } else if (outputFormat === 'html') {
+                // TXT to HTML
+                const content = await fs.readFile(filePath, 'utf8');
+                const htmlContent = `<html><body><pre>${content}</pre></body></html>`;
+                await fs.writeFile(outputPath, htmlContent);
+            } else if (outputFormat === 'md') {
+                // TXT to MD (simple conversion)
+                const content = await fs.readFile(filePath, 'utf8');
+                await fs.writeFile(outputPath, content);
+            } else {
+                throw new Error(`Conversion from TXT to ${outputFormat} is not supported`);
+            }
+        } else if (fileType === 'md') {
+            if (outputFormat === 'html') {
+                // MD to HTML using marked if available
+                try {
+                    const { marked } = await import('marked');
+                    const content = await fs.readFile(filePath, 'utf8');
+                    const htmlContent = await marked(content);
+                    await fs.writeFile(outputPath, htmlContent);
+                } catch (error) {
+                    logger.warn('marked not available, falling back to basic conversion', { error });
+                    // Fallback to basic conversion
+                    const content = await fs.readFile(filePath, 'utf8');
+                    const htmlContent = `<html><body><pre>${content}</pre></body></html>`;
+                    await fs.writeFile(outputPath, htmlContent);
+                }
+            } else if (outputFormat === 'pdf') {
+                // MD to PDF using pandoc if available
+                try {
+                    await execAsync(`pandoc ${filePath} -o ${outputPath}`);
+                } catch (error) {
+                    logger.warn('pandoc not available, conversion failed', { error });
+                    throw new Error('pandoc is required for MD to PDF conversion');
+                }
+            } else {
+                throw new Error(`Conversion from MD to ${outputFormat} is not supported`);
+            }
+        } else {
+            throw new Error(`Conversion from ${fileType} to ${outputFormat} is not supported`);
+        }
+
+        const processingTime = Date.now() - startTime;
+
+        return {
+            success: true,
+            documentId,
+            content: `Document converted to ${outputFormat}`,
+            metadata: {
+                processingTime,
+                originalFormat: fileType,
+                outputFormat
+            }
+        };
+    } catch (error) {
+        logger.error('Document conversion failed', { error, filePath, outputFormat });
+
+        return {
+            success: false,
+            documentId,
+            error: error instanceof Error ? error.message : 'Document conversion failed',
+            metadata: {
+                processingTime: Date.now() - startTime,
+                originalFormat: fileType,
+                outputFormat
+            }
+        };
+    }
+}
+
+/**
+ * Check if conversion is supported
+ */
+export function isConversionSupported(sourceFormat: DocumentType, targetFormat: OutputFormat): boolean {
+    // Define supported conversions
+    const supportedConversions: Record<DocumentType, OutputFormat[]> = {
+        'pdf': ['txt', 'html'],
+        'docx': ['pdf', 'txt', 'html'],
+        'doc': ['pdf', 'txt', 'html'],
+        'txt': ['pdf', 'html', 'md'],
+        'md': ['html', 'pdf'],
+        'html': [],
+        'epub': []
+    };
+
+    return supportedConversions[sourceFormat]?.includes(targetFormat) || false;
+}
+
+/**
+ * Get converted document path
+ */
+export async function getConvertedDocumentPath(documentId: string, format: OutputFormat): Promise<string | null> {
+    const outputDir = path.join(config.storage.path, 'converted');
+    const outputPath = path.join(outputDir, `${documentId}.${format}`);
+
+    try {
+        const exists = await fs.pathExists(outputPath);
+        return exists ? outputPath : null;
+    } catch (error) {
+        logger.error('Error checking converted document path', { error, documentId, format });
+        return null;
+    }
 } 

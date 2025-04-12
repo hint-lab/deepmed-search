@@ -5,11 +5,8 @@ import { ServerActionResponse } from '@/types/actions';
 import { IChangeParserConfigRequestBody, IDocumentMetaRequestBody } from '@/types/db/document';
 import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { agentManager } from '@/lib/agent-manager';
-import { uploadFileStream, fileExists } from '@/lib/minio';
-import path from 'path';
 import { Prisma } from '@prisma/client';
-import { Readable } from 'stream';
-
+import { uploadFileAction } from './file-upload';
 
 /**
  * 获取文档列表
@@ -77,123 +74,6 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
         return {
             success: false,
             error: error instanceof Error ? error.message : '获取文档列表失败'
-        };
-    }
-}
-
-/**
- * 上传文档到知识库
- * @param kbId - 知识库ID
- * @param files - 要上传的文件数组
- * @returns 上传结果，包含成功和失败的数量
- */
-export async function uploadDocumentAction(kbId: string, files: File[]): Promise<ServerActionResponse<any>> {
-    const results = {
-        success_count: 0,
-        failed_count: 0,
-        failed_files: [] as Array<{ name: string; error: string }>
-    };
-
-    try {
-        // 并行处理所有文件上传
-        const uploadPromises = files.map(async (file) => {
-            try {
-                // 生成唯一的文件名
-                const timestamp = Date.now();
-                const uniqueFileName = `${timestamp}-${file.name}`;
-                const bucketName = process.env.MINIO_BUCKET_NAME || 'documents';
-                const objectName = `${kbId}/${uniqueFileName}`;
-                const filePath = `${bucketName}/${objectName}`;
-                // 这个名字最好改一下
-
-                // 检查文件是否已存在
-                const exists = await fileExists(
-                    bucketName,
-                    objectName
-                );
-
-                if (exists) {
-                    throw new Error('文件已存在');
-                }
-
-                // 将文件内容转换为 Buffer
-                const buffer = Buffer.from(await file.arrayBuffer());
-                const stream = Readable.from(buffer);
-
-                // 清理文件名，移除无效字符
-                const sanitizedFileName = file.name.replace(/[^\x20-\x7E]/g, '');
-
-                // 上传文件到 MinIO S3
-                await uploadFileStream(
-                    bucketName,
-                    objectName,
-                    stream,
-                    file.size,
-                    {
-                        'Content-Type': file.type,
-                        'x-amz-meta-filename': sanitizedFileName,
-                        'x-amz-meta-kbid': kbId,
-                        'x-amz-meta-upload-date': new Date().toISOString()
-                    }
-                );
-
-                // 创建文档记录
-                const fileData = await prisma.document.create({
-                    data: {
-                        name: file.name,
-                        content: '',
-                        knowledgeBaseId: kbId,
-                        location: filePath,
-                        size: file.size,
-                        type: file.type,
-                        source_type: 'file',
-                        status: 'enabled',
-                        chunk_num: 0,
-                        token_num: 0,
-                        progress: 0,
-                        progress_msg: '文件上传成功',
-                        run: 'pending',
-                        process_begin_at: null,
-                        process_duation: 0,
-                        create_date: new Date(),
-                        create_time: BigInt(Date.now()),
-                        update_date: new Date(),
-                        update_time: BigInt(Date.now()),
-                        created_by: 'system',
-                        parser_id: '',
-                        parser_config: {}
-                    }
-                });
-
-                results.success_count++;
-                return fileData;
-            } catch (error) {
-                results.failed_count++;
-                results.failed_files.push({
-                    name: file.name,
-                    error: error instanceof Error ? error.message : '上传失败'
-                });
-                console.error(`文件 ${file.name} 上传失败:`, error);
-                return null;
-            }
-        });
-
-        // 等待所有上传完成
-        await Promise.all(uploadPromises);
-
-        // 重新验证知识库页面
-        revalidatePath(`/knowledge-base/${kbId}`);
-
-        return {
-            success: true,
-            data: results
-        };
-    } catch (error) {
-        console.error('上传文档失败:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : '上传失败',
-            data: results
         };
     }
 }
@@ -631,6 +511,94 @@ export async function processDocumentToChunksAction(documentId: string): Promise
         return {
             success: false,
             error: error instanceof Error ? error.message : '处理文档分块失败',
+        };
+    }
+}
+
+/**
+ * 上传文档到知识库
+ * @param kbId - 知识库ID
+ * @param files - 要上传的文件数组
+ * @returns 上传结果，包含成功和失败的数量
+ */
+export async function uploadDocumentAction(kbId: string, files: File[]): Promise<ServerActionResponse<any>> {
+    const results = {
+        success_count: 0,
+        failed_count: 0,
+        failed_files: [] as Array<{ name: string; error: string }>
+    };
+
+    try {
+        // 并行处理所有文件上传
+        const uploadPromises = files.map(async (file) => {
+            try {
+                // 使用 uploadFileAction 上传文件
+                const uploadResult = await uploadFileAction(file, "KB");
+
+                if (!uploadResult.success) {
+                    throw new Error(uploadResult.error || '文件上传失败');
+                }
+
+                const uploadFile = uploadResult.data;
+
+                // 创建文档记录
+                const document = await prisma.document.create({
+                    data: {
+                        name: file.name,
+                        content: '',
+                        knowledgeBaseId: kbId,
+                        location: uploadFile.location,
+                        size: file.size,
+                        type: file.type,
+                        source_type: 'file',
+                        status: 'enabled',
+                        chunk_num: 0,
+                        token_num: 0,
+                        progress: 0,
+                        progress_msg: '文件上传成功',
+                        run: 'pending',
+                        process_begin_at: null,
+                        process_duation: 0,
+                        create_date: new Date(),
+                        create_time: BigInt(Date.now()),
+                        update_date: new Date(),
+                        update_time: BigInt(Date.now()),
+                        created_by: 'system',
+                        parser_id: '',
+                        parser_config: {},
+                        uploadFileId: uploadFile.id
+                    }
+                });
+
+                results.success_count++;
+                return document;
+            } catch (error) {
+                results.failed_count++;
+                results.failed_files.push({
+                    name: file.name,
+                    error: error instanceof Error ? error.message : '上传失败'
+                });
+                console.error(`文件 ${file.name} 上传失败:`, error);
+                return null;
+            }
+        });
+
+        // 等待所有上传完成
+        await Promise.all(uploadPromises);
+
+        // // 重新验证知识库页面
+        // revalidatePath(`/knowledge-base/${kbId}`);
+
+        return {
+            success: true,
+            data: results
+        };
+    } catch (error) {
+        console.error('上传文档失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '上传失败',
+            data: results
         };
     }
 }

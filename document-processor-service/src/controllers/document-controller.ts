@@ -3,6 +3,8 @@ import * as documentProcessor from '../services/document-processor';
 import logger from '../utils/logger';
 import fs from 'fs/promises';
 import { AppContext, UploadRequestBody, UploadedFile } from '../types';
+import path from 'path';
+import config from '../config';
 
 /**
  * Upload and process document
@@ -171,5 +173,116 @@ export async function getDocumentChunks(ctx: AppContext) {
             success: false,
             error: error instanceof Error ? error.message : 'Failed to get document chunks'
         };
+    }
+}
+
+/**
+ * Convert document to different format
+ */
+export async function convertDocument(ctx: AppContext) {
+    try {
+        const { documentId } = ctx.params;
+        const { format } = ctx.request.query;
+
+        if (!format || typeof format !== 'string') {
+            ctx.status = 400;
+            ctx.body = {
+                success: false,
+                error: 'Output format is required'
+            };
+            return;
+        }
+
+        // Validate format
+        const outputFormat = format.toLowerCase() as documentProcessor.OutputFormat;
+        if (!['pdf', 'docx', 'txt', 'md', 'html', 'epub'].includes(outputFormat)) {
+            ctx.status = 400;
+            ctx.body = {
+                success: false,
+                error: `Unsupported output format: ${format}`
+            };
+            return;
+        }
+
+        // Find original file
+        const originalFiles = await documentProcessor.findOriginalFiles(documentId);
+        if (originalFiles.length === 0) {
+            ctx.status = 404;
+            ctx.body = {
+                success: false,
+                error: `Document not found: ${documentId}`
+            };
+            return;
+        }
+
+        const originalFilePath = originalFiles[0];
+        const fileType = documentProcessor.getFileType(originalFilePath);
+
+        // Check if conversion is supported
+        if (!documentProcessor.isConversionSupported(fileType, outputFormat)) {
+            ctx.status = 400;
+            ctx.body = {
+                success: false,
+                error: `Conversion from ${fileType} to ${outputFormat} is not supported`
+            };
+            return;
+        }
+
+        // Check if already converted
+        const convertedPath = await documentProcessor.getConvertedDocumentPath(documentId, outputFormat);
+        if (convertedPath) {
+            // Return existing converted file
+            ctx.set('Content-Type', getContentType(outputFormat));
+            ctx.set('Content-Disposition', `attachment; filename=${documentId}.${outputFormat}`);
+            ctx.body = await fs.readFile(convertedPath);
+            return;
+        }
+
+        // Convert document
+        const result = await documentProcessor.convertDocument(originalFilePath, outputFormat);
+
+        if (result.success) {
+            // Return converted file
+            const outputPath = path.join(config.storage.path, 'converted', `${documentId}.${outputFormat}`);
+            ctx.set('Content-Type', getContentType(outputFormat));
+            ctx.set('Content-Disposition', `attachment; filename=${documentId}.${outputFormat}`);
+            ctx.body = await fs.readFile(outputPath);
+        } else {
+            ctx.status = 500;
+            ctx.body = {
+                success: false,
+                error: result.error || 'Document conversion failed'
+            };
+        }
+    } catch (error) {
+        logger.error('Document conversion failed', { error, documentId: ctx.params.documentId });
+
+        ctx.status = 500;
+        ctx.body = {
+            success: false,
+            error: error instanceof Error ? error.message : 'Document conversion failed'
+        };
+    }
+}
+
+/**
+ * Get content type for file format
+ */
+function getContentType(format: string): string {
+    switch (format) {
+        case 'pdf':
+            return 'application/pdf';
+        case 'docx':
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        case 'txt':
+            return 'text/plain';
+        case 'md':
+            return 'text/markdown';
+        case 'html':
+            return 'text/html';
+        case 'epub':
+            return 'application/epub+zip';
+        default:
+            return 'application/octet-stream';
     }
 }

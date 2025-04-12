@@ -20,12 +20,16 @@ export class OpenAIAgent extends BaseAgent {
 
     constructor(config: OpenAIConfig) {
         super(config)
+        if (!config.baseUrl || !config.apiKey) {
+            throw new Error("OpenAI configuration is missing required parameters: baseUrl and apiKey")
+        }
         this.client = new OpenAI({
             baseURL: config.baseUrl,
             apiKey: config.apiKey,
             organization: config.organization,
         })
-        this.model = config.model || "gpt-4o-mini"
+        this.model = config.model || process.env.OPENAI_API_MODEL || "gpt-4o-mini"
+        console.log("OpenAI Agent initialized with model:", this.model)
     }
 
     // 处理用户输入
@@ -56,16 +60,24 @@ export class OpenAIAgent extends BaseAgent {
 
     // 处理工具调用
     async handleToolCall(toolName: string, params: any): Promise<any> {
-        const tool = this.tools.find((t) => t.name === toolName)
-        if (!tool) {
-            throw new Error(`Tool ${toolName} not found`)
+        try {
+            console.log(`Executing tool: ${toolName} with args:`, params)
+
+            const tool = this.tools.find(t => t.name === toolName)
+            if (!tool) {
+                throw new Error(`Tool ${toolName} not found`)
+            }
+
+            const result = await tool.handler(params)
+            console.log(`Tool ${toolName} execution result:`, result)
+            return result
+        } catch (error) {
+            console.error("Tool execution error:", error)
+            if (error instanceof Error) {
+                return `Error executing tool: ${error.message}\nStack: ${error.stack}`
+            }
+            return `Error executing tool: ${String(error)}`
         }
-
-        // 验证参数
-        const validatedParams = tool.parameters.parse(params)
-
-        // 执行工具
-        return await tool.handler(validatedParams)
     }
 
     // 生成响应
@@ -128,12 +140,12 @@ export class OpenAIAgent extends BaseAgent {
             // 处理函数调用
             if (message.function_call) {
                 const { name, arguments: args } = message.function_call
-                const result = await this.handleToolCall(name, JSON.parse(args))
+                const result = await this.handleToolCall(name, args)
 
                 // 添加函数调用结果
                 this.addMessage({
                     role: "assistant",
-                    content: JSON.stringify(result),
+                    content: result,
                 })
 
                 // 生成最终响应

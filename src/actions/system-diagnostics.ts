@@ -1,6 +1,7 @@
 'use server';
 
-import { queues, QUEUE_NAMES } from '@/lib/queue-init';
+import { QUEUE_NAMES } from '@/lib/queue-constants';
+import { checkQueueHealth } from '@/lib/queue-init';
 
 /**
  * 检查队列系统状态
@@ -8,22 +9,21 @@ import { queues, QUEUE_NAMES } from '@/lib/queue-init';
  */
 export async function checkQueueSystem() {
     try {
-        // 检查队列对象是否存在
-        const queueExists = !!queues;
+        // 获取队列健康状态
+        const healthData = await checkQueueHealth();
+
+        // 检查队列服务是否可用
+        const queueServiceAvailable = healthData.status === 'healthy';
 
         // 检查各个队列是否已创建
         const queueStatus = Object.entries(QUEUE_NAMES).map(([key, queueName]) => {
-            const exists = !!queues[queueName];
+            const queueInfo = healthData.queues[queueName] || { status: 'missing' };
             return {
                 key,
                 name: queueName,
-                exists,
-                connectionInfo: exists ? {
-                    // 提取连接信息，但不包含敏感数据
-                    host: queues[queueName].opts.connection?.host || 'unknown',
-                    port: queues[queueName].opts.connection?.port || 'unknown',
-                    // 不要包含密码等敏感信息
-                } : null
+                exists: queueInfo.status === 'healthy',
+                status: queueInfo.status,
+                details: queueInfo.details || null
             };
         });
 
@@ -33,11 +33,11 @@ export async function checkQueueSystem() {
         return {
             success: true,
             timestamp: new Date().toISOString(),
-            queueSystemInitialized: queueExists,
+            queueSystemInitialized: queueServiceAvailable,
             allQueuesExist,
             queueStatus,
             queueNames: QUEUE_NAMES,
-            rawQueues: Object.keys(queues)
+            redisStatus: healthData.redis
         };
     } catch (error) {
         console.error('队列系统诊断失败:', error);
@@ -57,8 +57,8 @@ export async function checkQueueSystem() {
  */
 export async function reinitializeQueueSystem() {
     try {
-        const { initQueueSystem } = await import('@/lib/queue-init');
-        await initQueueSystem();
+        const { initQueueSystemClient } = await import('@/lib/queue-init');
+        await initQueueSystemClient();
 
         // 再次检查队列状态
         const status = await checkQueueSystem();
