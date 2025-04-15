@@ -21,6 +21,38 @@ export default function DocumentTestPage() {
     const [error, setError] = useState<string>('');
     const [progress, setProgress] = useState<number>(0);
 
+    // 监听结果变化
+    useEffect(() => {
+        if (result) {
+            // 强制重新渲染结果卡片
+            const resultCard = document.getElementById('result-card');
+            if (resultCard) {
+                resultCard.style.display = 'none';
+                setTimeout(() => {
+                    resultCard.style.display = 'block';
+                }, 0);
+            }
+        }
+    }, [result]);
+
+    // 监听处理状态变化
+    useEffect(() => {
+        if (processing) {
+            setProgress(0);
+            const interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 90) {
+                        clearInterval(interval);
+                        return 90;
+                    }
+                    return prev + 10;
+                });
+            }, 1000);
+
+            return () => clearInterval(interval);
+        }
+    }, [processing]);
+
     // 处理文档
     const handleProcessTest = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -48,8 +80,24 @@ export default function DocumentTestPage() {
                 prompt
             });
 
-            if (response.success) {
-                setResult(response.data);
+            if (response.success && response.data) {
+                // 确保结果数据结构正确
+                const processedResult = {
+                    success: response.data.success,
+                    data: response.data.data || {},
+                    metadata: {
+                        processingTime: response.data.metadata?.processingTime || 0,
+                        documentId: response.data.metadata?.documentId || documentId,
+                        completionTime: response.data.metadata?.completionTime || 0,
+                        fileName: response.data.metadata?.fileName || '未知',
+                        inputTokens: response.data.metadata?.inputTokens || 0,
+                        outputTokens: response.data.metadata?.outputTokens || 0,
+                        pageCount: response.data.metadata?.pageCount || 0,
+                        pages: response.data.metadata?.pages || [],
+                        wordCount: response.data.metadata?.wordCount || 0
+                    }
+                };
+                setResult(processedResult);
                 setProgress(100);
                 toast.success('文档处理完成');
             } else {
@@ -130,7 +178,7 @@ export default function DocumentTestPage() {
 
             {/* 处理结果卡片 */}
             {result && (
-                <Card className="mb-6 bg-blue-50 border border-blue-200">
+                <Card id="result-card" className="mb-6 bg-blue-50 border border-blue-200">
                     <CardHeader>
                         <CardTitle>处理结果</CardTitle>
                         <CardDescription>文档处理的结果</CardDescription>
@@ -146,8 +194,20 @@ export default function DocumentTestPage() {
                                 <span>{result.metadata?.processingTime || '未知'} ms</span>
                             </div>
                             <div>
-                                <span className="font-medium">页面数: </span>
+                                <span className="font-medium">页数: </span>
                                 <span>{result.metadata?.pageCount || 0}</span>
+                            </div>
+                            <div>
+                                <span className="font-medium">输入 Tokens: </span>
+                                <span>{result.metadata?.inputTokens || 0}</span>
+                            </div>
+                            <div>
+                                <span className="font-medium">输出 Tokens: </span>
+                                <span>{result.metadata?.outputTokens || 0}</span>
+                            </div>
+                            <div>
+                                <span className="font-medium">完成时间: </span>
+                                <span>{result.metadata?.completionTime || '未知'} ms</span>
                             </div>
                             <div>
                                 <span className="font-medium">源文件: </span>
@@ -157,7 +217,7 @@ export default function DocumentTestPage() {
                                 <span className="font-medium">内容预览 (最多500字符): </span>
                                 <ScrollArea className="mt-2 h-60 w-full rounded-md border p-4 bg-white">
                                     <pre className="whitespace-pre-wrap text-sm">
-                                        {result.content?.substring(0, 500)}{result.content?.length > 500 ? '...' : ''}
+                                        {result.data?.pages?.[0]?.content?.substring(0, 500)}{result.data?.pages?.[0]?.content?.length > 500 ? '...' : ''}
                                     </pre>
                                 </ScrollArea>
                             </div>
@@ -170,6 +230,24 @@ export default function DocumentTestPage() {
                                     </pre>
                                 </ScrollArea>
                             </div>
+                            {/* 显示所有页面内容 */}
+                            {result.data?.pages && result.data.pages.length > 0 && (
+                                <div>
+                                    <span className="font-medium">所有页面内容:</span>
+                                    <ScrollArea className="mt-2 h-96 w-full rounded-md border p-4 bg-white">
+                                        <div className="space-y-4">
+                                            {result.data.pages.map((page: any, index: number) => (
+                                                <div key={index} className="border-b pb-4 last:border-b-0">
+                                                    <div className="font-medium mb-2">第 {page.pageNumber} 页</div>
+                                                    <pre className="whitespace-pre-wrap text-sm">
+                                                        {page.content}
+                                                    </pre>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
