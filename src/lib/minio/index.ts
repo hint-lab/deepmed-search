@@ -11,7 +11,7 @@ export * from './client';
 export async function initMinio() {
     try {
         const client = await getMinioClient();
-        const bucketName = 'uploadfiles';
+        const bucketName = process.env.MINIO_BUCKET_NAME || 'deepmed';
 
         // 检查存储桶是否存在
         const exists = await client.bucketExists(bucketName);
@@ -42,7 +42,7 @@ export async function initMinio() {
         };
 
         await client.setBucketPolicy(bucketName, JSON.stringify(policy));
-        console.log('设置存储桶策略成功');
+        console.log('✅ 设置存储桶策略成功');
 
         return { success: true };
     } catch (error) {

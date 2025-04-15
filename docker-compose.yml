@@ -34,50 +34,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 队列服务
-  bullmq-queue-service:
-    build:
-      context: ./queue-service
-      dockerfile: Dockerfile
-    container_name: deepmed-queue
-    restart: always
-    ports:
-      - "${QUEUE_SERVICE_PORT:-5000}:5000"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DB=0
-      - PORT=5000
-      - NODE_ENV=${NODE_ENV:-production}
-      - QUEUE_PREFIX=deepmed
-    depends_on:
-      redis:
-        condition: service_healthy
-
-  # 文档处理服务
-  document-parser-service:
-    build:
-      context: ./document-parser-service
-      dockerfile: Dockerfile
-    ports:
-      - "5001:5001"
-    environment:
-      - NODE_ENV=development
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
-      - REDIS_DB=0
-      - QUEUE_PREFIX=bullmq
-      - STORAGE_PATH=/app/storage
-      - LOG_LEVEL=info
-      - PORT=5001
-    volumes:
-      - ./storage:/app/storage
-    depends_on:
-      redis:
-        condition: service_healthy
-
   # Milvus 向量数据库服务 (使用独立模式)
   milvus:
     image: milvusdb/milvus:v2.3.3
@@ -111,21 +67,6 @@ services:
       - MILVUS_URL=${MILVUS_HOST}:${MILVUS_PORT}
     depends_on:
       - milvus
-
-  # pgAdmin 数据库管理工具 (可选)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: deepmed-pgadmin
-    restart: always
-    ports:
-      - "5050:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@deepmed.tech}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    depends_on:
-      - postgres
 
   # Milvus 依赖的 etcd 服务
   etcd:
@@ -178,7 +119,6 @@ services:
 volumes:
   postgres-data:
   milvus-data:
-  pgadmin-data:
   etcd-data:
   minio-data:
   redis-data:

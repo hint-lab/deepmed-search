@@ -8,10 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Upload, X, Loader2, ExternalLink, Database, HardDrive, Download } from 'lucide-react';
 import { uploadFileAction, DocumentType } from '@/actions/file-upload';
+import { uploadDocumentAction } from '@/actions/document';
 import { getMinioStatusAction, getFileUrlAction } from '@/actions/minio';
+import { getInvisibleKnowledgeBaseAction } from '@/actions/knowledgebase';
 import { FileUploader } from '@/components/file-uploader';
 import { MinioServerStatus } from '@/lib/minio';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export default function UploadTestPage() {
     const [file, setFile] = useState<File | null>(null);
@@ -89,12 +92,29 @@ export default function UploadTestPage() {
             formData.append('file', file);
 
             // 使用Server Action上传文件
-            const uploadResult = await uploadFileAction(file, documentType);
-            setResult(uploadResult);
+            if (documentType === 'KB') {
+                // 获取不可见知识库ID
+                const invisibleKbResult = await getInvisibleKnowledgeBaseAction();
 
-            // 上传成功后刷新 MinIO 状态
-            if (uploadResult.success) {
-                fetchMinioStatus();
+                if (!invisibleKbResult.success || !invisibleKbResult.data?.id) {
+                    throw new Error('无法获取不可见知识库ID');
+                }
+
+                const uploadResult = await uploadDocumentAction(invisibleKbResult.data.id, [file]);
+                setResult(uploadResult);
+
+                // 上传成功后刷新 MinIO 状态
+                if (uploadResult.success) {
+                    fetchMinioStatus();
+                }
+            } else {
+                const uploadResult = await uploadFileAction(file, documentType);
+                setResult(uploadResult);
+
+                // 上传成功后刷新 MinIO 状态
+                if (uploadResult.success) {
+                    fetchMinioStatus();
+                }
             }
         } catch (error) {
             console.error('上传失败:', error);
@@ -115,6 +135,13 @@ export default function UploadTestPage() {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    // 处理 BigInt 序列化
+    const stringifyWithBigInt = (obj: any) => {
+        return JSON.stringify(obj, (_, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        );
     };
 
     return (
@@ -288,26 +315,36 @@ export default function UploadTestPage() {
                                         <div className="space-y-4">
                                             <div className="flex items-center text-sm">
                                                 <FileText className="mr-2 h-4 w-4 text-green-500" />
-                                                <span>文件 <strong>{result.data.name}</strong> 上传成功</span>
+                                                <span>文件 <strong>{file?.name || result.data?.name || result.data?.fileName || '未知'}</strong> 上传成功</span>
                                             </div>
 
                                             <div className="p-2 bg-muted rounded-md">
                                                 <div className="flex justify-between mb-1">
                                                     <span className="text-sm font-medium">文件大小:</span>
-                                                    <span className="text-sm">{formatFileSize(result.data.size)}</span>
+                                                    <span className="text-sm">{formatFileSize(file?.size || result.data?.size || 0)}</span>
                                                 </div>
                                                 <div className="flex justify-between mb-1">
                                                     <span className="text-sm font-medium">文件类型:</span>
-                                                    <span className="text-sm">{result.data.type}</span>
+                                                    <span className="text-sm">{file?.type || result.data?.type || result.data?.fileType || '未知'}</span>
                                                 </div>
-                                                <div className="flex justify-between mb-1">
-                                                    <span className="text-sm font-medium">存储位置:</span>
-                                                    <span className="text-sm">{result.data.bucketName}/{result.data.objectName}</span>
-                                                </div>
-                                                <div className="flex justify-between mb-1">
-                                                    <span className="text-sm font-medium">文档类型:</span>
-                                                    <span className="text-sm">{result.data.documentType}</span>
-                                                </div>
+                                                {result.data?.bucketName && result.data?.objectName && (
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="text-sm font-medium">存储位置:</span>
+                                                        <span className="text-sm">{result.data.bucketName}/{result.data.objectName}</span>
+                                                    </div>
+                                                )}
+                                                {result.data?.documentType && (
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="text-sm font-medium">文档类型:</span>
+                                                        <span className="text-sm">{result.data.documentType}</span>
+                                                    </div>
+                                                )}
+                                                {result.data?.knowledgeBaseId && (
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="text-sm font-medium">知识库ID:</span>
+                                                        <span className="text-sm">{result.data.knowledgeBaseId}</span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center space-x-4">
@@ -337,7 +374,7 @@ export default function UploadTestPage() {
                                     <details className="mt-4">
                                         <summary className="text-sm text-muted-foreground cursor-pointer">查看完整响应</summary>
                                         <pre className="bg-muted p-4 rounded-md overflow-auto mt-2 text-xs">
-                                            {JSON.stringify(result, null, 2)}
+                                            {stringifyWithBigInt(result)}
                                         </pre>
                                     </details>
                                 </CardContent>
@@ -379,7 +416,7 @@ export default function UploadTestPage() {
                                 <div className="mt-6">
                                     <h3 className="text-lg font-medium mb-2">组件上传结果</h3>
                                     <pre className="bg-muted p-4 rounded-md overflow-auto text-xs">
-                                        {JSON.stringify(result, null, 2)}
+                                        {stringifyWithBigInt(result)}
                                     </pre>
                                 </div>
                             )}

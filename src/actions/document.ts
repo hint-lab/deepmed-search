@@ -7,7 +7,7 @@ import { IDocumentMetaRequestBody } from '@/types/db/document';
 import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { agentManager } from '@/lib/agent-manager';
 import { Prisma } from '@prisma/client';
-import { uploadFileAction, deleteUploadFileAction } from './file-upload';
+import { uploadFileAction } from './file-upload';
 import { DocumentProcessingStatus } from '@/types/db/enums';
 
 /**

@@ -3,12 +3,11 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
-import { APIResponse } from '@/types/api';
-
+import { ServerActionResponse } from '@/types/actions';
 /**
  * 获取知识库列表
  */
-export async function getKnowledgeBaseListAction(): Promise<APIResponse<any>> {
+export async function getKnowledgeBaseListAction(): Promise<ServerActionResponse<any>> {
     try {
         const kbs = await prisma.knowledgeBase.findMany({
             orderBy: {
@@ -323,4 +322,186 @@ export async function getKnowledgeGraphAction(knowledgeBaseId: string) {
             },
         };
     });
+}
+
+
+
+/**
+ * 获取不可见知识库
+ * 如果不存在，则创建一个
+ * @returns 不可见知识库信息
+ */
+export async function getInvisibleKnowledgeBase() {
+    try {
+        // 查找所有不可见的知识库
+        const invisibleKnowledgeBases = await prisma.knowledgeBase.findMany({
+            where: {
+                visible: false
+            },
+            include: {
+                documents: true
+            }
+        });
+
+        // 如果找到不可见知识库，返回第一个
+        if (invisibleKnowledgeBases.length > 0) {
+            return {
+                success: true,
+                data: invisibleKnowledgeBases[0]
+            };
+        }
+
+        // 如果没有找到不可见知识库，创建一个
+        console.log('没有找到不可见知识库，正在创建一个...');
+
+        const knowledgeBase = await prisma.knowledgeBase.create({
+            data: {
+                name: '不可见测试知识库',
+                description: '这是一个不可见的测试知识库，用于测试知识库可见性功能',
+                visible: false,
+                create_date: new Date(),
+                create_time: BigInt(Date.now()),
+                created_by: 'system',
+                update_date: new Date(),
+                update_time: BigInt(Date.now()),
+                similarity_threshold: 0.7,
+                vector_similarity_weight: 0.5,
+                status: 'active',
+                parser_config: {},
+                doc_num: 0,
+                chunk_num: 0,
+                token_num: 0,
+                operator_permission: 0
+            }
+        });
+
+        return {
+            success: true,
+            data: knowledgeBase
+        };
+    } catch (error) {
+        console.error('获取不可见知识库失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '获取不可见知识库失败'
+        };
+    }
+}
+
+/**
+ * 获取所有不可见知识库
+ * @returns 所有不可见知识库列表
+ */
+export async function getAllInvisibleKnowledgeBases() {
+    try {
+        const invisibleKnowledgeBases = await prisma.knowledgeBase.findMany({
+            where: {
+                visible: false
+            },
+            include: {
+                documents: true
+            }
+        });
+
+        return {
+            success: true,
+            data: invisibleKnowledgeBases
+        };
+    } catch (error) {
+        console.error('获取所有不可见知识库失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '获取所有不可见知识库失败'
+        };
+    }
+}
+
+/**
+ * 获取不可见知识库
+ * 如果不存在，则创建一个
+ * @returns 不可见知识库信息
+ */
+export async function getInvisibleKnowledgeBaseAction(): Promise<ServerActionResponse<any>> {
+    try {
+        // 查找所有不可见的知识库
+        const invisibleKnowledgeBases = await prisma.knowledgeBase.findMany({
+            where: {
+                visible: false
+            },
+            include: {
+                documents: true
+            }
+        });
+
+        // 如果找到不可见知识库，返回第一个
+        if (invisibleKnowledgeBases.length > 0) {
+            return {
+                success: true,
+                data: invisibleKnowledgeBases[0]
+            };
+        }
+
+        // 如果没有找到不可见知识库，创建一个
+        console.log('没有找到不可见知识库，正在创建一个...');
+
+        const knowledgeBase = await prisma.knowledgeBase.create({
+            data: {
+                name: '不可见测试知识库',
+                description: '这是一个不可见的测试知识库，用于测试知识库可见性功能',
+                visible: false,
+                create_date: new Date(),
+                create_time: BigInt(Date.now()),
+                created_by: 'system',
+                update_date: new Date(),
+                update_time: BigInt(Date.now()),
+                similarity_threshold: 0.7,
+                vector_similarity_weight: 0.5,
+                status: 'active',
+                parser_config: {},
+                doc_num: 0,
+                chunk_num: 0,
+                token_num: 0,
+                operator_permission: 0
+            }
+        });
+
+        return {
+            success: true,
+            data: knowledgeBase
+        };
+    } catch (error) {
+        console.error('获取不可见知识库失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '获取不可见知识库失败'
+        };
+    }
+}
+
+/**
+ * 获取所有不可见知识库
+ * @returns 所有不可见知识库列表
+ */
+export async function getAllInvisibleKnowledgeBasesAction(): Promise<ServerActionResponse<any>> {
+    try {
+        const invisibleKnowledgeBases = await prisma.knowledgeBase.findMany({
+            where: {
+                visible: false
+            },
+            include: {
+                documents: true
+            }
+        });
+
+        return {
+            success: true,
+            data: invisibleKnowledgeBases
+        };
+    } catch (error) {
+        console.error('获取所有不可见知识库失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '获取所有不可见知识库失败'
+        };
+    }
 } 

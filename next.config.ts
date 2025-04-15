@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  serverExternalPackages: ['tesseract.js', 'zerox'],
+  serverExternalPackages: ['tesseract.js', 'zerox', 'bullmq', 'redis', 'minio'],
 };
 
 export default nextConfig;

@@ -305,4 +305,43 @@ export async function getPresignedUrl({
             throw error;
         }
     });
+}
+
+/**
+ * 生成可读的 MinIO URL
+ * @param bucketName 存储桶名称
+ * @param objectName 对象名称
+ * @param expiresInSeconds URL 有效期（秒），默认 7 天
+ * @returns 可读的 URL
+ */
+export async function getReadableUrl(
+    bucketName: string,
+    objectName: string,
+    expiresInSeconds: number = 7 * 24 * 60 * 60 // 默认 7 天
+): Promise<string> {
+    try {
+        // 检查文件是否存在
+        const exists = await fileExists(bucketName, objectName);
+        if (!exists) {
+            throw new Error(`文件不存在: ${bucketName}/${objectName}`);
+        }
+
+        // 生成预签名 URL
+        const url = await executeWithRetry(async (client) => {
+            return client.presignedGetObject(
+                bucketName,
+                objectName,
+                expiresInSeconds
+            );
+        });
+
+        return url;
+    } catch (error) {
+        console.error('生成可读 URL 失败', {
+            bucketName,
+            objectName,
+            error: error instanceof Error ? error.message : '未知错误'
+        });
+        throw error;
+    }
 } 

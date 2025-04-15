@@ -1,0 +1,1 @@
+sed -i 's#https://api.openai.com#你的自定义URL#g' node_modules/zerox/node-zerox/dist/models/openAI.js

@@ -25,7 +25,7 @@ import {
     renameTagAction,
     getKnowledgeGraphAction,
     getKnowledgeBaseListAction
-} from '@/actions/knowledge-base';
+} from '@/actions/knowledgebase';
 import { z } from 'zod';
 
 /**

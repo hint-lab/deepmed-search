@@ -1,118 +1,70 @@
-'use server';
+"use server";
 
-import { TaskType, addTask, getTaskStatus, checkQueueHealth } from '@/lib/queue';
+import { checkQueueHealth, documentConvertProcessQueue, addJob, getJobStatus } from '@/lib/bullmq/queue-manager';
+import { QUEUE_NAMES } from '@/lib/bullmq/queue-names';
+import { ServerActionResponse } from '@/types/actions';
+
+/**
+ * 检查队列健康状态
+ */
+export async function checkQueueHealthAction() {
+    return await checkQueueHealth();
+}
+
+/**
+ * 获取队列名称
+ */
+export async function getQueueName() {
+    return QUEUE_NAMES;
+}
+
 /**
  * 添加任务到队列
- * @param type 任务类型
- * @param data 任务数据
- * @returns 任务ID
  */
-export async function addTaskAction(type: TaskType, data: any) {
+export async function addTaskAction(
+    queueName: string,
+    data: any
+): Promise<ServerActionResponse<{ jobId: string }>> {
     try {
-        console.log('服务器端添加任务:', { type, data });
-        const jobId = await addTask(type, data);
-        console.log('任务添加成功，任务ID:', jobId);
+        const job = await addJob(documentConvertProcessQueue, data);
         return {
             success: true,
-            jobId,
+            data: {
+                jobId: job.id || ''
+            }
         };
-    } catch (error) {
-        console.error('服务器端添加任务失败:', error);
+    } catch (error: any) {
+        console.error('添加任务失败:', error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : '未知错误',
+            error: error.message || '添加任务失败'
         };
     }
 }
 
 /**
  * 获取任务状态
- * @param jobId 任务ID
- * @returns 任务状态和结果
  */
-export async function getTaskStatusAction(jobId: string) {
+export async function getTaskStatusAction(
+    jobId: string
+): Promise<ServerActionResponse<any>> {
     try {
-        const status = await getTaskStatus(jobId);
-
-        // 获取队列健康状态
-        const healthStatus = await checkQueueHealth();
-
+        const status = await getJobStatus(documentConvertProcessQueue, jobId);
+        if (!status) {
+            return {
+                success: false,
+                error: '任务不存在'
+            };
+        }
         return {
             success: true,
-            jobId,
-            state: status.state,
-            result: status.result,
-            timestamp: new Date().toISOString(),
-            queues: healthStatus.queues,
-            redis: healthStatus.redis,
-            performance: healthStatus.performance
+            data: status
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error('获取任务状态失败:', error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : '未知错误',
-            jobId,
-            state: 'error',
-            timestamp: new Date().toISOString(),
-            queues: {},
-            redis: { connected: false, error: error instanceof Error ? error.message : '未知错误' },
-            performance: {
-                totalJobs: 0,
-                activeJobs: 0,
-                completedJobs: 0,
-                failedJobs: 0
-            }
+            error: error.message || '获取任务状态失败'
         };
     }
 }
-
-/**
- * 检查队列系统健康状态
- * @returns 队列系统健康状态
- */
-export async function checkQueueHealthAction() {
-    try {
-        console.log('服务器端检查队列健康状态');
-        const healthStatus = await checkQueueHealth();
-        console.log('队列健康状态:', healthStatus);
-
-        // 处理Redis连接状态
-        const redisStatus = healthStatus.redis.status === 'connected' ? 'connected' : 'disconnected';
-        const redisDetails = healthStatus.redis.details || '';
-        const redisError = healthStatus.redis.status === 'connected' ? null : (healthStatus.redis.error || '连接失败');
-
-        return {
-            success: true,
-            status: healthStatus.status,
-            timestamp: healthStatus.timestamp,
-            redis: {
-                status: redisStatus,
-                details: redisDetails,
-                error: redisError
-            },
-            queues: healthStatus.queues,
-            performance: healthStatus.performance
-        };
-    } catch (error) {
-        console.error('检查队列健康状态失败:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : '未知错误',
-            status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            redis: {
-                status: 'disconnected',
-                details: '',
-                error: error instanceof Error ? error.message : '未知错误'
-            },
-            queues: {},
-            performance: {
-                totalJobs: 0,
-                activeJobs: 0,
-                completedJobs: 0,
-                failedJobs: 0
-            }
-        };
-    }
-} 

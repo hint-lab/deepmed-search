@@ -1,9 +1,7 @@
 // 服务器端初始化文件
 // 这个文件用于初始化所有服务器端服务
 
-import { initQueueSystem } from './queue';
 import { initMinio } from './minio';
-import { initDocumentParser } from './document-parser';
 // 状态变量，确保只初始化一次
 let serverInitialized = false;
 
@@ -20,14 +18,10 @@ export async function initializeServer() {
     try {
         console.log('🚀 初始化服务器端服务...');
 
-        // 初始化队列系统客户端
-        await initQueueSystem();
 
         // 初始化MinIO客户端
         await initMinio();
 
-        // 初始化Document Parser客户端 
-        await initDocumentParser();
 
         // 标记初始化完成
         serverInitialized = true;
