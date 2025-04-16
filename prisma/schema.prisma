@@ -187,10 +187,10 @@ model Document {
   knowledgeBaseId String    // 知识库ID
   parser_id       String?   // 解析器ID
   parser_config   Json      // 解析器配置
-  markdown_content String?  // Markdown格式内容
-  summary         String?   // 文档摘要
+  markdown_content String?   @db.Text  // Markdown格式内容
+  summary         String?   @db.Text  // 文档摘要
   metadata        Json?     // 元数据
-  processing_error String?  // 处理错误信息
+  processing_error String?  @db.Text  // 处理错误信息
   enabled          Boolean   @default(true)  // 是否启用
   knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])  // 知识库关联
   tags            Tag[]     // 标签列表

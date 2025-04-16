@@ -75,18 +75,31 @@ export async function processDocumentDirectlyAction(
 
         // 更新文档处理状态
         const markdown_content = result.data?.data?.metadata?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
+
+        // 将完整结果保存为字符串
+        const rawResult = result.data ? JSON.stringify(result.data) : '{}';
+        console.log('处理结果详细信息:', rawResult);
+
+        // 尝试安全地提取值
+        const totalChunks = result.data?.totalChunks || 0;
+        const pages = result.data?.data?.metadata?.pages || [];
+        const pageCount = pages.length || 0;
+
         await prisma.document.update({
             where: { id: documentId },
             data: {
                 markdown_content,
-                chunk_num: result.data?.totalChunks || 0,
+                chunk_num: totalChunks,
                 processing_status: DocumentProcessingStatus.PROCESSED,
                 progress: 100,
                 progress_msg: '处理完成',
                 process_duation: Math.floor((Date.now() - startTime) / 1000),
+                process_begin_at: new Date(startTime),
                 metadata: {
                     processingTime: Date.now() - startTime,
-                    documentId
+                    documentId,
+                    rawResult: rawResult,
+                    pageCount: pageCount
                 }
             }
         });
@@ -250,6 +263,8 @@ export async function processDocumentActionUsingQueue(
     }
 ): Promise<ServerActionResponse<{ success: boolean }>> {
     try {
+        const startTime = Date.now();
+
         // 获取文档信息
         const document = await prisma.document.findUnique({
             where: { id: documentId },
@@ -278,7 +293,8 @@ export async function processDocumentActionUsingQueue(
             data: {
                 processing_status: DocumentProcessingStatus.PROCESSING,
                 progress: 0,
-                progress_msg: '开始处理'
+                progress_msg: '开始处理',
+                process_begin_at: new Date(startTime)
             }
         });
 
@@ -292,7 +308,9 @@ export async function processDocumentActionUsingQueue(
                 data: {
                     processing_status: DocumentProcessingStatus.FAILED,
                     progress: 0,
-                    progress_msg: result.error || '处理失败'
+                    progress_msg: result.error || '处理失败',
+                    process_duation: Math.floor((Date.now() - startTime) / 1000),
+                    processing_error: result.error
                 }
             });
 
@@ -317,7 +335,8 @@ export async function processDocumentActionUsingQueue(
             data: {
                 processing_status: DocumentProcessingStatus.FAILED,
                 progress: 0,
-                progress_msg: error.message || '处理失败'
+                progress_msg: error.message || '处理失败',
+                processing_error: error.message
             }
         });
 
