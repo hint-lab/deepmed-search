@@ -1,13 +1,14 @@
 'use server';
 
-import { documentConvertProcessQueue, addJob, getJobStatus } from '@/lib/bullmq/queue-manager';
+import { prisma } from '@/lib/prisma';
+import { ChunkIndexer } from '@/lib/chunk-indexer';
+import { DocumentSplitter } from '@/lib/document-splitter';
+import logger from '@/utils/logger';
+import { DocumentChunk } from '@/lib/document-splitter';
+import { DocumentProcessingStatus } from '@/types/db/enums';
 import { ServerActionResponse } from '@/types/actions';
-import { DocumentProcessJobData } from '@/lib/bullmq/document-worker/types';
-import { processDocument } from '@/lib/bullmq/document-worker';
 import { ProcessResult } from '@/lib/zerox/types';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { processDocument } from '@/lib/bullmq/document-worker';
 
 interface Page {
     pageNumber: number;
@@ -24,16 +25,47 @@ export async function processDocumentDirectlyAction(
         prompt?: string;
     }
 ): Promise<ServerActionResponse<ProcessResult>> {
+    const startTime = Date.now();
+
     try {
+        // 获取文档信息
+        const document = await prisma.document.findUnique({
+            where: { id: documentId },
+            include: {
+                uploadFile: true
+            }
+        });
+
+        if (!document) {
+            return {
+                success: false,
+                error: '文档不存在'
+            };
+        }
+
+        if (!document.uploadFile) {
+            return {
+                success: false,
+                error: '文档文件不存在'
+            };
+        }
+
+        // 调用文档处理函数
         const result = await processDocument({
             documentId,
+            documentInfo: {
+                name: document.name,
+                uploadFile: {
+                    location: document.uploadFile.location
+                }
+            },
             options: {
                 model: options.model,
                 maintainFormat: options.maintainFormat,
                 prompt: options.prompt
             }
         });
-
+        console.log('result', result);
         if (!result.success) {
             return {
                 success: false,
@@ -41,94 +73,28 @@ export async function processDocumentDirectlyAction(
             };
         }
 
-        // 保存处理结果到 Chunk 表
-        console.log('开始创建 chunks，文档ID:', documentId);
-        console.log('处理结果:', JSON.stringify(result.data, null, 2));
-
-        // 获取文档信息
-        const document = await prisma.document.findUnique({
-            where: { id: documentId },
-            select: { knowledgeBaseId: true, name: true }
-        });
-
-        if (!document) {
-            console.error('文档不存在:', documentId);
-            throw new Error('文档不存在');
-        }
-
-        const chunks = result.data.pages?.map((page: Page) => {
-            const chunk = {
-                chunk_id: `${documentId}-${page.pageNumber}`,
-                content_with_weight: page.content || '',
-                available_int: 1,
-                doc_id: documentId,
-                doc_name: document.name || result.data.fileName || '未知文档',
-                positions: {
-                    pageNumber: page.pageNumber,
-                    contentLength: page.content?.length || 0,
-                    processingTime: result.data.processingTime,
-                    completionTime: result.data.completionTime,
-                    inputTokens: result.data.inputTokens,
-                    outputTokens: result.data.outputTokens,
-                    model: options.model,
-                    maintainFormat: options.maintainFormat,
-                    prompt: options.prompt
-                },
-                important_kwd: [],
-                question_kwd: [],
-                tag_kwd: [],
-                kb_id: document.knowledgeBaseId,
-                tag_feas: null
-            };
-            console.log('创建 chunk:', JSON.stringify(chunk, null, 2));
-            return chunk;
-        }) || [];
-
-        console.log('准备批量创建 chunks，数量:', chunks.length);
-
-        try {
-            // 批量创建 chunks
-            const result = await prisma.chunk.createMany({
-                data: chunks,
-                skipDuplicates: true // 跳过已存在的记录
-            });
-            console.log('Chunks 创建结果:', result);
-        } catch (error) {
-            console.error('创建 chunks 失败:', error);
-            throw error;
-        }
-
-        // 更新文档的 chunk_num
+        // 更新文档处理状态
+        const markdown_content = result.data?.data?.metadata?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                chunk_num: chunks.length,
-                processing_status: 'PROCESSED'
+                markdown_content,
+                chunk_num: result.data?.totalChunks || 0,
+                processing_status: DocumentProcessingStatus.PROCESSED,
+                progress: 100,
+                progress_msg: '处理完成',
+                process_duation: Math.floor((Date.now() - startTime) / 1000),
+                metadata: {
+                    processingTime: Date.now() - startTime,
+                    documentId
+                }
             }
         });
 
-        // 确保返回的数据格式正确
+        // 返回处理结果
         return {
             success: true,
-            data: {
-                success: true,
-                data: result.data,
-                metadata: {
-                    processingTime: result.data.processingTime,
-                    documentId: documentId,
-                    completionTime: result.data.completionTime,
-                    fileName: result.data.fileName,
-                    inputTokens: result.data.inputTokens,
-                    outputTokens: result.data.outputTokens,
-                    pageCount: result.data.pages?.length || 0,
-                    pages: result.data.pages?.map((page: Page) => ({
-                        pageNumber: page.pageNumber,
-                        content: page.content,
-                        contentLength: page.content?.length || 0
-                    })),
-                    wordCount: result.data.wordCount
-                }
-            }
+            data: result.data?.data
         };
     } catch (error: any) {
         console.error('处理文档失败:', error);
@@ -139,71 +105,225 @@ export async function processDocumentDirectlyAction(
     }
 }
 
-// 添加到队列的server action
-export async function processDocumentAction(
+// 文档分块的server action
+export async function splitDocumentAction(
+    documentId: string,
+    pages: Array<{ pageNumber: number; content: string }>,
+    options: {
+        model: string;
+        maintainFormat: boolean;
+        prompt?: string;
+        documentName: string;
+    }
+): Promise<ServerActionResponse<{ chunks: DocumentChunk[]; totalChunks: number }>> {
+    try {
+        logger.info('开始文档分割', {
+            documentId,
+            pageCount: pages.length
+        });
+
+        // 创建文档分割器
+        const splitter = new DocumentSplitter({
+            maxChunkSize: 1000,
+            overlapSize: 100,
+            splitByParagraph: true,
+            preserveFormat: options.maintainFormat
+        });
+
+        // 处理每个页面
+        const allChunks = [];
+        let totalChunks = 0;
+
+        for (const page of pages) {
+            // 分割页面内容
+            const chunks = splitter.splitDocument(page.content, {
+                documentId,
+                documentName: options.documentName,
+                pageNumber: page.pageNumber,
+                model: options.model,
+                maintainFormat: options.maintainFormat,
+                prompt: options.prompt
+            });
+
+            totalChunks += chunks.length;
+            allChunks.push(...chunks);
+        }
+
+        logger.info('文档分割完成', {
+            documentId,
+            totalChunks
+        });
+
+        return {
+            success: true,
+            data: {
+                chunks: allChunks,
+                totalChunks
+            }
+        };
+    } catch (error: any) {
+        logger.error('文档分割失败', {
+            documentId,
+            error: error instanceof Error ? error.message : '未知错误'
+        });
+
+        return {
+            success: false,
+            error: error.message || '文档分割失败'
+        };
+    }
+}
+
+// 文档块索引的server action
+export async function indexDocumentChunksAction(
+    documentId: string,
+    chunks: DocumentChunk[]
+): Promise<ServerActionResponse<{ indexedCount: number }>> {
+    try {
+        logger.info('开始索引文档块', {
+            documentId,
+            chunkCount: chunks.length
+        });
+
+        // 创建块索引器
+        const indexer = new ChunkIndexer({
+            embeddingModel: 'text-embedding-3-small',
+            collectionName: 'chunks',
+            batchSize: 10
+        });
+
+        // 索引文档块
+        const indexResult = await indexer.indexChunks(chunks);
+
+        if (!indexResult.success) {
+            logger.error('索引文档块失败', {
+                documentId,
+                error: indexResult.error
+            });
+
+            return {
+                success: false,
+                error: indexResult.error || '索引文档块失败'
+            };
+        }
+
+        logger.info('文档块索引完成', {
+            documentId,
+            indexedCount: indexResult.indexedCount
+        });
+
+        // 更新文档的 chunk_num
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                chunk_num: chunks.length,
+                processing_status: DocumentProcessingStatus.PROCESSED
+            }
+        });
+
+        return {
+            success: true,
+            data: {
+                indexedCount: indexResult.indexedCount
+            }
+        };
+    } catch (error: any) {
+        logger.error('索引文档块失败', {
+            documentId,
+            error: error instanceof Error ? error.message : '未知错误'
+        });
+
+        return {
+            success: false,
+            error: error.message || '索引文档块失败'
+        };
+    }
+}
+
+// 使用队列处理文档的server action
+export async function processDocumentActionUsingQueue(
     documentId: string,
     options: {
         model: string;
         maintainFormat: boolean;
         prompt?: string;
     }
-): Promise<ServerActionResponse<{ jobId: string }>> {
+): Promise<ServerActionResponse<{ success: boolean }>> {
     try {
-        // 添加任务到队列
-        const job = await addJob<DocumentProcessJobData, any>(
-            documentConvertProcessQueue,
-            {
-                documentId,
-                options: {
-                    model: options.model,
-                    maintainFormat: options.maintainFormat,
-                    prompt: options.prompt
-                }
+        // 获取文档信息
+        const document = await prisma.document.findUnique({
+            where: { id: documentId },
+            include: {
+                uploadFile: true
             }
-        );
+        });
 
-        if (!job.id) {
-            throw new Error('任务ID不存在');
-        }
-
-        return {
-            success: true,
-            data: {
-                jobId: job.id
-            }
-        };
-    } catch (error: any) {
-        console.error('添加文档处理任务失败:', error);
-        return {
-            success: false,
-            error: error.message || '添加文档处理任务失败'
-        };
-    }
-}
-
-// 获取任务状态的server action
-export async function getDocumentProcessStatusAction(
-    jobId: string
-): Promise<ServerActionResponse<any>> {
-    try {
-        const status = await getJobStatus(jobId);
-
-        if (!status) {
+        if (!document) {
             return {
                 success: false,
-                error: '任务不存在'
+                error: '文档不存在'
+            };
+        }
+
+        if (!document.uploadFile) {
+            return {
+                success: false,
+                error: '文档文件不存在'
+            };
+        }
+
+        // 更新文档状态为处理中
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                processing_status: DocumentProcessingStatus.PROCESSING,
+                progress: 0,
+                progress_msg: '开始处理'
+            }
+        });
+
+        // 开始处理文档
+        const result = await processDocumentDirectlyAction(documentId, options);
+
+        if (!result.success) {
+            // 更新文档状态为处理失败
+            await prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    processing_status: DocumentProcessingStatus.FAILED,
+                    progress: 0,
+                    progress_msg: result.error || '处理失败'
+                }
+            });
+
+            return {
+                success: false,
+                error: result.error
             };
         }
 
         return {
             success: true,
-            data: status
+            data: {
+                success: true
+            }
         };
     } catch (error: any) {
-        console.error('获取任务状态失败:', error);
+        console.error('处理文档失败:', error);
+
+        // 更新文档状态为处理失败
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                processing_status: DocumentProcessingStatus.FAILED,
+                progress: 0,
+                progress_msg: error.message || '处理失败'
+            }
+        });
+
         return {
             success: false,
-            error: error.message || '获取任务状态失败'
+            error: error.message || '处理文档失败'
         };
     }
 } 

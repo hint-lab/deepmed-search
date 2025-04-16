@@ -2,38 +2,26 @@ import { createWorker } from '../queue-manager';
 import { DocumentProcessJobData, DocumentProcessJobResult } from './types';
 import { processDocumentWithZerox } from '../../zerox';
 import { ModelProvider } from 'zerox/node-zerox/dist/types';
-import { prisma } from '../../prisma';
 import { TaskType } from '../types';
 import { Job } from 'bullmq';
 import logger from '@/utils/logger';
 import { getReadableUrl } from '../../minio/operations';
+import { DocumentSplitter } from '../../document-splitter';
 
 // 文档处理函数
 export async function processDocument(data: DocumentProcessJobData): Promise<DocumentProcessJobResult> {
-    const { documentId, options } = data;
+    const { documentId, options, documentInfo } = data;
 
     try {
-        // 从数据库获取文档信息
-        const document = await prisma.document.findUnique({
-            where: { id: documentId },
-            include: {
-                uploadFile: true
-            }
-        });
-
-        if (!document) {
-            throw new Error('文档不存在');
-        }
-
-        if (!document.uploadFile) {
-            throw new Error('文档文件不存在');
+        if (!documentInfo || !documentInfo.uploadFile) {
+            throw new Error('文档信息不完整');
         }
 
         // 修复文件路径，移除重复的 deepmed 目录
-        const filePath = document.uploadFile.location.replace(/^deepmed\//, '');
+        const filePath = documentInfo.uploadFile.location.replace(/^deepmed\//, '');
         logger.info('处理文件路径', {
             documentId,
-            originalPath: document.uploadFile.location,
+            originalPath: documentInfo.uploadFile.location,
             fixedPath: filePath
         });
 
@@ -63,7 +51,7 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             success: true,
             data: {
                 ...result,
-                fileUrl // 添加文件 URL 到返回结果中
+                fileUrl
             }
         };
     } catch (error) {
