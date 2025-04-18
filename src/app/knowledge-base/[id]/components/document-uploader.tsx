@@ -56,7 +56,7 @@ export function DocumentUploader({
       console.log('上传结果:', uploadResult);
 
       if (!uploadResult.success) {
-        throw new Error(uploadResult.error || '上传失败');
+        throw new Error(uploadResult.error ? String(uploadResult.error) : '上传失败');
       }
 
       // 调用成功回调

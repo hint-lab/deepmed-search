@@ -7,8 +7,9 @@ import logger from '@/utils/logger';
 import { DocumentChunk } from '@/lib/document-splitter';
 import { DocumentProcessingStatus } from '@/types/db/enums';
 import { ServerActionResponse } from '@/types/actions';
-import { ProcessResult } from '@/lib/zerox/types';
 import { processDocument } from '@/lib/bullmq/document-worker';
+import { } from '@/lib/minio/client';
+import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
 
 interface Page {
     pageNumber: number;
@@ -24,7 +25,7 @@ export async function processDocumentDirectlyAction(
         maintainFormat: boolean;
         prompt?: string;
     }
-): Promise<ServerActionResponse<ProcessResult>> {
+): Promise<ServerActionResponse<any>> {
     const startTime = Date.now();
 
     try {
@@ -51,7 +52,7 @@ export async function processDocumentDirectlyAction(
         }
 
         // 调用文档处理函数
-        const result = await processDocument({
+        const result: DocumentProcessJobResult = await processDocument({
             documentId,
             documentInfo: {
                 name: document.name,
@@ -65,49 +66,85 @@ export async function processDocumentDirectlyAction(
                 prompt: options.prompt
             }
         });
-        console.log('result', result);
+        console.log('DocumentProcessJobResult', result);
         if (!result.success) {
             return {
                 success: false,
                 error: result.error || '处理文档失败'
             };
         }
-
-        // 更新文档处理状态
-        const markdown_content = result.data?.data?.metadata?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
+        // 提取Markdown内容
+        const markdown_content = result.data?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
 
         // 将完整结果保存为字符串
-        const rawResult = result.data ? JSON.stringify(result.data) : '{}';
-        console.log('处理结果详细信息:', rawResult);
+        const rawData = result.data ? JSON.stringify(result.data) : '{}';
+        console.log('处理结果详细信息:', rawData);
 
-        // 尝试安全地提取值
-        const totalChunks = result.data?.totalChunks || 0;
-        const pages = result.data?.data?.metadata?.pages || [];
-        const pageCount = pages.length || 0;
-
-        await prisma.document.update({
-            where: { id: documentId },
-            data: {
-                markdown_content,
-                chunk_num: totalChunks,
-                processing_status: DocumentProcessingStatus.PROCESSED,
-                progress: 100,
-                progress_msg: '处理完成',
-                process_duation: Math.floor((Date.now() - startTime) / 1000),
-                process_begin_at: new Date(startTime),
-                metadata: {
-                    processingTime: Date.now() - startTime,
-                    documentId,
-                    rawResult: rawResult,
-                    pageCount: pageCount
-                }
+        // 将Markdown内容上传到MinIO，获取URL
+        let content_url = null;
+        // 如果markdown_content不为空，则上传到MinIO
+        console.log('markdown_content', markdown_content);
+        if (markdown_content) {
+            try {
+                content_url = await uploadTextContent(
+                    markdown_content,
+                    `documents/${documentId}/markdown`
+                );
+                console.log('Markdown内容已上传至MinIO:', content_url);
+            } catch (error) {
+                console.error('上传Markdown内容到M inIO失败:', error);
             }
-        });
+        }
+
+        // 更新文档处理状态
+        try {
+            await prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    markdown_content: markdown_content, // 如果上传成功，就不存在数据库里
+                    chunk_num: 0,
+                    token_num: result.metadata?.inputTokens || 0,
+                    processing_status: DocumentProcessingStatus.PROCESSED,
+                    progress: 100,
+                    progress_msg: '转换完成',
+                    process_duation: Math.floor((Date.now() - startTime) / 1000),
+                    process_begin_at: new Date(startTime),
+                    file_url: result.metadata?.fileUrl || '',
+                    content_url: content_url || '',
+                    metadata: {
+                        processingTime: Date.now() - startTime,
+                        completionTime: result.metadata?.completionTime || 0,
+                        documentId,
+                        pageCount: result.data?.pageCount || 0,
+                    }
+
+                }
+            });
+            console.log('文档更新成功:', documentId);
+        } catch (error) {
+            console.error('更新文档失败:', error);
+            throw new Error(`更新文档失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        }
 
         // 返回处理结果
         return {
             success: true,
-            data: result.data?.data
+            data: {
+                success: true,
+                data: {
+                    pageCount: result.data?.pageCount,
+                    pages: result.data?.pages,
+                },
+                metadata: {
+                    processingTime: Date.now() - startTime,
+                    documentId,
+                    completionTime: result.metadata?.completionTime,
+                    fileName: result.metadata?.fileName,
+                    inputTokens: result.metadata?.inputTokens,
+                    outputTokens: result.metadata?.outputTokens,
+                    fileUrl: result.metadata?.fileUrl,
+                }
+            }
         };
     } catch (error: any) {
         console.error('处理文档失败:', error);

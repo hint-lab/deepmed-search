@@ -22,6 +22,7 @@ import { DocumentProcessingStatus } from '@/types/db/enums';
 import { useToggleDocumentEnabled } from '@/hooks/use-document';
 import { FileIcon } from '@/components/file-icon';
 // import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
+import { processDocumentDirectlyAction } from '@/actions/document-process';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -94,17 +95,27 @@ export function useKnowledgeBaseTableColumns({
   const handleConvertToMarkdown = async (documentId: string) => {
     setConvertingDocId(documentId);
     // 暂时注释掉未定义的函数调用
-    // const result = await convertAnyToMarkdown(documentId);
-    // if (!result.success) {
-    //   // 如果失败，清除正在转换的文档ID
-    //   setConvertingDocId(null);
-    // }
+    const result = await processDocumentDirectlyAction(documentId, {
+      model: 'gpt-4o-mini',
+      maintainFormat: true,
+    });
+    console.log('转换结果:', result);
+    if (!result.success) {
+      // 如果失败，清除正在转换的文档ID
+      toast.error('转换失败');
+      setConvertingDocId(null);
+      return;
+    }
+    toast.success('转换成功');
     // 临时实现
     console.log('转换文档为Markdown:', documentId);
     setConvertingDocId(null);
   };
 
   const handleToggle = useCallback(async (document: IDocument, newEnabled: boolean) => {
+    // 添加延迟
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     const success = await toggleDocumentEnabled(
       document.id,
       newEnabled,
@@ -231,14 +242,13 @@ export function useKnowledgeBaseTableColumns({
 
         return (
           <div className="flex items-center gap-2">
-            <Button
+            <Badge
               variant="outline"
-              size={"sm"}
+              className="hover:cursor-pointer text-xs"
               onClick={() => handleConvertToMarkdown(document.id)}
-              className='hover:cursor-pointer text-xs'
             >
               {t('convertToMarkdown')}
-            </Button>
+            </Badge>
           </div>
         );
       },
@@ -300,10 +310,11 @@ export function useKnowledgeBaseTableColumns({
               id={`status-${document.id}`}
               className="scale-75"
               checked={localEnabled}
-              disabled={toggleLoading || document.processing_status === DocumentProcessingStatus.PROCESSING}
               onCheckedChange={(checked) => {
                 setLocalEnabled(checked);
-                handleToggle(document, checked);
+                setTimeout(() => {
+                  handleToggle(document, checked);
+                }, 500);
               }}
             />
           </div>

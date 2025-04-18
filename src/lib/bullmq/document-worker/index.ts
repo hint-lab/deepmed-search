@@ -7,7 +7,7 @@ import { Job } from 'bullmq';
 import logger from '@/utils/logger';
 import { getReadableUrl } from '../../minio/operations';
 import { DocumentSplitter } from '../../document-splitter';
-
+import { ZeroxProcessResult } from '@/lib/zerox/types';
 // 文档处理函数
 export async function processDocument(data: DocumentProcessJobData): Promise<DocumentProcessJobResult> {
     const { documentId, options, documentInfo } = data;
@@ -33,7 +33,7 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
         });
 
         // 使用 processDocumentWithZerox 处理文档
-        const result = await processDocumentWithZerox(fileUrl, {
+        const result: ZeroxProcessResult = await processDocumentWithZerox(fileUrl, {
             modelProvider: ModelProvider.OPENAI,
             model: options.model,
             maintainFormat: options.maintainFormat,
@@ -46,13 +46,15 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             correctOrientation: true,
             trimEdges: true
         });
-
+        console.log('processDocumentWithZerox', result);
+        // 需要将 ZeroxProcessResult 转换成 DocumentProcessJobResult 的格式
         return {
-            success: true,
-            data: {
-                ...result,
+            ...result,
+            error: result.error || '',
+            metadata: {
+                ...result.metadata,
                 fileUrl
-            }
+            },
         };
     } catch (error) {
         logger.error('文档处理失败', {

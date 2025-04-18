@@ -2,7 +2,7 @@ import { MinioConfig } from './types';
 
 // MinIO 默认配置
 export const DEFAULT_CONFIG: MinioConfig = {
-    endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+    endPoint: getMinioEndpoint(),
     port: parseInt(process.env.MINIO_PORT || '9000'),
     useSSL: process.env.MINIO_USE_SSL === 'true',
     accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',

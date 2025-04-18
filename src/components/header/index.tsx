@@ -55,6 +55,11 @@ export default function Header() {
             icon: <Beaker className="h-5 w-5" />,
             dropdown: [
                 {
+                    name: "数据库测试",
+                    href: "/dev-tools/database-test",
+                    icon: <File className="h-4 w-4" />
+                },
+                {
                     name: "队列测试",
                     href: "/dev-tools/queue-test",
                     icon: <ListTodo className="h-4 w-4" />
@@ -75,7 +80,7 @@ export default function Header() {
                     icon: <ServerCrash className="h-4 w-4" />
                 },
                 {
-                    name: "文件处理测试",
+                    name: "文件转换测试",
                     href: "/dev-tools/document-test",
                     icon: <File className="h-4 w-4" />
                 }

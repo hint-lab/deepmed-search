@@ -1,32 +1,31 @@
 // This file defines types and interfaces for the BullMQ document processing worker.
+import { ProcessJobResult } from '../types';
 
-import { ProcessResult } from '../../zerox/types';
-import { DocumentChunk } from '../../document-splitter';
-
-export const JOB_OPTIONS = {
-    attempts: 3,
-    backoff: {
-        type: 'exponential',
-        delay: 1000,
-    },
-    removeOnComplete: true,
-    removeOnFail: false,
-} as const;
-
-
-export interface DocumentProcessJobResult {
+export interface DocumentProcessJobResult extends ProcessJobResult {
     success: boolean;
     data?: {
-        success: boolean;
-        data?: ProcessResult;
-        error?: string;
-        fileUrl?: string;
-        totalChunks?: number;
-        pages?: {
-            pageNumber: number;
+        pages?: Array<{
             content: string;
             contentLength: number;
-        }[];
+        }>;
+        summary?: {
+            totalPages: number;
+            ocr: {
+                successful: number;
+                failed: number;
+            };
+            extracted: any;
+        };
+        extracted?: any;
+    };
+    metadata?: {
+        fileName?: string;
+        processingTime?: number;
+        completionTime?: number;
+        documentId?: string;
+        inputTokens?: number;
+        outputTokens?: number;
+        fileUrl?: string;
     };
     error?: string;
 }

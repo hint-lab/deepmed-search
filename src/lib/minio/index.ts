@@ -1,5 +1,5 @@
 import { getMinioClient } from './client';
-
+import logger from '@/utils/logger';
 export * from './types';
 export * from './config';
 export * from './operations';
@@ -18,7 +18,7 @@ export async function initMinio() {
         if (!exists) {
             // 创建存储桶
             await client.makeBucket(bucketName);
-            console.log('创建存储桶:', bucketName);
+            logger.info(`创建存储桶: ${bucketName}`);
         }
 
         // 设置存储桶策略为公共读取
@@ -42,11 +42,11 @@ export async function initMinio() {
         };
 
         await client.setBucketPolicy(bucketName, JSON.stringify(policy));
-        console.log('✅ 设置存储桶策略成功');
+        logger.info('✅ 设置存储桶策略成功');
 
         return { success: true };
     } catch (error) {
-        console.error('初始化 MinIO 失败:', error);
+        logger.error('初始化 MinIO 失败:', error);
         return { success: false, error: (error as Error).message };
     }
 } 

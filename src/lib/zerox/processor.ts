@@ -4,13 +4,12 @@ import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { zerox } from 'zerox';
 import { zeroxConfig } from './config';
-import { ZeroxOptions, ProcessResult } from './types';
+import { ZeroxOptions, ZeroxProcessResult, ZeroxOutput } from './types';
 import logger from '@/utils/logger';
 import { EventEmitter } from 'events';
 import { Readable } from 'stream';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-
 const execAsync = promisify(exec);
 
 // 增加最大监听器数量
@@ -308,7 +307,7 @@ async function ensureAllDirectories(): Promise<{
 export async function processDocumentWithZerox(
     filePathOrUrl: string,
     options: ZeroxOptions = {}
-): Promise<ProcessResult> {
+): Promise<ZeroxProcessResult> {
     const startTime = Date.now();
     const documentId = uuidv4();
 
@@ -326,37 +325,6 @@ export async function processDocumentWithZerox(
         const { baseDir, tempDir, processedDir } = await ensureAllDirectories();
         // 检查输入是 URL 还是本地文件路径
         const isUrl = filePathOrUrl.startsWith('http://') || filePathOrUrl.startsWith('https://');
-        let absoluteFilePath: string;
-
-        // if (isUrl) {
-        //     // 如果是 URL，下载到临时文件
-        //     const fileName = path.basename(filePathOrUrl).split('?')[0]; // 移除 URL 参数
-        //     absoluteFilePath = path.join(tempDir, `${documentId}-${fileName}`);
-        //     try {
-        //         await downloadFileFromUrl(filePathOrUrl, absoluteFilePath);
-        //         logger.info('从 URL 下载文件成功', {
-        //             url: filePathOrUrl,
-        //             localPath: absoluteFilePath
-        //         });
-        //     } catch (error) {
-        //         logger.error('从 URL 下载文件失败', {
-        //             url: filePathOrUrl,
-        //             error: error instanceof Error ? error.message : '未知错误',
-        //             stack: error instanceof Error ? error.stack : undefined
-        //         });
-        //         throw new Error(`下载文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
-        //     }
-        // } else {
-        //     // 如果是本地文件路径，直接使用
-        //     absoluteFilePath = path.resolve(filePathOrUrl);
-        //     if (!fs.existsSync(absoluteFilePath)) {
-        //         logger.error('源文件不存在', {
-        //             filePath: absoluteFilePath
-        //         });
-        //         throw new Error(`源文件不存在: ${absoluteFilePath}`);
-        //     }
-        // }
-
 
         logger.info('源文件信息', {
             originalPath: filePathOrUrl,
@@ -394,97 +362,62 @@ export async function processDocumentWithZerox(
             }
         });
 
-        try {
-            // 调用 zerox 处理文档
-            const result = await zerox({
-                filePath: filePathOrUrl,
-                modelProvider,
-                model,
-                credentials,
-                outputDir,
-                maintainFormat: options.maintainFormat ?? false,
-                cleanup: options.cleanup ?? zeroxConfig.processing.cleanup,
-                concurrency: options.concurrency ?? zeroxConfig.processing.concurrency,
-                tempDir: tempDirPath,
-                maxImageSize: options.maxImageSize ?? zeroxConfig.processing.maxImageSize,
-                imageDensity: options.imageDensity ?? zeroxConfig.processing.imageDensity,
-                imageHeight: options.imageHeight ?? zeroxConfig.processing.imageHeight,
-                correctOrientation: options.correctOrientation ?? zeroxConfig.processing.correctOrientation,
-                trimEdges: options.trimEdges ?? zeroxConfig.processing.trimEdges,
-                directImageExtraction: options.directImageExtraction,
-                extractionPrompt: options.extractionPrompt,
-                extractOnly: options.extractOnly,
-                extractPerPage: options.extractPerPage,
-                prompt: options.prompt
-            });
-
-            // // 清理临时文件
-            // if (isUrl) {
-            //     try {
-            //         fs.unlinkSync(absoluteFilePath);
-            //         logger.info('清理临时文件成功', { path: absoluteFilePath });
-            //     } catch (error) {
-            //         logger.warn('清理临时文件失败', {
-            //             path: absoluteFilePath,
-            //             error: error instanceof Error ? error.message : '未知错误'
-            //         });
-            //     }
-            // }
-
-            const processingTime = Date.now() - startTime;
-            logger.info('文档处理完成', {
-                documentId,
-                processingTime,
-                result: {
-                    pages: result.pages?.length || 0,
-                    inputTokens: result.inputTokens,
-                    outputTokens: result.outputTokens,
-                    completionTime: result.completionTime,
-                    content: result.pages?.[0]?.content?.substring(0, 200) + '...' || null
-                }
-            });
-
-            return {
-                success: true,
-                data: result,
-                metadata: {
-                    processingTime,
-                    documentId,
-                    pageCount: result.pages?.length,
-                    inputTokens: result.inputTokens,
-                    outputTokens: result.outputTokens,
-                    completionTime: result.completionTime
-                }
-            };
-        } catch (error) {
-            logger.error('ZeroX 处理文档失败', {
-                documentId,
-                filePath: filePathOrUrl,
-                error: error instanceof Error ? error.message : '未知错误',
-                stack: error instanceof Error ? error.stack : undefined
-            });
-            throw error;
-        }
+        // 调用 zerox 处理文档
+        const result: ZeroxOutput = await zerox({
+            filePath: filePathOrUrl,
+            modelProvider,
+            model,
+            credentials,
+            outputDir,
+            maintainFormat: options.maintainFormat ?? false,
+            cleanup: options.cleanup ?? zeroxConfig.processing.cleanup,
+            concurrency: options.concurrency ?? zeroxConfig.processing.concurrency,
+            tempDir: tempDirPath,
+            maxImageSize: options.maxImageSize ?? zeroxConfig.processing.maxImageSize,
+            imageDensity: options.imageDensity ?? zeroxConfig.processing.imageDensity,
+            imageHeight: options.imageHeight ?? zeroxConfig.processing.imageHeight,
+            correctOrientation: options.correctOrientation ?? zeroxConfig.processing.correctOrientation,
+            trimEdges: options.trimEdges ?? zeroxConfig.processing.trimEdges,
+            directImageExtraction: options.directImageExtraction,
+            extractionPrompt: options.extractionPrompt,
+            extractOnly: options.extractOnly,
+            extractPerPage: options.extractPerPage,
+            prompt: options.prompt
+        });
+        const processingTime = Date.now() - startTime;
+        logger.info('Zerox文档转换完成', {
+            documentId,
+            processingTime
+        });
+        return {
+            success: true,
+            data: {
+                pages: result.pages,
+                extracted: result.extracted,
+                summary: result.summary
+            },
+            metadata: {
+                processingTime: processingTime,
+                documentId: documentId,
+                completionTime: result.completionTime,
+                fileName: result.fileName,
+                inputTokens: result.inputTokens,
+                outputTokens: result.outputTokens,
+            }
+        } as ZeroxProcessResult;
     } catch (error) {
         const processingTime = Date.now() - startTime;
         logger.error('文档处理失败', {
             documentId,
             processingTime,
-            error: error instanceof Error ? error.message : '未知错误',
-            stack: error instanceof Error ? error.stack : undefined,
-            filePathOrUrl,
-            options: {
-                ...options,
-                apiKey: undefined
-            }
+            error: error instanceof Error ? error.message : '未知错误'
         });
-
         return {
             success: false,
             error: error instanceof Error ? error.message : '未知错误',
             metadata: {
-                processingTime,
-                documentId
+                documentId,
+                processingTime
             }
         };
     }

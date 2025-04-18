@@ -36,7 +36,7 @@ export interface IKnowledgeBase {
     dialogs?: IDialog[];
 }
 
-export interface IKnowledgeListItem extends Pick<IKnowledgeBase, 'id' | 'name' | 'description' | 'avatar' | 'doc_num' | 'chunk_num' | 'createdAt'> {
+export interface IKnowledgeListItem extends Pick<IKnowledgeBase, 'id' | 'name' | 'description' | 'avatar' | 'doc_num' | 'chunk_num' | 'createdAt' | 'visible'> {
     // 可以添加列表项特有的字段
 }
 

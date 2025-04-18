@@ -42,7 +42,7 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
                 skip,
                 take: pageSize,
                 orderBy: {
-                    createdAt: 'desc'
+                    create_date: 'desc'
                 }
             })
         ]);
@@ -312,7 +312,6 @@ export async function convertToMarkdownAction(documentId: string): Promise<Serve
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                content: content,
                 processing_status: DocumentProcessingStatus.PROCESSED,
                 chunk_num: parseResponse.metadata.pages.length,
                 token_num: parseResponse.metadata.inputTokens,
@@ -487,7 +486,6 @@ export async function processDocumentToChunksAction(documentId: string): Promise
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                content: content,
                 processing_status: DocumentProcessingStatus.PROCESSED,
                 chunk_num: parseResponse.metadata.pages.length,
                 token_num: parseResponse.metadata.inputTokens,
@@ -619,7 +617,7 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                 const document = await prisma.document.create({
                     data: {
                         name: file.name,
-                        content: '',
+                        content_url: uploadFile.location,
                         knowledgeBaseId: kbId,
                         size: file.size,
                         type: file.type,
@@ -657,7 +655,7 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                 return document;
             } catch (error) {
                 results.failed_count++;
-                results.failed_files.push({
+                results.failed_documents.push({
                     name: file.name,
                     error: error instanceof Error ? error.message : '上传失败'
                 });

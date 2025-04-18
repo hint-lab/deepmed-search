@@ -33,9 +33,17 @@ export interface TaskStatus {
     data: any;
 }
 
+
 // 通用任务数据接口
 export interface ProcessJobData {
     options: Record<string, any>;
+}
+// 通用任务结果接口
+export interface ProcessJobResult {
+    success: boolean;
+    data?: any;
+    metadata?: any;
+    error?: string;
 }
 
 // 文档处理任务数据

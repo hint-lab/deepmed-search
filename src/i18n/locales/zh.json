@@ -123,7 +123,7 @@
             "page": "页",
             "totalPages": "总页数",
             "currentPage": "当前页",
-            "convertToMarkdown": "转换为Markdown",
+            "convertToMarkdown": "转换",
             "documentProcessingStatus": {
                 "title": "处理状态",
                 "processing": "处理中",

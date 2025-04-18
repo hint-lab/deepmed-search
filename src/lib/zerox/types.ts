@@ -27,9 +27,13 @@ export interface ZeroxOptions {
     apiKey?: string;
 }
 
-export interface ProcessResult {
+export interface ZeroxProcessResult {
     success: boolean;
-    data?: any;
+    data?: {
+        pages?: any,
+        extracted?: any,
+        summary?: any,
+    },
     error?: string;
     metadata: {
         processingTime: number;
@@ -38,13 +42,6 @@ export interface ProcessResult {
         fileName?: string;
         inputTokens?: number;
         outputTokens?: number;
-        pageCount?: number;
-        pages?: {
-            pageNumber: number;
-            content: string;
-            contentLength: number;
-        }[];
-        wordCount?: number;
     };
 }
 

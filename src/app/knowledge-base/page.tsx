@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslate } from '@/hooks/use-language';
 import { KnowledgeBaseCard } from './components/knowledge-base-card';
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/contexts/user-context';
 import { useFetchKnowledgeBaseListWithPagination, useCreateKnowledgeBase } from '@/hooks/use-knowledge-base'
 import { useRouter } from "next/navigation";
+import { getAllInvisibleKnowledgeBasesAction } from '@/actions/knowledgebase';
 
 export default function KnowledgeBaseListPage() {
     const router = useRouter();
@@ -32,9 +33,7 @@ export default function KnowledgeBaseListPage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [creatingLoading, setCreatingLoading] = useState(false);
 
-    const nextList = useMemo(() => {
-        return list ?? [];
-    }, [list]);
+    const nextList = list;
 
     const total = useMemo(() => {
         return list?.length ?? 0;
