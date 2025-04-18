@@ -8,14 +8,8 @@ import { DocumentChunk } from '@/lib/document-splitter';
 import { DocumentProcessingStatus } from '@/types/db/enums';
 import { ServerActionResponse } from '@/types/actions';
 import { processDocument } from '@/lib/bullmq/document-worker';
-import { } from '@/lib/minio/client';
+import { uploadFileStream, getFileUrl } from '@/lib/minio/operations';
 import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
-
-interface Page {
-    pageNumber: number;
-    content: string;
-    contentLength?: number;
-}
 
 // 直接处理文档的server action
 export async function processDocumentDirectlyAction(
@@ -86,13 +80,29 @@ export async function processDocumentDirectlyAction(
         console.log('markdown_content', markdown_content);
         if (markdown_content) {
             try {
-                content_url = await uploadTextContent(
-                    markdown_content,
-                    `documents/${documentId}/markdown`
-                );
+                // 创建一个 Readable 流
+                const { Readable } = require('stream');
+                const buffer = Buffer.from(markdown_content, 'utf8');
+                const stream = new Readable();
+                stream.push(buffer);
+                stream.push(null);
+
+                const objectName = `documents/${documentId}/markdown`;
+                await uploadFileStream({
+                    bucketName: 'deepmed',
+                    objectName,
+                    stream,
+                    size: buffer.length,
+                    metaData: {
+                        'content-type': 'text/markdown; charset=utf-8'
+                    }
+                });
+
+                // 获取文件 URL
+                content_url = await getFileUrl('deepmed', objectName);
                 console.log('Markdown内容已上传至MinIO:', content_url);
             } catch (error) {
-                console.error('上传Markdown内容到M inIO失败:', error);
+                console.error('上传Markdown内容到MinIO失败:', error);
             }
         }
 
@@ -115,7 +125,7 @@ export async function processDocumentDirectlyAction(
                         processingTime: Date.now() - startTime,
                         completionTime: result.metadata?.completionTime || 0,
                         documentId,
-                        pageCount: result.data?.pageCount || 0,
+                        pageCount: result.data?.pages?.length || 0,
                     }
 
                 }
@@ -132,7 +142,7 @@ export async function processDocumentDirectlyAction(
             data: {
                 success: true,
                 data: {
-                    pageCount: result.data?.pageCount,
+                    pageCount: result.data?.pages?.length,
                     pages: result.data?.pages,
                 },
                 metadata: {
@@ -143,6 +153,7 @@ export async function processDocumentDirectlyAction(
                     inputTokens: result.metadata?.inputTokens,
                     outputTokens: result.metadata?.outputTokens,
                     fileUrl: result.metadata?.fileUrl,
+                    contentUrl: content_url || '',
                 }
             }
         };

@@ -13,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Send, Pencil, MessagesSquare } from 'lucide-react';
 import { createChatDialogAction, sendChatMessageAction } from '@/actions/chat';
 import { toast } from 'sonner';
+import { useUserInfo } from '@/hooks/use-user-info';
 
 export default function ModelTestPage() {
+    const { userInfo } = useUserInfo();
     const [model, setModel] = useState('gpt-4o-mini');
     const [prompt, setPrompt] = useState('');
     const [temperature, setTemperature] = useState(0.7);
@@ -28,7 +30,6 @@ export default function ModelTestPage() {
     const [dialogCreated, setDialogCreated] = useState(false);
 
     const resultRef = useRef<HTMLDivElement>(null);
-
     // 在组件加载时创建测试对话
     useEffect(() => {
         async function createTestDialog() {
@@ -58,12 +59,7 @@ export default function ModelTestPage() {
 
     const models = [
         { value: 'gpt-4o', label: 'GPT-4o' },
-        { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-        { value: 'claude-3-opus', label: 'Claude 3 Opus' },
-        { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet' },
-        { value: 'claude-3-haiku', label: 'Claude 3 Haiku' },
+        { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
     ];
 
     const handleSubmit = async () => {
@@ -77,11 +73,12 @@ export default function ModelTestPage() {
         const startTime = Date.now();
 
         try {
-            // 构建增强的提示词，包含模型和参数信息
-            const enhancedPrompt = `[模型: ${model}, 温度: ${temperature}, 最大令牌数: ${maxTokens}]\n\n${prompt}`;
+            // 构建增强的提示词，不包含模型和参数信息
+            const enhancedPrompt = prompt;
 
             // 使用真实的sendChatMessageAction发送消息
             const response = await sendChatMessageAction(dialogId, enhancedPrompt);
+            console.log(response);
 
             if (response.success && response.data) {
                 // 获取助手响应内容

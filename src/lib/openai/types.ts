@@ -1,4 +1,3 @@
-import OpenAI from 'openai'
 
 // OpenAI API 响应类型
 export interface OpenAIResponse {

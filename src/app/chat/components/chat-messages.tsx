@@ -3,17 +3,15 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useTranslate } from '@/hooks/use-language';
-import { Message } from '@prisma/client';
+import { IMessage } from '@/types/db/message';
 import dayjs from 'dayjs';
 import { MessageType } from '@/constants/chat';
+import { useEffect } from 'react';
 
-// Define the local message type again here or import it
-// For simplicity, defining it here, ensure it matches ChatPage
-type LocalMessage = Partial<Message> & { id: string; content: string; role: MessageType; createdAt: Date };
 
 interface ChatMessageItemProps {
     // Accept LocalMessage type
-    message: LocalMessage;
+    message: IMessage;
 }
 
 function ChatMessageItem({ message }: ChatMessageItemProps) {
@@ -57,10 +55,14 @@ function ChatMessageItem({ message }: ChatMessageItemProps) {
 
 interface ChatMessagesProps {
     // Expect LocalMessage array
-    messages: LocalMessage[];
+    messages: IMessage[];
 }
 
 export default function ChatMessages({ messages }: ChatMessagesProps) {
+    useEffect(() => {
+        console.log(messages)
+    }, [messages])
+
     return (
         <div className="space-y-4 pt-12 mt-6">
             {messages.map((msg) => (

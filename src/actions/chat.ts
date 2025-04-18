@@ -4,20 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
-import { agentManager } from '@/lib/agent-manager';
-import { Message } from '@/types/db/chat';
+import { chatClient } from '@/lib/openai/chat/client';
+import { IMessage } from '@/types/db/message';
 import { MessageType } from '@/constants/chat';
-import { Message as PrismaMessage } from '@prisma/client';
 
-type DatabaseMessage = {
-    id: string;
-    content: string;
-    role: MessageType;
-    createdAt: Date;
-    updatedAt: Date;
-    userId: string;
-    dialogId: string;
-};
+
 
 /**
  * 获取对话列表
@@ -196,9 +187,6 @@ export const deleteChatDialogAction = withAuth(async (session, id: string): Prom
             return dialog;
         });
 
-        // 清理 agent 实例
-        agentManager.removeAgent(id);
-
         // 在事务成功完成后调用 revalidatePath
         revalidatePath('/chat');
         revalidatePath('/chat/[id]', 'page');
@@ -219,7 +207,7 @@ export const deleteChatDialogAction = withAuth(async (session, id: string): Prom
 /**
  * 获取对话消息
  */
-export const getChatConversationAction = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
+export const fetchChatMessagesAction = withAuth(async (session, dialogId: string): Promise<APIResponse<any>> => {
     const messages = await prisma.message.findMany({
         where: {
             dialogId,
@@ -249,7 +237,7 @@ export const deleteChatMessageAction = withAuth(async (session, messageId: strin
 });
 
 /**
- * 发送消息 (仅非流式)
+ * 发送消息 (非流式响应)
  */
 export const sendChatMessageAction = withAuth(async (session, dialogId: string, content: string): Promise<APIResponse<any>> => {
     try {
@@ -263,7 +251,7 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
                 dialogId,
                 userId: session.user.id,
             },
-        }) as unknown as DatabaseMessage;
+        });
 
         console.log('用户消息创建成功:', { messageId: userMessage.id });
 
@@ -279,18 +267,18 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
             throw new Error('对话不存在');
         }
 
-        console.log('获取对话信息成功:', {
+        console.log('获取对话信息成功:', { dialogId });
+
+        // 设置系统提示词
+        chatClient.setSystemPrompt(
             dialogId,
-            userId: dialog.userId,
-            knowledgeBaseId: dialog.knowledgeBaseId
-        });
+            dialog.knowledgeBase
+                ? `你是一个专业的AI助手。请基于以下知识库回答问题：${dialog.knowledgeBase.name}`
+                : '你是一个专业的AI助手。'
+        );
 
-        // 获取或创建 agent
-        const agent = agentManager.getChatAgent(dialogId, dialog.knowledgeBase);
-        console.log('Agent 获取成功');
-
-        // 使用普通处理 (非流式)
-        const response = await agent.process(content);
+        // 使用 chatClient 处理非流式输出
+        const response = await chatClient.chat(dialogId, content);
 
         // 创建助手消息
         const assistantMessage = await prisma.message.create({
@@ -300,29 +288,129 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
                 dialogId,
                 userId: session.user.id,
             },
-        }) as unknown as DatabaseMessage;
+        });
 
         console.log('助手消息创建成功:', { messageId: assistantMessage.id });
-
         revalidatePath(`/chat/${dialogId}`);
 
         return {
             success: true,
             data: {
-                userMessage,
-                assistantMessage
+                messageId: assistantMessage.id,
+                content: response.content
             }
         };
+
     } catch (error) {
-        console.error('发送消息失败 (非流式):', {
-            error,
-            dialogId,
-            userId: session?.user?.id,
-            content
-        });
+        console.error('处理消息失败:', error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : '发送消息失败'
+            error: error instanceof Error ? error.message : '处理消息失败'
+        };
+    }
+});
+
+/**
+ * 发送消息 (流式响应)
+ */
+export const sendChatMessageStreamAction = withAuth(async (session, dialogId: string, content: string, onChunk: (chunk: string) => void): Promise<APIResponse<any>> => {
+    try {
+        console.log('开始发送消息 (流式):', { dialogId, content });
+
+        // 创建用户消息
+        const userMessage = await prisma.message.create({
+            data: {
+                content,
+                role: MessageType.User,
+                dialogId,
+                userId: session.user.id,
+            },
+        });
+
+        console.log('用户消息创建成功:', { messageId: userMessage.id });
+
+        // 获取对话信息
+        const dialog = await prisma.dialog.findUnique({
+            where: { id: dialogId },
+            include: {
+                knowledgeBase: true
+            }
+        });
+
+        if (!dialog) {
+            throw new Error('对话不存在');
+        }
+
+        console.log('获取对话信息成功:', { dialogId });
+
+        // 设置系统提示词
+        chatClient.setSystemPrompt(
+            dialogId,
+            dialog.knowledgeBase
+                ? `你是一个专业的AI助手。请基于以下知识库回答问题：${dialog.knowledgeBase.name}`
+                : '你是一个专业的AI助手。'
+        );
+
+        // 创建临时的空助手消息 (用于后续更新)
+        let assistantMessage = await prisma.message.create({
+            data: {
+                content: '', // 初始为空
+                role: MessageType.Assistant,
+                dialogId,
+                userId: session.user.id,
+            },
+        });
+
+        console.log('临时助手消息创建成功:', { messageId: assistantMessage.id });
+
+        let accumulatedContent = '';
+
+        // 使用 chatClient 处理流式输出
+        await chatClient.chatStream(dialogId, content, (chunk: string) => {
+            if (chunk) {
+                accumulatedContent += chunk;
+                onChunk(chunk);
+            }
+        });
+
+        // 流处理结束后，更新数据库中的完整内容
+        console.log('流处理完成，更新数据库:', {
+            messageId: assistantMessage.id,
+            contentLength: accumulatedContent.length,
+            contentPreview: accumulatedContent.substring(0, 100) + '...'
+        });
+
+        await prisma.message.update({
+            where: { id: assistantMessage.id },
+            data: {
+                content: accumulatedContent,
+            },
+        });
+
+        // 更新对话的最后更新时间
+        await prisma.dialog.update({
+            where: { id: dialogId },
+            data: {
+                update_date: new Date(),
+            },
+        });
+
+        console.log('数据库更新成功');
+        revalidatePath(`/chat/${dialogId}`);
+
+        return {
+            success: true,
+            data: {
+                messageId: assistantMessage.id,
+                content: accumulatedContent
+            }
+        };
+
+    } catch (error) {
+        console.error('处理流式消息失败:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : '处理流式消息失败'
         };
     }
 });

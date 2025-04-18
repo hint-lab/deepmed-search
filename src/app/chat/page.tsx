@@ -9,6 +9,8 @@ import { useChatDialogList, useCreateChatDialog } from '@/hooks/use-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/user-context';
+import { useChat } from '@/contexts/chat-context';
+
 // Define a type for the initial prompt examples
 interface PromptExample {
   titleKey: string;
@@ -23,6 +25,7 @@ export default function ChatPage() {
   const router = useRouter();
   const { createChatDialog, loading: isCreatingDialog } = useCreateChatDialog();
   const { userInfo } = useUser();
+  const { setInitialMessage } = useChat();
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -43,6 +46,7 @@ export default function ChatPage() {
       if (!newDialog?.id) {
         throw new Error("Failed to create dialog");
       }
+      setInitialMessage(messageToSend);
       router.push(`/chat/${newDialog.id}`);
     } catch (error) {
       console.error("Failed to create dialog:", error);

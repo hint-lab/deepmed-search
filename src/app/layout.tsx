@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner"
 import Header from '@/components/header';
 import { UserProvider } from '@/contexts/user-context';
 import { initializeServer } from '@/lib/init-server';
+import { ChatProvider } from '@/contexts/chat-context';
 
 // 初始化服务器端服务
 // 这只会在服务器端执行一次
@@ -41,12 +42,14 @@ export default async function RootLayout({
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
                                 <UserProvider>
-                                    <div className="flex flex-col h-screen overflow-hidden">
-                                        <Header />
-                                        <main className="flex-1 overflow-auto  h-full">
-                                            {children}
-                                        </main>
-                                    </div>
+                                    <ChatProvider>
+                                        <div className="flex flex-col h-screen overflow-hidden">
+                                            <Header />
+                                            <main className="flex-1 overflow-auto  h-full">
+                                                {children}
+                                            </main>
+                                        </div>
+                                    </ChatProvider>
                                 </UserProvider>
                             </TooltipProvider>
                         </NextThemeProvider>

@@ -1,3 +1,12 @@
+import OpenAI from 'openai';
+
+// 创建 OpenAI 客户端实例
+export const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || '',
+    baseURL: process.env.OPENAI_API_BASE_URL || 'https://api.openai.com/v1',
+    organization: process.env.OPENAI_ORGANIZATION,
+});
+
 export * from './types';
 export * from './config';
 export * from './chat/client';

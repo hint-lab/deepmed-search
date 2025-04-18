@@ -17,7 +17,7 @@ import 'dayjs/locale/ja';
 import { useDeleteChatDialog } from '@/hooks/use-chat';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { IDialog } from '@/types/db/chat';
+import { IDialog } from '@/types/db/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -144,6 +144,7 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
   const { t } = useTranslate('chat');
   const router = useRouter();
   const { deleteDialog } = useDeleteChatDialog();
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
   const handleDeleteDialog = async (dialogId: string) => {
     try {
@@ -167,11 +168,61 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
     }
   };
 
+  const handleDeleteAllDialog = async () => {
+    try {
+      // 删除所有对话
+      for (const dialog of dialogs) {
+        await deleteDialog(dialog.id);
+      }
+      toast.success(t('deleteAllSuccess', '所有对话已删除'));
+      // 先跳转到聊天主页
+      router.push('/chat');
+      // 强制刷新页面
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete all dialogs:", error);
+      toast.error(t('deleteAllError', '删除所有对话失败'));
+    } finally {
+      setShowDeleteAllConfirm(false);
+    }
+  };
+
   return (
     <div className="w-80 border-r bg-background flex flex-col pt-16 h-screen">
-      <div className="flex h-14 items-center border-b px-4 ">
+      <div className="flex h-14 items-center border-b px-4 justify-between">
         <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
-        <CreateChatDialogForm />
+        <div className="flex items-center gap-2">
+          <CreateChatDialogForm />
+          {dialogs.length > 0 && (
+            <AlertDialog open={showDeleteAllConfirm} onOpenChange={setShowDeleteAllConfirm}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('deleteAllDialogTitle', '删除所有对话')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('deleteAllDialogDescription', '确定要删除所有对话吗？此操作无法撤销。')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>
+                    {t('common:cancel')}
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllDialog} className="bg-destructive hover:bg-destructive/90">
+                    {t('common:delete')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
       <div className="p-4">
         <div className="relative">

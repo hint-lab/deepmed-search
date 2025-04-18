@@ -3,16 +3,19 @@
 import { toast } from 'sonner';
 import { useTranslate } from '@/hooks/use-language';
 import { useState, useEffect, useRef } from 'react';
+import { IMessage } from '@/types/db/message';
 import {
     getChatDialogListAction,
     createChatDialogAction,
     updateChatDialogAction,
     deleteChatDialogAction,
-    getChatConversationAction,
+    fetchChatMessagesAction,
     sendChatMessageAction,
+    sendChatMessageStreamAction,
     deleteChatMessageAction,
     getRelatedQuestionsAction
 } from '@/actions/chat';
+import { MessageType } from '@/constants/chat';
 
 /**
  * 获取对话列表
@@ -133,63 +136,65 @@ export function useDeleteChatDialog() {
 /**
  * 获取对话消息
  */
-export function useConversation(dialogId: string) {
+export function useChatMessages() {
     const [data, setData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!dialogId) return;
-            try {
-                const result = await getChatConversationAction(dialogId);
-                if (result.success) {
-                    setData(result.data as any[]);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setIsLoading(false);
+    const fetchChatMessages = async (dialogId: string) => {
+        if (!dialogId) return;
+        setIsLoading(true);
+        try {
+            const result = await fetchChatMessagesAction(dialogId);
+            if (result.success) {
+                const formattedMessages = result.data.map((msg: any) => ({
+                    ...msg,
+                    role: msg.role as MessageType,
+                    createdAt: new Date(msg.createdAt),
+                }));
+                setData(formattedMessages);
             }
-        };
-        fetchData();
-    }, [dialogId]);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    return { data, isLoading };
+    return {
+        data,
+        isLoading,
+        setData,
+        fetchChatMessages
+    };
 }
 
 /**
  * 发送消息
- * 注意：这个Hook发送消息后，通常期望后台API返回AI的完整响应。
- * 如果你需要流式响应，请使用 useSendMessageWithSSE。
  */
 export function useSendMessage() {
-    const { t } = useTranslate('chat') // 使用 'chat' 命名空间
+    const { t } = useTranslate('chat')
     const [isPending, setIsPending] = useState(false);
 
     const sendMessage = async (dialogId: string, content: string) => {
         setIsPending(true);
         try {
-            // 注意：sendChatMessage 内部调用 /api/chat/message,
-            // 这个 API 需要负责生成并可能保存助手的响应
             const result = await sendChatMessageAction(dialogId, content);
             if (result.success) {
-                // 假设 result.data 包含AI响应（如果API设计如此）
-                // toast.success(t('message.sent')); // 修正提示消息
-                return result.data; // 返回数据给调用者处理
+                return result.data;
             } else {
                 throw new Error(result.error || t('errors.sendMessageFailed'));
             }
         } catch (error: any) {
             toast.error(error.message || t('errors.sendMessageFailed'));
-            return null; // 返回 null 或抛出错误
-        }
-        finally {
+            return null;
+        } finally {
             setIsPending(false);
         }
     };
 
     return { sendMessage, isPending };
 }
+
 /**
  * 删除消息
  */
