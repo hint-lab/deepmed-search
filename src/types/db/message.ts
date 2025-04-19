@@ -1,5 +1,3 @@
-import { User } from './user';
-import { Dialog } from './dialog';
 
 // 消息模型类型定义
 export interface IMessage {
@@ -7,9 +5,7 @@ export interface IMessage {
     content: string;
     role: string;
     dialogId: string;
-    dialog: Dialog;
     userId: string;
-    user: User;
     createdAt: Date;
     updatedAt: Date;
 }

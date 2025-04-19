@@ -132,7 +132,9 @@ export function useKnowledgeBaseTableColumns({
                   row.original.knowledgeBaseId
                 )}
               >
-                <FileIcon extension={extension} />
+                <div className="w-4 h-4 flex-shrink-0">
+                  <FileIcon extension={extension} />
+                </div>
                 <span className={cn('truncate font-medium')}>{name}</span>
               </div>
             </TooltipTrigger>

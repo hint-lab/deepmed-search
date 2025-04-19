@@ -14,6 +14,7 @@ import { IMessage } from '@/types/db/message';
 import { useUser } from '@/contexts/user-context';
 import { MessageType } from '@/constants/chat';
 import { useChat } from '@/contexts/chat-context';
+import { toast } from 'sonner';
 
 
 
@@ -46,7 +47,8 @@ export default function ChatPage() {
             role: MessageType.User,
             createdAt: new Date(),
             updatedAt: new Date(),
-            dialogId: dialogId
+            dialogId: dialogId,
+            userId: userInfo?.id || ''
         };
 
         const optimisticAssistantMessage: IMessage = {
@@ -55,7 +57,8 @@ export default function ChatPage() {
             role: MessageType.Assistant,
             createdAt: new Date(),
             updatedAt: new Date(),
-            dialogId: dialogId
+            dialogId: dialogId,
+            userId: userInfo?.id || ''
         };
 
         setMessages(prev => [...prev, optimisticUserMessage, optimisticAssistantMessage]);
@@ -77,6 +80,7 @@ export default function ChatPage() {
 
             if (!result.success) {
                 console.error("流式消息发送失败:", result.error);
+                toast.error(t('sendMessageError') + (result.error ? `: ${result.error}` : ''));
                 setMessages(prev => prev.filter(msg =>
                     msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId
                 ));
