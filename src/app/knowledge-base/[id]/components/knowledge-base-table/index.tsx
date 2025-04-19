@@ -29,13 +29,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useFetchDocumentList } from '@/hooks/use-document';
 import { IDocument } from '@/types/db/document';
 import { getExtension } from '@/utils/document-util';
-import { useMemo } from 'react';
 import { useKnowledgeBaseTableColumns } from './use-table-columns';
 import { useTranslate } from '@/hooks/use-language';
-import { useSelectedRecord } from '@/hooks/use-selected-record';
 import { useChangeDocumentParser } from '@/hooks/use-document-parser';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { useDeleteDocument } from '@/hooks/use-document';
 
 

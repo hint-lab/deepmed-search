@@ -5,11 +5,12 @@ import { ChunkIndexer } from '@/lib/chunk-indexer';
 import { DocumentSplitter } from '@/lib/document-splitter';
 import logger from '@/utils/logger';
 import { DocumentChunk } from '@/lib/document-splitter';
-import { DocumentProcessingStatus } from '@/types/db/enums';
 import { ServerActionResponse } from '@/types/actions';
 import { processDocument } from '@/lib/bullmq/document-worker';
 import { uploadFileStream, getFileUrl } from '@/lib/minio/operations';
 import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
+import { DocumentProcessingStatus } from '@/types/db/enums';
+
 
 // 直接处理文档的server action
 export async function processDocumentDirectlyAction(
@@ -24,6 +25,7 @@ export async function processDocumentDirectlyAction(
 ): Promise<ServerActionResponse<any>> {
     try {
         // 1. 转换文档
+        // 更新文档状态为处理中
         const converted = await convertDocumentAction(documentId, {
             model: options.model,
             maintainFormat: options.maintainFormat,
@@ -157,7 +159,6 @@ export async function convertDocumentAction(
 
         // 将完整结果保存为字符串
         const rawData = result.data ? JSON.stringify(result.data) : '{}';
-        console.log('处理结果详细信息:', rawData);
 
         // 将Markdown内容上传到MinIO，获取URL
         let content_url = null;
@@ -199,8 +200,8 @@ export async function convertDocumentAction(
                     markdown_content: markdown_content, // 如果上传成功，就不存在数据库里
                     chunk_num: 0,
                     token_num: result.metadata?.inputTokens || 0,
-                    processing_status: DocumentProcessingStatus.PROCESSED,
-                    progress: 100,
+                    processing_status: DocumentProcessingStatus.CONVERTING,
+                    progress: 60,
                     progress_msg: '转换完成',
                     process_duation: Math.floor((Date.now() - startTime) / 1000),
                     process_begin_at: new Date(startTime),
@@ -326,7 +327,7 @@ export async function indexDocumentChunksAction(
     documentId: string,
     kbId: string,
     chunks: DocumentChunk[]
-): Promise<ServerActionResponse<{ indexedCount: number }>> {
+): Promise<ServerActionResponse<{ indexedCount: number; embeddings?: number[][] }>> {
     try {
         logger.info('开始索引文档块', {
             documentId,
@@ -338,15 +339,19 @@ export async function indexDocumentChunksAction(
             logger.error('indexDocumentChunksAction 收到无效的 kbId', { documentId, receivedKbId: kbId });
             return { success: false, error: `内部错误：传递给索引操作的知识库 ID 无效 (received: ${kbId})` };
         }
-
-        // 创建块索引器
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                chunk_num: chunks.length,
+                processing_status: DocumentProcessingStatus.INDEXING, progress: 70
+            }
+        });
         const indexer = new ChunkIndexer({
             embeddingModel: 'text-embedding-3-small',
             batchSize: 10,
             kbId: kbId
         });
 
-        // 索引文档块
         const indexResult = await indexer.indexChunks(chunks);
 
         if (!indexResult.success) {
@@ -366,19 +371,20 @@ export async function indexDocumentChunksAction(
             indexedCount: indexResult.indexedCount
         });
 
-        // 更新文档的 chunk_num
         await prisma.document.update({
             where: { id: documentId },
             data: {
                 chunk_num: chunks.length,
-                processing_status: DocumentProcessingStatus.PROCESSED
+                processing_status: DocumentProcessingStatus.SUCCESSED,
+                progress: 100
             }
         });
 
         return {
             success: true,
             data: {
-                indexedCount: indexResult.indexedCount
+                indexedCount: indexResult.indexedCount,
+                embeddings: indexResult.embeddings
             }
         };
     } catch (error: any) {
@@ -428,16 +434,7 @@ export async function processDocumentActionUsingQueue(
             };
         }
 
-        // 更新文档状态为处理中
-        await prisma.document.update({
-            where: { id: documentId },
-            data: {
-                processing_status: DocumentProcessingStatus.PROCESSING,
-                progress: 0,
-                progress_msg: '开始处理',
-                process_begin_at: new Date(startTime)
-            }
-        });
+
 
         // 开始处理文档
         const result = await processDocumentDirectlyAction(documentId, document.knowledgeBaseId, options);
@@ -474,7 +471,9 @@ export async function processDocumentActionUsingQueue(
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                processing_status: DocumentProcessingStatus.FAILED,
+                processing_status: {
+                    set: DocumentProcessingStatus.FAILED
+                },
                 progress: 0,
                 progress_msg: error.message || '处理失败',
                 processing_error: error.message
@@ -502,11 +501,13 @@ export async function updateDocumentProcessingStatusAction(
         await prisma.document.update({
             where: { id: documentId },
             data: {
-                processing_status: status,
+                processing_status: {
+                    set: status
+                },
                 progress: options?.progress ?? 0,
                 progress_msg: options?.progressMsg || '',
                 processing_error: options?.error || null,
-                ...(status === DocumentProcessingStatus.PROCESSING && {
+                ...(status === DocumentProcessingStatus.CONVERTING && {
                     process_begin_at: new Date()
                 })
             }

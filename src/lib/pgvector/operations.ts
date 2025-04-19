@@ -3,6 +3,7 @@
 import { prisma } from '../prisma';
 import { Prisma } from '@prisma/client';
 import { VECTOR_DIMENSIONS } from './client';
+import logger from '@/utils/logger';
 
 // 定义查询结果类型
 interface SearchResult {
@@ -79,13 +80,13 @@ export async function searchSimilarDocuments(
             distance: result.distance
         }));
     } catch (error) {
-        console.error('搜索相似文档失败:', error);
+        logger.error('搜索相似文档失败:', { error: error instanceof Error ? error.message : error });
         throw error;
     }
 }
 
 /**
- * 插入向量数据
+ * 插入向量数据 - 检查 chunk_id 是否存在，若存在则跳过
  */
 export async function insertVectors({
     vectors,
@@ -94,11 +95,16 @@ export async function insertVectors({
     metadataList,
     kbId,
     docName
-}: PgVectorInsertParams) {
+}: PgVectorInsertParams): Promise<number> {
+    let createdCount = 0;
     try {
         // 检查参数长度是否一致
         if (vectors.length !== contents.length || vectors.length !== docIds.length || vectors.length !== metadataList.length) {
-            throw new Error('向量、内容和文档ID的长度必须相同');
+            throw new Error('向量、内容、文档ID和元数据列表的长度必须相同');
+        }
+        if (vectors.length === 0) {
+            logger.warn('尝试插入空的向量数据');
+            return 0;
         }
 
         // 1. 检查知识库是否存在
@@ -109,58 +115,91 @@ export async function insertVectors({
             throw new Error(`知识库不存在: ${kbId}`);
         }
 
-        // 2. 批量创建 Chunk 并更新向量
-        const chunks = await Promise.all(vectors.map(async (vector, i) => {
+        // 2. 逐个处理 chunk
+        for (let i = 0; i < vectors.length; i++) {
             const currentDocId = docIds[i];
+            const metadata = metadataList[i];
+            const vector = vectors[i];
+            const content = contents[i];
+            const generatedChunkId = `chunk_${currentDocId}_${i}`;
 
-            // 2.1 检查文档是否存在且属于该知识库
-            const document = await prisma.document.findUnique({
-                where: { id: currentDocId, knowledgeBaseId: kbId },
-            });
-            if (!document) {
-                console.warn(`文档 ${currentDocId} 不存在或不属于知识库 ${kbId}，跳过 chunk ${i}`);
-                return null; // 跳过这个 chunk
-            }
-
-            // 2.2 创建不包含向量的记录
-            const chunk = await prisma.chunk.create({
-                data: {
-                    chunk_id: `chunk_${currentDocId}_${i}`,
-                    content_with_weight: contents[i],
-                    available_int: 1,
-                    doc_id: currentDocId,
-                    doc_name: docName, // 考虑是否应该从 document 对象获取 docName
-                    positions: { start: i, end: i + 1 },
-                    tag_feas: metadataList[i],
-                    kb_id: kbId,
-                    important_kwd: [],
-                    question_kwd: [],
-                    tag_kwd: []
+            try {
+                // 2.1 检查文档是否存在且属于该知识库
+                const document = await prisma.document.findUnique({
+                    where: { id: currentDocId, knowledgeBaseId: kbId },
+                    select: { id: true }
+                });
+                if (!document) {
+                    logger.warn(`文档 ${currentDocId} 不存在或不属于知识库 ${kbId}，跳过 chunk ${generatedChunkId}`);
+                    continue; // Skip this chunk
                 }
-            });
 
-            // 2.3 然后更新向量字段
-            await prisma.$executeRaw`
-                UPDATE "Chunk"
-                SET embedding = ${Prisma.raw(`'[${vector.join(',')}]'::vector`)}
-                WHERE id = ${chunk.id}
-            `;
+                // 2.2 检查 chunk_id 是否已存在
+                const existingChunk = await prisma.chunk.findUnique({
+                    where: { chunk_id: generatedChunkId },
+                    select: { id: true } // Only need to know if it exists
+                });
 
-            return chunk;
-        }));
+                if (existingChunk) {
+                    logger.info(`Chunk ID ${generatedChunkId} 已存在，跳过插入。`);
+                    continue; // Skip this chunk
+                }
 
-        // 过滤掉因为文档不存在而被跳过的 null 值
-        const successfulChunks = chunks.filter(chunk => chunk !== null);
+                // 2.3 创建不包含向量的记录
+                const chunk = await prisma.chunk.create({
+                    data: {
+                        chunk_id: generatedChunkId,
+                        content_with_weight: content,
+                        available_int: 1,
+                        doc_id: currentDocId,
+                        doc_name: docName, // Consider using document.name if available
+                        positions: metadata.positions || { start: i, end: i + 1 },
+                        tag_feas: metadata.tag_feas || null,
+                        kb_id: kbId,
+                        important_kwd: metadata.important_kwd || [],
+                        question_kwd: metadata.question_kwd || [],
+                        tag_kwd: metadata.tag_kwd || []
+                        // id, createdAt, updatedAt, embedding have defaults or are handled next
+                    }
+                });
 
-        return successfulChunks.length;
-    } catch (error) {
-        console.error('插入向量数据失败:', error);
-        // 如果是 Prisma 已知错误，可以提供更具体的错误信息
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            console.error('Prisma Error Code:', error.code);
-            console.error('Prisma Error Meta:', error.meta);
+                // 2.4 然后更新向量字段
+                await prisma.$executeRaw`
+                    UPDATE "Chunk"
+                    SET embedding = ${Prisma.raw(`'[${vector.join(',')}]'::vector`)}
+                    WHERE id = ${chunk.id}
+                `;
+                createdCount++; // Increment count only if created
+
+            } catch (innerError) {
+                // Log error for this specific chunk but continue with others
+                logger.error(`处理 chunk ${generatedChunkId} 失败:`, {
+                    error: innerError instanceof Error ? innerError.message : innerError,
+                    docId: currentDocId,
+                    index: i
+                });
+                // Optionally re-throw if one failure should stop the whole batch
+                // throw innerError;
+            }
         }
-        throw error;
+
+        logger.info(`向量插入完成，成功创建 ${createdCount} 个 chunk。`);
+        return createdCount;
+
+    } catch (error) {
+        logger.error('插入向量数据的主流程失败:', {
+            kbId,
+            error: error instanceof Error ? error.message : '未知错误',
+            stack: error instanceof Error ? error.stack : undefined
+        });
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            logger.error('Prisma Error Details:', {
+                code: error.code,
+                meta: error.meta,
+                clientVersion: error.clientVersion
+            });
+        }
+        throw error; // Re-throw the main error
     }
 }
 
@@ -181,7 +220,7 @@ export async function updateChunkEmbedding(
 
         return true;
     } catch (error) {
-        console.error(`更新文档块 ${chunkId} 的向量嵌入失败:`, error);
+        logger.error(`更新文档块 ${chunkId} 的向量嵌入失败:`, { error: error instanceof Error ? error.message : error });
         throw error;
     }
 } 

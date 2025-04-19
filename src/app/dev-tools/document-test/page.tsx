@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Loader2, FileText, ArrowRight, Info } from 'lucide-react';
 import {
@@ -21,6 +20,7 @@ import {
     getDocumentKnowledgeBaseIdAction
 } from '@/actions/document-process';
 import { DocumentProcessingStatus } from '@/types/db/enums';
+
 
 export default function DocumentTestPage() {
     const [documentId, setDocumentId] = useState<string>('');
@@ -34,6 +34,7 @@ export default function DocumentTestPage() {
     const [convertedResult, setConvertedResult] = useState<any>(null);
     const [splitResult, setSplitResult] = useState<any>(null);
     const [indexResult, setIndexResult] = useState<any>(null);
+    const [indexEmbeddings, setIndexEmbeddings] = useState<number[][] | null>(null);
     const [currentStep, setCurrentStep] = useState<string>('convert');
 
     // 为每个步骤添加独立的处理状态
@@ -166,62 +167,70 @@ export default function DocumentTestPage() {
     // 处理文档 - 完整流程
     const handleProcessTest = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!documentId) {
-            toast.error('请输入要测试的文档ID');
-            return;
-        }
-        if (!kbId && !kbIdLoading) {
-            toast.error('无法获取此文档的知识库ID，请检查文档ID是否正确');
-            return;
-        }
-
-        const formData = new FormData(e.currentTarget);
-        const model = formData.get('model') as string || ModelOptions.OPENAI_GPT_4O_MINI;
-        const maintainFormat = formData.get('maintainFormat') === 'on';
-        const prompt = formData.get('prompt') as string || '';
-
+        setProcessing(true);
         setFullProcessing(true);
         setError('');
-        setResult(null);
         setFullProgress(0);
-
-        toast.info(`正在处理文档: ${documentId} (知识库: ${kbId})`);
+        setConvertProgress(0);
+        setSplitProgress(0);
+        setIndexProgress(0);
+        setCurrentStep('convert');
 
         try {
-            const response = await processDocumentDirectlyAction(documentId, kbId, {
+            const form = e.currentTarget;
+            const formData = new FormData(form);
+            const model = formData.get('model') as string || ModelOptions.OPENAI_GPT_4O_MINI;
+            const maintainFormat = formData.get('maintainFormat') === 'on';
+            const prompt = formData.get('prompt') as string || '';
+
+            // 获取文档所属的知识库 ID
+            const kbIdResponse = await getDocumentKnowledgeBaseIdAction(documentId);
+            if (!kbIdResponse.success || !kbIdResponse.kbId) {
+                throw new Error(kbIdResponse.error || '获取知识库 ID 失败');
+            }
+
+            const response = await processDocumentDirectlyAction(documentId, kbIdResponse.kbId, {
                 model,
                 maintainFormat,
                 prompt
             });
 
-            if (response.success && response.data) {
+            if (response.success && response.data && response.data.converted) {
+                const convertedData = response.data.converted.data;
+                const convertedMetadata = response.data.converted.metadata;
+
                 const processedResult = {
-                    success: response.data.success,
-                    data: response.data.data || {},
+                    success: true,
+                    data: {
+                        pages: convertedData?.pages || [],
+                        pageCount: convertedData?.pageCount || 0,
+                    },
                     metadata: {
-                        processingTime: response.data.metadata?.processingTime || 0,
-                        documentId: response.data.metadata?.documentId || documentId,
-                        completionTime: response.data.metadata?.completionTime || 0,
-                        fileName: response.data.metadata?.fileName || '未知',
-                        inputTokens: response.data.metadata?.inputTokens || 0,
-                        outputTokens: response.data.metadata?.outputTokens || 0,
-                        pageCount: response.data.metadata?.pageCount || 0,
-                        pages: response.data.metadata?.pages || [],
-                        wordCount: response.data.metadata?.wordCount || 0
+                        processingTime: convertedMetadata?.processingTime || 0,
+                        documentId: convertedMetadata?.documentId || documentId,
+                        completionTime: convertedMetadata?.completionTime || 0,
+                        fileName: convertedMetadata?.fileName || '未知',
+                        inputTokens: convertedMetadata?.inputTokens || 0,
+                        outputTokens: convertedMetadata?.outputTokens || 0,
+                        pageCount: convertedMetadata?.pageCount || 0,
+                        wordCount: 0
                     }
                 };
                 setResult(processedResult);
                 setFullProgress(100);
                 toast.success('文档处理完成');
             } else {
-                setError(response.error || '处理文档失败');
-                toast.error(response.error || '处理文档失败');
+                const errorMsg = response.error || '处理文档失败，但未返回明确错误信息。';
+                setError(errorMsg);
+                toast.error(errorMsg);
+                console.error('完整流程处理失败:', response);
             }
         } catch (err: any) {
             setError('处理文档失败: ' + (err.message || '未知错误'));
             toast.error('处理文档失败: ' + (err.message || '未知错误'));
             console.error(err);
         } finally {
+            setProcessing(false);
             setFullProcessing(false);
         }
     };
@@ -241,7 +250,7 @@ export default function DocumentTestPage() {
         toast.info(`正在转换文档: ${documentId}`);
 
         try {
-            await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.PROCESSING, {
+            await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.CONVERTING, {
                 progress: 0,
                 progressMsg: '开始转换'
             });
@@ -259,7 +268,7 @@ export default function DocumentTestPage() {
             } else {
                 setError(response.error || '转换文档失败');
                 toast.error(response.error || '转换文档失败');
-                console.error(err);
+                console.error('转换文档失败:', response.error);
                 await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
                     progress: 0,
                     progressMsg: response.error || '转换失败',
@@ -300,6 +309,7 @@ export default function DocumentTestPage() {
         toast.info(`正在分割文档: ${documentId}`);
 
         try {
+
             const response = await splitDocumentAction(
                 documentId,
                 convertedResult.data.pages,
@@ -316,9 +326,10 @@ export default function DocumentTestPage() {
                 toast.success('文档分割完成');
                 setCurrentStep('index');
             } else {
+
                 setError(response.error || '分割文档失败');
                 toast.error(response.error || '分割文档失败');
-                console.error(err);
+                console.error('分割文档失败:', response.error);
             }
         } catch (err: any) {
             setError('分割文档失败: ' + (err.message || '未知错误'));
@@ -347,11 +358,16 @@ export default function DocumentTestPage() {
         setIndexProcessing(true);
         setError('');
         setIndexResult(null);
+        setIndexEmbeddings(null);
         setIndexProgress(0);
 
-        toast.info(`正在索引文档块: ${documentId} (知识库: ${kbId})`);
+        console.log(`正在索引文档块: ${documentId} (知识库: ${kbId})`);
 
         try {
+            await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.INDEXING, {
+                progress: 0,
+                progressMsg: '开始索引'
+            });
             const response = await indexDocumentChunksAction(
                 documentId,
                 kbId,
@@ -360,13 +376,20 @@ export default function DocumentTestPage() {
 
             if (response.success && response.data) {
                 setIndexResult(response.data);
+                setIndexEmbeddings(response.data.embeddings || null);
                 setIndexProgress(100);
                 toast.success('文档块索引完成');
                 setCurrentStep('complete');
+
             } else {
                 setError(response.error || '索引文档块失败');
                 toast.error(response.error || '索引文档块失败');
-                console.error(err);
+                console.error(response.error);
+                await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
+                    progress: 0,
+                    progressMsg: response.error || '转换失败',
+                    error: response.error
+                });
             }
         } catch (err: any) {
             setError('索引文档块失败: ' + (err.message || '未知错误'));
@@ -629,6 +652,18 @@ export default function DocumentTestPage() {
                                     <span className="font-medium">索引块数: </span>
                                     <span>{indexResult.indexedCount || 0}</span>
                                 </div>
+                                {/* Display Embeddings */}
+                                {indexEmbeddings && indexEmbeddings.length > 0 && (
+                                    <div>
+                                        <span className="font-medium">Embedding 预览 (第一个块的前10维): </span>
+                                        <div className="mt-2 w-full rounded-md border p-4 bg-muted overflow-x-auto">
+                                            <pre className="text-xs">{`[${indexEmbeddings[0].slice(0, 10).join(', ')} ...]`}</pre>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            维度: {indexEmbeddings[0].length}, 共 {indexEmbeddings.length} 个向量 (来自第一个批次)
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -695,7 +730,7 @@ export default function DocumentTestPage() {
                                 </div>
                                 <div>
                                     <span className="font-medium">页数: </span>
-                                    <span>{result.metadata?.pageCount || 0}</span>
+                                    <span>{result.data?.pages.length || 0}</span>
                                 </div>
                                 <div>
                                     <span className="font-medium">输入 Tokens: </span>
@@ -712,16 +747,6 @@ export default function DocumentTestPage() {
                                 <div>
                                     <span className="font-medium">源文件: </span>
                                     <span>{result.metadata?.fileName || '未知'}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium">内容预览 (最多500字符): </span>
-                                    <div className="mt-2 h-72 w-full rounded-md border">
-                                        <div className="p-4 bg-white">
-                                            <pre className="whitespace-pre-wrap text-sm break-all">
-                                                {result.data?.pages?.[0]?.content?.substring(0, 500)}{result.data?.pages?.[0]?.content?.length > 500 ? '...' : ''}
-                                            </pre>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

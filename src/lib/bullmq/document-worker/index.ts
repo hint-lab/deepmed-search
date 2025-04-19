@@ -46,7 +46,6 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             correctOrientation: true,
             trimEdges: true
         });
-        console.log('processDocumentWithZerox', result);
         // 需要将 ZeroxProcessResult 转换成 DocumentProcessJobResult 的格式
         return {
             ...result,

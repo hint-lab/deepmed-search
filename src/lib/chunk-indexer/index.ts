@@ -44,11 +44,12 @@ export class ChunkIndexer {
     /**
      * 索引文档块
      * @param chunks 文档块数组
-     * @returns 索引结果
+     * @returns 索引结果，包含第一个批次的 embedding
      */
     public async indexChunks(chunks: DocumentChunk[]): Promise<{
         success: boolean;
         indexedCount: number;
+        embeddings?: number[][];
         error?: string;
     }> {
         if (!this.options.kbId) {
@@ -73,6 +74,7 @@ export class ChunkIndexer {
             // 准备批处理
             const batches = this.prepareBatches(chunks);
             let indexedCount = 0;
+            let firstBatchEmbeddings: number[][] | undefined = undefined;
 
             // 处理每个批次
             for (let i = 0; i < batches.length; i++) {
@@ -84,6 +86,11 @@ export class ChunkIndexer {
                 // 获取嵌入向量
                 const contents = batch.map(chunk => chunk.content);
                 const vectors = await getEmbeddings(contents, this.options.embeddingModel);
+
+                // Store embeddings from the first batch
+                if (i === 0) {
+                    firstBatchEmbeddings = vectors;
+                }
 
                 // 准备元数据
                 const docIds = batch.map(chunk => chunk.metadata.documentId);
@@ -98,7 +105,7 @@ export class ChunkIndexer {
                     contents,
                     docIds,
                     metadataList,
-                    kbId: this.options.kbId,
+                    kbId: this.options.kbId!,
                     docName: batch[0].metadata.documentName || '未知文档',
                 });
 
@@ -117,6 +124,7 @@ export class ChunkIndexer {
             return {
                 success: true,
                 indexedCount,
+                embeddings: firstBatchEmbeddings
             };
         } catch (error) {
             logger.error('索引文档块失败', {

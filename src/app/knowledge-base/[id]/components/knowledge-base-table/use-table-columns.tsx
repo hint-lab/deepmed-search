@@ -14,17 +14,14 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowUpDown } from 'lucide-react';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslate } from '@/hooks/use-language';
-import { Badge } from '@/components/ui/badge';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentOptions } from './document-options';
-import { DocumentProcessingStatus } from '@/types/db/enums';
 import { useToggleDocumentEnabled } from '@/hooks/use-document';
 import { FileIcon } from '@/components/file-icon';
-// import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
-import { processDocumentDirectlyAction, updateDocumentProcessingStatusAction } from '@/actions/document-process';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { DocumentProcessingBadge } from './document-processing-badge';
 
 export type UseKnowledgeBaseTableColumnsType = {
   showChangeParserModal: () => void;
@@ -36,15 +33,6 @@ export function useKnowledgeBaseTableColumns({
   setCurrentRecord,
 }: UseKnowledgeBaseTableColumnsType) {
   const { t } = useTranslate('knowledgeBase.table');
-  // const {
-  //   convertAnyToMarkdown,
-  //   jobId,
-  //   jobStatus,
-  //   isLoading
-  // } = useZeroxConvertToMarkdown();
-  // const { startProcessingDocumentToChunks, cancelProcessingDocumentToChunks,
-  //   retryProcessingDocumentToChunks, isProcessingDocumentToChunks } = useProcessDocumentChunks();
-
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
   const { loading: toggleLoading, toggleDocumentEnabled } = useToggleDocumentEnabled();
@@ -61,69 +49,11 @@ export function useKnowledgeBaseTableColumns({
     [setCurrentRecord, showChangeParserModal],
   );
 
-  const handleProcessBadge = async (document: IDocument) => {
-    console.log('handleProcessBadge', document);
-    // if (isProcessingDocumentToChunks) return;
-    await handleConvertToMarkdown(document.id);
-  }
+
 
   const navigateToChunkParsedResult = useCallback((documentId: string, knowledgeBaseId: string) => {
-    router.push(`/knowledge-base/${knowledgeBaseId}/document/${documentId}/chunks`);
+    router.push(`/chunks/${documentId}`);
   }, [router]);
-
-  // 记录当前正在转换的文档ID
-  const [convertingDocId, setConvertingDocId] = useState<string | null>(null);
-
-  const handleConvertToMarkdown = async (documentId: string) => {
-    setConvertingDocId(documentId);
-
-    try {
-      // 更新文档状态为处理中
-      await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.PROCESSING, {
-        progress: 0,
-        progressMsg: '开始处理'
-      });
-
-      // 调用处理函数
-      const result = await processDocumentDirectlyAction(documentId, {
-        model: 'gpt-4o-mini',
-        maintainFormat: true,
-      });
-
-      console.log('转换结果:', result);
-
-      if (!result.success) {
-        // 如果失败，更新文档状态为失败
-        await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
-          progress: 0,
-          progressMsg: result.error || '处理失败',
-          error: result.error
-        });
-
-        toast.error('转换失败: ' + (result.error || '未知错误'));
-        setConvertingDocId(null);
-        return;
-      }
-
-      toast.success('转换成功');
-      setConvertingDocId(null);
-
-      // 刷新页面以显示最新状态
-      setRefreshKey(prev => prev + 1);
-    } catch (error: any) {
-      console.error('转换文档失败:', error);
-
-      // 更新文档状态为失败
-      await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
-        progress: 0,
-        progressMsg: error.message || '处理失败',
-        error: error.message
-      });
-
-      toast.error('转换失败: ' + (error.message || '未知错误'));
-      setConvertingDocId(null);
-    }
-  };
 
   const handleToggle = useCallback(async (document: IDocument, newEnabled: boolean) => {
     // 添加延迟
@@ -247,55 +177,8 @@ export function useKnowledgeBaseTableColumns({
       accessorKey: 'processing_status',
       header: t('documentProcessingStatus.title'),
       cell: ({ row }) => {
-        const status = (row.getValue('processing_status') as string) || 'pending';
         const document = row.original;
-        let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
-        let icon = null;
-
-        // 根据状态设置不同的样式
-        switch (status) {
-          case DocumentProcessingStatus.PROCESSED:
-            badgeVariant = 'default';
-            break;
-          case DocumentProcessingStatus.PROCESSING:
-            badgeVariant = 'secondary';
-            break;
-          case DocumentProcessingStatus.FAILED:
-            badgeVariant = 'destructive';
-            break;
-          default:
-            badgeVariant = 'outline';
-        }
-
-        // 检查当前文档是否正在转换中
-        const isConverting = convertingDocId === document.id;
-
-        return (
-          <div className="flex items-center gap-2">
-            {isConverting ? (
-              <Badge
-                variant="secondary"
-                className="text-xs flex items-center gap-1"
-              >
-                <span className="animate-spin">⟳</span> {t('processing')}
-              </Badge>
-            ) : (
-              <Badge
-                variant={badgeVariant}
-                className="hover:cursor-pointer text-xs"
-                onClick={() => handleProcessBadge(document)}
-              >
-                {status === DocumentProcessingStatus.PROCESSED
-                  ? t('processed')
-                  : status === DocumentProcessingStatus.PROCESSING
-                    ? t('processing')
-                    : status === DocumentProcessingStatus.FAILED
-                      ? t('failed')
-                      : t('convertToMarkdown')}
-              </Badge>
-            )}
-          </div>
-        );
+        return <DocumentProcessingBadge document={document} />;
       },
       meta: {
         cellClassName: 'w-32',
@@ -303,9 +186,12 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'chunk_num',
-      header: t('documentChunkNum'),
+      header: ({ column }) => (
+        <div className="text-right">
+          {t('documentChunkNum')}
+        </div>
+      ),
       cell: ({ row }) => {
-        console.log(row)
         const chunk_count = row.getValue('chunk_num') as number;
         return <div className="text-right">{chunk_count === undefined ? "-" : chunk_count}</div>;
       },
@@ -315,7 +201,11 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'token_num',
-      header: t('documentWordCount'),
+      header: ({ column }) => (
+        <div className="text-right">
+          {t('documentWordCount')}
+        </div>
+      ),
       cell: ({ row }) => {
         const count = row.getValue('token_num') as number;
         return <div className="text-right">{count === undefined ? "-" : count}</div>;
@@ -326,10 +216,13 @@ export function useKnowledgeBaseTableColumns({
     },
     {
       accessorKey: 'size',
-      header: t('documentSize'),
+      header: ({ column }) => (
+        <div className="text-right">
+          {t('documentSize')}
+        </div>
+      ),
       cell: ({ row }) => {
         const size = row.getValue('size') as number;
-
         return <div className="text-right">{formatBytes(size)}</div>;
       },
       meta: {
@@ -350,7 +243,7 @@ export function useKnowledgeBaseTableColumns({
         }, [document.enabled]);
 
         return (
-          <div className="flex items-center gap-2">
+          <div className="text-right">
             <Switch
               id={`status-${document.id}`}
               className="scale-75"
@@ -366,7 +259,7 @@ export function useKnowledgeBaseTableColumns({
         );
       },
       meta: {
-        cellClassName: 'w-48',
+        cellClassName: 'w-12',
       } as ColumnMeta,
     },
     {
@@ -383,7 +276,6 @@ export function useKnowledgeBaseTableColumns({
             <DocumentOptions
               document={document}
               onShowChangeParserModal={onShowChangeParserModal}
-              onProcessChunks={() => handleProcessBadge(document)}
               setCurrentRecord={setCurrentRecord}
               showChangeParserModal={showChangeParserModal}
             />

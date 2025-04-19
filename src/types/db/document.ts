@@ -1,10 +1,15 @@
 import { DocumentProcessingStatus } from './enums';
+import { KnowledgeBase } from './knowledge-base';
+import { Tag } from './tag';
+import { IChunk } from './chunk';
+import { UploadFile } from './upload-file';
 
-
+// 文档模型类型定义
 export interface IDocument {
     id: string;
     name: string;
-    content?: string;
+    content_url?: string;
+    file_url?: string;
     size: number;
     type: string;
     source_type: string;
@@ -17,33 +22,57 @@ export interface IDocument {
     process_begin_at?: Date;
     process_duation: number;
     create_date: Date;
-    create_time: bigint;
+    create_time: number;
     update_date: Date;
-    update_time: bigint;
+    update_time: number;
     created_by: string;
     knowledgeBaseId: string;
     parser_id?: string;
-    parser_config: Record<string, any>;
+    parser_config: any;
     markdown_content?: string;
     summary?: string;
-    metadata?: Record<string, any>;
+    metadata?: any;
     processing_error?: string;
-    uploadFileId?: string;
     enabled: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    knowledgeBase: KnowledgeBase;
+    tags: Tag[];
+    chunks: IChunk[];
+    uploadFile: UploadFile;
+    uploadFileId: string;
 }
 
-
-
-export interface FailedFile {
+// 文档创建参数
+export interface CreateIDocumentParams {
     name: string;
-    error: string;
+    content?: string;
+    size: number;
+    type: string;
+    source_type: string;
+    thumbnail?: string;
+    created_by: string;
+    knowledgeBaseId: string;
+    parser_id?: string;
+    parser_config: any;
+    markdown_content?: string;
+    summary?: string;
+    metadata?: any;
+    uploadFileId?: string;
 }
 
+// 文档更新参数
+export interface UpdateIDocumentParams {
+    name?: string;
+    content?: string;
+    status?: DocumentProcessingStatus;
+    thumbnail?: string;
+    progress?: number;
+    progress_msg?: string;
+    processing_status?: DocumentProcessingStatus;
+    processing_error?: string;
+}
 
-
+// 文档元数据
 export interface IDocumentMetaRequestBody {
-    documentId: string;
-    meta: string; // json format string
+    id: string;
+    metadata?: any;
 }

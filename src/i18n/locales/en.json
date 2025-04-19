@@ -2,13 +2,13 @@
     "common": {
         "delete": "Delete",
         "deleteModalTitle": "Are you sure you want to delete?",
-        "ok": "Confirm",
+        "ok": "OK",
         "cancel": "Cancel",
         "total": "Total",
         "rename": "Rename",
         "name": "Name",
         "save": "Save",
-        "namePlaceholder": "Enter name",
+        "namePlaceholder": "Please enter a name",
         "next": "Next",
         "create": "Create",
         "edit": "Edit",
@@ -17,7 +17,7 @@
         "chinese": "Simplified Chinese",
         "language": "Language",
         "languageMessage": "Please select a language!",
-        "languagePlaceholder": "Select language",
+        "languagePlaceholder": "Select a language",
         "copy": "Copy",
         "copied": "Copied",
         "comingSoon": "Coming Soon",
@@ -28,7 +28,7 @@
         "warn": "Warning",
         "action": "Action",
         "pleaseSelect": "Please select",
-        "pleaseInput": "Please input",
+        "pleaseInput": "Please enter",
         "submit": "Submit"
     },
     "nav": {
@@ -36,36 +36,37 @@
         "chat": "Chat",
         "search": "Search",
         "agent": "Agent",
-        "fileManagement": "File Management"
+        "fileManagement": "File Management",
+        "development-tools": "Development Tools"
     },
     "home": {
         "title": "DeepMed Search",
-        "subtitle": "A simple and efficient tool for managing your knowledge base",
+        "subtitle": "Your intelligent medical document assistant, making document processing simpler and more efficient",
         "getStarted": "Get Started",
-        "viewDocs": "View Documentation",
+        "viewDocs": "View Docs",
         "features": {
             "title": "Core Features",
             "documentProcessing": {
-                "title": "Document Processing",
-                "description": "Supports multiple document formats and automatically identifies and extracts keywords"
+                "title": "Intelligent Medical Document Processing",
+                "description": "Supports multiple document formats, automatically identifies and extracts key information"
             },
             "documentQA": {
-                "title": "Document Q&A",
-                "description": "Automatically parses document content and answers smart questions regardless of document format"
+                "title": "Intelligent Medical Document Q&A",
+                "description": "Parses document content and provides intelligent Q&A for any document format"
             },
             "quickConversion": {
                 "title": "Quick Conversion",
-                "description": "Convert document formats instantly while maintaining original form and style"
+                "description": "One-click document format conversion, preserving original formatting and style"
             },
             "dataAnalysis": {
                 "title": "Data Analysis",
-                "description": "Smartly analyze document content and generate data visualization reports"
+                "description": "Intelligently analyzes document content and generates data visualization reports"
             }
         },
         "cta": {
             "title": "Ready to get started?",
-            "subtitle": "Join us and experience the future of smart document processing",
-            "register": "Register"
+            "subtitle": "Join us to experience the future of intelligent medical document processing",
+            "register": "Register Now"
         }
     },
     "knowledgeBase": {
@@ -84,34 +85,55 @@
         "status": "Status",
         "action": "Action",
         "createSuccess": "Created successfully",
-        "createError": "Failed to create",
+        "createError": "Creation failed",
         "deleteSuccess": "Deleted successfully",
-        "deleteError": "Failed to delete",
+        "deleteError": "Deletion failed",
         "editSuccess": "Edited successfully",
-        "editError": "Failed to edit",
-        "namePlaceholder": "Enter knowledge base name",
-        "descriptionPlaceholder": "Enter knowledge base description",
-        "createKnowledgeBase": "Create a new knowledge base to manage documents",
-        "createKnowledgeBaseDescription": "Create a new knowledge base to manage documents",
-        "createdAt": "Created At",
-        "updatedAt": "Updated At",
-        "actions": "Actions",
-        "confirmDelete": "Confirm Delete",
+        "editError": "Edit failed",
+        "namePlaceholder": "Please enter knowledge base name",
+        "descriptionPlaceholder": "Please enter knowledge base description",
+        "createKnowledgeBase": "Create New Knowledge Base",
+        "createKnowledgeBaseDescription": "Create a new knowledge base to manage your documents",
+        "createdAt": "Created on",
+        "updatedAt": "Updated on",
+        "confirmDelete": "Confirm Deletion",
         "confirm": "Confirm",
-        "welcome": "Welcome back!",
+        "welcome": "Welcome back",
         "guest": "Guest",
         "searchKnowledgePlaceholder": "Search knowledge base",
-        "noData": "No data",
+        "noData": "No data available",
         "noMoreData": "No more data",
-        "files": "File List",
-        "fileName": "File Name",
-        "fileSize": "File Size",
-        "fileType": "File Type",
-        "fileUploadDate": "File Upload Date",
-        "fileUploader": "File Uploader",
-        "fileStatus": "File Status",
-        "fileProcessStage": "File Processing Stage",
-        "fileAction": "File Action",
+        "documentTable": "Document List",
+        "table": {
+            "documentName": "Document Name",
+            "documentUploadDate": "Upload Date",
+            "documentType": "Document Type",
+            "delete": "Delete",
+            "documentSize": "Document Size",
+            "documentUploader": "Uploader",
+            "documentAction": "File Action",
+            "noResults": "No data available",
+            "documentProcessStage": "File Processing Stage",
+            "documentChunkMethod": "Chunk Method",
+            "documentChunkNum": "Chunk Count",
+            "documentWordCount": "Word Count",
+            "selected": "Selected",
+            "total": "Total",
+            "page": "Page",
+            "totalPages": "Total Pages",
+            "currentPage": "Current Page",
+            "convertToMarkdown": "Convert",
+            "documentProcessingStatus": {
+                "title": "Processing Status",
+                "converting": "Converting",
+                "successed": "Processed Successfully",
+                "failed": "Processing Failed",
+                "error": "Error",
+                "indexing": "Indexing"
+            },
+            "documentEnable": "Enable",
+            "viewDetails": "View Details"
+        },
         "settings": {
             "title": "Settings",
             "basicTitle": "Basic Settings",
@@ -120,43 +142,61 @@
         "validation": {
             "nameRequired": "Please enter knowledge base name",
             "languageRequired": "Please select a language",
-            "parserRequired": "Please select a parsing method"
+            "parserRequired": "Please select a chunk method"
         },
         "form": {
             "name": "Knowledge Base Name",
-            "namePlaceholder": "Enter knowledge base name",
-            "nameDescription": "This will be the unique identifier for the knowledge base",
+            "namePlaceholder": "Please enter knowledge base name",
+            "nameDescription": "This will be the unique identifier for your knowledge base",
             "description": "Description",
-            "descriptionPlaceholder": "Enter knowledge base description",
+            "descriptionPlaceholder": "Please enter knowledge base description",
             "descriptionDescription": "Briefly describe the purpose of this knowledge base",
             "language": "Language",
             "languagePlaceholder": "Select knowledge base language",
-            "languageDescription": "Select the main language for the knowledge base",
+            "languageDescription": "Select the primary language for the knowledge base",
             "saveSettings": "Save Settings",
             "chunkSize": "Chunk Size",
-            "chunkSizeDescription": "Set maximum characters per text block (100-2000)",
+            "chunkSizeDescription": "Set the maximum number of characters per text chunk (100-2000)",
             "chunkOverlap": "Chunk Overlap",
-            "chunkOverlapDescription": "Set overlapping characters between adjacent text blocks (0-1000)",
+            "chunkOverlapDescription": "Set the number of overlapping characters between adjacent text chunks (0-1000)",
             "separator": "Separator",
             "separatorPlaceholder": "Enter custom separator",
-            "separatorDescription": "Custom separator for text splitting (optional)",
+            "separatorDescription": "Custom separator for text chunking (optional)",
             "customRules": "Custom Rules",
-            "customRulesPlaceholder": "Enter custom splitting rules",
-            "customRulesDescription": "Enter custom rules for text splitting (optional)",
+            "customRulesPlaceholder": "Enter custom chunking rules",
+            "customRulesDescription": "Enter custom text chunking rules (optional)",
             "applySettings": "Apply Settings"
         },
-        "chunkNum": "Chunk Count",
-        "wordCount": "Word Count",
         "searchFiles": "Search Files",
-        "uploadFile": "Upload File",
         "noDatasetId": "Dataset ID not found",
         "uploadDate": "Upload Date",
-        "chunkMethod": "Chunking Method",
-        "selectChunkMethod": "Select Chunking Method",
+        "chunkMethod": "Chunk Method",
+        "selectChunkMethod": "Select Chunk Method",
         "parsingStatus": "Parsing Status",
-        "noResults": "No data",
+        "noResults": "No data available",
+        "processChunks": "Process Chunks",
+        "processing": "Processing",
+        "error": "Error",
+        "completed": "Completed",
+        "processingError": "Processing Error",
+        "changeChunkMethod": "Change Chunk Method",
+        "rename": "Rename",
+        "fileStatus": {
+            "title": "File Status",
+            "processing": "Processing",
+            "error": "Error",
+            "success": "Success",
+            "pending": "Pending"
+        },
+        "options": {
+            "title": "Actions",
+            "delete": "Delete",
+            "changeChunkMethod": "Change Chunk Method",
+            "rename": "Rename",
+            "copyId": "Copy ID"
+        },
         "docParser": {
-            "methodTitle": "Settings",
+            "methodTitle": "Configuration",
             "presentation": "Presentation",
             "methodExamples": "Examples",
             "methodExamplesDescription": "Examples",
@@ -165,7 +205,7 @@
             "book": "Book",
             "laws": "Laws",
             "manual": "Manual",
-            "picture": "Image",
+            "picture": "Picture",
             "paper": "Paper",
             "resume": "Resume",
             "table": "Table",
@@ -173,68 +213,88 @@
             "knowledgeGraph": "Knowledge Graph"
         }
     },
+    "chunks": {
+        "totalChunks": "Total Chunks",
+        "totalTokens": "Total Tokens",
+        "chunks": "Chunk Content",
+        "original": "Original Content",
+        "preview": "Document Preview",
+        "chunk": "Chunk",
+        "tokens": "Token Count",
+        "noContent": "No content available",
+        "noPreview": "No preview available",
+        "previewNotSupported": "Preview not supported for this file type",
+        "noChunks": "No chunk content available",
+        "updateSuccess": "Status updated successfully",
+        "updateError": "Status update failed",
+        "fetchError": "Failed to fetch chunk data"
+    },
     "login": {
         "title": "DeepMed Search",
-        "description": "RAG+Search Integrated Medical Document Assistant",
+        "description": "RAG+Search integrated intelligent medical document assistant, making document processing simpler and more efficient",
         "features": {
             "ai": {
-                "title": "AI-Driven",
-                "description": "Accurate processing through advanced machine learning"
+                "title": "AI-Powered",
+                "description": "Highly advanced machine learning technology for accurate processing"
             },
             "security": {
                 "title": "Secure",
-                "description": "Enterprise-level security and encryption"
+                "description": "Enterprise-grade security and encryption"
             },
             "speed": {
                 "title": "Fast",
-                "description": "Ultra-fast processing and response times"
+                "description": "Lightning-fast processing and response times"
             },
             "reliability": {
                 "title": "Reliable",
-                "description": "99.9% uptime and stable performance"
+                "description": "99.9% uptime and consistency"
             }
         },
         "form": {
             "title": "Login",
-            "description": "Welcome back, please login to your account",
-            "googleSignIn": "Sign in with Google",
-            "githubSignIn": "Sign in with GitHub",
+            "description": "Welcome back, please log in to your account",
+            "googleSignIn": "Continue with Google",
+            "githubSignIn": "Continue with GitHub",
             "orContinueWith": "Or continue with",
             "emailLabel": "Email",
-            "emailPlaceholder": "Enter email",
+            "emailPlaceholder": "Please enter your email",
             "passwordLabel": "Password",
-            "passwordPlaceholder": "Enter password",
-            "forgotPassword": "Forgot password?",
+            "passwordPlaceholder": "Please enter your password",
+            "forgotPassword": "Forgot Password?",
             "submit": "Login",
             "noAccount": "Don't have an account?",
-            "signUp": "Sign up"
+            "signUp": "Sign Up"
         },
         "errors": {
             "loginFailed": "Login failed"
         },
         "login": "Login",
-        "loginDescription": "Welcome back! Please login to your account.",
-        "loginWithGoogle": "Sign in with Google",
-        "loginWithGithub": "Sign in with GitHub",
+        "loginDescription": "Welcome back! Please log in to your account.",
+        "loginWithGoogle": "Login with Google",
+        "loginWithGithub": "Login with GitHub",
         "orContinueWith": "Or continue with",
         "emailLabel": "Email",
-        "emailPlaceholder": "Enter email",
+        "emailPlaceholder": "Please enter your email",
         "passwordLabel": "Password",
-        "passwordPlaceholder": "Enter password",
-        "forgotPassword": "Forgot password?",
+        "passwordPlaceholder": "Please enter your password",
+        "forgotPassword": "Forgot Password?",
         "noAccount": "Don't have an account?",
-        "signUp": "Sign up"
+        "signUp": "Sign Up"
     },
     "search": {
         "title": "Deep Search",
         "searchPlaceholder": "Search...",
-        "searchDescription": "Search documents, knowledge bases, and more",
+        "searchDescription": "Search documents, knowledge bases, etc.",
         "searchResults": "Search Results",
         "noResults": "No search results"
     },
     "upload": {
         "uploadFile": "Upload File",
-        "uploadDescription": "File upload description",
+        "uploading": "Uploading",
+        "uploadDescription": "Supports uploading PDF, Word, Excel, PPT, images, and more",
+        "dragAndDrop": "Drag and drop files here",
+        "supportedFormats": "Or click to select",
+        "or": "or",
         "selectFile": "Select File",
         "cancel": "Cancel",
         "upload": "Upload",
@@ -257,39 +317,42 @@
         "noDescription": "No description",
         "noConversations": "No conversations yet.",
         "createChatTitle": "Create New Chat",
-        "createChatDescription": "Give your new chat conversation a name.",
+        "createChatDescription": "Give your new chat session a name.",
         "chatNameLabel": "Name",
-        "chatNamePlaceholder": "Example: Project Discussion",
+        "chatNamePlaceholder": "E.g., Project Discussion",
         "cancelButton": "Cancel",
         "createButton": "Create",
+        "cancelStream": "Cancel Sending",
         "validation": {
-            "chatNameRequired": "Please enter chat name"
+            "chatNameRequired": "Please enter a chat name"
         },
         "errors": {
-            "sendMessageFailed": "Failed to send message"
+            "sendMessageFailed": "Failed to send message",
+            "dialogNotFound": "Conversation not found or has been deleted",
+            "deleteFailed": "Deletion failed, please try again later"
         },
         "welcomeTitle": "How can I help you today?",
-        "startTypingPrompt": "Type a message to start a new conversation.",
+        "startTypingPrompt": "Send a message to start a new conversation.",
         "examples": {
             "heading": "Examples",
-            "title1": "Technical Concept Explanation",
-            "prompt1": "Simple explanation of quantum computing",
-            "title2": "Creative Writing Tips",
-            "prompt2": "Write a poem about city nightscape"
+            "title1": "Explain Medical Concepts",
+            "prompt1": "Briefly explain what gene editing is",
+            "title2": "Health Advice Prompt",
+            "prompt2": "Provide a list of practical tips to improve sleep quality"
         },
         "capabilities": {
             "heading": "Capabilities",
             "title1": "Remember Previous Conversations",
-            "desc1": "I can remember what was said in previous conversations",
-            "title2": "Allow Follow-up Corrections",
-            "desc2": "I allow users to make corrections and ask questions based on my responses"
+            "desc1": "I can recall medical topics we discussed earlier in this session",
+            "title2": "Provide Follow-up Corrections",
+            "desc2": "Allows users to correct or ask further questions based on my medical responses"
         },
         "limitations": {
             "heading": "Limitations",
-            "title1": "May Generate Incorrect Information",
-            "desc1": "I may occasionally provide incorrect or false information",
-            "title2": "Knowledge Cutoff",
-            "desc2": "My knowledge of the world and events after 2023 is limited"
+            "title1": "May Generate Inaccurate Information",
+            "desc1": "I may sometimes provide incorrect or misleading medical information",
+            "title2": "Medical Knowledge Limitation",
+            "desc2": "My knowledge of medical advancements and research after 2023 is limited"
         },
         "deleteDialogTitle": "Delete Conversation",
         "deleteDialogDescription": "Are you sure you want to delete this conversation? This action cannot be undone.",
@@ -297,6 +360,6 @@
         "deleteError": "Failed to delete conversation",
         "knowledgeBaseLabel": "Knowledge Base",
         "selectKnowledgeBase": "Select Knowledge Base",
-        "noKnowledgeBase": "Don't use knowledge base"
+        "noKnowledgeBase": "Do not use Knowledge Base"
     }
 }

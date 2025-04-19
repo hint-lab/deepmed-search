@@ -1,106 +1,76 @@
-import { IDocument } from './document';
-import { ITag } from './tag';
-import { IChunk } from './chunk';
-import { IDialog } from './dialog';
+import { Document } from './document';
+import { Tag } from './tag';
+import { Chunk } from './chunk';
+import { Dialog } from './dialog';
+import { Tenant } from './tenant';
 
-export interface IKnowledgeBase {
+// 知识库模型类型定义
+export interface KnowledgeBase {
     id: string;
     name: string;
-    description?: string;
-    avatar?: string;
+    description?: string | null;
+    avatar?: string | null;
     chunk_num: number;
     create_date: Date;
     create_time: bigint;
     created_by: string;
     doc_num: number;
-    parser_config?: Record<string, any>;
-    parser_id?: string;
-    permission?: string;
+    parser_config?: any | null;
+    parser_id?: string | null;
+    permission?: string | null;
     similarity_threshold: number;
     status: string;
-    tenant_id?: string;
+    tenant_id?: string | null;
     token_num: number;
     update_date: Date;
     update_time: bigint;
     vector_similarity_weight: number;
-    embd_id?: string;
-    nickname?: string;
-    language?: string;
+    embd_id?: string | null;
+    nickname?: string | null;
+    language?: string | null;
     operator_permission: number;
-    visible: boolean;
     createdAt: Date;
     updatedAt: Date;
-    documents?: IDocument[];
-    tags?: ITag[];
-    chunks?: IChunk[];
-    dialogs?: IDialog[];
+    documents: Document[];
+    tags: Tag[];
+    chunks: Chunk[];
+    dialogs: Dialog[];
+    tenant?: Tenant | null;
 }
 
-export interface IKnowledgeListItem extends Pick<IKnowledgeBase, 'id' | 'name' | 'description' | 'avatar' | 'doc_num' | 'chunk_num' | 'createdAt' | 'visible'> {
-    // 可以添加列表项特有的字段
-}
-
-export interface ICreateKnowledgeParams {
+// 知识库创建参数
+export interface CreateKnowledgeBaseParams {
     name: string;
     description?: string;
     avatar?: string;
+    created_by: string;
+    parser_config?: any;
     parser_id?: string;
-    parser_config?: Record<string, any>;
+    permission?: string;
     similarity_threshold?: number;
+    status?: string;
+    tenant_id?: string;
     vector_similarity_weight?: number;
     embd_id?: string;
+    nickname?: string;
     language?: string;
-    visible?: boolean;
+    operator_permission?: number;
 }
 
-export interface IUpdateKnowledgeParams extends Partial<ICreateKnowledgeParams> {
-    id: string;
-}
-
-export interface ISearchKnowledgeParams {
-    keyword?: string;
-    keywords?: string;
-    page?: number;
-    pageSize?: number;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-}
-
-export interface ISearchKnowledgeResult {
-    items: IKnowledgeListItem[];
-    total: number;
-    page: number;
-    pageSize: number;
-}
-
-export interface ITestingResult {
-    success: boolean;
-    message?: string;
-    data?: {
-        chunks: Array<{
-            id: string;
-            content: string;
-        }>;
-        documents: Array<{
-            id: string;
-            name: string;
-            content: string;
-        }>;
-        total: number;
-    };
-}
-
-export interface IKnowledgeGraph {
-    nodes: Array<{
-        id: string;
-        label: string;
-        type: string;
-    }>;
-    edges: Array<{
-        source: string;
-        target: string;
-        label?: string;
-    }>;
-    graph: Record<string, any>;
-    mind_map: Record<string, any>;
+// 知识库更新参数
+export interface UpdateKnowledgeBaseParams {
+    name?: string;
+    description?: string;
+    avatar?: string;
+    parser_config?: any;
+    parser_id?: string;
+    permission?: string;
+    similarity_threshold?: number;
+    status?: string;
+    tenant_id?: string;
+    vector_similarity_weight?: number;
+    embd_id?: string;
+    nickname?: string;
+    language?: string;
+    operator_permission?: number;
 } 

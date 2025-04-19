@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Upload, Loader2 } from 'lucide-react';
 import { uploadDocumentAction } from '@/actions/document';
 import { toast } from 'sonner';
-import { FailedFile } from '@/types/db/document';
-import { ServerActionResponse } from '@/types/actions';
 
 interface DocumentUploaderProps {
   kbId?: string;

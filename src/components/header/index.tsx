@@ -80,7 +80,7 @@ export default function Header() {
                     icon: <ServerCrash className="h-4 w-4" />
                 },
                 {
-                    name: "文件转换测试",
+                    name: "文档测试",
                     href: "/dev-tools/document-test",
                     icon: <File className="h-4 w-4" />
                 }

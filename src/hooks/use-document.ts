@@ -25,8 +25,9 @@ export function useFetchDocumentList(kbId: string) {
             setLoading(true);
             setError(null);
             const result = await getDocumentListAction(kbId, page, pageSize, keywords);
+            console.log("result", result)
             if (result.success) {
-                setDocuments(result.data.docs);
+                setDocuments(result.data.items);
                 setPagination({
                     current: page,
                     pageSize,

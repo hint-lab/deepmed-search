@@ -141,13 +141,15 @@ model KnowledgeBase {
 
 /// 文档处理状态枚举
 /// UNPROCESSED: 未处理
-/// PROCESSING: 处理中
-/// PROCESSED: 处理完成
+/// CONVERTING: 转换中
+/// INDEXING: 向量索引中
+/// SUCCESSED: 处理完成
 /// FAILED: 处理失败
 enum DocumentProcessingStatus {
   UNPROCESSED
-  PROCESSING
-  PROCESSED
+  CONVERTING
+  INDEXING
+  SUCCESSED
   FAILED
 }
 

@@ -1,17 +1,14 @@
-// 导出用户相关类型
+// 数据库类型定义
+// 基于 Prisma schema 生成的类型定义
+
+export * from './enums';
 export * from './user';
-
-// 导出对话相关类型
+export * from './tenant';
 export * from './dialog';
-
-// 导出系统相关类型
-export * from './system';
-
-// 导出知识库相关类型
-export * from './knowledge-base';
-
-// 导出文档相关类型
+export * from './message';
 export * from './document';
-
-// 导出上传文件相关类型
+export * from './knowledge-base';
 export * from './upload-file';
+export * from './chunk';
+export * from './tag';
+export * from './system'; 

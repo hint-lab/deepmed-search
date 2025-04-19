@@ -12,8 +12,8 @@ const projectRoot = process.cwd();
 // 补丁文件路径
 const openAIModelPath = path.join(projectRoot, 'node_modules/zerox/node-zerox/dist/models/openAI.js');
 
-console.info('项目根目录:', projectRoot);
-console.info('尝试应用补丁到文件:', openAIModelPath);
+logger.info(`项目根目录:${projectRoot}`);
+logger.info(`尝试应用补丁到文件:${openAIModelPath}`);
 
 // 检查文件是否存在
 if (!fs.existsSync(openAIModelPath)) {

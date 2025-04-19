@@ -1,6 +1,8 @@
+// 文档处理状态枚举
 export enum DocumentProcessingStatus {
     UNPROCESSED = 'UNPROCESSED',
-    PROCESSING = 'PROCESSING',
-    PROCESSED = 'PROCESSED',
+    INDEXING = 'INDEXING',
+    CONVERTING = 'CONVERTING',
+    SUCCESSED = 'SUCCESSED',
     FAILED = 'FAILED'
-} 
+}

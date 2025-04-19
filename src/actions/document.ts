@@ -50,26 +50,38 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
         return {
             success: true,
             data: {
-                docs: docs.map((doc: any) => ({
+                items: docs.map(doc => ({
                     id: doc.id,
                     name: doc.name,
+                    content_url: doc.content_url,
+                    file_url: doc.file_url,
+                    size: doc.size,
+                    type: doc.type,
+                    source_type: doc.source_type,
+                    processing_status: doc.processing_status,
+                    thumbnail: doc.thumbnail,
+                    chunk_num: doc.chunk_num,
+                    token_num: doc.token_num,
+                    progress: doc.progress,
+                    progress_msg: doc.progress_msg,
+                    process_begin_at: doc.process_begin_at?.toISOString(),
+                    process_duation: doc.process_duation,
                     create_date: doc.create_date.toISOString(),
                     create_time: doc.create_time.toString(),
                     update_date: doc.update_date.toISOString(),
                     update_time: doc.update_time.toString(),
-                    parser_id: doc.parser_id || '',
-                    parser_config: doc.parser_config as any,
-                    status: doc.status,
-                    error_message: doc.progress_msg,
-                    extension: doc.type,
-                    size: doc.size,
-                    page_count: doc.chunk_num || 0,
-                    word_count: doc.token_num || 0,
-                    chunk_count: doc.chunk_num || 0,
+                    created_by: doc.created_by,
+                    knowledgeBaseId: doc.knowledgeBaseId,
+                    parser_id: doc.parser_id,
+                    parser_config: doc.parser_config,
+                    markdown_content: doc.markdown_content,
+                    summary: doc.summary,
+                    metadata: doc.metadata,
+                    processing_error: doc.processing_error,
                     enabled: doc.enabled,
-                    processing_status: doc.processing_status
+                    uploadFileId: doc.uploadFileId
                 })),
-                total
+                total: total
             }
         };
     } catch (error) {
@@ -154,7 +166,7 @@ export async function renameDocumentAction(documentId: string, name: string): Pr
 export async function setDocumentMetaAction(documentId: string, meta: IDocumentMetaRequestBody): Promise<ServerActionResponse<any>> {
     try {
         // 解析元数据字符串
-        const metaData = JSON.parse(meta.meta);
+        const metaData = JSON.parse(meta.metadata);
 
         // 准备更新数据
         const updateData: any = {};
@@ -191,52 +203,41 @@ export async function setDocumentMetaAction(documentId: string, meta: IDocumentM
  */
 export async function deleteDocumentAction(documentId: string): Promise<ServerActionResponse<any>> {
     try {
-        // 查找文档记录
+        // 获取文档信息
         const document = await prisma.document.findUnique({
             where: { id: documentId }
         });
 
         if (!document) {
-            return {
-                success: false,
-                error: '文档不存在',
-            };
+            return { success: false, error: '文档不存在' };
         }
 
         // 保存上传文件ID，以便在删除文档后删除文件
         const uploadFileId = document.uploadFileId;
+
+        // 先删除关联的 chunks
+        await prisma.chunk.deleteMany({
+            where: { doc_id: documentId }
+        });
 
         // 删除文档记录
         await prisma.document.delete({
             where: { id: documentId }
         });
 
-        // 如果文档有关联的上传文件，则删除该文件
+        // 删除上传文件
         if (uploadFileId) {
-            try {
-                // 导入删除上传文件的函数
-                const { deleteUploadFileAction } = await import('./file-upload');
-                await deleteUploadFileAction(uploadFileId);
-            } catch (error) {
-                console.error('删除关联的上传文件失败:', error);
-                // 继续执行，即使删除上传文件失败，文档记录已经被删除
-            }
+            await prisma.uploadFile.delete({
+                where: { id: uploadFileId }
+            });
         }
 
-        // 重新验证知识库页面
-        revalidatePath('/knowledge-base/[id]');
-        return {
-            success: true
-        };
+        return { success: true };
     } catch (error) {
         console.error('删除文档失败:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : '删除失败'
-        };
+        return { success: false, error: '删除文档失败' };
     }
 }
-
 
 /**
  * 上传文档到知识库

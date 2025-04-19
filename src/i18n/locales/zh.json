@@ -96,7 +96,6 @@
         "createKnowledgeBaseDescription": "创建新的知识库来管理您的文档",
         "createdAt": "创建于",
         "updatedAt": "更新于",
-        "actions": "操作",
         "confirmDelete": "确认删除",
         "confirm": "确认",
         "welcome": "欢迎回来",
@@ -126,12 +125,11 @@
             "convertToMarkdown": "转换",
             "documentProcessingStatus": {
                 "title": "处理状态",
-                "processing": "处理中",
-                "processed": "已处理",
+                "converting": "转换中",
+                "successed": "处理成功",
                 "failed": "处理失败",
                 "error": "错误",
-                "pending": "待处理",
-                "completed": "完成"
+                "indexing": "索引中"
             },
             "documentEnable": "启用",
             "viewDetails": "查看详情"
@@ -181,7 +179,6 @@
         "error": "错误",
         "completed": "完成",
         "processingError": "处理错误",
-        "copyId": "复制 ID",
         "changeChunkMethod": "更改分块方法",
         "rename": "重命名",
         "fileStatus": {
@@ -190,6 +187,13 @@
             "error": "错误",
             "success": "成功",
             "pending": "待处理"
+        },
+        "options": {
+            "title": "操作",
+            "delete": "删除",
+            "changeChunkMethod": "更改分块方法",
+            "rename": "重命名",
+            "copyId": "复制 ID"
         },
         "docParser": {
             "methodTitle": "配置",
@@ -208,6 +212,22 @@
             "one": "单文档",
             "knowledgeGraph": "知识图谱"
         }
+    },
+    "chunks": {
+        "totalChunks": "总分块数",
+        "totalTokens": "总Token数",
+        "chunks": "分块内容",
+        "original": "原始内容",
+        "preview": "文档预览",
+        "chunk": "分块",
+        "tokens": "Token数",
+        "noContent": "暂无内容",
+        "noPreview": "无可用预览",
+        "previewNotSupported": "不支持的文件类型预览",
+        "noChunks": "暂无分块内容",
+        "updateSuccess": "状态更新成功",
+        "updateError": "状态更新失败",
+        "fetchError": "获取分块数据失败"
     },
     "login": {
         "title": "DeepMed Search",
@@ -315,24 +335,24 @@
         "startTypingPrompt": "发送消息以开始新的对话。",
         "examples": {
             "heading": "示例",
-            "title1": "解释技术概念",
-            "prompt1": "简要解释什么是量子计算",
-            "title2": "创意写作提示",
-            "prompt2": "写一首关于城市夜晚的诗"
+            "title1": "解释医学概念",
+            "prompt1": "简要解释什么是基因编辑",
+            "title2": "健康建议提示",
+            "prompt2": "提供一份改善睡眠质量的实用建议清单"
         },
         "capabilities": {
             "heading": "能力",
             "title1": "记住之前的对话",
-            "desc1": "我可以记住我们在此次会话中早些时候说过的话",
+            "desc1": "我可以记住我们在此次会话中早些时候讨论的医学话题",
             "title2": "提供后续修正",
-            "desc2": "允许用户根据我的回答进行更正和追问"
+            "desc2": "允许用户根据我的医学回答进行更正或进一步提问"
         },
         "limitations": {
             "heading": "限制",
             "title1": "可能产生不准确信息",
-            "desc1": "我有时可能会提供不正确或误导性的信息",
-            "title2": "知识截止日期",
-            "desc2": "我对2023年之后的世界和事件了解有限"
+            "desc1": "我有时可能会提供不正确或误导性的医学信息",
+            "title2": "医学知识局限",
+            "desc2": "我对2023年之后的医学进展和研究了解有限"
         },
         "deleteDialogTitle": "删除对话",
         "deleteDialogDescription": "确定要删除这个对话吗？此操作无法撤销。",

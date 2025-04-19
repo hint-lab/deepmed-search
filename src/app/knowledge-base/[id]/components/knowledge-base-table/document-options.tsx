@@ -17,7 +17,6 @@ import { DocumentProcessingStatus } from '@/types/db/enums';
 interface DocumentOptionsProps {
     document: IDocument;
     onShowChangeParserModal: (document: IDocument) => void;
-    onProcessChunks: (document: IDocument) => void;
     setCurrentRecord: (record: IDocument) => void;
     showChangeParserModal: () => void;
 }
@@ -25,15 +24,13 @@ interface DocumentOptionsProps {
 export function DocumentOptions({
     document,
     onShowChangeParserModal,
-    onProcessChunks,
     setCurrentRecord,
     showChangeParserModal,
 }: DocumentOptionsProps) {
-    const { t } = useTranslate('knowledgeBase');
+    const { t } = useTranslate('knowledgeBase.options');
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const { deleteDocument } = useDeleteDocument();
-    const isProcessing = document.processing_status === DocumentProcessingStatus.PROCESSING;
-    const canProcessChunks = document.processing_status === DocumentProcessingStatus.PROCESSED && document.chunk_num === 0;
+    const isProcessing = document.processing_status === DocumentProcessingStatus.CONVERTING || document.processing_status === DocumentProcessingStatus.INDEXING;
 
     const handleRenameClick = useCallback(() => {
         setRenameDialogOpen(true);
@@ -58,7 +55,7 @@ export function DocumentOptions({
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('title')}</DropdownMenuLabel>
                         <DropdownMenuItem
                             onClick={() => navigator.clipboard.writeText(document.id)}
                             disabled={isProcessing}
@@ -81,13 +78,6 @@ export function DocumentOptions({
                         >
                             <Pencil className="h-4 w-4" />{t('rename')}
                         </DropdownMenuItem>
-                        {canProcessChunks && (
-                            <DropdownMenuItem
-                                onClick={() => onProcessChunks(document)}
-                            >
-                                {t('processChunks')}
-                            </DropdownMenuItem>
-                        )}
                         <DropdownMenuItem
                             className="text-destructive focus:text-destructive focus:bg-destructive/10"
                             disabled={isProcessing}
