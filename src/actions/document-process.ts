@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../lib/prisma';
 import { ChunkIndexer } from '@/lib/chunk-indexer';
 import { DocumentSplitter } from '@/lib/document-splitter';
 import logger from '@/utils/logger';
@@ -13,6 +13,91 @@ import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
 
 // 直接处理文档的server action
 export async function processDocumentDirectlyAction(
+    documentId: string,
+    kbId: string,
+    options: {
+        model: string;
+        maintainFormat: boolean;
+        prompt?: string;
+        chunkSize?: number;
+    }
+): Promise<ServerActionResponse<any>> {
+    try {
+        // 1. 转换文档
+        const converted = await convertDocumentAction(documentId, {
+            model: options.model,
+            maintainFormat: options.maintainFormat,
+            prompt: options.prompt
+        });
+
+        if (!converted.success) {
+            return {
+                success: false,
+                error: converted.error || '文档转换失败'
+            };
+        }
+
+        // 2. 分割文档
+        const pages = converted.data?.data?.pages || [];
+        const documentName = converted.data?.metadata?.fileName || '未知文档';
+
+        const split = await splitDocumentAction(
+            documentId,
+            pages,
+            {
+                model: options.model,
+                maintainFormat: options.maintainFormat,
+                prompt: options.prompt,
+                documentName
+            }
+        );
+
+        if (!split.success || !split.data) {
+            return {
+                success: false,
+                error: split.error || '文档分割失败'
+            };
+        }
+
+        // 3. 索引文档块
+        const index = await indexDocumentChunksAction(
+            documentId,
+            kbId,
+            split.data.chunks
+        );
+
+        if (!index.success) {
+            return {
+                success: false,
+                error: index.error || '文档索引失败'
+            };
+        }
+
+        // 返回成功结果
+        return {
+            success: true,
+            data: {
+                documentId,
+                converted: converted.data,
+                split: split.data,
+                index: index.data
+            }
+        };
+    } catch (error: any) {
+        logger.error('直接处理文档失败', {
+            documentId,
+            error: error instanceof Error ? error.message : '未知错误'
+        });
+
+        return {
+            success: false,
+            error: error.message || '直接处理文档失败'
+        };
+    }
+}
+
+// 文档转换的server action
+export async function convertDocumentAction(
     documentId: string,
     options: {
         model: string;
@@ -166,6 +251,7 @@ export async function processDocumentDirectlyAction(
     }
 }
 
+
 // 文档分块的server action
 export async function splitDocumentAction(
     documentId: string,
@@ -238,19 +324,26 @@ export async function splitDocumentAction(
 // 文档块索引的server action
 export async function indexDocumentChunksAction(
     documentId: string,
+    kbId: string,
     chunks: DocumentChunk[]
 ): Promise<ServerActionResponse<{ indexedCount: number }>> {
     try {
         logger.info('开始索引文档块', {
             documentId,
-            chunkCount: chunks.length
+            chunkCount: chunks.length,
+            kbId
         });
+
+        if (!kbId) {
+            logger.error('indexDocumentChunksAction 收到无效的 kbId', { documentId, receivedKbId: kbId });
+            return { success: false, error: `内部错误：传递给索引操作的知识库 ID 无效 (received: ${kbId})` };
+        }
 
         // 创建块索引器
         const indexer = new ChunkIndexer({
             embeddingModel: 'text-embedding-3-small',
-            collectionName: 'chunks',
-            batchSize: 10
+            batchSize: 10,
+            kbId: kbId
         });
 
         // 索引文档块
@@ -347,7 +440,7 @@ export async function processDocumentActionUsingQueue(
         });
 
         // 开始处理文档
-        const result = await processDocumentDirectlyAction(documentId, options);
+        const result = await processDocumentDirectlyAction(documentId, document.knowledgeBaseId, options);
 
         if (!result.success) {
             // 更新文档状态为处理失败
@@ -392,5 +485,81 @@ export async function processDocumentActionUsingQueue(
             success: false,
             error: error.message || '处理文档失败'
         };
+    }
+}
+
+// 更新文档处理状态的server action
+export async function updateDocumentProcessingStatusAction(
+    documentId: string,
+    status: DocumentProcessingStatus,
+    options?: {
+        progress?: number;
+        progressMsg?: string;
+        error?: string;
+    }
+): Promise<ServerActionResponse<{ success: boolean }>> {
+    try {
+        await prisma.document.update({
+            where: { id: documentId },
+            data: {
+                processing_status: status,
+                progress: options?.progress ?? 0,
+                progress_msg: options?.progressMsg || '',
+                processing_error: options?.error || null,
+                ...(status === DocumentProcessingStatus.PROCESSING && {
+                    process_begin_at: new Date()
+                })
+            }
+        });
+
+        return {
+            success: true,
+            data: {
+                success: true
+            }
+        };
+    } catch (error: any) {
+        logger.error('更新文档处理状态失败', {
+            documentId,
+            status,
+            error: error instanceof Error ? error.message : '未知错误'
+        });
+
+        return {
+            success: false,
+            error: error.message || '更新文档处理状态失败'
+        };
+    }
+}
+
+/**
+ * 获取文档所属的知识库 ID
+ * @param documentId 文档 ID
+ * @returns 包含知识库 ID 或错误的响应
+ */
+export async function getDocumentKnowledgeBaseIdAction(
+    documentId: string
+): Promise<{ success: boolean; kbId?: string; error?: string }> {
+    if (!documentId) {
+        return { success: false, error: '文档 ID 不能为空' };
+    }
+    try {
+        const document = await prisma.document.findUnique({
+            where: { id: documentId },
+            select: { knowledgeBaseId: true },
+        });
+
+        if (!document) {
+            return { success: false, error: `找不到文档: ${documentId}` };
+        }
+
+        if (document.knowledgeBaseId === null) {
+            return { success: false, error: `文档 ${documentId} 的 knowledgeBaseId 为 null` };
+        }
+
+        return { success: true, kbId: document.knowledgeBaseId };
+    } catch (error: any) {
+        console.error(`获取文档 ${documentId} 的知识库 ID 失败:`, error, {});
+        return { success: false, error: error.message || '获取知识库 ID 时发生未知错误' };
     }
 } 

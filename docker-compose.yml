@@ -1,7 +1,7 @@
 services:
-  # PostgreSQL 数据库服务
+  # PostgreSQL 数据库服务（支持 pgvector）
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg17
     container_name: deepmed-postgres
     restart: always
     ports:
@@ -12,6 +12,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+        docker-entrypoint.sh postgres &
+        sleep 10 &&
+        psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-deepmed} -c 'CREATE EXTENSION IF NOT EXISTS vector;' &&
+        wait
+      "
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
       interval: 10s
@@ -34,69 +41,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Milvus 向量数据库服务 (使用独立模式)
-  milvus:
-    image: milvusdb/milvus:v2.3.3
-    container_name: deepmed-milvus
-    command: [ "milvus", "run", "standalone" ]
-    environment:
-      ETCD_ENDPOINTS: deepmed-etcd:2379
-      MINIO_ADDRESS: ${MINIO_ENDPOINT}:${MINIO_PORT}
-    volumes:
-      - milvus-data:/var/lib/milvus
-    ports:
-      - "${MILVUS_PORT}:19530" # Milvus 服务端口
-      - "9091:9091" # Milvus API 端口
-    depends_on:
-      - etcd
-      - minio
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9091/api/v1/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # Milvus 监控面板
-  attu:
-    image: zilliz/attu:latest
-    container_name: deepmed-attu
-    ports:
-      - "8000:3000"
-    environment:
-      - MILVUS_URL=${MILVUS_HOST}:${MILVUS_PORT}
-    depends_on:
-      - milvus
-
-  # Milvus 依赖的 etcd 服务
-  etcd:
-    image: quay.io/coreos/etcd:v3.5.5
-    container_name: deepmed-etcd
-    environment:
-      - ETCD_AUTO_COMPACTION_MODE=revision
-      - ETCD_AUTO_COMPACTION_RETENTION=1000
-      - ETCD_QUOTA_BACKEND_BYTES=4294967296
-      - ETCD_SNAPSHOT_COUNT=50000
-      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
-      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://0.0.0.0:2380
-      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
-      - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
-      - ETCD_INITIAL_CLUSTER=default=http://0.0.0.0:2380
-      - ETCD_INITIAL_CLUSTER_STATE=new
-    volumes:
-      - etcd-data:/etcd
-    ports:
-      - "2379:2379"
-      - "2380:2380"
-    healthcheck:
-      test: [ "CMD", "etcdctl", "endpoint", "health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # Milvus 依赖的 MinIO 服务
+  # MinIO 服务
   minio:
     image: minio/minio:latest
     container_name: deepmed-minio
@@ -118,7 +63,5 @@ services:
 
 volumes:
   postgres-data:
-  milvus-data:
-  etcd-data:
   minio-data:
   redis-data:

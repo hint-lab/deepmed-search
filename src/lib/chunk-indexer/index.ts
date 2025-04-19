@@ -1,6 +1,6 @@
 import { DocumentChunk } from '../document-splitter';
 import { getEmbeddings } from '../openai/embedding';
-import { insertVectors } from '../milvus/operations';
+import { insertVectors } from '../pgvector/operations';
 import logger from '@/utils/logger';
 
 /**
@@ -13,9 +13,9 @@ export interface ChunkIndexerOptions {
     embeddingModel?: string;
 
     /**
-     * Milvus集合名称
+     * 知识库ID
      */
-    collectionName?: string;
+    kbId?: string;
 
     /**
      * 批处理大小
@@ -27,14 +27,18 @@ export interface ChunkIndexerOptions {
  * 文档块索引器类
  */
 export class ChunkIndexer {
-    private options: Required<ChunkIndexerOptions>;
+    private options: Partial<ChunkIndexerOptions> & { embeddingModel: string; batchSize: number; kbId?: string };
 
     constructor(options: ChunkIndexerOptions = {}) {
         this.options = {
             embeddingModel: options.embeddingModel || 'text-embedding-3-small',
-            collectionName: options.collectionName || 'documents',
             batchSize: options.batchSize || 10,
+            kbId: options.kbId
         };
+
+        if (!this.options.kbId) {
+            logger.warn('ChunkIndexer 初始化时缺少 kbId');
+        }
     }
 
     /**
@@ -47,6 +51,11 @@ export class ChunkIndexer {
         indexedCount: number;
         error?: string;
     }> {
+        if (!this.options.kbId) {
+            logger.error('无法执行索引，ChunkIndexer 的 kbId 未设置');
+            return { success: false, indexedCount: 0, error: '内部错误：知识库 ID 未设置' };
+        }
+
         try {
             if (!chunks || chunks.length === 0) {
                 logger.warn('尝试索引空文档块数组');
@@ -58,7 +67,7 @@ export class ChunkIndexer {
 
             logger.info('开始索引文档块', {
                 chunkCount: chunks.length,
-                collectionName: this.options.collectionName,
+                kbId: this.options.kbId,
             });
 
             // 准备批处理
@@ -85,11 +94,12 @@ export class ChunkIndexer {
 
                 // 插入向量
                 await insertVectors({
-                    collectionName: this.options.collectionName,
                     vectors,
                     contents,
                     docIds,
                     metadataList,
+                    kbId: this.options.kbId,
+                    docName: batch[0].metadata.documentName || '未知文档',
                 });
 
                 indexedCount += batch.length;
@@ -112,6 +122,7 @@ export class ChunkIndexer {
             logger.error('索引文档块失败', {
                 error: error instanceof Error ? error.message : '未知错误',
                 chunkCount: chunks.length,
+                kbId: this.options.kbId,
             });
 
             return {

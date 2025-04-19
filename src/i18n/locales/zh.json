@@ -127,6 +127,8 @@
             "documentProcessingStatus": {
                 "title": "处理状态",
                 "processing": "处理中",
+                "processed": "已处理",
+                "failed": "处理失败",
                 "error": "错误",
                 "pending": "待处理",
                 "completed": "完成"

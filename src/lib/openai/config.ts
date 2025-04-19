@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG: Partial<OpenAIConfig> = {
     maxTokens: 2000,
     stop: [],
     systemPrompt: '你是一个有帮助的AI助手。',
-    baseUrl: process.env.OPENAI_API_BASE_URL || 'https://api.openai.com/v1',
+    baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
 }
 
 // 验证配置

@@ -223,20 +223,55 @@ export class DocumentSplitter {
             if (endIndex > content.length) {
                 endIndex = content.length;
             } else {
-                // 尝试在句子或段落边界分割
+                // 尝试在段落边界分割
                 const nextParagraph = content.indexOf('\n\n', startIndex + this.options.maxChunkSize - 100);
                 if (nextParagraph > startIndex && nextParagraph < endIndex + 100) {
                     endIndex = nextParagraph;
                 } else {
-                    const nextSentence = content.indexOf('. ', startIndex + this.options.maxChunkSize - 50);
-                    if (nextSentence > startIndex && nextSentence < endIndex + 50) {
-                        endIndex = nextSentence + 1;
+                    // 尝试在句子边界分割
+                    const sentenceEndings = ['. ', '! ', '? ', '。', '！', '？', '；', ';'];
+                    let bestSentenceEnd = -1;
+
+                    for (const ending of sentenceEndings) {
+                        const nextSentence = content.indexOf(ending, startIndex + this.options.maxChunkSize - 50);
+                        if (nextSentence > startIndex && nextSentence < endIndex + 50) {
+                            if (bestSentenceEnd === -1 || nextSentence < bestSentenceEnd) {
+                                bestSentenceEnd = nextSentence + ending.length;
+                            }
+                        }
+                    }
+
+                    if (bestSentenceEnd !== -1) {
+                        endIndex = bestSentenceEnd;
+                    } else {
+                        // 如果找不到句子边界，尝试在单词边界分割
+                        const lastSpace = content.lastIndexOf(' ', endIndex);
+                        if (lastSpace > startIndex + this.options.maxChunkSize * 0.8) {
+                            endIndex = lastSpace;
+                        } else {
+                            // 如果找不到合适的单词边界，尝试在标点符号处分割
+                            const punctuationMarks = [',', '，', '、', '：', ':', '；', ';'];
+                            let bestPunctuation = -1;
+
+                            for (const mark of punctuationMarks) {
+                                const nextMark = content.lastIndexOf(mark, endIndex);
+                                if (nextMark > startIndex + this.options.maxChunkSize * 0.8) {
+                                    if (bestPunctuation === -1 || nextMark > bestPunctuation) {
+                                        bestPunctuation = nextMark + 1;
+                                    }
+                                }
+                            }
+
+                            if (bestPunctuation !== -1) {
+                                endIndex = bestPunctuation;
+                            }
+                        }
                     }
                 }
             }
 
             // 提取当前块内容
-            const chunkContent = content.substring(startIndex, endIndex);
+            const chunkContent = content.substring(startIndex, endIndex).trim();
 
             // 创建块
             chunks.push({

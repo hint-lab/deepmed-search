@@ -48,7 +48,7 @@
     "@types/tesseract.js": "^2.0.0",
     "@types/uuid": "^10.0.0",
     "@xyflow/react": "^12.5.4",
-    "@zilliz/milvus2-sdk-node": "^2.5.7",
+    "@zilliz/milvus2-sdk-node": "^2.5.8",
     "add": "^2.0.6",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.48.1",

@@ -22,7 +22,7 @@ import { DocumentProcessingStatus } from '@/types/db/enums';
 import { useToggleDocumentEnabled } from '@/hooks/use-document';
 import { FileIcon } from '@/components/file-icon';
 // import { useProcessDocumentChunks, useZeroxConvertToMarkdown } from '@/hooks/use-document';
-import { processDocumentDirectlyAction } from '@/actions/document-process';
+import { processDocumentDirectlyAction, updateDocumentProcessingStatusAction } from '@/actions/document-process';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -61,27 +61,10 @@ export function useKnowledgeBaseTableColumns({
     [setCurrentRecord, showChangeParserModal],
   );
 
-  const handleProcessBadge = (document: IDocument, status: string) => {
-    console.log('handleProcessBadge', document, status);
+  const handleProcessBadge = async (document: IDocument) => {
+    console.log('handleProcessBadge', document);
     // if (isProcessingDocumentToChunks) return;
-
-    switch (status) {
-      case 'pending':
-        // startProcessingDocumentToChunks(document);
-        break;
-      // case 'completed':
-      //   if (document.chunk_num === 0) {
-      //     startProcessingDocumentToChunks(document);
-      //   }
-      //   break;
-      // case 'failed':
-      //   retryProcessingDocumentToChunks(document);
-      //   break;
-      // case 'processing':
-      //   // TODO: 实现取消处理
-      //   cancelProcessingDocumentToChunks(document);
-      //   break;
-    }
+    await handleConvertToMarkdown(document.id);
   }
 
   const navigateToChunkParsedResult = useCallback((documentId: string, knowledgeBaseId: string) => {
@@ -91,25 +74,55 @@ export function useKnowledgeBaseTableColumns({
   // 记录当前正在转换的文档ID
   const [convertingDocId, setConvertingDocId] = useState<string | null>(null);
 
-  // 注释掉未定义的函数调用
   const handleConvertToMarkdown = async (documentId: string) => {
     setConvertingDocId(documentId);
-    // 暂时注释掉未定义的函数调用
-    const result = await processDocumentDirectlyAction(documentId, {
-      model: 'gpt-4o-mini',
-      maintainFormat: true,
-    });
-    console.log('转换结果:', result);
-    if (!result.success) {
-      // 如果失败，清除正在转换的文档ID
-      toast.error('转换失败');
+
+    try {
+      // 更新文档状态为处理中
+      await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.PROCESSING, {
+        progress: 0,
+        progressMsg: '开始处理'
+      });
+
+      // 调用处理函数
+      const result = await processDocumentDirectlyAction(documentId, {
+        model: 'gpt-4o-mini',
+        maintainFormat: true,
+      });
+
+      console.log('转换结果:', result);
+
+      if (!result.success) {
+        // 如果失败，更新文档状态为失败
+        await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
+          progress: 0,
+          progressMsg: result.error || '处理失败',
+          error: result.error
+        });
+
+        toast.error('转换失败: ' + (result.error || '未知错误'));
+        setConvertingDocId(null);
+        return;
+      }
+
+      toast.success('转换成功');
       setConvertingDocId(null);
-      return;
+
+      // 刷新页面以显示最新状态
+      setRefreshKey(prev => prev + 1);
+    } catch (error: any) {
+      console.error('转换文档失败:', error);
+
+      // 更新文档状态为失败
+      await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
+        progress: 0,
+        progressMsg: error.message || '处理失败',
+        error: error.message
+      });
+
+      toast.error('转换失败: ' + (error.message || '未知错误'));
+      setConvertingDocId(null);
     }
-    toast.success('转换成功');
-    // 临时实现
-    console.log('转换文档为Markdown:', documentId);
-    setConvertingDocId(null);
   };
 
   const handleToggle = useCallback(async (document: IDocument, newEnabled: boolean) => {
@@ -239,16 +252,48 @@ export function useKnowledgeBaseTableColumns({
         let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
         let icon = null;
 
+        // 根据状态设置不同的样式
+        switch (status) {
+          case DocumentProcessingStatus.PROCESSED:
+            badgeVariant = 'default';
+            break;
+          case DocumentProcessingStatus.PROCESSING:
+            badgeVariant = 'secondary';
+            break;
+          case DocumentProcessingStatus.FAILED:
+            badgeVariant = 'destructive';
+            break;
+          default:
+            badgeVariant = 'outline';
+        }
+
+        // 检查当前文档是否正在转换中
+        const isConverting = convertingDocId === document.id;
 
         return (
           <div className="flex items-center gap-2">
-            <Badge
-              variant="outline"
-              className="hover:cursor-pointer text-xs"
-              onClick={() => handleConvertToMarkdown(document.id)}
-            >
-              {t('convertToMarkdown')}
-            </Badge>
+            {isConverting ? (
+              <Badge
+                variant="secondary"
+                className="text-xs flex items-center gap-1"
+              >
+                <span className="animate-spin">⟳</span> {t('processing')}
+              </Badge>
+            ) : (
+              <Badge
+                variant={badgeVariant}
+                className="hover:cursor-pointer text-xs"
+                onClick={() => handleProcessBadge(document)}
+              >
+                {status === DocumentProcessingStatus.PROCESSED
+                  ? t('processed')
+                  : status === DocumentProcessingStatus.PROCESSING
+                    ? t('processing')
+                    : status === DocumentProcessingStatus.FAILED
+                      ? t('failed')
+                      : t('convertToMarkdown')}
+              </Badge>
+            )}
           </div>
         );
       },
@@ -338,7 +383,7 @@ export function useKnowledgeBaseTableColumns({
             <DocumentOptions
               document={document}
               onShowChangeParserModal={onShowChangeParserModal}
-              onProcessChunks={() => handleProcessBadge(document, 'processing')}
+              onProcessChunks={() => handleProcessBadge(document)}
               setCurrentRecord={setCurrentRecord}
               showChangeParserModal={showChangeParserModal}
             />

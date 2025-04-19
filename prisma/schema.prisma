@@ -6,13 +6,14 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]  // Enable the postgresqlExtensions. Currently in preview
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [vector] // Add the pgvector extension
 }
-
 /// 用户模型
 /// 存储系统用户信息，包括认证和偏好设置
 model User {
@@ -254,6 +255,7 @@ model Chunk {
   positions         Json      // 位置信息
   tag_feas          Json?     // 标签特征
   kb_id             String    // 知识库ID
+  embedding         Unsupported("vector(1536)")?  // 向量嵌入，支持 pgvector
   knowledgeBase     KnowledgeBase @relation(fields: [kb_id], references: [id])  // 知识库关联
   document          Document      @relation(fields: [doc_id], references: [id])  // 文档关联
   createdAt         DateTime  @default(now())  // 创建时间

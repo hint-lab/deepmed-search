@@ -339,7 +339,10 @@ export async function processDocumentWithZerox(
             logger.error('API 密钥缺失');
             throw new Error('API key is missing. Provide it via options, OPENAI_API_KEY env var, or config.');
         }
-        const credentials = { apiKey };
+        const credentials = {
+            apiKey: apiKey,
+            baseUrl: zeroxConfig.baseUrl
+        };
 
         // 确定模型提供商和模型
         const modelProvider = options.modelProvider || zeroxConfig.modelProvider;
