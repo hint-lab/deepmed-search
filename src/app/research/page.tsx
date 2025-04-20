@@ -72,9 +72,9 @@ export default function ResearchPage() {
     }
 
     return (
-        <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-16 sm:pt-20 ${(!result && !error && !stepDetails) ? 'justify-center' : 'justify-start'}`}>
-            <div className="w-full max-w-3xl space-y-8">
-                <div className="text-center space-y-3 mb-6 sm:mb-8">
+        <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-24 sm:pt-20 ${(!result && !error && !stepDetails) ? 'justify-center' : 'justify-start'}`}>
+            <div className="w-full max-w-3xl space-y-8 ">
+                <div className="text-center space-y-3 my-6 sm:my-8">
                     <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
                         深度医学研究
                     </h1>
@@ -88,13 +88,13 @@ export default function ResearchPage() {
                                     onChange={handleInputChange}
                                     placeholder="输入您的问题，开始探索..."
                                     disabled={isPending}
-                                    className="h-12 text-base rounded-l-lg rounded-r-none border-r-0 border border-border/80 shadow-sm px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    className="h-12 text-base rounded-l-lg rounded-r-none border-r-0 border border-border/80 px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
                                 />
                             </div>
                             <Button
                                 type="submit"
                                 disabled={isPending}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border border-x-0 border-border/80 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-sm hover:shadow-lg transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border-y border-r-0 border-border/80 bg-gradient-to-r from-blue-500 to-purple-600 text-white  transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isPending ? (
                                     <>
@@ -125,48 +125,6 @@ export default function ResearchPage() {
                     {taskId && <ThinkStatusDisplay taskId={taskId} />}
                 </div>
 
-
-                {result && (
-                    <div className="border-t border-border/60 pt-8 mt-10 space-y-6">
-                        <h2 className="text-xl font-semibold">研究结果</h2>
-                        <div className="prose dark:prose-invert max-w-none space-y-5 text-base leading-relaxed bg-background p-5 rounded-lg border border-border/60 shadow-sm">
-                            {isAnswerAction(result) && result.mdAnswer ? (
-                                <div className="markdown-content space-y-4">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{result.mdAnswer}</ReactMarkdown>
-                                </div>
-                            ) : isAnswerAction(result) ? (
-                                <p>{result.answer || '未能生成文本答案。'}</p>
-                            ) : (
-                                <p className="text-muted-foreground text-sm">研究已完成，但未生成直接的文本答案。请查看下方详细信息。</p>
-                            )}
-
-                            {isAnswerAction(result) && result.references && result.references.length > 0 && (
-                                <div className="pt-5 border-t border-border/60 mt-5">
-                                    <h3 className="text-sm font-semibold mb-3 text-muted-foreground">参考文献</h3>
-                                    <ul className="list-none pl-0 space-y-2.5">
-                                        {result.references.map((ref, index) => (
-                                            <li key={index} className="text-sm flex items-start">
-                                                <span className="text-muted-foreground w-6 text-right mr-2">[{index + 1}]</span>
-                                                <div className="flex-1">
-                                                    <a href={ref.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all font-medium">
-                                                        {ref.title || ref.url}
-                                                    </a>
-                                                    {ref.dateTime && <span className="block text-xs text-muted-foreground/80 mt-0.5">({ref.dateTime})</span>}
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                            <details className="pt-5 border-t border-border/60 mt-5">
-                                <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">查看原始结果数据</summary>
-                                <pre className="text-xs whitespace-pre-wrap break-all bg-muted/40 p-4 rounded-lg mt-2 border border-border/60">
-                                    {JSON.stringify(result, null, 2)}
-                                </pre>
-                            </details>
-                        </div>
-                    </div>
-                )}
 
                 {stepDetails && stepDetails.length > 0 && (
                     <div className="border-t border-border/60 pt-8 mt-10 space-y-4">

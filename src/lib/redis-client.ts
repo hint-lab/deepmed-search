@@ -1,11 +1,11 @@
 import IORedis, { Redis, RedisOptions } from 'ioredis';
-
+import logger from '@/utils/logger';
 // 从环境变量或默认值获取 Redis 连接信息
 const redisHost = process.env.REDIS_HOST || 'localhost';
 const redisPort = parseInt(process.env.REDIS_PORT || '6379');
 const redisPassword = process.env.REDIS_PASSWORD;
 
-console.log(`初始化 Redis 客户端，连接至: ${redisHost}:${redisPort}`);
+logger.info(`初始化 Redis 客户端，连接至: ${redisHost}:${redisPort}`);
 
 // 定义 Redis 连接选项
 const connectionOptions: RedisOptions = {
@@ -32,15 +32,15 @@ export function getRedisClient(): Redis {
         try {
             redisClient = new IORedis(connectionOptions);
 
-            redisClient.on('connect', () => console.log('Redis 客户端已连接。'));
-            redisClient.on('ready', () => console.log('Redis 客户端已准备就绪。'));
-            redisClient.on('error', (err: any) => console.error('Redis 客户端错误:', err));
-            redisClient.on('close', () => console.log('Redis 客户端连接已关闭。'));
-            redisClient.on('reconnecting', () => console.log('Redis 客户端正在重新连接...'));
-            redisClient.on('end', () => console.log('Redis 客户端连接已结束。'));
+            redisClient.on('connect', () => logger.info('Redis 客户端已连接。'));
+            redisClient.on('ready', () => logger.info('Redis 客户端已准备就绪。'));
+            redisClient.on('error', (err: any) => logger.error('Redis 客户端错误:', err));
+            redisClient.on('close', () => logger.info('Redis 客户端连接已关闭。'));
+            redisClient.on('reconnecting', () => logger.info('Redis 客户端正在重新连接...'));
+            redisClient.on('end', () => logger.info('Redis 客户端连接已结束。'));
 
         } catch (error) {
-            console.error("创建 Redis 客户端失败:", error);
+            logger.error("创建 Redis 客户端失败:", error);
             // 根据错误处理策略，您可能希望在此处退出或抛出更具体的错误
             throw new Error("无法初始化 Redis 客户端。");
         }
@@ -56,27 +56,27 @@ export function getRedisClient(): Redis {
  */
 export function createNewRedisClient(): Redis {
     try {
-        console.log(`[createNewRedisClient] Attempting connection with options:`, connectionOptions); // Log options
+        logger.info(`[createNewRedisClient] Attempting connection with options:`, connectionOptions); // Log options
         const client = new IORedis(connectionOptions);
         // 添加更多日志
-        client.on('connect', () => console.log('[createNewRedisClient] New client connected.'));
-        client.on('ready', () => console.log('[createNewRedisClient] New client ready.'));
-        client.on('error', (err: any) => console.error('[createNewRedisClient] New client error:', err));
-        client.on('close', () => console.log('[createNewRedisClient] New client closed.'));
-        client.on('reconnecting', () => console.log('[createNewRedisClient] New client reconnecting...'));
+        client.on('connect', () => logger.info('[createNewRedisClient] New client connected.'));
+        client.on('ready', () => logger.info('[createNewRedisClient] New client ready.'));
+        client.on('error', (err: any) => logger.error('[createNewRedisClient] New client error:', err));
+        client.on('close', () => logger.info('[createNewRedisClient] New client closed.'));
+        client.on('reconnecting', () => logger.info('[createNewRedisClient] New client reconnecting...'));
         return client;
     } catch (error) {
-        console.error("创建新的 Redis 客户端实例失败:", error);
+        logger.error("创建新的 Redis 客户端实例失败:", error);
         throw new Error("无法创建新的 Redis 客户端实例。");
     }
 }
 
 // 可选：优雅关机处理示例
 // process.on('SIGTERM', () => {
-//     console.log('收到 SIGTERM 信号：正在关闭 Redis 客户端连接。');
+//     logger.info('收到 SIGTERM 信号：正在关闭 Redis 客户端连接。');
 //     redisClient?.quit();
 // });
 // process.on('SIGINT', () => {
-//     console.log('收到 SIGINT 信号：正在关闭 Redis 客户端连接。');
+//     logger.info('收到 SIGINT 信号：正在关闭 Redis 客户端连接。');
 //     redisClient?.quit();
 // }); 

@@ -60,7 +60,7 @@ export async function removeTaskPlaceholder(taskId: string): Promise<void> {
 
 // --- Pub/Sub Functions --- (Used by the Worker)
 
-interface TrackerEvent {
+export interface TrackerEvent {
     type: 'think' | 'error' | 'complete' | 'result';
     payload: string; // The message content
 }

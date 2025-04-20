@@ -14,12 +14,11 @@ export async function handleReflectAction(thisAgent: ResearchAgent, action: Refl
     const step = thisAgent.step as number;
     const totalStep = thisAgent.totalStep as number;
     const gaps = thisAgent.gaps as string[];
-
+    await publishThink(thisAgent.context.taskId, `步骤 ${step}: 开始反思`);
     // 添加防御性检查
     if (!action.questionsToAnswer || !Array.isArray(action.questionsToAnswer)) {
         console.error(`[handleReflectAction] Invalid questionsToAnswer for step ${step}`, action);
         action.questionsToAnswer = []; // 确保是有效数组
-        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 反思失败，没有有效子问题`);
     }
 
     // 使用安全版 dedupQueries
@@ -36,7 +35,6 @@ ${newGapQuestions.map((q: string) => `- ${q}`).join('\n')}
 
 You will now figure out the answers to these sub-questions and see if they can help you find the answer to the original question.
 `);
-        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 反思成功，找到子问题`);
         // Update agent state arrays (caller handles this)
         gaps.push(...newGapQuestions);
         allQuestions.push(...newGapQuestions);
@@ -48,7 +46,6 @@ You will now figure out the answers to these sub-questions and see if they can h
     } else {
         // 添加空数组检查
         const safeQuestions = action.questionsToAnswer?.length ? action.questionsToAnswer : ['(未能生成有效子问题)'];
-        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 反思失败，没有有效子问题`);
         diaryContext.push(`
 At step ${step}, you took **reflect** and think about the knowledge gaps. You tried to break down the question "${currentQuestion}" into sub-questions like this: ${safeQuestions.join(', ')} 
 But then you realized you have asked them before or they were duplicates. You decided to to think out of the box or cut from a completely different angle. 

@@ -1,5 +1,5 @@
 import { createOpenAI, OpenAIProviderSettings } from '@ai-sdk/openai';
-
+import logger from '@/utils/logger';
 // 从环境变量读取 API 密钥和其他配置
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export const JINA_API_KEY = process.env.JINA_API_KEY;
@@ -35,7 +35,7 @@ export const LLM_PROVIDER: LLMProvider = (() => {
 export const SEARCH_PROVIDER: SearchProvider = (() => {
     const provider = process.env.SEARCH_PROVIDER || FALLBACK_DEFAULTS.SEARCH_PROVIDER;
     if (!isValidSearchProvider(provider)) {
-        console.warn(`无效的 SEARCH_PROVIDER: ${provider}。将使用默认值 '${FALLBACK_DEFAULTS.SEARCH_PROVIDER}'。`);
+        logger.warn(`无效的 SEARCH_PROVIDER: ${provider}。将使用默认值 '${FALLBACK_DEFAULTS.SEARCH_PROVIDER}'。`);
         return FALLBACK_DEFAULTS.SEARCH_PROVIDER as SearchProvider;
     }
     return provider;
@@ -122,7 +122,7 @@ export function getModel(toolName: ToolName) {
     // 从环境变量获取特定于提供者的设置
     const openAICompatibility = process.env.OPENAI_COMPATIBILITY as 'strict' | 'compatible' | undefined || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY;
 
-    console.log(`getModel 调用，工具: ${String(toolName)}, 提供者: ${LLM_PROVIDER}, 解析配置:`, config);
+    logger.info(`getModel 调用，工具: ${String(toolName)}, 提供者: ${LLM_PROVIDER}, 解析配置:`, config);
 
     if (!OPENAI_API_KEY) {
         throw new Error('OPENAI_API_KEY 在环境变量中未找到');
@@ -135,12 +135,12 @@ export function getModel(toolName: ToolName) {
     }
     if (OPENAI_BASE_URL) {
         opt.baseURL = OPENAI_BASE_URL;
-        console.log(`使用 OpenAI Base URL: ${opt.baseURL}`);
+        logger.info(`使用 OpenAI Base URL: ${opt.baseURL}`);
     }
     try {
         return createOpenAI(opt)(config.model);
     } catch (error) {
-        console.error(`为模型 ${config.model} 创建 OpenAI 客户端失败，选项:`, opt, error);
+        logger.error(`为模型 ${config.model} 创建 OpenAI 客户端失败，选项:`, opt, error);
         throw error;
     }
 }
@@ -148,10 +148,10 @@ export function getModel(toolName: ToolName) {
 // --- 初始验证和日志记录 ---
 
 // 根据选定的提供者验证必需的 API 密钥
-if (LLM_PROVIDER === 'openai' && !OPENAI_API_KEY) console.error("错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。");
+if (LLM_PROVIDER === 'openai' && !OPENAI_API_KEY) logger.error("错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。");
 
 // 警告搜索提供者密钥缺失
-if (SEARCH_PROVIDER === 'jina' && !JINA_API_KEY) console.warn("警告: SEARCH_PROVIDER 是 'jina' 但 JINA_API_KEY 未设置。");
+if (SEARCH_PROVIDER === 'jina' && !JINA_API_KEY) logger.warn("警告: SEARCH_PROVIDER 是 'jina' 但 JINA_API_KEY 未设置。");
 
 // 定义 STEP_SLEEP (从环境变量读取或使用默认值)
 export const STEP_SLEEP = (() => {
@@ -192,8 +192,8 @@ if (process.env.NODE_ENV !== 'production') {
                 stepSleep: STEP_SLEEP // 步骤间延迟
             }
         };
-        console.log('有效配置摘要 (来自环境变量或默认值):', JSON.stringify(configSummary, null, 2));
+        logger.info('有效配置摘要 (来自环境变量或默认值):', JSON.stringify(configSummary, null, 2));
     } catch (error) {
-        console.error("生成配置摘要时出错:", error);
+        logger.error("生成配置摘要时出错:", error);
     }
 } 

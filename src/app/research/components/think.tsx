@@ -5,6 +5,8 @@ import {
     Card,
     CardContent,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 interface ThinkStep {
     think: string;
@@ -33,6 +35,25 @@ interface ActionState {
     totalStep: number;
 }
 
+interface Reference {
+    exactQuote?: string;
+    url: string;
+    title?: string;
+    dateTime?: string;
+    relevanceScore?: number;
+    answerChunk?: string;
+    answerChunkPosition?: [number, number];
+}
+
+interface ResearchResult {
+    action: string;
+    answer?: string;
+    references?: Reference[];
+    think?: string;
+    isFinal?: boolean;
+    mdAnswer?: string;
+}
+
 // Define props interface
 interface ThinkStatusDisplayProps {
     taskId: string | null;
@@ -44,7 +65,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
     const [error, setError] = useState<string | null>(null);
     const [tokenState, setTokenState] = useState<TokenState | null>(null);
     const [actionState, setActionState] = useState<ActionState | null>(null);
-    const [researchResult, setResearchResult] = useState<any>(null);
+    const [researchResult, setResearchResult] = useState<ResearchResult | null>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     // 使用一个 useRef 对象来存储所有需要跨渲染周期保持的状态
@@ -139,13 +160,17 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                     console.log("ThinkStatusDisplay: Received completion message from server:", data.complete);
                     setIsConnected(false);
                 } else if (data.result) {
-                    console.log("ThinkStatusDisplay: Received result data:", data.result);
-                    // 如果有结果数据，可以在这里处理
+                    console.log("ThinkStatusDisplay: Received result data via onmessage:", data.result);
+                    if (typeof data.result === 'object' && data.result !== null && data.result.action) {
+                        setResearchResult(data.result);
+                    } else {
+                        console.warn("ThinkStatusDisplay: Received unexpected data structure in onmessage 'result':", data.result);
+                    }
                 } else {
                     console.log("ThinkStatusDisplay: Received unknown data type:", data);
                 }
             } catch (e) {
-                console.error(`ThinkStatusDisplay: Failed to parse think data for taskId ${taskId}:`, e, "Data:", event.data);
+                console.error(`ThinkStatusDisplay: Failed to parse message data for taskId ${taskId}:`, e, "Data:", event.data);
             }
         };
 
@@ -171,15 +196,21 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
             }
         });
 
-        // 处理 result 事件
         eventSource.addEventListener('result', (event) => {
             try {
-                const result = JSON.parse(event.data);
-                console.log("ThinkStatusDisplay: Received result event:", result);
-                setResearchResult(result);
-                // 如果有结果数据，可以在这里处理
+                const data = JSON.parse(event.data);
+                console.log("ThinkStatusDisplay: Received result event data:", data);
+                if (data && data.result && typeof data.result === 'object') {
+                    setResearchResult(data.result);
+                } else {
+                    console.warn("ThinkStatusDisplay: Received result event data in unexpected format:", data);
+                    if (typeof data === 'object' && data !== null && data.action) {
+                        setResearchResult(data);
+                    }
+                }
+                console.log("ThinkStatusDisplay: Received result event data:", data);
             } catch (e) {
-                console.error("Failed to parse result data:", e);
+                console.error("Failed to parse result event data:", e);
             }
         });
 
@@ -209,113 +240,185 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
     const renderContent = () => {
         if (!taskId) {
             return (
-                <div className="flex items-start space-x-2">
-                    <span className="text-xl mt-1">🤔</span>
-                    <CardContent className="flex-1 bg-muted p-4 rounded-lg text-sm text-muted-foreground">
-                        准备开始研究...
-                    </CardContent>
+                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                    <span className="text-lg">准备开始研究...</span>
                 </div>
             );
         }
 
         if (error) {
             return (
-                <div className="flex items-start space-x-2">
-                    <span className="text-xl mt-1">⚠️</span>
-                    <CardContent className="flex-1 bg-destructive/10 border border-destructive/30 p-4 rounded-lg text-sm text-destructive">
-                        {error}
-                    </CardContent>
+                <div className="flex items-center justify-center h-32 text-destructive">
+                    <div className="bg-destructive/10 p-4 rounded-lg border border-destructive/30">
+                        <p className="text-sm">{error}</p>
+                    </div>
                 </div>
             );
         }
 
         if (!isConnected && !error) {
             return (
-                <div className="flex items-start space-x-2 animate-pulse">
-                    <span className="text-xl mt-1">📡</span>
-                    <CardContent className="flex-1 bg-muted p-4 rounded-lg text-sm text-muted-foreground">
-                        正在连接思考过程流...
-                    </CardContent>
+                <div className="flex items-center justify-center h-32 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    <span className="text-lg">正在连接思考过程流...</span>
                 </div>
             );
         }
 
         return (
-            <div className="flex flex-col w-full max-h-[80vh] gap-2 mx-auto overflow-y-auto">
-                {/* 显示研究结果 */}
+            <div className="space-y-6 p-4">
                 {researchResult && (
-                    <div className="flex items-start space-x-2 p-4 border-b bg-green-50">
-                        <span className="text-xl mt-1">📊</span>
-                        <CardContent className="flex-1 bg-white p-4 rounded-lg text-sm border border-green-200">
-                            <div className="font-medium mb-2 text-green-700">研究结果:</div>
-                            <div className="whitespace-pre-wrap break-words">
-                                {typeof researchResult === 'string'
-                                    ? researchResult
-                                    : JSON.stringify(researchResult, null, 2)}
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-border/60 shadow-lg">
+                        <div className="prose dark:prose-invert max-w-none">
+                            {typeof researchResult === 'string' ? (
+                                <div className="space-y-4">
+                                    {(researchResult as string).split('\n\n').map((paragraph: string, index: number) => (
+                                        <p key={index} className="text-base leading-relaxed">
+                                            {paragraph}
+                                        </p>
+                                    ))}
+                                </div>
+                            ) : researchResult.mdAnswer ? (
+                                <div className="space-y-4">
+                                    {researchResult.mdAnswer.split('\n\n').map((paragraph: string, index: number) => {
+                                        const processedParagraph = paragraph.replace(/\[\^(\d+)\]/g, (match: string, num: string) => {
+                                            return `<sup class="text-primary cursor-pointer hover:text-primary/80">[${num}]</sup>`;
+                                        });
+                                        return (
+                                            <div key={index} className="text-base leading-relaxed" dangerouslySetInnerHTML={{ __html: processedParagraph }} />
+                                        );
+                                    })}
+                                </div>
+                            ) : researchResult.answer ? (
+                                <div className="space-y-4">
+                                    {researchResult.answer.split('\n\n').map((paragraph: string, index: number) => (
+                                        <p key={index} className="text-base leading-relaxed">
+                                            {paragraph}
+                                        </p>
+                                    ))}
+                                </div>
+                            ) : (
+                                <pre className="text-sm bg-muted/40 p-4 rounded-lg overflow-x-auto">
+                                    {JSON.stringify(researchResult, null, 2)}
+                                </pre>
+                            )}
+                        </div>
+
+                        {researchResult.references && researchResult.references.length > 0 && (
+                            <div className="mt-8 pt-6 border-t border-border/60">
+                                <h3 className="text-lg font-semibold mb-4 text-muted-foreground">参考文献</h3>
+                                <div className="space-y-3">
+                                    {researchResult.references.map((ref: Reference, index: number) => (
+                                        <div key={index} className="group relative pl-4 py-2">
+                                            <div className="absolute left-0 top-0 h-full w-0.5 bg-gradient-to-b from-primary/50 to-primary/20 group-hover:from-primary group-hover:to-primary/50 transition-colors duration-300" />
+                                            <div className="space-y-1">
+                                                <div className="flex items-start gap-2">
+                                                    <span className="text-sm font-medium text-primary">[{index + 1}]</span>
+                                                    <div className="flex-1">
+                                                        <a
+                                                            href={ref.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                                        >
+                                                            {ref.title || ref.url}
+                                                        </a>
+                                                        {ref.dateTime && (
+                                                            <span className="block text-xs text-muted-foreground mt-1">
+                                                                {ref.dateTime}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {ref.exactQuote && (
+                                                    <div className="mt-2 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                                                        <p className="italic">{ref.exactQuote}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </CardContent>
+                        )}
                     </div>
                 )}
 
-                {/* 显示 Token 使用情况 */}
                 {tokenState && (
-                    <div className="flex items-start space-x-2 p-4 border-b">
-                        <span className="text-xl mt-1">📊</span>
-                        <CardContent className="flex-1 bg-muted/50 p-4 rounded-lg text-sm">
-                            <div className="font-medium mb-2">Token 使用情况:</div>
-                            <div className="space-y-1">
-                                <div>总使用量: {tokenState.usages.reduce((sum, u) => sum + u.usage.totalTokens, 0)} tokens</div>
-                                {tokenState.budget && (
-                                    <div>预算: {tokenState.budget} tokens</div>
-                                )}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+                        <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-4">Token 使用情况</h3>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-blue-600 dark:text-blue-400">总使用量</span>
+                                <span className="font-mono text-sm">
+                                    {tokenState.usages.reduce((sum, u) => sum + u.usage.totalTokens, 0)} tokens
+                                </span>
                             </div>
-                        </CardContent>
+                            {tokenState.budget && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-blue-600 dark:text-blue-400">预算</span>
+                                    <span className="font-mono text-sm">{tokenState.budget} tokens</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
-                {/* 显示当前动作状态 */}
                 {actionState && (
-                    <div className="flex items-start space-x-2 p-4 border-b">
-                        <span className="text-xl mt-1">🎯</span>
-                        <CardContent className="flex-1 bg-muted/50 p-4 rounded-lg text-sm">
-                            <div className="font-medium mb-2">当前状态:</div>
-                            <div className="space-y-1">
-                                <div>步骤: {actionState.totalStep}</div>
-                                <div>动作: {actionState.thisStep.action}</div>
-                                {actionState.thisStep.think && (
-                                    <div>思考: {actionState.thisStep.think}</div>
-                                )}
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+                        <h3 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-4">当前状态</h3>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-purple-600 dark:text-purple-400">步骤</span>
+                                <span className="font-mono text-sm">{actionState.totalStep}</span>
                             </div>
-                        </CardContent>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-purple-600 dark:text-purple-400">动作</span>
+                                <span className="font-mono text-sm">{actionState.thisStep.action}</span>
+                            </div>
+                            {actionState.thisStep.think && (
+                                <div className="mt-2">
+                                    <span className="text-sm text-purple-600 dark:text-purple-400">思考</span>
+                                    <p className="text-sm mt-1">{actionState.thisStep.think}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
-                {/* 显示思考步骤 */}
-                {thoughts.map((step, index) => (
-                    <div key={index} className="flex items-start space-x-2 mb-1 px-2 animate-in fade-in slide-in-from-bottom-5 duration-300">
-                        <span className="text-xl mt-1">🤔</span>
-                        <CardContent className="flex-1 bg-muted p-4 rounded-lg text-sm whitespace-pre-wrap break-words">
-                            {step.think}
-                        </CardContent>
-                    </div>
-                ))}
+                <div className="space-y-4">
+                    {thoughts.map((step, index) => (
+                        <div
+                            key={index}
+                            className={cn(
+                                "group relative pl-4 py-2 transition-all duration-300",
+                                "before:absolute before:left-0 before:top-0 before:h-full before:w-0.5",
+                                "before:bg-gradient-to-b before:from-blue-500 before:to-purple-500",
+                                "hover:before:opacity-100 before:opacity-50"
+                            )}
+                        >
+                            <div className="prose dark:prose-invert max-w-none">
+                                <p className="text-sm leading-relaxed">{step.think}</p>
+                            </div>
+                        </div>
+                    ))}
 
-                {/* 显示等待状态 */}
-                {isConnected && thoughts.length === 0 && (
-                    <div className="flex items-start space-x-2">
-                        <span className="text-xl mt-1">⏳</span>
-                        <CardContent className="flex-1 bg-muted p-4 rounded-lg text-sm text-muted-foreground">
-                            已连接，等待第一个思考步骤...
-                        </CardContent>
-                    </div>
-                )}
+                    {isConnected && thoughts.length === 0 && (
+                        <div className="flex items-center justify-center h-32 text-muted-foreground">
+                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                            <span className="text-lg">等待第一个思考步骤...</span>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
 
     return (
-        <Card className="w-full max-w-2xl mx-auto mt-1 border border-border/60 shadow-sm">
-            {renderContent()}
+        <Card className="w-full max-w-4xl mx-auto bg-background/50 backdrop-blur-sm border-border/60 shadow-lg">
+            <CardContent className="p-0">
+                {renderContent()}
+            </CardContent>
         </Card>
     );
 }

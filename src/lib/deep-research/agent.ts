@@ -275,7 +275,7 @@ export class ResearchAgent {
         }
 
         console.log("Agent Run Finished");
-        await publishThink(this.context.taskId, `深度思考结束`);
+        await publishThink(this.context.taskId, `✅ 深度思考结束！`);
         // 对最终的 URL 进行排序，并返回指定数量的 URL
         const finalWeightedURLs = rankURLsHelper(this);
         const returnedURLs = finalWeightedURLs.slice(0, this.options.numReturnedURLs).map(r => r.url!);

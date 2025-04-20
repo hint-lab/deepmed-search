@@ -25,11 +25,10 @@ export async function handleCodingAction(thisAgent: ResearchAgent, action: Codin
 
     // Pass necessary context/state to CodeSandbox constructor
     const sandbox = new CodeSandbox({ allContext: allContext, URLs: weightedURLs.slice(0, 20), allKnowledge: allKnowledge }, context, SchemaGen);
-    await publishThink(thisAgent.context.taskId, `初始化代码沙盒`);
+    await publishThink(thisAgent.context.taskId, `步骤 ${step}: 初始化代码沙盒`);
     try {
         const result = await sandbox.solve(action.codingIssue);
         // Add successful coding result to knowledge
-        await publishThink(thisAgent.context.taskId, `添加代码到知识`);
         allKnowledge.push({
             question: `What is the solution to the coding issue: ${action.codingIssue}?`,
             answer: result.solution.output,
@@ -42,17 +41,14 @@ export async function handleCodingAction(thisAgent: ResearchAgent, action: Codin
 At step ${step}, you took the **coding** action and try to solve the coding issue: ${action.codingIssue}.
 You found the solution and add it to your knowledge for future reference.
 `);
-        await publishThink(thisAgent.context.taskId, `更新日志`);
         // Update context for success
         updateContextHelper(thisAgent, {
             totalStep: totalStep,
             ...action,
             result: result // Store the sandbox result
         });
-        await publishThink(thisAgent.context.taskId, `更新状态`);
     } catch (error) {
         console.error('Error solving coding issue:', error);
-        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 代码失败`);
         // Update diary context for failure
         diaryContext.push(`
 At step ${step}, you took the **coding** action and try to solve the coding issue: ${action.codingIssue}.

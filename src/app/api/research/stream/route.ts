@@ -1,16 +1,10 @@
 // src/app/api/research/stream/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createNewRedisClient } from '@/lib/redis-client';
-import { checkTaskActive, getTokenTrackerState, getActionTrackerState } from '@/lib/deep-research/tracker-store'; // Correct path assumes tracker-store.ts is in src/lib
+import { checkTaskActive, getTokenTrackerState, getActionTrackerState, TrackerEvent } from '@/lib/deep-research/tracker-store'; // 导入 TrackerEvent
 import type { Redis } from 'ioredis';
 import { TokenUsage } from '@/lib/deep-research/types';
 import { ActionState } from '@/lib/deep-research/utils/action-tracker';
-
-// Define the expected event structure from Redis Pub/Sub
-interface TrackerEvent {
-    type: 'think' | 'error' | 'complete' | 'result';
-    payload: string;
-}
 
 export async function GET(req: NextRequest) {
     const taskId = req.nextUrl.searchParams.get('taskId');
@@ -77,6 +71,8 @@ export async function GET(req: NextRequest) {
 
                             // 处理事件
                             let originalEventData = '';
+                            let shouldCloseController = false;
+
                             switch (event.type) {
                                 case 'think':
                                     originalEventData = `data: ${JSON.stringify({ think: event.payload })}\n\n`;
@@ -86,11 +82,8 @@ export async function GET(req: NextRequest) {
                                     break;
                                 case 'complete':
                                     originalEventData = `data: ${JSON.stringify({ complete: event.payload })}\n\n`;
-                                    // 在发送完成消息后关闭流
-                                    controller.enqueue(new TextEncoder().encode(originalEventData));
-                                    controller.close();
-                                    console.log(`[SSE ${taskId}] Task completed, closing SSE stream.`);
-                                    return;
+                                    shouldCloseController = true;
+                                    break;
                                 case 'result':
                                     originalEventData = `event: result\ndata: ${event.payload}\n\n`;
                                     console.log(`[SSE ${taskId}] Sending result event:`, event.payload);
@@ -122,6 +115,13 @@ export async function GET(req: NextRequest) {
                                 }
                             } catch (stateError) {
                                 console.error(`[SSE ${taskId}] Error fetching states after event:`, stateError);
+                            }
+
+                            // 如果需要关闭控制器，在发送完所有数据后关闭
+                            if (shouldCloseController) {
+                                controller.close();
+                                console.log(`[SSE ${taskId}] Task completed, closing SSE stream.`);
+                                return;
                             }
                         } catch (error) {
                             console.error(`[SSE ${taskId}] Error processing message:`, error);
