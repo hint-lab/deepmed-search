@@ -1,6 +1,7 @@
-import {z} from "zod";
-import {ObjectGeneratorSafe} from "./safe-generator";
-import {EvaluationType, PromptPair} from "../types";
+import { z } from "zod";
+import { ObjectGeneratorSafe } from "./safe-generator";
+import { EvaluationType, PromptPair } from "../types";
+import { TokenTracker } from "./token-tracker";
 
 export const MAX_URLS_PER_STEP = 5
 export const MAX_QUERIES_PER_STEP = 5
@@ -64,8 +65,8 @@ export class Schemas {
   public languageCode: string = 'en';
 
 
-  async setLanguage(query: string) {
-    const generator = new ObjectGeneratorSafe();
+  async setLanguage(query: string, tokenTracker?: TokenTracker) {
+    const generator = new ObjectGeneratorSafe(tokenTracker);
     const prompt = getLanguagePrompt(query.slice(0, 100))
 
     const result = await generator.generateObject({
@@ -124,7 +125,7 @@ export class Schemas {
           tbs: z.enum(['qdr:h', 'qdr:d', 'qdr:w', 'qdr:m', 'qdr:y']).describe('time-based search filter, must use this field if the search request asks for latest info. qdr:h for past hour, qdr:d for past 24 hours, qdr:w for past week, qdr:m for past month, qdr:y for past year. Choose exactly one.'),
           gl: z.string().describe('defines the country to use for the search. a two-letter country code. e.g., us for the United States, uk for United Kingdom, or fr for France.'),
           hl: z.string().describe('the language to use for the search. a two-letter language code. e.g., en for English, es for Spanish, or fr for French.'),
-          location: z.string().describe('defines from where you want the search to originate. It is recommended to specify location at the city level in order to simulate a real user’s search.').optional(),
+          location: z.string().describe("defines from where you want the search to originate. It is recommended to specify location at the city level in order to simulate a real user's search.").optional(),
           q: z.string().describe('keyword-based search query, 2-3 words preferred, total length < 30 characters').max(50),
         }))
         .max(MAX_QUERIES_PER_STEP)
@@ -196,7 +197,7 @@ export class Schemas {
   }
 
   getAgentSchema(allowReflect: boolean, allowRead: boolean, allowAnswer: boolean, allowSearch: boolean, allowCoding: boolean,
-                 currentQuestion?: string): z.ZodObject<any> {
+    currentQuestion?: string): z.ZodObject<any> {
     const actionSchemas: Record<string, z.ZodOptional<any>> = {};
 
     if (allowSearch) {

@@ -1,6 +1,6 @@
-import {TokenTracker} from "../utils/token-tracker";
-import {cosineSimilarity} from "./cosine";
-import {getEmbeddings} from "./embeddings";
+import { TokenTracker } from "../utils/token-tracker";
+import { cosineSimilarity } from "./cosine";
+import { getEmbeddings } from "./embeddings";
 
 const SIMILARITY_THRESHOLD = 0.86; // Adjustable threshold for cosine similarity
 
@@ -12,15 +12,21 @@ export async function dedupQueries(
 ): Promise<{ unique_queries: string[] }> {
   try {
     // Quick return for single new query with no existing queries
-    if (newQueries.length === 1 && existingQueries.length === 0) {
+    if (newQueries?.length === 1 && (!existingQueries || existingQueries.length === 0)) {
       return {
         unique_queries: newQueries,
       };
     }
 
+    // Ensure arrays are valid before proceeding
+    if (!newQueries || !existingQueries) {
+      console.error("[dedupQueries] Error: Input arrays cannot be null/undefined.");
+      return { unique_queries: newQueries || [] }; // Return new queries or empty if newQueries is also invalid
+    }
+
     // Get embeddings for all queries in one batch
-    const allQueries = [...newQueries, ...existingQueries];
-    const {embeddings: allEmbeddings} = await getEmbeddings(allQueries, tracker);
+    const combinedQueries = [...newQueries, ...existingQueries];
+    const { embeddings: allEmbeddings } = await getEmbeddings(combinedQueries, tracker);
 
     // If embeddings is empty (due to 402 error), return all new queries
     if (!allEmbeddings.length) {

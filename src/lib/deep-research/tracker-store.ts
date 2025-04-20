@@ -61,12 +61,12 @@ export async function removeTaskPlaceholder(taskId: string): Promise<void> {
 // --- Pub/Sub Functions --- (Used by the Worker)
 
 interface TrackerEvent {
-    type: 'think' | 'error' | 'complete';
+    type: 'think' | 'error' | 'complete' | 'result';
     payload: string; // The message content
 }
 
 function getChannelName(taskId: string): string {
-    return `${TRACKER_CHANNEL_PREFIX}${taskId}`;
+    return `${ACTION_TRACKER_STATE_PREFIX}${taskId}`;
 }
 
 async function publishEvent(taskId: string, event: TrackerEvent): Promise<void> {
@@ -109,4 +109,106 @@ export async function publishError(taskId: string, errorMessage: string): Promis
  */
 export async function publishComplete(taskId: string, completionMessage: string = 'Task completed successfully'): Promise<void> {
     await publishEvent(taskId, { type: 'complete', payload: completionMessage });
+}
+
+/**
+ * Publishes a result message to the task's Redis channel.
+ * (To be called by the background worker when research is complete)
+ * @param taskId The unique ID of the task.
+ * @param result The research result to publish.
+ */
+export async function publishResult(taskId: string, result: any): Promise<void> {
+    await publishEvent(taskId, { type: 'result', payload: JSON.stringify(result) });
+}
+
+// --- State Persistence Functions --- (Used by Trackers / Agent)
+
+// Define Redis keys for tracker states
+const TOKEN_TRACKER_STATE_PREFIX = 'tracker:token:';
+const ACTION_TRACKER_STATE_PREFIX = 'tracker:action:';
+
+// Import necessary types (adjust path if needed)
+import { TokenUsage } from './types';
+import { ActionState } from './utils/action-tracker'; // Assuming ActionState is exported from here
+
+/**
+ * Stores the state of the TokenTracker in Redis.
+ * @param taskId The unique ID of the task.
+ * @param state The state object to store.
+ */
+export async function storeTokenTrackerState(taskId: string, state: { usages: TokenUsage[], budget?: number }): Promise<void> {
+    const redis = getRedisClient();
+    const key = `${TOKEN_TRACKER_STATE_PREFIX}${taskId}`;
+    try {
+        const stateString = JSON.stringify(state);
+        // Store the state, potentially with the same TTL as the task placeholder?
+        await redis.set(key, stateString, 'EX', DEFAULT_TASK_TTL_SECONDS);
+        console.log(`[TrackerStore] Stored TokenTracker state for task ${taskId}`);
+    } catch (error) {
+        console.error(`[TrackerStore] Error storing TokenTracker state for task ${taskId}:`, error);
+    }
+}
+
+/**
+ * Retrieves the state of the TokenTracker from Redis.
+ * @param taskId The unique ID of the task.
+ * @returns The stored state object or null if not found or on error.
+ */
+export async function getTokenTrackerState(taskId: string): Promise<{ usages: TokenUsage[], budget?: number } | null> {
+    const redis = getRedisClient();
+    const key = `${TOKEN_TRACKER_STATE_PREFIX}${taskId}`;
+    try {
+        const stateString = await redis.get(key);
+        if (stateString) {
+            const state = JSON.parse(stateString);
+            console.log(`[TrackerStore] Retrieved TokenTracker state for task ${taskId}`);
+            return state;
+        }
+        console.log(`[TrackerStore] No TokenTracker state found for task ${taskId}`);
+        return null;
+    } catch (error) {
+        console.error(`[TrackerStore] Error retrieving TokenTracker state for task ${taskId}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Stores the state of the ActionTracker in Redis.
+ * @param taskId The unique ID of the task.
+ * @param state The state object to store.
+ */
+export async function storeActionTrackerState(taskId: string, state: ActionState): Promise<void> {
+    const redis = getRedisClient();
+    const key = `${ACTION_TRACKER_STATE_PREFIX}${taskId}`;
+    try {
+        const stateString = JSON.stringify(state);
+        // Store the state with TTL
+        await redis.set(key, stateString, 'EX', DEFAULT_TASK_TTL_SECONDS);
+        console.log(`[TrackerStore] Stored ActionTracker state for task ${taskId}`);
+    } catch (error) {
+        console.error(`[TrackerStore] Error storing ActionTracker state for task ${taskId}:`, error);
+    }
+}
+
+/**
+ * Retrieves the state of the ActionTracker from Redis.
+ * @param taskId The unique ID of the task.
+ * @returns The stored state object or null if not found or on error.
+ */
+export async function getActionTrackerState(taskId: string): Promise<ActionState | null> {
+    const redis = getRedisClient();
+    const key = `${ACTION_TRACKER_STATE_PREFIX}${taskId}`;
+    try {
+        const stateString = await redis.get(key);
+        if (stateString) {
+            const state = JSON.parse(stateString);
+            console.log(`[TrackerStore] Retrieved ActionTracker state for task ${taskId}`);
+            return state;
+        }
+        console.log(`[TrackerStore] No ActionTracker state found for task ${taskId}`);
+        return null;
+    } catch (error) {
+        console.error(`[TrackerStore] Error retrieving ActionTracker state for task ${taskId}:`, error);
+        return null;
+    }
 } 

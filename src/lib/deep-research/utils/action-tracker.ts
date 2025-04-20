@@ -1,9 +1,10 @@
 import { EventEmitter } from 'events';
 import { StepAction } from '../types';
 import { getI18nText } from "./text-tools";
+import { storeActionTrackerState } from '../tracker-store';
 
 // 定义动作跟踪器的状态结构
-interface ActionState {
+export interface ActionState {
   thisStep: StepAction; // 当前步骤的动作
   gaps: string[];       // 当前存在的知识差距（问题列表）
   totalStep: number;    // 总共执行的步骤数
@@ -12,12 +13,24 @@ interface ActionState {
 // ActionTracker 类用于跟踪代理执行的动作和思考过程
 // 它继承自 EventEmitter，可以在状态变化时发出事件
 export class ActionTracker extends EventEmitter {
+  private taskId: string;
   // 私有状态变量，存储当前的动作状态
   private state: ActionState = {
     thisStep: { action: 'answer', answer: '', references: [], think: '' }, // 初始动作为回答空内容
     gaps: [], // 初始知识差距为空
     totalStep: 0 // 初始步骤数为 0
   };
+
+  // Update constructor to accept taskId
+  constructor(taskId: string) {
+    super();
+    this.taskId = taskId; // Store taskId
+  }
+
+  // Helper function to persist state
+  private async persistState(): Promise<void> {
+    await storeActionTrackerState(this.taskId, this.state);
+  }
 
   // 跟踪一个完整的动作步骤
   // newState 可以包含部分或全部 ActionState 的更新
@@ -26,6 +39,10 @@ export class ActionTracker extends EventEmitter {
     this.state = { ...this.state, ...newState };
     // 发出 'action' 事件，传递当前的动作步骤信息
     this.emit('action', this.state.thisStep);
+    // Persist state to Redis
+    this.persistState().catch(err => {
+      console.error(`[ActionTracker ${this.taskId}] Error persisting state after trackAction:`, err);
+    });
   }
 
   // 跟踪思考过程
@@ -42,6 +59,10 @@ export class ActionTracker extends EventEmitter {
     this.state = { ...this.state, thisStep: { ...this.state.thisStep, URLTargets: [], think } as StepAction };
     // 发出 'action' 事件，传递更新后的动作步骤信息 (主要是更新了 think)
     this.emit('action', this.state.thisStep);
+    // Persist state to Redis
+    this.persistState().catch(err => {
+      console.error(`[ActionTracker ${this.taskId}] Error persisting state after trackThink:`, err);
+    });
   }
 
   // 获取当前的动作状态
@@ -57,5 +78,9 @@ export class ActionTracker extends EventEmitter {
       gaps: [],
       totalStep: 0
     };
+    // Persist the reset state
+    this.persistState().catch(err => {
+      console.error(`[ActionTracker ${this.taskId}] Error persisting reset state:`, err);
+    });
   }
 }

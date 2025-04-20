@@ -7,6 +7,8 @@ import { Schemas } from "../utils/schemas";
 import { ResearchAgent } from '../agent';
 import { updateContextHelper } from '../agent-helpers';
 import { formatDateBasedOnType } from "../utils/date-tools";
+import { publishThink } from '../tracker-store';
+
 
 export async function handleAnswerAction(thisAgent: ResearchAgent, action: AnswerAction, currentQuestion: string): Promise<boolean> { // Returns true if loop should break
     console.log("Handling Answer Action for:", currentQuestion);
@@ -25,6 +27,7 @@ export async function handleAnswerAction(thisAgent: ResearchAgent, action: Answe
     // 1. Check for trivial question (first step, direct answer allowed)
     if (totalStep === 1 && !options.noDirectAnswer) {
         console.log("Trivial question or direct answer allowed on first step.");
+        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 直接回答允许`);
         action.isFinal = true;
         (thisAgent as any).trivialQuestion = true; // Modify agent state
         updateContextHelper(thisAgent, { totalStep: totalStep, question: currentQuestion, ...action });
@@ -42,6 +45,8 @@ export async function handleAnswerAction(thisAgent: ResearchAgent, action: Answe
 
     if (currentEvalMetrics && currentEvalMetrics.length > 0) {
         console.log(`Evaluating answer for: ${currentQuestion} with metrics:`, currentEvalMetrics.map(e => e.type));
+        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 开始评估答案`);
+
         context.actionTracker.trackThink('eval_first', SchemaGen.languageCode);
         try {
             evaluation = await evaluateAnswer(
@@ -54,17 +59,19 @@ export async function handleAnswerAction(thisAgent: ResearchAgent, action: Answe
             ) || evaluation;
         } catch (evalError) {
             console.error(`Error during answer evaluation for ${currentQuestion}:`, evalError);
+            await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 评估答案失败`);
             evaluation = { pass: false, think: `Evaluation failed with error: ${evalError instanceof Error ? evalError.message : String(evalError)}`, type: 'strict' };
         }
     } else {
         console.log(`No evaluation metrics found for: ${currentQuestion}, skipping evaluation.`);
+        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 没有评估指标，跳过评估`);
     }
 
     // 3. Handle evaluation results
     if (currentQuestion.trim() === question) {
         // Handling evaluation for the MAIN question
         (thisAgent as any).allowCoding = false; // Modify agent state
-
+        await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 开始处理主问题`);
         if (evaluation.pass) {
             diaryContext.push(`
 At step ${thisAgent.step}, you took **answer** action and finally found the answer to the original question:
@@ -74,6 +81,7 @@ The evaluator thinks your answer is good because: ${evaluation.think}
 Your journey ends here. Congratulations! 🎉
 `);
             action.isFinal = true;
+            await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 最终答案找到`);
             updateContextHelper(thisAgent, { totalStep: totalStep, question: currentQuestion, ...action }); // Update context before breaking
             return true; // Break loop - Final Answer Found
         } else {
@@ -84,7 +92,7 @@ Original question: ${currentQuestion}
 Your answer: ${action.answer}
 The evaluator thinks your answer is bad because: ${evaluation.think}
 `);
-
+            await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 主问题答案评估失败`);
             // Decrement eval attempts for the failed type
             if (currentEvalMetrics) {
                 evaluationMetrics[currentQuestion] = currentEvalMetrics.map(e => {
@@ -124,8 +132,9 @@ The evaluator thinks your answer is bad because: ${evaluation.think}
                     answer: `The answer was evaluated as needing improvement for reason: ${evaluation.think}. Step analysis failed.`,
                     type: 'qa'
                 });
-            }
 
+            }
+            await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 添加反射到知识`);
             // Reset diary and step counter for reflection cycle (modified in the caller)
             (thisAgent as any).diaryContext = [];
             (thisAgent as any).step = 0;
@@ -147,6 +156,7 @@ Adding this to knowledge.`);
                 type: 'qa',
                 updated: formatDateBasedOnType(new Date(), 'full')
             });
+            await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 添加答案到知识`);
             // Remove the answered sub-question from gaps (modified in the caller)
             const gapIndex = gaps.indexOf(currentQuestion);
             if (gapIndex > -1) {
@@ -160,6 +170,7 @@ Your answer: ${action.answer}
 However, the evaluator thinks your answer is bad because: ${evaluation.think}
 This answer will not be added to the knowledge base.`);
             updateContextHelper(thisAgent, { totalStep: totalStep, question: currentQuestion, ...action, evaluation }); // Update context with failure info
+            await publishThink(thisAgent.context.taskId, `步骤 ${totalStep}: 答案评估失败，不添加到知识`);
         }
     }
 

@@ -41,6 +41,9 @@ import { handleReflectAction } from './actions/reflect';
 import { handleAnswerAction } from './actions/answer';
 import { handleCodingAction } from './actions/coding';
 
+// Import publishThink function
+import { publishThink } from './tracker-store';
+
 // --- ResearchAgent Class ---
 
 /**
@@ -106,10 +109,17 @@ export class ResearchAgent {
         this.question = options.question.trim();
         this.messages = options.messages;
 
-        // 初始化上下文追踪器
+        // 强化 taskId 检查
+        const taskId = options.existingContext?.taskId;
+        if (!taskId) {
+            throw new Error("[ResearchAgent] taskId is missing in existingContext");
+        }
+
+        // 确保上下文正确传递
         this.context = {
-            tokenTracker: options.existingContext?.tokenTracker || new TokenTracker(options.tokenBudget),
-            actionTracker: options.existingContext?.actionTracker || new ActionTracker()
+            taskId: taskId,
+            tokenTracker: options.existingContext?.tokenTracker || new TokenTracker(taskId, options.tokenBudget),
+            actionTracker: options.existingContext?.actionTracker || new ActionTracker(taskId)
         };
 
         // 初始化工具
@@ -136,8 +146,9 @@ export class ResearchAgent {
         if (!this.context.tokenTracker) {
             throw new Error("Token tracker is not initialized");
         }
-        // 异步初始化 Schema 语言
-        this.SchemaGen.setLanguage(this.question).catch(err => {
+
+        // 异步初始化 Schema 语言，确保传递 taskId
+        this.SchemaGen.setLanguage(this.question, this.context.tokenTracker).catch(err => {
             console.error("Failed to set schema language during initialization:", err);
             // 可以在这里处理错误，例如回退到默认语言
         });
@@ -161,6 +172,9 @@ export class ResearchAgent {
             this.allowReflect = this.allowReflect && (this.gaps.length <= MAX_REFLECT_PER_STEP);
             // 选择当前要处理的问题 (轮询 gaps)
             const currentQuestion: string = this.gaps[this.totalStep % this.gaps.length];
+
+            // 发布当前步骤的思考消息
+            await publishThink(this.context.taskId, `步骤 ${this.totalStep}: 正在思考问题 "${currentQuestion}"`);
 
             // 初始化当前问题的评估指标 (如果需要)
             initializeEvaluationMetricsHelper(this, currentQuestion);
@@ -261,6 +275,7 @@ export class ResearchAgent {
         }
 
         console.log("Agent Run Finished");
+        await publishThink(this.context.taskId, `深度思考结束`);
         // 对最终的 URL 进行排序，并返回指定数量的 URL
         const finalWeightedURLs = rankURLsHelper(this);
         const returnedURLs = finalWeightedURLs.slice(0, this.options.numReturnedURLs).map(r => r.url!);

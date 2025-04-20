@@ -313,6 +313,7 @@ import { TokenTracker } from './utils/token-tracker';
 import { ActionTracker } from './utils/action-tracker';
 
 export interface TrackerContext {
+    taskId: string;
     tokenTracker: TokenTracker;
     actionTracker: ActionTracker;
 }

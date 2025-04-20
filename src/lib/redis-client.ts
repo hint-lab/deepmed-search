@@ -56,9 +56,14 @@ export function getRedisClient(): Redis {
  */
 export function createNewRedisClient(): Redis {
     try {
+        console.log(`[createNewRedisClient] Attempting connection with options:`, connectionOptions); // Log options
         const client = new IORedis(connectionOptions);
-        // 可选：为订阅者客户端添加最小日志记录（如果需要）
-        client.on('error', (err: any) => console.error('新的 Redis 客户端实例错误:', err));
+        // 添加更多日志
+        client.on('connect', () => console.log('[createNewRedisClient] New client connected.'));
+        client.on('ready', () => console.log('[createNewRedisClient] New client ready.'));
+        client.on('error', (err: any) => console.error('[createNewRedisClient] New client error:', err));
+        client.on('close', () => console.log('[createNewRedisClient] New client closed.'));
+        client.on('reconnecting', () => console.log('[createNewRedisClient] New client reconnecting...'));
         return client;
     } catch (error) {
         console.error("创建新的 Redis 客户端实例失败:", error);

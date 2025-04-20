@@ -1,0 +1,10 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+./node_modules
+./dist
+./build
+./coverage
+./logs
+./temp
+./public/images
+./public/images/research
+./public/images/research/research-agent-flow.png

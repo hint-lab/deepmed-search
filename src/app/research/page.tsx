@@ -115,15 +115,16 @@ export default function ResearchPage() {
                     </div>
                 )}
 
-                {isPending && (
-                    <div className="flex flex-col justify-start items-center py-5 rounded-lg">
-                        <div className="flex justify-center items-center space-x-3 mb-4">
-                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">正在处理研究请求，请稍候...</p>
-                        </div>
-                        <ThinkStatusDisplay taskId={taskId} />
-                    </div>
-                )}
+
+
+                <div className="flex flex-col justify-start items-center py-5 rounded-lg">
+                    {isPending && (<div className="flex justify-center items-center space-x-3 mb-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">正在处理研究请求，请稍候...</p>
+                    </div>)}
+                    {taskId && <ThinkStatusDisplay taskId={taskId} />}
+                </div>
+
 
                 {result && (
                     <div className="border-t border-border/60 pt-8 mt-10 space-y-6">

@@ -1,8 +1,7 @@
 import { CoreMessage } from 'ai';
 import { ResearchAgent, ResearchAgentOptions } from './agent'; // Assuming ResearchAgent is exported from agent.ts
 import { StepAction, TrackerContext } from './types'; // Assuming types are in types.ts 
-
-
+import { publishThink, publishComplete, publishResult } from './tracker-store';
 
 export async function processResearchTask(
     taskId: string,
@@ -50,13 +49,22 @@ export async function processResearchTask(
         throw new Error("Provide either initialMessages or questionFromParam.");
     }
 
+    // 发布开始思考的消息
+    await publishThink(taskId, `开始研究问题: ${question}`);
+
     // Prepare options for the agent
+    // Combine existingContext with the taskId
+    const contextWithTaskId: Partial<TrackerContext> = {
+        ...existingContext, // Spread existing context first
+        taskId: taskId      // Ensure taskId is included
+    };
+
     const agentOptions: ResearchAgentOptions = {
         question,
         messages,
         tokenBudget,
         maxBadAttempts,
-        existingContext,
+        existingContext: contextWithTaskId, // Pass the combined context
         numReturnedURLs,
         noDirectAnswer,
         boostHostnames,
@@ -68,5 +76,14 @@ export async function processResearchTask(
 
     // Instantiate and run the agent
     const agent = new ResearchAgent(agentOptions);
-    return agent.run();
+    const result = await agent.run();
+    await publishThink(taskId, `研究完成: ${question}`);
+
+    // 发布研究结果
+    await publishResult(taskId, result);
+
+    // 发布完成消息
+    await publishComplete(taskId, `研究完成: ${question}`);
+
+    return result;
 }

@@ -1,8 +1,11 @@
-import {AnswerAction, KnowledgeItem, Reference} from "../types";
+import { AnswerAction, KnowledgeItem, Reference } from "../types";
 import i18nJSON from './i18n.json';
-import {JSDOM} from 'jsdom';
+import { JSDOM } from 'jsdom';
 import fs from "fs/promises";
 
+function normalizeQuery(q: string): string {
+  return q.toLowerCase().trim();
+}
 
 export function buildMdFromAnswer(answer: AnswerAction): string {
   return repairMarkdownFootnotes(answer.answer, answer.references);
@@ -96,7 +99,7 @@ export function repairMarkdownFootnotes(
   // No footnotes in answer but we have references - append them at the end
   if (validFootnotes.length === 0) {
     const appendedCitations = Array.from(
-      {length: references.length},
+      { length: references.length },
       (_, i) => `[^${i + 1}]`
     ).join('');
 
@@ -124,7 +127,7 @@ ${formattedReferences}
 
     // Create citations for unused references
     const unusedReferences = Array.from(
-      {length: references.length},
+      { length: references.length },
       (_, i) => !usedIndices.has(i + 1) ? `[^${i + 1}]` : ''
     ).join('');
 
@@ -181,7 +184,7 @@ export function repairMarkdownFootnotesOuter(markdownString: string): string {
   markdownString = processedString;
 
   // Extract existing footnote definitions
-  const footnoteDefRegex = /\[\^(\d+)]:\s*(.*?)(?=\n\[\^|$)/gs;
+  const footnoteDefRegex = /\[\^(\d+)]:\s*([\s\S]*?)(?=\n\[\^|$)/g;
   const references: Array<Reference> = [];
 
   // Extract content part (without footnote definitions)
@@ -244,7 +247,12 @@ export const removeExtraLineBreaks = (text: string) => {
 
 export function chooseK(a: string[], k: number) {
   // randomly sample k from `a` without repitition
-  return a.sort(() => 0.5 - Math.random()).slice(0, k);
+  if (!a || a.length === 0) {
+    return []; // Return empty array if input is invalid
+  }
+  // Ensure k is not larger than the array length
+  const effectiveK = Math.min(k, a.length);
+  return a.sort(() => 0.5 - Math.random()).slice(0, effectiveK);
 }
 
 export function removeHTMLtags(text: string) {
@@ -363,7 +371,7 @@ export function fixCodeBlockIndentation(markdownText: string): string {
           }
         }
 
-        codeBlockStack.push({indent, language: restOfLine, listIndent});
+        codeBlockStack.push({ indent, language: restOfLine, listIndent });
         result.push(line);
       } else {
         // This is a closing code fence
@@ -661,7 +669,7 @@ function sanitizeCell(content: string): string {
 if (typeof window === 'undefined') {
   global.DOMParser = class DOMParser {
     parseFromString(htmlString: string, mimeType: string) {
-      const dom = new JSDOM(htmlString, {contentType: mimeType});
+      const dom = new JSDOM(htmlString, { contentType: mimeType });
       return dom.window.document;
     }
   };
@@ -821,5 +829,20 @@ export async function detectBrokenUnicodeViaFileIO(str: string) {
   await fs.unlink(tempFilePath);
 
   // Now check for the visible replacement character
-  return {broken: readStr.includes('�'), readStr};
+  return { broken: readStr.includes('�'), readStr };
+}
+
+export function dedupQueries(inputQueries: string[] | null | undefined, existingQueries: string[]): string[] {
+  // 添加空值检查
+  if (!inputQueries || !Array.isArray(inputQueries)) {
+    console.error('[dedupQueries] Received invalid input queries:', inputQueries);
+    return [];
+  }
+
+  // 原处理逻辑保持不变
+  const seen = new Set([...existingQueries.map(normalizeQuery)]);
+  return inputQueries.filter(q => {
+    const nq = normalizeQuery(q);
+    return !seen.has(nq) && (seen.add(nq), true);
+  });
 }

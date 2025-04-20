@@ -1,5 +1,5 @@
 import { LanguageModelUsage } from "ai";
-import { StepAction } from "@/deep-research/src/types";
+import { StepAction } from "@/lib/deep-research/types";
 import { EventEmitter } from "events";
 
 export interface BaseTokenTracker {

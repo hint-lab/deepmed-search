@@ -4,9 +4,9 @@ import { v4 as uuidv4 } from 'uuid'; // 需要安装 uuid: npm install uuid @typ
 import { ServerActionResponse } from '@/types/actions';
 import { addTask } from '@/lib/bullmq/queue-manager'; // Import only addTask
 import { TaskType } from '@/lib/bullmq/types'; // Import TaskType directly
-import { storeTaskPlaceholder, removeTaskPlaceholder } from '@/lib/deep-research/tracker-store';
+import { storeTaskPlaceholder, removeTaskPlaceholder, publishError, checkTaskActive } from '@/lib/deep-research/tracker-store';
 // 假设的研究任务处理函数，请确保路径正确
-import { processResearchTask } from '@/lib/deep-research'; // Placeholder 
+import { processResearchTask } from '@/lib/deep-research'; // Placeholder import
 import logger from '@/utils/logger';
 // 定义前端期望的返回类型，现在主要是 taskId
 interface ResearchStartResponseData {
@@ -55,20 +55,30 @@ export async function startResearchAction(
 
         // === 根据 useQueue 参数决定执行方式 ===
         if (useQueue) {
-            console.log(`[Task ${taskId}] 添加任务到队列 ${TaskType.DEEP_RESEARCH}`);
+            logger.info(`[Task ${taskId}] 添加任务到队列 ${TaskType.DEEP_RESEARCH}`);
             await addTask<ResearchJobPayload>(TaskType.DEEP_RESEARCH, jobPayload);
-            console.log(`[Task ${taskId}] 任务已成功添加到队列`);
+            logger.info(`[Task ${taskId}] 任务已成功添加到队列`);
         } else {
             logger.info(`[Task ${taskId}] 直接调用研究任务处理逻辑`);
             // 直接调用，但不阻塞返回。让它在后台运行。
-            // 注意：这里的错误处理可能需要根据 processResearchTask 的实现来调整
             processResearchTask(taskId, jobPayload.question, jobPayload.tokenBudget).catch((err: unknown) => {
+                // Log the error
                 logger.error(`[Task ${taskId}] 直接调用 processResearchTask 失败:`, err);
-                // 考虑是否需要更新任务状态或执行其他错误处理逻辑
-                // 例如，可以尝试在这里移除 placeholder，尽管初始存储成功了
-                removeTaskPlaceholder(taskId).catch((removeErr: unknown) => {
-                    logger.error(`[Task ${taskId}] 移除 placeholder 失败 (在直接调用错误后):`, removeErr);
+
+                // --- Publish error instead of removing placeholder --- START
+                const errorMessage = err instanceof Error ? err.message : 'Agent execution failed';
+                publishError(taskId, errorMessage).catch(pubErr => {
+                    logger.error(`[Task ${taskId}] Failed to publish error event to Redis after agent failure:`, pubErr);
                 });
+                // --- Publish error instead of removing placeholder --- END
+
+                // Optional: Decide if removeTaskPlaceholder is *still* needed in some cases.
+                // For now, we rely on the agent/worker or TTL to handle cleanup.
+                /*
+                removeTaskPlaceholder(taskId).catch((removeErr: unknown) => {
+                    console.error(`[Task ${taskId}] 移除 placeholder 失败 (在直接调用错误后):`, removeErr);
+                });
+                */
             });
             logger.info(`[Task ${taskId}] 研究任务处理逻辑已触发 (非队列)`);
         }
@@ -76,6 +86,20 @@ export async function startResearchAction(
 
         // 4. 立即返回 taskId 给前端 (无论哪种方式)
         logger.info(`[Task ${taskId}] 返回 taskId 给前端`);
+
+        // 增加延迟时间，确保任务状态初始化完成
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // 检查任务状态
+        const isActive = await checkTaskActive(taskId);
+        if (!isActive) {
+            logger.error(`[Task ${taskId}] 任务状态检查失败：任务未激活`);
+            return {
+                success: false,
+                error: '任务初始化失败，请重试'
+            };
+        }
+
         return {
             success: true,
             data: { taskId }
@@ -83,11 +107,15 @@ export async function startResearchAction(
 
     } catch (error: any) {
         console.error(`[Task ${taskId}] 启动研究任务失败:`, error);
-        // Attempt to remove placeholder if task setup failed
-        await removeTaskPlaceholder(taskId);
+        // Attempt to remove placeholder if task setup failed *before* agent call
+        // Check if taskId exists before trying to remove
+        if (taskId) {
+            await removeTaskPlaceholder(taskId);
+        }
         return {
             success: false,
             error: error.message || '启动研究任务失败'
         };
     }
 }
+
