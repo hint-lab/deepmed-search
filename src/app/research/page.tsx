@@ -21,12 +21,20 @@ interface StepDetail {
     details?: any; // 可以根据需要定义更具体的类型
 }
 
+// Define the expected data structure in the ServerActionResponse
+interface ResearchResponseData {
+    result: StepAction;
+    taskId?: string; // Add taskId here
+    logs?: string[];
+    stepDetails?: StepDetail[];
+}
+
 export default function ResearchPage() {
     const [question, setQuestion] = useState<string>('');
     const [result, setResult] = useState<StepAction | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [logs, setLogs] = useState<string[] | null>(null);
     const [stepDetails, setStepDetails] = useState<StepDetail[] | null>(null); // 新增：用于存储步骤详情的状态
+    const [taskId, setTaskId] = useState<string | null>(null); // Add state for taskId
     const [isPending, startTransition] = useTransition();
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,8 +45,8 @@ export default function ResearchPage() {
         event.preventDefault();
         setError(null);
         setResult(null);
-        setLogs(null);
         setStepDetails(null); // 重置步骤详情
+        setTaskId(null); // Reset taskId on new submission
 
         if (!question.trim()) {
             setError("请输入研究问题。");
@@ -46,16 +54,14 @@ export default function ResearchPage() {
         }
 
         startTransition(async () => {
-            // 更新类型断言以包含 stepDetails
-            const response = await startResearchAction(question) as ServerActionResponse<{ result: StepAction; logs?: string[]; stepDetails?: StepDetail[] }>;
+            // 更新类型断言以包含 stepDetails 和 taskId
+            const response = await startResearchAction(question) as ServerActionResponse<ResearchResponseData>;
+            console.log("startResearchAction", response);
             if (response.success && response.data) {
-                setResult(response.data.result);
-                setLogs(response.data.logs || null); // 如果没有日志则设为 null
-                setStepDetails(response.data.stepDetails || null); // 设置步骤详情状态
+                setTaskId(response.data.taskId || null); // Store the received taskId
             } else {
                 setError(response.error || "研究失败，请稍后再试。");
-                setLogs(null);
-                setStepDetails(null); // 错误时清空
+                setTaskId(null); // Clear taskId on error
             }
         });
     };
@@ -66,7 +72,7 @@ export default function ResearchPage() {
     }
 
     return (
-        <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-16 sm:pt-20 ${(!result && !error && !logs && !stepDetails) ? 'justify-center' : 'justify-start'}`}>
+        <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-16 sm:pt-20 ${(!result && !error && !stepDetails) ? 'justify-center' : 'justify-start'}`}>
             <div className="w-full max-w-3xl space-y-8">
                 <div className="text-center space-y-3 mb-6 sm:mb-8">
                     <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
@@ -109,12 +115,13 @@ export default function ResearchPage() {
                     </div>
                 )}
 
-                {isPending && !result && !logs && !stepDetails && (
+                {isPending && (
                     <div className="flex flex-col justify-start items-center py-5 rounded-lg">
-                        <div className="flex justify-center items-center space-x-3">
+                        <div className="flex justify-center items-center space-x-3 mb-4">
                             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">正在处理研究请求，请稍候...</p> </div>
-                        <ThinkStatusDisplay></ThinkStatusDisplay>
+                            <p className="text-sm text-muted-foreground">正在处理研究请求，请稍候...</p>
+                        </div>
+                        <ThinkStatusDisplay taskId={taskId} />
                     </div>
                 )}
 
@@ -184,7 +191,7 @@ export default function ResearchPage() {
                     </div>
                 )}
 
-                {logs && logs.length > 0 && (
+                {/* {logs && logs.length > 0 && (
                     <div className="border-t border-border/60 pt-8 mt-10 space-y-4">
                         <details className="group">
                             <summary className="cursor-pointer list-none flex items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -202,7 +209,7 @@ export default function ResearchPage() {
                             </pre>
                         </details>
                     </div>
-                )}
+                )} */}
             </div>
         </main>
     );

@@ -1,31 +1,35 @@
-import { Queue, Worker, Job } from 'bullmq';
+import { Queue, Worker, Job, QueueOptions, WorkerOptions, JobsOptions, ConnectionOptions } from 'bullmq';
+import { Redis, RedisOptions } from 'ioredis';
 import { TaskType, QueueHealthStatus, TaskStatus, ProcessJobData, JobStatus } from './types';
-import { DocumentProcessJobData } from './document-worker/types';
 import { QUEUE_NAMES } from './queue-names';
+
+
+
 // Redis连接配置
-const connection = {
+const connection: ConnectionOptions = {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
+    maxRetriesPerRequest: null
 };
 
 
 // 任务选项
-const jobOptions = {
+const jobOptions: JobsOptions = {
     attempts: 3,
     backoff: {
-        type: 'exponential',
+        type: 'exponential' as const,
         delay: 1000,
     },
     removeOnComplete: true,
-    removeOnFail: false,
+    removeOnFail: 1000,
 };
 
 // 创建队列实例
-const queues: Record<TaskType, Queue> = {
+const queues: { [key: string]: Queue } = {
     [TaskType.DOCUMENT_CONVERT_TO_MD]: new Queue(QUEUE_NAMES.DOCUMENT_TO_MARKDOWN, { connection }),
-    [TaskType.DOCUMENT_SPLIT_TO_CHUNKS]: new Queue(QUEUE_NAMES.DOCUMENT_SPLIT_TO_CHUNKS, { connection }),
     [TaskType.CHUNK_VECTOR_INDEX]: new Queue(QUEUE_NAMES.CHUNK_VECTOR_INDEX, { connection }),
+    [TaskType.DEEP_RESEARCH]: new Queue(QUEUE_NAMES.DEEP_RESEARCH, { connection }),
 };
 
 /**
@@ -33,7 +37,7 @@ const queues: Record<TaskType, Queue> = {
  * @param type 任务类型
  * @returns 对应的队列实例
  */
-export function getQueue<TData, TResult>(type: TaskType): Queue<TData, TResult> {
+export function getQueue<TData = any, TResult = any>(type: TaskType): Queue<TData, TResult> {
     const queue = queues[type];
     if (!queue) {
         throw new Error(`队列 ${type} 不存在`);
@@ -42,9 +46,9 @@ export function getQueue<TData, TResult>(type: TaskType): Queue<TData, TResult> 
 }
 
 // 导出处理队列（独立实例）
-export const documentConvertProcessQueue = getQueue<DocumentProcessJobData, any>(TaskType.DOCUMENT_CONVERT_TO_MD);
-export const documentSplitProcessQueue = getQueue<ProcessJobData, any>(TaskType.DOCUMENT_SPLIT_TO_CHUNKS);
-export const chunkIndexProcessQueue = getQueue<ProcessJobData, any>(TaskType.CHUNK_VECTOR_INDEX);
+export const documentConvertProcessQueue = getQueue<any, any>(TaskType.DOCUMENT_CONVERT_TO_MD);
+export const chunkIndexProcessQueue = getQueue<any, any>(TaskType.CHUNK_VECTOR_INDEX);
+export const researchQueue = getQueue<any, any>(TaskType.DEEP_RESEARCH);
 
 
 
@@ -54,13 +58,10 @@ export const chunkIndexProcessQueue = getQueue<ProcessJobData, any>(TaskType.CHU
  * @param data 任务数据
  * @returns 任务ID
  */
-export async function addTask(type: TaskType, data: any): Promise<string> {
-    const queue = queues[type];
-    if (!queue) {
-        throw new Error(`队列 ${type} 不存在`);
-    }
-
-    const job = await queue.add('process', data, jobOptions);
+export async function addTask<TData = any>(type: TaskType, data: TData, name: string = 'process'): Promise<string> {
+    const queue = getQueue<TData>(type);
+    const job = await queue.add(name as any, data, jobOptions);
+    console.log(`任务 '${name}' 已添加到队列 ${type} (Job ID: ${job.id})`);
     return job.id || '';
 }
 
@@ -70,19 +71,25 @@ export async function addTask(type: TaskType, data: any): Promise<string> {
  * @returns 任务状态
  */
 export async function getTaskStatus(jobId: string): Promise<TaskStatus | null> {
-    // 遍历所有队列查找任务
-    for (const queue of Object.values(queues)) {
-        const job = await queue.getJob(jobId);
-        if (job) {
-            const state = await job.getState();
-            return {
-                state,
-                result: job.returnvalue,
-                data: job.data,
-            };
+    for (const type of Object.values(TaskType)) {
+        const queue = queues[type];
+        if (!queue) continue;
+        try {
+            const job = await queue.getJob(jobId);
+            if (job) {
+                const state = await job.getState();
+                console.log(`找到任务 ${jobId} 在队列 ${type} 中，状态: ${state}`);
+                return {
+                    state,
+                    result: job.returnvalue,
+                    data: job.data,
+                };
+            }
+        } catch (error) {
+            console.error(`在队列 ${type} 中查找任务 ${jobId} 时出错:`, error);
         }
     }
-
+    console.log(`未在任何队列中找到任务 ${jobId}`);
     return null;
 }
 
@@ -108,30 +115,34 @@ export async function checkQueueHealth(): Promise<QueueHealthStatus> {
         },
     };
 
+    let redis: Redis | null = null;
     try {
-        // 检查Redis连接
-        const client = await import('ioredis');
-        const redis = new client.default(connection);
-        redis.ping();
-        redis.quit();
+        redis = new Redis(connection as RedisOptions);
+        await redis.ping();
     } catch (error) {
         status.status = 'unhealthy';
         status.redis.status = 'disconnected';
         status.redis.error = error instanceof Error ? error.message : '连接失败';
+    } finally {
+        if (redis) {
+            redis.quit();
+        }
     }
 
     // 检查队列状态
-    for (const [name, queue] of Object.entries(queues)) {
+    for (const type of Object.values(TaskType)) {
+        const queue = queues[type];
+        if (!queue) continue;
         try {
             const jobCounts = await queue.getJobCounts();
-            status.queues[name] = jobCounts;
+            status.queues[type] = jobCounts;
 
-            status.performance.totalJobs += jobCounts.waiting + jobCounts.active + jobCounts.completed + jobCounts.failed;
-            status.performance.activeJobs += jobCounts.active;
-            status.performance.completedJobs += jobCounts.completed;
-            status.performance.failedJobs += jobCounts.failed;
+            status.performance.totalJobs += Object.values(jobCounts).reduce((sum, count) => sum + (count || 0), 0);
+            status.performance.activeJobs += (jobCounts.active || 0);
+            status.performance.completedJobs += (jobCounts.completed || 0);
+            status.performance.failedJobs += (jobCounts.failed || 0);
         } catch (error) {
-            status.queues[name] = { error: error instanceof Error ? error.message : '获取队列状态失败' };
+            status.queues[type] = { error: error instanceof Error ? error.message : '获取队列状态失败' };
         }
     }
 
@@ -140,48 +151,54 @@ export async function checkQueueHealth(): Promise<QueueHealthStatus> {
 
 /**
  * 创建工作进程
- * @param queueName 队列名称
+ * @param type 任务类型
  * @param processor 处理函数
  * @returns Worker实例
  */
-export function createWorker<TData, TResult>(
-    queueName: TaskType,
+export function createWorker<TData = any, TResult = any>(
+    type: TaskType,
     processor: (job: Job<TData, TResult>) => Promise<TResult>
 ): Worker<TData, TResult> {
-    const queueNameMap: Record<TaskType, string> = {
+    const queueNameMap: { [key: string]: string } = {
         [TaskType.DOCUMENT_CONVERT_TO_MD]: QUEUE_NAMES.DOCUMENT_TO_MARKDOWN,
-        [TaskType.DOCUMENT_SPLIT_TO_CHUNKS]: QUEUE_NAMES.DOCUMENT_SPLIT_TO_CHUNKS,
         [TaskType.CHUNK_VECTOR_INDEX]: QUEUE_NAMES.CHUNK_VECTOR_INDEX,
+        [TaskType.DEEP_RESEARCH]: QUEUE_NAMES.DEEP_RESEARCH,
     };
 
-    const worker = new Worker<TData, TResult>(queueNameMap[queueName], processor, { connection });
+    const actualQueueName = queueNameMap[type];
+    if (!actualQueueName) {
+        throw new Error(`未找到 TaskType ${type} 对应的队列名称映射`);
+    }
+
+    console.log(`创建 Worker 连接到队列: ${actualQueueName} (TaskType: ${type})`);
+    const worker = new Worker<TData, TResult>(actualQueueName, processor, { connection });
 
     // 错误处理
     worker.on('error', (err) => {
-        console.error('Worker error:', err);
+        console.error(`Worker for ${actualQueueName} error:`, err);
     });
 
     worker.on('failed', (job, err) => {
-        console.error('Job failed:', job?.id || 'unknown', err);
+        console.error(`Job in ${actualQueueName} failed:`, job?.id || 'unknown', err);
+    });
+
+    worker.on('completed', (job, result) => {
+        console.log(`Job in ${actualQueueName} completed:`, job.id, 'Result:', result);
+    });
+
+    worker.on('active', (job) => {
+        console.log(`Job in ${actualQueueName} started:`, job.id);
     });
 
     return worker;
 }
 
-// 导出添加任务的方法
-export async function addJob<TData, TResult>(
-    queue: Queue<TData, TResult>,
-    data: TData,
-    options = jobOptions
-): Promise<Job<TData, TResult>> {
-    return queue.add('process' as any, data as any, options) as Promise<Job<TData, TResult>>;
-}
-
 // 获取任务状态
 export async function getJobStatus(jobId: string): Promise<JobStatus> {
     try {
-        // 遍历所有队列查找任务
-        for (const queue of Object.values(queues)) {
+        for (const type of Object.values(TaskType)) {
+            const queue = queues[type];
+            if (!queue) continue;
             const job = await queue.getJob(jobId);
             if (job) {
                 const state = await job.getState();
@@ -198,8 +215,7 @@ export async function getJobStatus(jobId: string): Promise<JobStatus> {
             }
         }
     } catch (error) {
-        console.error('获取任务状态失败:', error);
-        throw error;
+        console.error(`获取任务 ${jobId} 状态失败:`, error);
     }
 
     return {

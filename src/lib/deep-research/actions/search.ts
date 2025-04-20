@@ -1,108 +1,108 @@
-import { SEARCH_PROVIDER, STEP_SLEEP } from '../config';
-import { SafeSearchType, search as duckSearch } from "duck-duck-scrape";
-import { search } from "../tools/jina-search";
-import { serperSearch } from '../tools/serper-search';
-import { sleep } from '../utils/common';
-import { TrackerContext, KnowledgeItem, SearchSnippet, UnNormalizedSearchSnippet, SERPQuery, WebContent } from '../types';
-import { Schemas } from '../utils/schemas';
-import { normalizeUrl, addToAllURLs } from '../utils/url-tools';
-import { removeHTMLtags } from '../utils/text-tools';
-import { formatDateRange } from '../utils/date-tools';
+import {
+    SearchAction, KnowledgeItem, TrackerContext, SearchSnippet, WebContent
+} from '../types';
+import { chooseK } from "../utils/text-tools";
+import { dedupQueries } from '../tools/jina-dedup';
+import { executeSearchQueries } from '../search'; // Correct import path
+import { rewriteQuery } from '../tools/query-rewriter';
+import { MAX_QUERIES_PER_STEP } from '../utils/schemas';
+import { Schemas } from "../utils/schemas";
+import { ResearchAgent } from '../agent'; // Import ResearchAgent for type hints
+import { updateContextHelper } from '../agent-helpers'; // Import context helper
 
-// 执行搜索查询
-export async function executeSearchQueries(
-    keywordsQueries: any[],
-    context: TrackerContext,
-    allURLs: Record<string, SearchSnippet>,
-    SchemaGen: Schemas,
-    webContents: Record<string, WebContent>,
-    onlyHostnames?: string[]
-): Promise<{
-    newKnowledge: KnowledgeItem[],
-    searchedQueries: string[]
-}> {
-    const uniqQOnly = keywordsQueries.map(q => q.q);
-    const newKnowledge: KnowledgeItem[] = [];
-    const searchedQueries: string[] = [];
-    context.actionTracker.trackThink('search_for', SchemaGen.languageCode, { keywords: uniqQOnly.join(', ') });
-    let utilityScore = 0;
+export async function handleSearchAction(thisAgent: ResearchAgent, action: SearchAction, currentQuestion: string): Promise<void> {
+    console.log("Handling Search Action for:", currentQuestion);
+    const context = thisAgent.context as TrackerContext;
+    const allKeywords = thisAgent.allKeywords as string[];
+    const allURLs = thisAgent.allURLs as Record<string, SearchSnippet>;
+    const SchemaGen = thisAgent.SchemaGen as Schemas;
+    const allWebContents = thisAgent.allWebContents as Record<string, WebContent>;
+    const allKnowledge = thisAgent.allKnowledge as KnowledgeItem[];
+    const options = (thisAgent as any).options; // Cast to any to access options
+    const diaryContext = thisAgent.diaryContext as string[];
+    const step = thisAgent.step as number;
 
-    for (const query of keywordsQueries) {
-        let results: UnNormalizedSearchSnippet[] = [];
-        const oldQuery = query.q;
-        if (onlyHostnames && onlyHostnames.length > 0) {
-            query.q = `${query.q} site:${onlyHostnames.join(' OR site:')}`;
-        }
+    // 1. Deduplicate queries
+    action.searchRequests = chooseK((await dedupQueries(action.searchRequests, allKeywords, context.tokenTracker!)).unique_queries, MAX_QUERIES_PER_STEP);
 
-        try {
-            console.log('Search query:', query);
-            switch (SEARCH_PROVIDER) {
-                case 'jina':
-                    results = (await search(query.q, context.tokenTracker)).response?.data || [];
-                    break;
-                case 'duck':
-                    results = (await duckSearch(query.q, { safeSearch: SafeSearchType.STRICT })).results;
-                    break;
-                default:
-                    results = [];
-            }
-
-            if (results.length === 0) {
-                throw new Error('No results found');
-            }
-        } catch (error) {
-            console.error(`${SEARCH_PROVIDER} search failed for query:`, query, error);
-            continue;
-        } finally {
-            await sleep(STEP_SLEEP);
-        }
-
-        const minResults: SearchSnippet[] = results
-            .map(r => {
-                const url = normalizeUrl('url' in r ? r.url! : r.link!);
-                if (!url) return null;
-
-                return {
-                    title: r.title,
-                    url,
-                    description: ('description' in r ? r.description : r.snippet) || '',
-                    weight: 1,
-                    date: r.date,
-                } as SearchSnippet;
-            })
-            .filter(Boolean) as SearchSnippet[];
-
-        minResults.forEach(r => {
-            utilityScore = utilityScore + addToAllURLs(r, allURLs);
-            webContents[r.url] = {
-                title: r.title,
-                full: r.description,
-                chunks: [r.description],
-                chunk_positions: [[0, r.description?.length || 0]],
-            }
-        });
-
-        searchedQueries.push(query.q)
-
-        newKnowledge.push({
-            question: `What do Internet say about "${oldQuery}"?`,
-            answer: removeHTMLtags(minResults.map(r => r.description).join('; ')),
-            type: 'side-info',
-            updated: query.tbs ? formatDateRange(query) : undefined
-        });
+    // 2. Execute initial search (if any requests left)
+    let initialNewKnowledge: KnowledgeItem[] = [];
+    if (action.searchRequests.length > 0) {
+        const { searchedQueries: initialSearchedQueries, newKnowledge } = await executeSearchQueries(
+            action.searchRequests.map((q: string) => ({ q })), // Pass queries correctly
+            context,
+            allURLs,
+            SchemaGen,
+            allWebContents
+        );
+        allKeywords.push(...initialSearchedQueries);
+        initialNewKnowledge = newKnowledge; // Store for soundbites
+        allKnowledge.push(...initialNewKnowledge);
     }
 
-    if (searchedQueries.length === 0) {
-        if (onlyHostnames && onlyHostnames.length > 0) {
-            console.log(`No results found for queries: ${uniqQOnly.join(', ')} on hostnames: ${onlyHostnames.join(', ')}`);
-            context.actionTracker.trackThink('hostnames_no_results', SchemaGen.languageCode, { hostnames: onlyHostnames.join(', ') });
+    // 3. Rewrite queries based on soundbites
+    const soundBites = initialNewKnowledge.map(k => k.answer).join(' ');
+    let keywordsQueries = await rewriteQuery(action, soundBites, context, SchemaGen);
+
+    // 4. Deduplicate rewritten queries
+    const qOnly = keywordsQueries.filter(q => q.q).map(q => q.q);
+    const uniqQOnly = chooseK((await dedupQueries(qOnly, allKeywords, context.tokenTracker!)).unique_queries, MAX_QUERIES_PER_STEP);
+    keywordsQueries = uniqQOnly.map(q => {
+        const matches = keywordsQueries.filter(kq => kq.q === q);
+        return matches.length > 1 ? { q } : matches[0]; // Keep original query object if unique
+    });
+
+    // 5. Execute rewritten search
+    let anyResult = false;
+    let finalSearchedQueries: string[] = [];
+    let finalNewKnowledge: KnowledgeItem[] = [];
+
+    if (keywordsQueries.length > 0) {
+        const { searchedQueries, newKnowledge } = await executeSearchQueries(
+            keywordsQueries,
+            context,
+            allURLs,
+            SchemaGen,
+            allWebContents,
+            options.onlyHostnames // Pass onlyHostnames option
+        );
+        finalSearchedQueries = searchedQueries;
+        finalNewKnowledge = newKnowledge;
+
+        if (finalSearchedQueries.length > 0) {
+            anyResult = true;
+            // 6. Update knowledge/keywords
+            allKeywords.push(...finalSearchedQueries);
+            allKnowledge.push(...finalNewKnowledge);
         }
+    }
+
+    // 7. Update diary context
+    if (anyResult) {
+        diaryContext.push(`
+At step ${step}, you took the **search** action and look for external information for the question: "${currentQuestion}".
+In particular, you tried to search for the following keywords: "${keywordsQueries.map(q => q.q).join(', ')}".
+You found quite some information and add them to your URL list and **visit** them later when needed. 
+`);
+        updateContextHelper(thisAgent, {
+            question: currentQuestion,
+            ...action,
+            result: { searchedQueries: finalSearchedQueries, newKnowledge: finalNewKnowledge } // Use final results
+        });
     } else {
-        console.log(`Utility/Queries: ${utilityScore}/${searchedQueries.length}`);
+        diaryContext.push(`
+At step ${step}, you took the **search** action and look for external information for the question: "${currentQuestion}".
+In particular, you tried to search for the following keywords:  "${keywordsQueries.map(q => q.q).join(', ')}".
+But then you realized you have already searched for these keywords before, or the rewritten queries yielded no results. No new information is returned.
+You decided to think out of the box or cut from a completely different angle.
+`);
+        updateContextHelper(thisAgent, {
+            ...action,
+            result: 'You have tried all possible queries and found no new information. You must think out of the box or different angle!!!'
+        });
     }
 
-    return {
-        newKnowledge,
-        searchedQueries
-    };
+    // 8. Update agent state (modified in the caller)
+    (thisAgent as any).allowSearch = false;
+    (thisAgent as any).allowAnswer = false;
 } 

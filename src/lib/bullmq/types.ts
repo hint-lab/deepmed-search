@@ -1,8 +1,8 @@
 // 任务类型枚举
 export enum TaskType {
     DOCUMENT_CONVERT_TO_MD = 'document-convert-to-md',
-    DOCUMENT_SPLIT_TO_CHUNKS = 'document-split-to-chunks',
     CHUNK_VECTOR_INDEX = 'chunk-vector-index',
+    DEEP_RESEARCH = 'deep-research',
 }
 
 // 任务类型列表
