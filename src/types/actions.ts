@@ -7,4 +7,5 @@ export interface ServerActionResponse<T = any> {
     data?: T;
     error?: string;
     details?: string;
-} 
+}
+

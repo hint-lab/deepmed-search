@@ -41,8 +41,8 @@ export default function Header() {
             icon: <Search className="h-5 w-5" />
         },
         {
-            name: t('agent'),
-            href: "/agent",
+            name: t('research'),
+            href: "/research",
             icon: <Cpu className="h-5 w-5" />
         },
         {

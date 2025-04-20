@@ -1,0 +1,82 @@
+[
+  {
+    "question": "what did jina ai ceo say about deepseek that went viral and become a meme?",
+    "answer": "a side project"
+  },
+  {
+    "question": "when was jina ai founded, month and year?",
+    "answer": "feb 2020"
+  },
+  {
+    "question": "what is the latest model published by jina ai?",
+    "answer": "ReaderLM-2.0"
+  },
+  {
+    "question": "what is the latest blog post that jina ai published?",
+    "answer": "A Practical Guide to Deploying Search Foundation Models in Production"
+  },
+  {
+    "question": "what is the context length of readerlm-v2?",
+    "answer": "512K"
+  },
+  {
+    "question": "how many employees does jina ai have right now?",
+    "answer": "30"
+  },
+  {
+    "question": "when was jina reader api released?",
+    "answer": "April 2024"
+  },
+  {
+    "question": "How many offices do Jina AI have and where are they?",
+    "answer": "four: sunnyvale, berlin, beijing, shenzhen"
+  },
+  {
+    "question": "what exactly jina-colbert-v2 improves over jina-colbert-v1?",
+    "answer": "v2 add multilingual support"
+  },
+  {
+    "question": "who are the authors of jina-clip-v2 paper?",
+    "answer": "Andreas Koukounas, Georgios Mastrapas, Bo Wang, Mohammad Kalim Akram, Sedigheh Eslami, Michael Günther, Isabelle Mohr, Saba Sturua, Scott Martens, Nan Wang, Han Xiao"
+  },
+  {
+    "question": "who created the node-deepresearch project?",
+    "answer": "Han Xiao / jina ai"
+  },
+  {
+    "question": "Which countries are the investors of Jina AI from?",
+    "answer": "USA and China only, no German investors"
+  },
+  {
+    "question": "what is the grounding api endpoint of jina ai?",
+    "answer": "g.jina.ai"
+  },
+  {
+    "question": "which of the following models do not support Matryoshka representation? jina-embeddings-v3, jina-embeddings-v2-base-en, jina-clip-v2, jina-clip-v1",
+    "answer": "jina-embeddings-v2-base-en and jina-clip-v1"
+  },
+  {
+    "question": "Can I purchase the 2024 yearbook that jina ai published today?",
+    "answer": "No it is sold out."
+  },
+  {
+    "question": "How many free tokens do you get from a new jina api key?",
+    "answer": "1 million."
+  },
+  {
+    "question": "Who is the legal signatory of Jina AI gmbh?",
+    "answer": "Jiao Liu"
+  },
+  {
+    "question": "what is the key idea behind node-deepresearch project?",
+    "answer": "It keeps searching, reading webpages, reasoning until an answer is found."
+  },
+  {
+    "question": "what is the name of the jina ai's mascot?",
+    "answer": "No, Jina AI does not have a mascot."
+  },
+  {
+    "question": "Does late chunking work with cls pooling?",
+    "answer": "No. late chunking only works with mean pooling."
+  }
+]

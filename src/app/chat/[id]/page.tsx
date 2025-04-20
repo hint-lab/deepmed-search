@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,9 +33,10 @@ export default function ChatPage() {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
     const { initialMessage, setInitialMessage } = useChat();
+    const [historyLoaded, setHistoryLoaded] = useState(false);
+    const processedDialogIdRef = useRef<string | null>(null);
 
-    // 发送消息的通用函数
-    const sendMessage = async (content: string) => {
+    const sendMessage = useCallback(async (content: string) => {
         if (!content.trim() || isSendingMessage || isProcessingFirstMessage) return;
 
         const tempUserMessageId = `temp-user-${Date.now()}`;
@@ -61,6 +62,7 @@ export default function ChatPage() {
             userId: userInfo?.id || ''
         };
 
+        console.log('[Page] Setting streamingMessageId:', tempAssistantMessageId);
         setMessages(prev => [...prev, optimisticUserMessage, optimisticAssistantMessage]);
         setStreamingMessageId(tempAssistantMessageId);
 
@@ -79,18 +81,23 @@ export default function ChatPage() {
             console.log("SSE 请求完成:", result);
 
             if (!result.success) {
-                console.error("流式消息发送失败:", result.error);
-                toast.error(t('sendMessageError') + (result.error ? `: ${result.error}` : ''));
+                const isAbortError = result.error?.includes('aborted') || result.error?.includes('cancel');
+                if (isAbortError) {
+                    console.log("流式消息请求被取消:", result.error);
+                } else {
+                    console.error("流式消息发送失败:", result.error);
+                    toast.error(t('sendMessageError') + (result.error ? `: ${result.error}` : ''));
+                }
                 setMessages(prev => prev.filter(msg =>
                     msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId
                 ));
                 return false;
             } else {
                 console.log("流式消息完成，最终内容长度:", result.content?.length);
-                if (result.content) {
+                if (result.content !== undefined) {
                     setMessages(prev => prev.map(msg =>
                         msg.id === tempAssistantMessageId
-                            ? { ...msg, content: result.content || '' }
+                            ? { ...msg, content: result.content }
                             : msg
                     ));
                 }
@@ -103,24 +110,59 @@ export default function ChatPage() {
             ));
             return false;
         } finally {
+            console.log('[Page] Clearing streamingMessageId in finally block. ID was:', streamingMessageId);
             setStreamingMessageId(null);
         }
-    };
+    }, [dialogId, isSendingMessage, isProcessingFirstMessage, setMessages, setStreamingMessageId, userInfo, sendMessageWithSSE, t]);
 
     useEffect(() => {
-        console.log("dialogId", dialogId);
+        console.log('[Page] Stream Effect Triggered. ID:', streamingMessageId, 'Partial Response:', partialResponse);
 
-        // 先获取历史消息
-        fetchChatMessages(dialogId).then(() => {
-            // 获取完历史消息后，如果有初始消息则发送
-            if (initialMessage && userInfo?.id) {
-                console.log('处理初始消息:', initialMessage);
-                sendMessage(initialMessage).finally(() => {
-                    setInitialMessage(null); // 清除初始消息
-                });
+        if (streamingMessageId && partialResponse !== undefined && partialResponse !== '') {
+            console.log(`[Page] Stream Effect Applying Update. ID: ${streamingMessageId}`);
+            setMessages(prevMessages =>
+                prevMessages.map(msg =>
+                    msg.id === streamingMessageId
+                        ? { ...msg, content: partialResponse }
+                        : msg
+                )
+            );
+        }
+    }, [partialResponse, streamingMessageId, setMessages]);
+
+    useEffect(() => {
+        if (dialogId && dialogId !== processedDialogIdRef.current) {
+            console.log("Effect 1: Loading history for dialogId:", dialogId);
+            setHistoryLoaded(false);
+            fetchChatMessages(dialogId).then(() => {
+                console.log("Effect 1: History fetch completed for dialogId:", dialogId);
+                setHistoryLoaded(true);
+                processedDialogIdRef.current = dialogId;
+            });
+        }
+    }, [dialogId, fetchChatMessages]);
+
+    useEffect(() => {
+        if (historyLoaded && initialMessage && userInfo?.id) {
+            console.log("Effect 2: Processing initial message:", initialMessage);
+
+            const initialMessageAlreadySent = messages.some(
+                (msg) => msg.role === MessageType.User && msg.content === initialMessage
+            );
+            console.log("Effect 2: Initial message already sent?", initialMessageAlreadySent);
+
+            if (!initialMessageAlreadySent) {
+                console.log('Effect 2: Sending initial message.');
+                sendMessage(initialMessage);
+            } else {
+                console.log('Effect 2: Initial message found in history, skipping send.');
             }
-        });
-    }, [dialogId, initialMessage, userInfo?.id]);
+            setInitialMessage(null);
+        } else if (historyLoaded && initialMessage) {
+            console.log("Effect 2: Clearing initial message (no user info).");
+            setInitialMessage(null);
+        }
+    }, [historyLoaded, initialMessage, messages, userInfo?.id, setInitialMessage, sendMessage]);
 
     useEffect(() => {
         console.log("Messages", messages)
@@ -187,7 +229,7 @@ export default function ChatPage() {
     return (
         <div className="flex h-screen">
             <ChatSidebar dialogs={dialogs} isLoading={isLoadingDialogs} currentDialogId={dialogId} />
-            <div className="flex flex-col flex-1 bg-muted/30 ">
+            <div className="flex flex-col flex-1 bg-muted/30 h-full overflow-hidden">
                 <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
                     <div className="max-w-3xl mx-auto w-full space-y-4 pb-4">
                         {isLoadingInitialData && !messages.length ? (

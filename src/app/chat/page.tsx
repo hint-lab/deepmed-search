@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/contexts/user-context';
 import { useChat } from '@/contexts/chat-context';
+import { toast } from 'sonner';
 
 // Define a type for the initial prompt examples
 interface PromptExample {
@@ -29,31 +30,39 @@ export default function ChatPage() {
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  // 新增：提取创建对话并导航的通用逻辑
+  const createAndNavigate = async (messageContent: string) => {
+    if (!messageContent.trim() || isProcessing) return;
 
-    const messageToSend = inputValue;
-    setInputValue('');
     setIsProcessing(true);
-
     try {
       if (!userInfo?.id) {
         throw new Error("用户未登录");
       }
-      const defaultName = messageToSend.split(' ').slice(0, 5).join(' ') || t('newChat');
+      // 使用消息内容的前几个词作为默认对话名称
+      const defaultName = messageContent.split(' ').slice(0, 5).join(' ') || t('newChat');
       const newDialog = await createChatDialog({ name: defaultName, userId: userInfo.id });
 
       if (!newDialog?.id) {
         throw new Error("Failed to create dialog");
       }
-      setInitialMessage(messageToSend);
+      // 设置初始消息
+      setInitialMessage(messageContent);
+      // 跳转到新对话页面
       router.push(`/chat/${newDialog.id}`);
     } catch (error) {
-      console.error("Failed to create dialog:", error);
-      setInputValue(messageToSend);
+      console.error("Failed to create dialog or navigate:", error);
+      // 如果出错，可能需要通知用户
+      toast.error(t('createChatError', 'Failed to start chat. Please try again.'));
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // 修改：处理发送按钮/Enter键
+  const handleSendMessage = async () => {
+    await createAndNavigate(inputValue);
+    setInputValue(''); // 清空输入框
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,17 +76,10 @@ export default function ChatPage() {
     }
   };
 
-  // Function to handle clicking on an example prompt
-  const handleExampleClick = (promptKey: string) => {
+  // 修改：处理点击示例提示
+  const handleExampleClick = async (promptKey: string) => {
     const promptText = t(promptKey);
-    setInputValue(promptText);
-    // 在输入框中自动聚焦，以便用户可以直接按 Enter 发送
-    setTimeout(() => {
-      const inputElement = document.querySelector('input[placeholder="' + t('messagePlaceholder') + '"]');
-      if (inputElement instanceof HTMLInputElement) {
-        inputElement.focus();
-      }
-    }, 100);
+    await createAndNavigate(promptText);
   };
 
   // Define example prompts/capabilities

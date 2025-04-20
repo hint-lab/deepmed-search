@@ -267,7 +267,7 @@ export function useSendMessageWithSSE() {
 
         // 如果有之前未取消的请求，先取消
         if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+            abortControllerRef.current.abort('Cancelling previous request');
         }
 
         // 创建新的 AbortController
@@ -372,11 +372,20 @@ export function useSendMessageWithSSE() {
                 content: accumulatedTextRef.current
             };
         } catch (error) {
-            console.error('发送 SSE 消息失败:', error);
-            setError(error instanceof Error ? error.message : '发送消息失败');
+            // 增强日志记录
+            console.error('发送 SSE 消息失败 (Caught in useSendMessageWithSSE):', error);
+            console.error('Type of caught error:', typeof error);
+            if (error && typeof error === 'object') {
+                console.error('Properties of caught error:', Object.keys(error));
+            }
+
+            // 确定错误消息
+            const errorMessage = error instanceof Error ? error.message : (typeof error === 'string' ? error : '发送消息失败');
+            setError(errorMessage); // 更新本地错误状态
+
             return {
                 success: false,
-                error: error instanceof Error ? error.message : '发送消息失败'
+                error: errorMessage // 返回确定的错误消息
             };
         } finally {
             setIsLoading(false);

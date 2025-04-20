@@ -7,6 +7,8 @@ import { IMessage } from '@/types/db/message';
 import dayjs from 'dayjs';
 import { MessageType } from '@/constants/chat';
 import { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Bot, User } from 'lucide-react';
 
 
 interface ChatMessageItemProps {
@@ -35,12 +37,15 @@ function ChatMessageItem({ message }: ChatMessageItemProps) {
                 </Avatar>
             )}
             <div className={cn(
-                "rounded-lg px-3 py-2 max-w-[75%] break-words shadow-sm",
+                "rounded-lg px-3 py-2 max-w-[75%] break-words",
+                "prose dark:prose-invert prose-sm",
                 isUser
                     ? "bg-primary text-primary-foreground"
-                    : "bg-card border"
+                    : "bg-muted"
             )}>
-                <p className="text-sm leading-relaxed">{content}</p>
+                <ReactMarkdown>
+                    {content}
+                </ReactMarkdown>
             </div>
             {isUser && (
                 <Avatar className="h-7 w-7 shrink-0">
