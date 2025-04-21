@@ -45,6 +45,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: deepmed-minio
+    restart: always
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}

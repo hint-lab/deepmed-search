@@ -11,7 +11,7 @@
 .env
 /.env
 /node_modules
-
+.cursorignore
 **/dist
 **/dist/**
 **/dist/**/**

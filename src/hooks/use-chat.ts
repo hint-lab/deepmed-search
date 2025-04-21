@@ -23,7 +23,6 @@ import { MessageType } from '@/constants/chat';
 export function useChatDialogList() {
     const [data, setData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -42,6 +41,9 @@ export function useChatDialogList() {
 
     return { data, isLoading };
 }
+
+
+
 
 interface CreateDialogParams {
     name: string;
@@ -111,7 +113,7 @@ export function useDeleteChatDialog() {
     const { t } = useTranslate('chat')
     const [isPending, setIsPending] = useState(false);
 
-    const deleteDialog = async (id: string): Promise<{ success: boolean; error?: string; data?: any }> => {
+    const deleteChatDialog = async (id: string): Promise<{ success: boolean; error?: string; data?: any }> => {
         setIsPending(true);
         try {
             const result = await deleteChatDialogAction(id);
@@ -130,7 +132,7 @@ export function useDeleteChatDialog() {
         }
     };
 
-    return { deleteDialog, isPending };
+    return { deleteChatDialog, isPending };
 }
 
 /**

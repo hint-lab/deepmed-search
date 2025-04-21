@@ -10,21 +10,22 @@ import { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Bot, User } from 'lucide-react';
 
-
 interface ChatMessageItemProps {
-    // Accept LocalMessage type
     message: IMessage;
+    isStreaming: boolean;
 }
 
-function ChatMessageItem({ message }: ChatMessageItemProps) {
+function ChatMessageItem({ message, isStreaming }: ChatMessageItemProps) {
     const { t } = useTranslate('chat');
-    // Access properties directly from LocalMessage
     const isUser = message.role === MessageType.User;
     const createdAt = message.createdAt;
-    const content = message.content;
+    let content = message.content;
     const messageId = message.id;
 
-    // Use dayjs to format timestamp
+    if (isStreaming && content !== undefined) {
+        content += '';
+    }
+
     const timestamp = createdAt ? dayjs(createdAt).format('HH:mm') : '--:--';
 
     return (
@@ -37,15 +38,20 @@ function ChatMessageItem({ message }: ChatMessageItemProps) {
                 </Avatar>
             )}
             <div className={cn(
-                "rounded-lg px-3 py-2 max-w-[75%] break-words",
-                "prose dark:prose-invert prose-sm",
+                "rounded-lg max-w-[85%] md:max-w-[75%] break-words shadow-sm border",
+                "p-3",
                 isUser
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    ? "bg-primary text-primary-foreground border-transparent"
+                    : "bg-muted text-card-foreground border-border",
             )}>
-                <ReactMarkdown>
-                    {content}
-                </ReactMarkdown>
+                <div className={cn(
+                    "prose prose-sm dark:prose-invert max-w-none",
+                    isStreaming && !isUser && "animate-blinking-cursor"
+                )}>
+                    <ReactMarkdown>
+                        {content || ''}
+                    </ReactMarkdown>
+                </div>
             </div>
             {isUser && (
                 <Avatar className="h-7 w-7 shrink-0">
@@ -59,20 +65,26 @@ function ChatMessageItem({ message }: ChatMessageItemProps) {
 }
 
 interface ChatMessagesProps {
-    // Expect LocalMessage array
     messages: IMessage[];
+    streamingMessageId?: string | null;
 }
 
-export default function ChatMessages({ messages }: ChatMessagesProps) {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, streamingMessageId }) => {
     useEffect(() => {
-        console.log(messages)
-    }, [messages])
+        console.log("ChatMessages rendered. Messages:", messages, "Streaming ID:", streamingMessageId);
+    }, [messages, streamingMessageId]);
 
     return (
-        <div className="space-y-4 pt-12 mt-6">
-            {messages.map((msg) => (
-                <ChatMessageItem key={msg.id} message={msg} />
+        <div className="flex flex-col gap-4 md:px-6 overflow-y-auto h-full">
+            {messages.map((message) => (
+                <ChatMessageItem
+                    key={message.id}
+                    message={message}
+                    isStreaming={message.id === streamingMessageId}
+                />
             ))}
         </div>
     );
-} 
+};
+
+export default ChatMessages; 

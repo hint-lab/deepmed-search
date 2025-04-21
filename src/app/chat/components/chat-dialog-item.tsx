@@ -19,7 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/extensions/alert-dialog";
-import { IDialog } from '@/types/db/chat';
+import { IDialog } from '@/types/db/dialog';
 
 interface ChatDialogItemProps {
     dialog: IDialog;

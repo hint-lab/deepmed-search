@@ -1,125 +1,44 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCreateChatDialog, useChatDialogList, useChatMessages, useSendMessageWithSSE } from '@/hooks/use-chat';
-import ChatSidebar from '../components/chat-sidebar';
+import { useChatMessages } from '@/hooks/use-chat';
 import ChatMessages from '../components/chat-messages';
-import { useTranslate } from '@/hooks/use-language';
-import { IMessage } from '@/types/db/message';
 import { useUser } from '@/contexts/user-context';
 import { MessageType } from '@/constants/chat';
 import { useChat } from '@/contexts/chat-context';
-import { toast } from 'sonner';
-
 
 
 export default function ChatPage() {
     const params = useParams();
-    const router = useRouter();
     const dialogId = params.id as string;
     const { userInfo } = useUser();
-    const { t } = useTranslate('chat');
-    const { data: dialogs, isLoading: isLoadingDialogs } = useChatDialogList();
     const { data: messages, isLoading: isLoadingMessages, setData: setMessages, fetchChatMessages } = useChatMessages();
-    const { createChatDialog, loading: isCreatingDialog } = useCreateChatDialog();
-    const { sendMessageWithSSE, isLoading: isSendingMessage, partialResponse, cancelStream } = useSendMessageWithSSE();
-    const [inputValue, setInputValue] = useState('');
-    const [isProcessingFirstMessage, setIsProcessingFirstMessage] = useState(false);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
-    const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
-    const { initialMessage, setInitialMessage } = useChat();
+    const {
+        initialMessage,
+        setInitialMessage,
+        registerMessagesSetter,
+        partialResponse,
+        streamingMessageId,
+        sendMessage
+    } = useChat();
     const [historyLoaded, setHistoryLoaded] = useState(false);
     const processedDialogIdRef = useRef<string | null>(null);
 
-    const sendMessage = useCallback(async (content: string) => {
-        if (!content.trim() || isSendingMessage || isProcessingFirstMessage) return;
-
-        const tempUserMessageId = `temp-user-${Date.now()}`;
-        const tempAssistantMessageId = `temp-assistant-${Date.now()}`;
-
-        const optimisticUserMessage: IMessage = {
-            id: tempUserMessageId,
-            content,
-            role: MessageType.User,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            dialogId: dialogId,
-            userId: userInfo?.id || ''
-        };
-
-        const optimisticAssistantMessage: IMessage = {
-            id: tempAssistantMessageId,
-            content: '',
-            role: MessageType.Assistant,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            dialogId: dialogId,
-            userId: userInfo?.id || ''
-        };
-
-        console.log('[Page] Setting streamingMessageId:', tempAssistantMessageId);
-        setMessages(prev => [...prev, optimisticUserMessage, optimisticAssistantMessage]);
-        setStreamingMessageId(tempAssistantMessageId);
-
-        if (!userInfo?.id) {
-            console.error("用户未登录");
-            setMessages(prev => prev.filter(msg =>
-                msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId
-            ));
-            setStreamingMessageId(null);
-            return;
+    useEffect(() => {
+        if (dialogId) {
+            registerMessagesSetter(dialogId, setMessages);
         }
-
-        try {
-            console.log("开始 SSE 流式请求:", { dialogId, content });
-            const result = await sendMessageWithSSE(dialogId, content, userInfo.id);
-            console.log("SSE 请求完成:", result);
-
-            if (!result.success) {
-                const isAbortError = result.error?.includes('aborted') || result.error?.includes('cancel');
-                if (isAbortError) {
-                    console.log("流式消息请求被取消:", result.error);
-                } else {
-                    console.error("流式消息发送失败:", result.error);
-                    toast.error(t('sendMessageError') + (result.error ? `: ${result.error}` : ''));
-                }
-                setMessages(prev => prev.filter(msg =>
-                    msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId
-                ));
-                return false;
-            } else {
-                console.log("流式消息完成，最终内容长度:", result.content?.length);
-                if (result.content !== undefined) {
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === tempAssistantMessageId
-                            ? { ...msg, content: result.content }
-                            : msg
-                    ));
-                }
-                return true;
+        return () => {
+            if (dialogId) {
+                registerMessagesSetter(dialogId, null);
             }
-        } catch (error) {
-            console.error("发送流式消息失败:", error);
-            setMessages(prev => prev.filter(msg =>
-                msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId
-            ));
-            return false;
-        } finally {
-            console.log('[Page] Clearing streamingMessageId in finally block. ID was:', streamingMessageId);
-            setStreamingMessageId(null);
-        }
-    }, [dialogId, isSendingMessage, isProcessingFirstMessage, setMessages, setStreamingMessageId, userInfo, sendMessageWithSSE, t]);
+        };
+    }, [dialogId, registerMessagesSetter, setMessages]);
 
     useEffect(() => {
-        console.log('[Page] Stream Effect Triggered. ID:', streamingMessageId, 'Partial Response:', partialResponse);
-
-        if (streamingMessageId && partialResponse !== undefined && partialResponse !== '') {
-            console.log(`[Page] Stream Effect Applying Update. ID: ${streamingMessageId}`);
+        if (streamingMessageId && partialResponse !== undefined) {
             setMessages(prevMessages =>
                 prevMessages.map(msg =>
                     msg.id === streamingMessageId
@@ -130,20 +49,29 @@ export default function ChatPage() {
         }
     }, [partialResponse, streamingMessageId, setMessages]);
 
+    // Effect to load history
     useEffect(() => {
         if (dialogId && dialogId !== processedDialogIdRef.current) {
-            console.log("Effect 1: Loading history for dialogId:", dialogId);
-            setHistoryLoaded(false);
+            // Update the ref immediately upon deciding to fetch for the new dialogId
+            processedDialogIdRef.current = dialogId;
+            console.log("Effect 1: Starting history load for new dialogId:", dialogId);
+            setHistoryLoaded(false); // Set loading state
+            setMessages([]); // Clear previous messages
             fetchChatMessages(dialogId).then(() => {
                 console.log("Effect 1: History fetch completed for dialogId:", dialogId);
-                setHistoryLoaded(true);
-                processedDialogIdRef.current = dialogId;
+                setHistoryLoaded(true); // Set loaded state
+            }).catch(error => {
+                console.error("Effect 1: History fetch failed:", error);
+                // Optionally handle error state, e.g., show an error message
+                setHistoryLoaded(false); // Reset loading state on error maybe?
             });
         }
-    }, [dialogId, fetchChatMessages]);
+        // Cleanup or dependency logic can go here if needed, 
+        // but the main loop prevention is moving the ref update.
+    }, [dialogId, fetchChatMessages, setMessages]); // Dependencies remain the same
 
     useEffect(() => {
-        if (historyLoaded && initialMessage && userInfo?.id) {
+        if (historyLoaded && initialMessage && userInfo?.id && dialogId) {
             console.log("Effect 2: Processing initial message:", initialMessage);
 
             const initialMessageAlreadySent = messages.some(
@@ -152,118 +80,30 @@ export default function ChatPage() {
             console.log("Effect 2: Initial message already sent?", initialMessageAlreadySent);
 
             if (!initialMessageAlreadySent) {
-                console.log('Effect 2: Sending initial message.');
-                sendMessage(initialMessage);
+                console.log('Effect 2: Sending initial message via context.');
+                sendMessage(dialogId, initialMessage);
             } else {
                 console.log('Effect 2: Initial message found in history, skipping send.');
             }
             setInitialMessage(null);
         } else if (historyLoaded && initialMessage) {
-            console.log("Effect 2: Clearing initial message (no user info).");
+            console.log("Effect 2: Clearing initial message (no user/dialog info).");
             setInitialMessage(null);
         }
-    }, [historyLoaded, initialMessage, messages, userInfo?.id, setInitialMessage, sendMessage]);
+    }, [historyLoaded, initialMessage, messages, userInfo?.id, dialogId, setInitialMessage, sendMessage]);
 
-    useEffect(() => {
-        console.log("Messages", messages)
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-        }
-    }, [messages]);
-
-    const handleSendMessage = async () => {
-        if (!inputValue.trim()) return;
-
-        const messageToSend = inputValue;
-        setInputValue('');
-
-        let currentDialogId = dialogId;
-
-        if (!currentDialogId) {
-            setIsProcessingFirstMessage(true);
-            try {
-                const defaultName = messageToSend.split(' ').slice(0, 5).join(' ') || t('newChat');
-                if (!userInfo?.id) {
-                    throw new Error("用户未登录");
-                }
-                const newDialog = await createChatDialog({ name: defaultName, userId: userInfo.id });
-
-                if (!newDialog?.id) {
-                    throw new Error("创建对话失败");
-                }
-                currentDialogId = newDialog.id;
-                router.push(`/chat/${currentDialogId}`, { scroll: false });
-            } catch (error) {
-                console.error("创建对话失败:", error);
-                setInputValue(messageToSend);
-                return;
-            } finally {
-                setIsProcessingFirstMessage(false);
-            }
-        }
-
-        sendMessage(messageToSend);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
-    const handleCancelStream = () => {
-        if (streamingMessageId) {
-            cancelStream();
-            setStreamingMessageId(null);
-        }
-    };
-
-    const isLoadingInitialData = isLoadingMessages || isLoadingDialogs;
-    const isSending = isSendingMessage || isProcessingFirstMessage;
 
     return (
-        <div className="flex h-screen">
-            <ChatSidebar dialogs={dialogs} isLoading={isLoadingDialogs} currentDialogId={dialogId} />
-            <div className="flex flex-col flex-1 bg-muted/30 h-full overflow-hidden">
-                <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-                    <div className="max-w-3xl mx-auto w-full space-y-4 pb-4">
-                        {isLoadingInitialData && !messages.length ? (
-                            <div className="space-y-4">
-                                <Skeleton className="h-16 w-3/4 rounded-lg" />
-                                <Skeleton className="h-16 w-3/4 self-end rounded-lg bg-primary/10 ml-auto" />
-                                <Skeleton className="h-16 w-1/2 rounded-lg" />
-                            </div>
-                        ) : (
-                            <ChatMessages messages={messages} />
-                        )}
-                    </div>
-                </ScrollArea>
-                <div className="border-t p-4 bg-background shadow-inner">
-                    <div className="max-w-3xl mx-auto w-full flex items-center space-x-2">
-                        <Input
-                            placeholder={t('messagePlaceholder')}
-                            value={inputValue}
-                            onChange={handleInputChange}
-                            onKeyDown={handleKeyDown}
-                            disabled={isSendingMessage || isProcessingFirstMessage}
-                            className="flex-1 resize-none"
-                        />
-                        <Button onClick={handleSendMessage} disabled={isSendingMessage || isProcessingFirstMessage || !inputValue.trim()} aria-label={t('send')}>
-                            {isSendingMessage ? (
-                                <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent text-white rounded-full" role="status" aria-label="loading"></span>
-                            ) : t('send')}
-                        </Button>
-                        <Button onClick={handleCancelStream} disabled={!streamingMessageId} aria-label={t('cancelStream')}>
-                            {t('cancelStream')}
-                        </Button>
-                    </div>
+        <div className="flex flex-col flex-1 p-4 bg-muted/30 overflow-hidden">
+            {isLoadingMessages && messages.length === 0 ? (
+                <div className="space-y-4 p-4">
+                    <Skeleton className="h-16 w-3/4" />
+                    <Skeleton className="h-16 w-3/4 ml-auto" />
+                    <Skeleton className="h-16 w-2/3" />
                 </div>
-            </div>
+            ) : (
+                <ChatMessages messages={messages} streamingMessageId={streamingMessageId} />
+            )}
         </div>
     );
 }

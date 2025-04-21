@@ -126,7 +126,7 @@ export default function ServerActionDatabaseTest() {
                     </div>
 
                     {connectionResult && (
-                        <div className={`p-4 rounded-md ${connectionResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+                        <div className={`p-4 rounded-md ${connectionResult.success ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
                             <p className="font-semibold">数据库连接结果:</p>
                             <pre className="mt-2 overflow-auto max-h-60 text-sm">
                                 {JSON.stringify(connectionResult, null, 2)}
@@ -135,7 +135,7 @@ export default function ServerActionDatabaseTest() {
                     )}
 
                     {prismaResult && (
-                        <div className={`p-4 rounded-md ${prismaResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+                        <div className={`p-4 rounded-md ${prismaResult.success ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
                             <p className="font-semibold">Prisma操作结果:</p>
                             <pre className="mt-2 overflow-auto max-h-60 text-sm">
                                 {JSON.stringify(prismaResult, null, 2)}
@@ -163,7 +163,7 @@ export default function ServerActionDatabaseTest() {
                         </Button>
 
                         {customQueryResult && (
-                            <div className={`p-4 rounded-md ${customQueryResult.success ? 'bg-green-50' : 'bg-red-50'}`}>
+                            <div className={`p-4 rounded-md ${customQueryResult.success ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
                                 <p className="font-semibold">查询结果:</p>
                                 <pre className="mt-2 overflow-auto max-h-60 text-sm">
                                     {JSON.stringify(customQueryResult, null, 2)}

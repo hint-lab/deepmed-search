@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useTranslate, useLanguageSwitcher } from '@/hooks/use-language';
+import { useTranslate } from '@/hooks/use-language';
 import { MoreVertical, Plus, Search, Trash2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -18,17 +17,7 @@ import { useDeleteChatDialog } from '@/hooks/use-chat';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { IDialog } from '@/types/db/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/extensions/alert-dialog";
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from 'sonner';
 import { CreateChatDialogForm } from './create-chat-dialog-form';
 dayjs.extend(relativeTime);
@@ -36,7 +25,7 @@ dayjs.extend(relativeTime);
 interface ChatSidebarItemProps {
   dialog: IDialog;
   isActive?: boolean;
-  onDelete?: () => void;
+  onDelete?: (dialogId: string) => void;
 }
 
 function ChatSidebarItem({ dialog, isActive = false, onDelete }: ChatSidebarItemProps) {
@@ -44,31 +33,13 @@ function ChatSidebarItem({ dialog, isActive = false, onDelete }: ChatSidebarItem
   const dialogId = dialog.id;
   const dialogName = dialog.name;
   const dialogDescription = dialog.description;
-  const { currentLanguage } = useLanguageSwitcher();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { deleteChatDialog, isPending: isDeleting } = useDeleteChatDialog();
 
-  const updateLocale = () => {
-    let localeToSet = 'en';
-    if (currentLanguage.startsWith('zh')) {
-      localeToSet = 'zh-cn';
-    } else if (currentLanguage.startsWith('ja')) {
-      localeToSet = 'ja';
-    }
-    dayjs.locale(localeToSet);
-  };
-  updateLocale();
 
-  const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); // 阻止链接跳转
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleConfirmDelete = () => {
     if (onDelete) {
-      onDelete();
+      onDelete(dialogId);
     }
-    setShowDeleteConfirm(false);
   };
 
   return (
@@ -87,34 +58,22 @@ function ChatSidebarItem({ dialog, isActive = false, onDelete }: ChatSidebarItem
             <h4 className="text-sm font-medium truncate text-foreground">
               {dialogName}
             </h4>
-            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('deleteDialogTitle', '删除对话')}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('deleteDialogDescription', '确定要删除这个对话吗？此操作无法撤销。')}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={(e) => e.preventDefault()}>
-                    {t('common:cancel')}
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
-                    {t('common:delete')}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <DeleteConfirmationDialog
+              title={t('deleteDialogTitle', '删除对话')}
+              description={t('deleteDialogDescription', '确定要删除这个对话吗？此操作无法撤销。')}
+              confirmText={t('common:delete')}
+              cancelText={t('common:cancel')}
+              onConfirm={handleConfirmDelete}
+              isDeleting={isDeleting}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+              </Button>
+            </DeleteConfirmationDialog>
           </div>
           <div className="flex items-center justify-between gap-2 mt-1">
             <p className="text-xs text-muted-foreground truncate">
@@ -136,6 +95,7 @@ interface ChatSidebarProps {
   currentDialogId?: string;
 }
 
+
 const createDialogFormSchema = (t: Function) => z.object({
   name: z.string().min(1, { message: t('validation.chatNameRequired', 'Chat name cannot be empty') }),
 });
@@ -143,20 +103,20 @@ const createDialogFormSchema = (t: Function) => z.object({
 export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: ChatSidebarProps) {
   const { t } = useTranslate('chat');
   const router = useRouter();
-  const { deleteDialog } = useDeleteChatDialog();
+  const { deleteChatDialog, isPending: isDeletingDialog } = useDeleteChatDialog();
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
   const handleDeleteDialog = async (dialogId: string) => {
     try {
-      const result = await deleteDialog(dialogId);
+      const result = await deleteChatDialog(dialogId);
+
       if (result.success) {
         toast.success(t('deleteSuccess'));
         if (currentDialogId === dialogId) {
           router.push('/chat');
         }
-        router.refresh(); // 刷新页面以更新对话列表
+        router.refresh();
       } else {
-        // 根据错误类型显示不同的错误消息
         const errorMessage = result.error === 'Dialog not found'
           ? t('errors.dialogNotFound', '对话不存在或已被删除')
           : t('deleteError');
@@ -170,14 +130,11 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
 
   const handleDeleteAllDialog = async () => {
     try {
-      // 删除所有对话
       for (const dialog of dialogs) {
-        await deleteDialog(dialog.id);
+        await deleteChatDialog(dialog.id);
       }
       toast.success(t('deleteAllSuccess', '所有对话已删除'));
-      // 先跳转到聊天主页
       router.push('/chat');
-      // 强制刷新页面
       window.location.reload();
     } catch (error) {
       console.error("Failed to delete all dialogs:", error);
@@ -188,39 +145,28 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
   };
 
   return (
-    <div className="w-80 border-r bg-background flex flex-col pt-16 h-screen">
+    <div className="w-80 border-r bg-background flex flex-col h-screen">
       <div className="flex h-14 items-center border-b px-4 justify-between">
         <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
         <div className="flex items-center gap-2">
           <CreateChatDialogForm />
           {dialogs.length > 0 && (
-            <AlertDialog open={showDeleteAllConfirm} onOpenChange={setShowDeleteAllConfirm}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 p-0"
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('deleteAllDialogTitle', '删除所有对话')}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('deleteAllDialogDescription', '确定要删除所有对话吗？此操作无法撤销。')}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>
-                    {t('common:cancel')}
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAllDialog} className="bg-destructive hover:bg-destructive/90">
-                    {t('common:delete')}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <DeleteConfirmationDialog
+              title={t('deleteAllDialogTitle', '删除所有对话')}
+              description={t('deleteAllDialogDescription', '确定要删除所有对话吗？此操作无法撤销。')}
+              confirmText={t('delete')}
+              cancelText={t('cancel')}
+              onConfirm={handleDeleteAllDialog}
+              isDeleting={isDeletingDialog}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 p-0"
+              >
+                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+              </Button>
+            </DeleteConfirmationDialog>
           )}
         </div>
       </div>
@@ -230,32 +176,24 @@ export default function ChatSidebar({ dialogs, isLoading, currentDialogId }: Cha
           <Input placeholder={t('searchPlaceholder')} className="pl-8" />
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="space-y-1 p-4 pt-0">
-          {isLoading ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-3 p-2 rounded-lg">
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <div className="flex-1 space-y-1">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))
-          ) : dialogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">{t('noConversations')}</p>
-          ) : (
-            dialogs.map((dialog: IDialog) => (
-              <ChatSidebarItem
-                key={dialog.id}
-                dialog={dialog}
-                isActive={dialog.id === currentDialogId}
-                onDelete={() => handleDeleteDialog(dialog.id)}
-              />
-            ))
-          )}
-        </div>
-      </ScrollArea>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} className="h-16 w-full rounded-lg" />
+          ))
+        ) : dialogs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center p-4">{t('noConversations')}</p>
+        ) : (
+          dialogs.map((dialog) => (
+            <ChatSidebarItem
+              key={dialog.id}
+              dialog={dialog}
+              isActive={dialog.id === currentDialogId}
+              onDelete={handleDeleteDialog}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

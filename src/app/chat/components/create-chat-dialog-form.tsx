@@ -37,6 +37,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useKnowledgeBaseList } from '@/hooks/use-knowledge-base';
+import { useUser } from '@/contexts/user-context';
+import { toast } from 'sonner';
+
 const CreateChatDialogFormSchema = (t: Function) => z.object({
     name: z.string().min(1, { message: t('validation.chatNameRequired', 'Chat name cannot be empty') }),
     knowledgeBaseId: z.string().optional(),
@@ -49,6 +52,7 @@ export function CreateChatDialogForm() {
     const [isOpen, setIsOpen] = useState(false);
     const { createChatDialog, loading } = useCreateChatDialog();
     const { data: knowledgeBases = [], isLoading: isLoadingKnowledgeBases } = useKnowledgeBaseList();
+    const { userInfo } = useUser();
 
     const schema = CreateChatDialogFormSchema(t);
     type CreateDialogFormValues = z.infer<typeof schema>;
@@ -63,11 +67,16 @@ export function CreateChatDialogForm() {
     });
 
     const onSubmit = async (values: CreateDialogFormValues) => {
+        if (!userInfo?.id) {
+            toast.error(t('userNotLoggedIn', 'User not logged in'));
+            return;
+        }
         try {
             const newDialog = await createChatDialog({
                 name: values.name,
                 description: values.description,
-                knowledgeBaseId: values.knowledgeBaseId
+                knowledgeBaseId: values.knowledgeBaseId,
+                userId: userInfo.id
             });
             if (newDialog?.id) {
                 setIsOpen(false);
@@ -99,11 +108,11 @@ export function CreateChatDialogForm() {
                             control={form.control}
                             name="name"
                             render={({ field }) => (
-                                <FormItem className="w-full grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="name" className="text-right">
+                                <FormItem className="w-full space-y-2">
+                                    <Label htmlFor="name">
                                         {t('chatNameLabel')}
                                     </Label>
-                                    <FormControl className="col-span-3">
+                                    <FormControl>
                                         <Input
                                             id="name"
                                             placeholder={t('chatNamePlaceholder')}
@@ -111,7 +120,7 @@ export function CreateChatDialogForm() {
                                             disabled={loading}
                                         />
                                     </FormControl>
-                                    <FormMessage className="col-span-4 col-start-2" />
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -119,32 +128,33 @@ export function CreateChatDialogForm() {
                             control={form.control}
                             name="knowledgeBaseId"
                             render={({ field }) => (
-                                <FormItem className="w-full grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="knowledgeBaseId" className="text-right">
+                                <FormItem className="w-full space-y-2">
+                                    <Label htmlFor="knowledgeBaseId">
                                         {t('knowledgeBaseLabel')}
                                     </Label>
-                                    <Select
-                                        disabled={loading || isLoadingKnowledgeBases}
-                                        onValueChange={field.onChange}
-                                        value={field.value}
-                                    >
-                                        <FormControl className="col-span-3">
-                                            <SelectTrigger>
+                                    <FormControl>
+                                        <Select
+                                            disabled={loading || isLoadingKnowledgeBases}
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? ''}
+                                        >
+                                            <SelectTrigger className="w-full">
                                                 <SelectValue placeholder={t('selectKnowledgeBase')} />
                                             </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="">
-                                                {t('noKnowledgeBase')}
-                                            </SelectItem>
-                                            {knowledgeBases.map((kb) => (
-                                                <SelectItem key={kb.id} value={kb.id}>
-                                                    {kb.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage className="col-span-4 col-start-2" />
+                                            <SelectContent
+                                                position="popper"
+                                                sideOffset={4}
+                                                className="w-[--radix-select-trigger-width] max-h-[--radix-select-content-available-height]"
+                                            >
+                                                {knowledgeBases.map((kb) => (
+                                                    <SelectItem key={kb.id} value={kb.id}>
+                                                        {kb.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />

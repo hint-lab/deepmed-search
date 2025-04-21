@@ -1,10 +1,10 @@
 import { User } from './user';
 import { KnowledgeBase } from './knowledge-base';
-import { Message } from './message';
+import { IMessage } from './message';
 import { RelatedQuestion } from './system';
 
 // 对话模型类型定义
-export interface Dialog {
+export interface IDialog {
     id: string;
     name: string;
     description?: string | null;
@@ -12,7 +12,7 @@ export interface Dialog {
     knowledgeBaseId?: string | null;
     create_date: Date;
     update_date: Date;
-    messages: Message[];
+    messages: IMessage[];
     user: User;
     knowledgeBase?: KnowledgeBase | null;
     relatedQuestions: RelatedQuestion[];

@@ -36,16 +36,16 @@ export default async function RootLayout({
     // const session = await auth();
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${inter.variable} font-sans antialiased h-screen overflow-hidden`}>
+            <body className={`${inter.variable} font-sans antialiased h-full overflow-hidden`}>
                 <SessionProvider>
                     <I18nProvider>
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
                                 <UserProvider>
                                     <ChatProvider>
-                                        <div className="flex flex-col h-screen overflow-hidden">
+                                        <div className="fixed flex flex-col h-full w-full overflow-hidden">
                                             <Header />
-                                            <main className="flex-1 overflow-auto  h-full">
+                                            <main className="flex-1 overflow-auto h-full">
                                                 {children}
                                             </main>
                                         </div>
