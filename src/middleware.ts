@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 
 // 需要认证的路由
 const protectedRoutes = [
-    '/knowledge-base',
+    '/knowledgebase',
     '/chat',
     '/agent',
     '/files',
@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 
     // 如果已登录且访问登录页，重定向到主页
     if (token && pathname === '/login') {
-        return NextResponse.redirect(new URL('/knowledge-base', request.url));
+        return NextResponse.redirect(new URL('/knowledgebase', request.url));
     }
 
     return NextResponse.next();
@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
     matcher: [
         // 匹配所有需要保护的路由
-        '/knowledge-base/:path*',
+        '/knowledgebase/:path*',
         '/chat/:path*',
         '/agent/:path*',
         '/files/:path*',

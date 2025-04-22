@@ -22,7 +22,7 @@ export function ChunkSettings({ knowledgeBaseId }: ChunkSettingsProps) {
     const handleSave = async () => {
         try {
             // 这里应该是实际的API调用
-            // await fetch(`/api/knowledge-base/${knowledgeBaseId}/settings`, {
+            // await fetch(`/api/knowledgebase/${knowledgeBaseId}/settings`, {
             //   method: 'PUT',
             //   headers: {
             //     'Content-Type': 'application/json',

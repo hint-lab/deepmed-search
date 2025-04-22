@@ -88,7 +88,7 @@ const Login = () => {
     const searchParams = useSearchParams();
     const { t } = useTranslation('translation', { keyPrefix: 'login' });
     const [loading, setLoading] = useState(false);
-    const callbackUrl = searchParams.get('callbackUrl') || '/knowledge-base';
+    const callbackUrl = searchParams.get('callbackUrl') || '/knowledgebase';
 
     useEffect(() => {
         const error = searchParams.get("error");

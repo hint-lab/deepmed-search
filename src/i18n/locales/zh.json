@@ -120,6 +120,7 @@
             "selected": "已选择",
             "total": "总计",
             "page": "页",
+            "enabled": "启用",
             "totalPages": "总页数",
             "currentPage": "当前页",
             "convertToMarkdown": "转换",
@@ -138,6 +139,11 @@
             "title": "设置",
             "basicTitle": "基础设置",
             "advancedTitle": "高级设置"
+        },
+        "languages": {
+            "zh": "简体中文",
+            "en": "英语",
+            "ja": "日语"
         },
         "validation": {
             "nameRequired": "请输入知识库名称",
@@ -311,9 +317,11 @@
         "currentChat": "当前聊天",
         "newChat": "新聊天",
         "startNewChat": "开始新对话...",
+        "createSuccess": "创建成功",
         "justNow": "刚刚",
         "delete": "删除",
         "more": "更多",
+        "cancel": "取消",
         "noDescription": "没有描述",
         "noConversations": "还没有会话。",
         "createChatTitle": "创建新聊天",

@@ -6,8 +6,8 @@ import {
     Card, CardContent, CardHeader, CardTitle
 } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { IChunk } from '@/types/db/chunk';
-import { IDocument } from '@/types/db/document';
+import { IChunk } from '@/types/chunk';
+import { IDocument } from '@/types/document';
 import { getDocumentChunksAction, toggleChunkAvailabilityAction } from '@/actions/chunk';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslate } from '@/hooks/use-language';

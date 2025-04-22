@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useTranslate } from '@/hooks/use-language';
-import { IMessage } from '@/types/db/message';
+import { IMessage } from '@/types/message';
 import dayjs from 'dayjs';
 import { MessageType } from '@/constants/chat';
 import { useEffect } from 'react';

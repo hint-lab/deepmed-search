@@ -1,6 +1,6 @@
 'use client';
 
-import { ITenant, ITenantUser } from '@/types/db/user-setting';
+import { ITenant, ITenantUser } from '@/types/user-setting';
 import { addTenantUser, deleteTenantUser, listTenantUsers, listTenant, agreeTenant } from '@/actions/tenant';
 import { getTenantInfo } from '@/actions/user';
 import { useState, useEffect } from 'react';

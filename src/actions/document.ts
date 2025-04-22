@@ -3,11 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { ServerActionResponse } from '@/types/actions';
 import { IChangeParserConfigRequestBody } from '@/types/parser-config';
-import { IDocumentMetaRequestBody } from '@/types/db/document';
+import { IDocumentMetaRequestBody } from '@/types/document';
 import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { Prisma } from '@prisma/client';
 import { uploadFileAction } from './file-upload';
-import { DocumentProcessingStatus } from '@/types/db/enums';
+import { IDocumentProcessingStatus } from '@/types/enums';
 
 /**
  * 获取文档列表
@@ -116,7 +116,7 @@ export async function changeDocumentParserAction(
         });
 
         // 重新验证知识库页面
-        revalidatePath('/knowledge-base/[id]');
+        revalidatePath('/knowledgebase/[id]');
         return {
             success: true
         };
@@ -144,7 +144,7 @@ export async function renameDocumentAction(documentId: string, name: string): Pr
         });
 
         // 重新验证知识库页面
-        revalidatePath('/knowledge-base/[id]');
+        revalidatePath('/knowledgebase/[id]');
         return {
             success: true
         };
@@ -163,14 +163,13 @@ export async function renameDocumentAction(documentId: string, name: string): Pr
  * @param meta - 元数据对象
  * @returns 更新结果
  */
-export async function setDocumentMetaAction(documentId: string, meta: IDocumentMetaRequestBody): Promise<ServerActionResponse<any>> {
+export async function setDocumentMetaAction(params: IDocumentMetaRequestBody): Promise<ServerActionResponse<any>> {
     try {
         // 解析元数据字符串
-        const metaData = JSON.parse(meta.metadata);
-
+        const metaData = JSON.parse(params.meta);
         // 准备更新数据
         const updateData: any = {};
-
+        console.log("params", params)
         // 如果元数据中包含 enabled 字段，则更新 enabled 字段
         if (metaData.enabled !== undefined) {
             updateData.enabled = metaData.enabled;
@@ -178,12 +177,12 @@ export async function setDocumentMetaAction(documentId: string, meta: IDocumentM
 
         // 更新文档元数据
         await prisma.document.update({
-            where: { id: documentId },
+            where: { id: params.id },
             data: updateData
         });
 
         // 重新验证知识库页面
-        revalidatePath('/knowledge-base/[id]');
+        revalidatePath('/knowledgebase/[id]');
         return {
             success: true
         };
@@ -288,7 +287,7 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                         size: file.size,
                         type: file.type,
                         source_type: 'file',
-                        processing_status: DocumentProcessingStatus.UNPROCESSED,
+                        processing_status: IDocumentProcessingStatus.UNPROCESSED,
                         chunk_num: 0,
                         token_num: 0,
                         progress: 0,

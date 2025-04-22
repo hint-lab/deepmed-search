@@ -1,27 +1,14 @@
-import type { BaseTokenTracker, BaseActionTracker, TokenTracker, ActionTracker, TrackerContext, ResearchOptions, ResearchResult } from './common';
-import type { StepAction, AnswerAction, KnowledgeItem, EvaluationType, BoostedSearchSnippet, SearchSnippet, EvaluationResponse, Reference, SERPQuery, RepeatEvaluationType, UnNormalizedSearchSnippet, WebContent } from '@/deep-research/src/types';
+// 数据库类型定义
+// 基于 Prisma schema 生成的类型定义
 
-export type {
-    // Common types
-    BaseTokenTracker,
-    BaseActionTracker,
-    TokenTracker,
-    ActionTracker,
-    TrackerContext,
-    ResearchOptions,
-    ResearchResult,
-
-    // Deep research types
-    StepAction,
-    AnswerAction,
-    KnowledgeItem,
-    EvaluationType,
-    BoostedSearchSnippet,
-    SearchSnippet,
-    EvaluationResponse,
-    Reference,
-    SERPQuery,
-    RepeatEvaluationType,
-    UnNormalizedSearchSnippet,
-    WebContent
-}; 
+export * from './enums';
+export * from './user';
+export * from './tenant';
+export * from './dialog';
+export * from './message';
+export * from './document';
+export * from './knowledgebase';
+export * from './upload-file';
+export * from './chunk';
+export * from './tag';
+export * from './system'; 

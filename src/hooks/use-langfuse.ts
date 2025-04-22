@@ -1,6 +1,6 @@
 'use client';
 
-import { ILangfuseConfig, ISetLangfuseConfigRequestBody } from '@/types/db/user-setting';
+import { ILangfuseConfig, ISetLangfuseConfigRequestBody } from '@/types/user-setting';
 import { getLangfuseConfig, setLangfuseConfig, deleteLangfuseConfig } from '@/actions/user';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

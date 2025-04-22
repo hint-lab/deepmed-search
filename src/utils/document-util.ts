@@ -1,4 +1,4 @@
-import { IChunk } from "@/types/db/knowledge-base";
+import { IChunk } from "@/types/knowledgebase";
 import { IHighlight } from "react-pdf-highlighter";
 
 export function getExtension(filename: string): string {

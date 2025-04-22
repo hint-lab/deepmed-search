@@ -32,7 +32,7 @@ export function ChunkList({ knowledgeBaseId }: ChunkListProps) {
         const fetchChunks = async () => {
             try {
                 // 这里应该是实际的API调用
-                // const response = await fetch(`/api/knowledge-base/${knowledgeBaseId}/chunks`);
+                // const response = await fetch(`/api/knowledgebase/${knowledgeBaseId}/chunks`);
                 // const data = await response.json();
 
                 // 模拟数据

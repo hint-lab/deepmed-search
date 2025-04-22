@@ -19,7 +19,7 @@ import {
     updateDocumentProcessingStatusAction,
     getDocumentKnowledgeBaseIdAction
 } from '@/actions/document-process';
-import { DocumentProcessingStatus } from '@/types/db/enums';
+import { DocumentProcessingStatus } from '@/types/enums';
 
 
 export default function DocumentTestPage() {

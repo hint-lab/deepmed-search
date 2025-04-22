@@ -9,8 +9,8 @@ import {
     IUpdateKnowledgeParams,
     ISearchKnowledgeParams,
     ISearchKnowledgeResult
-} from '@/types/db/knowledge-base';
-import { IRenameTag } from '@/types/db/tag';
+} from '@/types/knowledgebase';
+import { IRenameTag } from '@/types/tag';
 import { usePagination } from '@/hooks/use-pagination';
 import {
     createKnowledgeBaseAction,
@@ -306,7 +306,7 @@ export const useCreateKnowledgeBase = () => {
         try {
             const result = await createKnowledgeBaseAction(params);
             if (result.success) {
-                router.push(`/knowledge-base/${result.data.id}?tab=settings`);
+                router.push(`/knowledgebase/${result.data.id}?tab=settings`);
                 return result.data;
             }
             throw new Error(result.error);

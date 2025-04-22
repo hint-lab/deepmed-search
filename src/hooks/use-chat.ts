@@ -3,12 +3,8 @@
 import { toast } from 'sonner';
 import { useTranslate } from '@/hooks/use-language';
 import { useState, useEffect, useRef } from 'react';
-import { IMessage } from '@/types/db/message';
+import { IMessage } from '@/types/message';
 import {
-    getChatDialogListAction,
-    createChatDialogAction,
-    updateChatDialogAction,
-    deleteChatDialogAction,
     fetchChatMessagesAction,
     sendChatMessageAction,
     sendChatMessageStreamAction,
@@ -16,124 +12,6 @@ import {
     getRelatedQuestionsAction
 } from '@/actions/chat';
 import { MessageType } from '@/constants/chat';
-
-/**
- * 获取对话列表
- */
-export function useChatDialogList() {
-    const [data, setData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const result = await getChatDialogListAction();
-                if (result.success) {
-                    setData(result.data as any[]);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
-
-    return { data, isLoading };
-}
-
-
-
-
-interface CreateDialogParams {
-    name: string;
-    description?: string;
-    knowledgeBaseId?: string;
-    userId: string;
-}
-
-/**
- * 创建对话
- */
-export function useCreateChatDialog() {
-    const [loading, setLoading] = useState(false);
-    const { t } = useTranslate('chat');
-
-    const createChatDialog = async (params: CreateDialogParams) => {
-        setLoading(true);
-        try {
-            const result = await createChatDialogAction(params);
-            if (result.success) {
-                toast.success(t('createSuccess'));
-                return result.data;
-            }
-            throw new Error(result.error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return { createChatDialog, loading };
-}
-
-/**
- * 更新对话
- */
-export function useUpdateChatDialog() {
-    const { t } = useTranslate('chat')
-    const [isPending, setIsPending] = useState(false);
-
-    const updateChatDialog = async ({
-        id,
-        data,
-    }: {
-        id: string;
-        data: { name?: string; description?: string };
-    }) => {
-        setIsPending(true);
-        try {
-            const result = await updateChatDialogAction(id, data);
-            if (result.success) {
-                toast.success(t('message.modified'));
-                return result.data;
-            }
-            throw new Error(result.error);
-        } finally {
-            setIsPending(false);
-        }
-    };
-
-    return { updateChatDialog, isPending };
-}
-
-/**
- * 删除对话
- */
-export function useDeleteChatDialog() {
-    const { t } = useTranslate('chat')
-    const [isPending, setIsPending] = useState(false);
-
-    const deleteChatDialog = async (id: string): Promise<{ success: boolean; error?: string; data?: any }> => {
-        setIsPending(true);
-        try {
-            const result = await deleteChatDialogAction(id);
-            if (!result.success) {
-                throw new Error(result.error || t('message.deleteFailed'));
-            }
-            return result;
-        } catch (error) {
-            console.error('Delete dialog error:', error);
-            return {
-                success: false,
-                error: error instanceof Error ? error.message : t('message.deleteFailed')
-            };
-        } finally {
-            setIsPending(false);
-        }
-    };
-
-    return { deleteChatDialog, isPending };
-}
 
 /**
  * 获取对话消息

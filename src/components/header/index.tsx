@@ -27,7 +27,7 @@ export default function Header() {
     const navItems = [
         {
             name: t('knowledgeBase'),
-            href: "/knowledge-base",
+            href: "/knowledgebase",
             icon: <Database className="h-5 w-5" />
         },
         {
@@ -44,11 +44,6 @@ export default function Header() {
             name: t('research'),
             href: "/research",
             icon: <Cpu className="h-5 w-5" />
-        },
-        {
-            name: t('fileManagement'),
-            href: "/files",
-            icon: <FolderOpen className="h-5 w-5" />
         },
         {
             name: "开发工具",

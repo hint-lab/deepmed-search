@@ -1,4 +1,4 @@
-import { IReference } from "@/types/db/chat"
+import { IReference } from "@/types/chat"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
 interface IProps {

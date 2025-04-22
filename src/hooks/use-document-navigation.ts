@@ -8,7 +8,7 @@ export function useDocumentNavigation() {
 
     const navigateToChunkParsedResult = useCallback(
         (documentId: string, kbId: string) => () => {
-            router.push(`/knowledge-base/chunk?id=${documentId}&kb_id=${kbId}`);
+            router.push(`/knowledgebase/chunk?id=${documentId}&kb_id=${kbId}`);
         },
         [router]
     );

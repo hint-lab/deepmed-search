@@ -103,7 +103,7 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
             },
         });
 
-        revalidatePath('/knowledge-base');
+        revalidatePath('/knowledgebase');
         return { success: true, data: serializeBigIntAction(knowledgeBase) };
     } catch (error) {
         console.error('创建知识库失败:', error);
@@ -111,13 +111,13 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
     }
 });
 
-export const updateKnowledgeBaseAction = withAuth(async (session, id: string, name: string) => {
+export const updateKnowledgeBaseAction = withAuth(async (session, id: string, name: string, description: string, language: string) => {
     const knowledgeBase = await prisma.knowledgeBase.update({
         where: { id },
-        data: { name },
+        data: { name, description, language },
     });
 
-    revalidatePath('/knowledge-base');
+    revalidatePath('/knowledgebase');
     return { success: true, data: knowledgeBase };
 });
 
@@ -126,7 +126,7 @@ export const deleteKnowledgeBaseAction = withAuth(async (session, id: string) =>
         where: { id },
     });
 
-    revalidatePath('/knowledge-base');
+    revalidatePath('/knowledgebase');
     return { success: true };
 });
 
@@ -266,7 +266,7 @@ export const removeTagAction = withAuth(async (session, knowledgeBaseId: string,
         },
     });
 
-    revalidatePath('/knowledge-base');
+    revalidatePath('/knowledgebase');
     return { success: true };
 });
 
@@ -280,7 +280,7 @@ export const renameTagAction = withAuth(async (session, knowledgeBaseId: string,
         },
     });
 
-    revalidatePath('/knowledge-base');
+    revalidatePath('/knowledgebase');
     return { success: true, data: tag };
 });
 

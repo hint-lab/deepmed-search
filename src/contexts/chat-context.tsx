@@ -3,7 +3,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useRef } f
 import { useSendMessageWithSSE } from '@/hooks/use-chat';
 import { useUser } from './user-context'; // Assuming user context is needed
 import { toast } from 'sonner';
-import { IMessage } from '@/types/db/message'; // Assuming IMessage type is needed
+import { IMessage } from '@/types/message'; // Assuming IMessage type is needed
 import { MessageType } from '@/constants/chat'; // Assuming MessageType is needed
 
 // Type for the message setter function

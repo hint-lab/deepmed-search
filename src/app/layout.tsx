@@ -42,6 +42,7 @@ export default async function RootLayout({
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
                                 <UserProvider>
+
                                     <ChatProvider>
                                         <div className="fixed flex flex-col h-full w-full overflow-hidden">
                                             <Header />
@@ -50,6 +51,7 @@ export default async function RootLayout({
                                             </main>
                                         </div>
                                     </ChatProvider>
+
                                 </UserProvider>
                             </TooltipProvider>
                         </NextThemeProvider>

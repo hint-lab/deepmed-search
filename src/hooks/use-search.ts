@@ -1,6 +1,6 @@
 "use client"
 
-import { IAnswer } from '@/types/db/chat';
+import { IAnswer } from '@/types/chat';
 import { get, isEmpty, trim } from 'lodash';
 import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
 import { useGetPaginationWithRouter } from '@/hooks/use-pagination';

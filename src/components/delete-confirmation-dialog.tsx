@@ -21,6 +21,8 @@ interface DeleteConfirmationDialogProps {
     description: string;
     confirmText?: string;
     cancelText?: string;
+    isOpen?: boolean;
+    setIsOpen: (isOpen: boolean) => void;
     onConfirm: () => void | Promise<void>;
     isDeleting?: boolean; // Optional loading state for the confirm button
 }
@@ -31,14 +33,16 @@ export function DeleteConfirmationDialog({
     description,
     confirmText = 'Delete', // Default texts
     cancelText = 'Cancel',
+    isOpen = false,
+    setIsOpen,
     onConfirm,
     isDeleting = false,
 }: DeleteConfirmationDialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
 
     const handleConfirm = async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault(); // Prevent default form submission if applicable
         await onConfirm();
+
         // Optionally close the dialog after confirmation, 
         // or let the parent handle it based on the result of onConfirm
         // setIsOpen(false); 
@@ -46,7 +50,7 @@ export function DeleteConfirmationDialog({
     };
 
     return (
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen} >
             <AlertDialogTrigger asChild>
                 {children}
             </AlertDialogTrigger>

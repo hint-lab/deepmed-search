@@ -9,7 +9,7 @@ import { ServerActionResponse } from '@/types/actions';
 import { processDocument } from '@/lib/bullmq/document-worker';
 import { uploadFileStream, getFileUrl } from '@/lib/minio/operations';
 import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
-import { DocumentProcessingStatus } from '@/types/db/enums';
+import { IDocumentProcessingStatus } from '@/types/enums';
 
 
 // 直接处理文档的server action
@@ -200,7 +200,7 @@ export async function convertDocumentAction(
                     markdown_content: markdown_content, // 如果上传成功，就不存在数据库里
                     chunk_num: 0,
                     token_num: result.metadata?.inputTokens || 0,
-                    processing_status: DocumentProcessingStatus.CONVERTING,
+                    processing_status: IDocumentProcessingStatus.CONVERTING,
                     progress: 60,
                     progress_msg: '转换完成',
                     process_duation: Math.floor((Date.now() - startTime) / 1000),
@@ -343,7 +343,7 @@ export async function indexDocumentChunksAction(
             where: { id: documentId },
             data: {
                 chunk_num: chunks.length,
-                processing_status: DocumentProcessingStatus.INDEXING, progress: 70
+                processing_status: IDocumentProcessingStatus.INDEXING, progress: 70
             }
         });
         const indexer = new ChunkIndexer({
@@ -375,7 +375,7 @@ export async function indexDocumentChunksAction(
             where: { id: documentId },
             data: {
                 chunk_num: chunks.length,
-                processing_status: DocumentProcessingStatus.SUCCESSED,
+                processing_status: IDocumentProcessingStatus.SUCCESSED,
                 progress: 100
             }
         });
@@ -444,7 +444,7 @@ export async function processDocumentActionUsingQueue(
             await prisma.document.update({
                 where: { id: documentId },
                 data: {
-                    processing_status: DocumentProcessingStatus.FAILED,
+                    processing_status: IDocumentProcessingStatus.FAILED,
                     progress: 0,
                     progress_msg: result.error || '处理失败',
                     process_duation: Math.floor((Date.now() - startTime) / 1000),
@@ -472,7 +472,7 @@ export async function processDocumentActionUsingQueue(
             where: { id: documentId },
             data: {
                 processing_status: {
-                    set: DocumentProcessingStatus.FAILED
+                    set: IDocumentProcessingStatus.FAILED
                 },
                 progress: 0,
                 progress_msg: error.message || '处理失败',
@@ -490,7 +490,7 @@ export async function processDocumentActionUsingQueue(
 // 更新文档处理状态的server action
 export async function updateDocumentProcessingStatusAction(
     documentId: string,
-    status: DocumentProcessingStatus,
+    status: IDocumentProcessingStatus,
     options?: {
         progress?: number;
         progressMsg?: string;
@@ -507,7 +507,7 @@ export async function updateDocumentProcessingStatusAction(
                 progress: options?.progress ?? 0,
                 progress_msg: options?.progressMsg || '',
                 processing_error: options?.error || null,
-                ...(status === DocumentProcessingStatus.CONVERTING && {
+                ...(status === IDocumentProcessingStatus.CONVERTING && {
                     process_begin_at: new Date()
                 })
             }

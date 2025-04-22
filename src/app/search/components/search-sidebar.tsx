@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { useFetchKnowledgeBaseList } from '@/hooks/use-knowledge-base'
+import { useFetchKnowledgeBaseList } from '@/hooks/use-knowledgebase'
 
 interface IKnowledgeItem {
     id: string;

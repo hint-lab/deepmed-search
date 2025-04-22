@@ -4,14 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useChat } from '@/contexts/chat-context';
 import { useTranslate } from '@/hooks/use-language';
-import { useCreateChatDialog } from '@/hooks/use-chat';
+import { useDialog } from '@/contexts/dialog-context';
 import { useUser } from '@/contexts/user-context';
+
 interface ChatInputAreaProps {
     dialogId?: string;
 }
 
 export function ChatInputArea({ dialogId }: ChatInputAreaProps) {
-    const { createChatDialog } = useCreateChatDialog();
+    const { createDialog } = useDialog();
     const { userInfo } = useUser();
     const {
         inputValue,
@@ -33,8 +34,10 @@ export function ChatInputArea({ dialogId }: ChatInputAreaProps) {
         const messageToSend = inputValue;
         setInputValue('');
         if (!dialogId) {
-            const newDialog = await createChatDialog({ name: messageToSend, userId: userInfo?.id || '' });
-            await sendMessage(newDialog.id, messageToSend);
+            const newDialog = await createDialog({ name: messageToSend, userId: userInfo?.id || '' });
+            if (newDialog) {
+                await sendMessage(newDialog.id, messageToSend);
+            }
         }
         else {
             await sendMessage(dialogId, messageToSend);

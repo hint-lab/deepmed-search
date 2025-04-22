@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { getDocumentListAction, changeDocumentParserAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction } from '@/actions/document';
-import { IDocumentMetaRequestBody } from '@/types/db/document';
+import { IDocumentMetaRequestBody } from '@/types/document';
 
 /**
  * 获取文档列表的 hook
@@ -170,7 +170,12 @@ export const useSetDocumentMeta = () => {
     const setDocumentMeta = useCallback(async (params: IDocumentMetaRequestBody): Promise<boolean> => {
         setLoading(true);
         try {
-            const result = await setDocumentMetaAction(params.documentId, { documentId: params.documentId, meta: params.meta });
+            const result = await setDocumentMetaAction(
+                {
+                    id: params.id,
+                    meta: JSON.stringify(params.meta)
+                }
+            );
             return result.success;
         } finally {
             setLoading(false);
@@ -192,10 +197,12 @@ export function useToggleDocumentEnabled() {
     const toggleDocumentEnabled = useCallback(async (documentId: string, enabled: boolean, onSuccess?: (newEnabled: boolean) => void) => {
         try {
             setLoading(true);
-            const result = await setDocumentMetaAction(documentId, {
-                documentId,
-                meta: JSON.stringify({ enabled })
-            });
+            const result = await setDocumentMetaAction(
+                {
+                    id: documentId,
+                    meta: JSON.stringify({ enabled })
+                }
+            );
 
             if (result.success) {
                 if (onSuccess) {

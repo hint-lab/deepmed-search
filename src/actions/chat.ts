@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
 import { chatClient } from '@/lib/openai/chat/client';
-import { IMessage } from '@/types/db/message';
+import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
 
 

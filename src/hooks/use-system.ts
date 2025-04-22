@@ -1,6 +1,6 @@
 'use client';
 
-import { ISystemStatus, IToken } from '@/types/db/user-setting';
+import { ISystemStatus, IToken } from '@/types/user-setting';
 import { getSystemStatus, getSystemVersion, getSystemTokenList, createSystemToken, removeSystemToken } from '@/actions/user';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
