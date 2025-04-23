@@ -52,7 +52,7 @@ export const useProcessDocumentChunks = () => {
     const [isProcessingDocumentToChunks, setIsProcessingDocumentToChunks] = useState(false);
 
 
-    const startProcessingDocumentToChunks = useCallback(async (document: IDocumentInfo) => {
+    const startProcessingDocumentToChunks = useCallback(async (document: IDocument) => {
         try {
             setIsProcessingDocumentToChunks(true);
             const result = await processDocumentToChunksAction(document.id);

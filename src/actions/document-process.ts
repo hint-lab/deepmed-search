@@ -563,4 +563,36 @@ export async function getDocumentKnowledgeBaseIdAction(
         console.error(`获取文档 ${documentId} 的知识库 ID 失败:`, error, {});
         return { success: false, error: error.message || '获取知识库 ID 时发生未知错误' };
     }
+}
+
+/**
+ * 获取单个文档的状态信息
+ * @param documentId - 文档ID
+ * @returns 文档状态信息或错误
+ */
+export async function getDocumentStatusAction(documentId: string): Promise<ServerActionResponse<{ processing_status: IDocumentProcessingStatus, progress_msg?: string | null }>> {
+    try {
+        const document = await prisma.document.findUnique({
+            where: { id: documentId },
+            select: {
+                processing_status: true,
+                progress_msg: true
+            }
+        });
+
+        if (!document) {
+            return { success: false, error: '文档不存在' };
+        }
+
+        return {
+            success: true, data: {
+                processing_status: document.processing_status as IDocumentProcessingStatus,
+                progress_msg: document.progress_msg
+            }
+        };
+
+    } catch (error) {
+        console.error(`获取文档 ${documentId} 状态失败:`, error);
+        return { success: false, error: '获取文档状态失败' };
+    }
 } 

@@ -14,7 +14,7 @@ interface DocumentSwitchProps {
 
 export function DocumentSwitch({ documentId, initialEnabled, onToggle }: DocumentSwitchProps) {
     const [localEnabled, setLocalEnabled] = useState(initialEnabled);
-    const { t } = useTranslate('knowledgeBase.table');
+    const { t } = useTranslate('knowledgeBase.table.fileStatus');
 
     const handleToggle = useCallback(async (checked: boolean) => {
         try {
@@ -27,12 +27,15 @@ export function DocumentSwitch({ documentId, initialEnabled, onToggle }: Documen
                 throw new Error(result.error);
             }
 
+            // 成功后更新本地状态
             setLocalEnabled(checked);
+            // 通知父组件
             onToggle?.(checked);
+            toast.success(t('toggleSuccess'));
         } catch (error) {
-            toast.error(t('toggleError', '切换状态失败'));
-            // 恢复原始状态
+            // 发生错误时恢复原始状态
             setLocalEnabled(!checked);
+            toast.error(t('toggleError'));
         }
     }, [documentId, onToggle, t]);
 
@@ -41,12 +44,7 @@ export function DocumentSwitch({ documentId, initialEnabled, onToggle }: Documen
             id={`status-${documentId}`}
             className="scale-75"
             checked={localEnabled}
-            onCheckedChange={(checked) => {
-                setLocalEnabled(checked);
-                setTimeout(() => {
-                    handleToggle(checked);
-                }, 500);
-            }}
+            onCheckedChange={handleToggle}
         />
     );
 } 

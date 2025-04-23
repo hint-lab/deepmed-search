@@ -33,7 +33,7 @@ interface BasicSettingFormProps {
 
 export default function BasicSettingForm({ kbId }: BasicSettingFormProps) {
   const { t } = useTranslate('knowledgeBase');
-  const { getKnowledgeBaseById, isLoading, updateKnowledgeBase } = useKnowledgeBase();
+  const { currentKnowledgeBase, isLoading, updateKnowledgeBase } = useKnowledgeBase();
   const [kbInfo, setKbInfo] = useState<IKnowledgeBase | null>(null);
   const formSchema = z.object({
     name: z.string().min(1, {
@@ -45,14 +45,6 @@ export default function BasicSettingForm({ kbId }: BasicSettingFormProps) {
     }),
     tags: z.array(z.string()),
   });
-
-  useEffect(() => {
-    getKnowledgeBaseById(kbId).then((kb) => {
-      if (kb) {
-        setKbInfo(kb);
-      }
-    });
-  }, [kbId, getKnowledgeBaseById]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

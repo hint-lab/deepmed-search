@@ -11,7 +11,7 @@ export async function getKnowledgeBaseListAction(): Promise<ServerActionResponse
     try {
         const kbs = await prisma.knowledgeBase.findMany({
             orderBy: {
-                create_date: 'desc'
+                created_at: 'desc'
             }
         });
         return {
@@ -67,7 +67,7 @@ export const getKnowledgeListAction = withAuth(async (session, params?: { page?:
             where,
             skip: (page - 1) * pageSize,
             take: pageSize,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { created_at: 'desc' },
         }),
     ]);
 
@@ -95,10 +95,8 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
             data: {
                 name: params.name,
                 description: params.description,
-                create_date: new Date(),
-                update_date: new Date(),
-                create_time: BigInt(Date.now()),
-                update_time: BigInt(Date.now()),
+                created_at: new Date(),
+                updated_at: new Date(),
                 created_by: session.user.id,
             },
         });
@@ -180,7 +178,7 @@ export const listKnowledgeBasesAction = withAuth(async (session, params?: {
             where,
             skip: (page - 1) * pageSize,
             take: pageSize,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { created_at: 'desc' },
             include: {
                 tags: true,
                 documents: {
@@ -361,11 +359,9 @@ export async function getInvisibleKnowledgeBase() {
                 name: '不可见测试知识库',
                 description: '这是一个不可见的测试知识库，用于测试知识库可见性功能',
                 visible: false,
-                create_date: new Date(),
-                create_time: BigInt(Date.now()),
+                created_at: new Date(),
                 created_by: 'system',
-                update_date: new Date(),
-                update_time: BigInt(Date.now()),
+                updated_at: new Date(),
                 similarity_threshold: 0.7,
                 vector_similarity_weight: 0.5,
                 status: 'active',
@@ -451,11 +447,9 @@ export async function getInvisibleKnowledgeBaseAction(): Promise<ServerActionRes
                 name: '不可见测试知识库',
                 description: '这是一个不可见的测试知识库，用于测试知识库可见性功能',
                 visible: false,
-                create_date: new Date(),
-                create_time: BigInt(Date.now()),
+                created_at: new Date(),
                 created_by: 'system',
-                update_date: new Date(),
-                update_time: BigInt(Date.now()),
+                updated_at: new Date(),
                 similarity_threshold: 0.7,
                 vector_similarity_weight: 0.5,
                 status: 'active',

@@ -112,9 +112,6 @@ model KnowledgeBase {
   description           String?       // 知识库描述
   avatar                String?       // 知识库头像
   chunk_num             Int           @default(0)  // 分块数量
-  create_date           DateTime      // 创建日期
-  create_time           BigInt        // 创建时间戳
-  created_by            String        // 创建者ID
   doc_num               Int           @default(0)  // 文档数量
   parser_config         Json?         // 解析器配置
   parser_id             String?       // 解析器ID
@@ -123,15 +120,14 @@ model KnowledgeBase {
   status                String        @default("active")  // 知识库状态
   tenant_id             String?       // 租户ID
   token_num             Int           @default(0)  // token数量
-  update_date           DateTime      // 更新日期
-  update_time           BigInt        // 更新时间戳
   vector_similarity_weight Float      @default(0.5)  // 向量相似度权重
   embd_id               String?       // 嵌入模型ID 
   language              String?       // 语言设置
   operator_permission   Int           @default(0)  // 操作权限
   visible               Boolean       @default(true)  // 知识库可见性
-  createdAt             DateTime      @default(now())  // 创建时间
-  updatedAt             DateTime      @updatedAt       // 更新时间
+  created_at            DateTime      @default(now())  // 创建时间
+  updated_at            DateTime      @default(now()) @updatedAt  // 更新时间
+  created_by            String        // 创建者ID
   documents             Document[]    // 文档列表
   tags                  Tag[]         // 标签列表
   chunks                Chunk[]       // 分块列表

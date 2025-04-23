@@ -7,7 +7,6 @@ import { zeroxConfig } from './config';
 import { ZeroxOptions, ZeroxProcessResult, ZeroxOutput } from './types';
 import logger from '@/utils/logger';
 import { EventEmitter } from 'events';
-import { Readable } from 'stream';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
@@ -321,6 +320,48 @@ export async function processDocumentWithZerox(
             }
         });
 
+        // 检查文件类型
+        const fileExt = path.extname(filePathOrUrl).toLowerCase();
+
+        // 如果是 txt 文件，直接读取内容返回
+        if (fileExt.startsWith('.txt')) {
+            try {
+                let content: string;
+                if (filePathOrUrl.startsWith('http://') || filePathOrUrl.startsWith('https://')) {
+                    // 如果是 URL，下载内容
+                    const response = await fetch(filePathOrUrl);
+                    content = await response.text();
+                } else {
+                    // 如果是本地文件，直接读取
+                    content = await fs.promises.readFile(filePathOrUrl, 'utf-8');
+                }
+
+                const processingTime = Date.now() - startTime;
+                return {
+                    success: true,
+                    data: {
+                        pages: [{
+                            pageNum: 1,
+                            content: content,
+                            tokens: content.split(/\s+/).length // 简单的词数统计
+                        }],
+                        extracted: content,
+                        summary: null
+                    },
+                    metadata: {
+                        processingTime,
+                        documentId,
+                        fileName: path.basename(filePathOrUrl),
+                        inputTokens: content.split(/\s+/).length,
+                        outputTokens: content.split(/\s+/).length
+                    }
+                } as ZeroxProcessResult;
+            } catch (error) {
+                throw new Error(`读取 TXT 文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+            }
+        }
+
+        // 对于其他类型的文件，继续使用原有的 zerox 处理逻辑
         // 确保目录存在
         const { baseDir, tempDir, processedDir } = await ensureAllDirectories();
         // 检查输入是 URL 还是本地文件路径

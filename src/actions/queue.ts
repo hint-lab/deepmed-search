@@ -1,6 +1,7 @@
 "use server";
 
-import { checkQueueHealth, documentConvertProcessQueue, addJob, getJobStatus } from '@/lib/bullmq/queue-manager';
+import { Queue, Job } from 'bullmq';
+import { checkQueueHealth, documentConvertProcessQueue, addTask, getJobStatus } from '@/lib/bullmq/queue-manager';
 import { QUEUE_NAMES } from '@/lib/bullmq/queue-names';
 import { ServerActionResponse } from '@/types/actions';
 
@@ -22,22 +23,28 @@ export async function getQueueName() {
  * 添加任务到队列
  */
 export async function addTaskAction(
-    queueName: string,
+    queue: Queue,
     data: any
-): Promise<ServerActionResponse<{ jobId: string }>> {
+): Promise<ServerActionResponse<{ jobId: string | null }>> {
     try {
-        const job = await addJob(documentConvertProcessQueue, data);
-        return {
-            success: true,
-            data: {
-                jobId: job.id || ''
-            }
-        };
+        const job: Job | undefined = await addTask(queue, data);
+
+        if (job && job.id) {
+            return {
+                success: true,
+                data: {
+                    jobId: job.id
+                }
+            };
+        } else {
+            throw new Error('任务创建失败，未能获取 Job ID');
+        }
     } catch (error: any) {
         console.error('添加任务失败:', error);
         return {
             success: false,
-            error: error.message || '添加任务失败'
+            error: error.message || '添加任务失败',
+            data: { jobId: null }
         };
     }
 }
@@ -49,11 +56,12 @@ export async function getTaskStatusAction(
     jobId: string
 ): Promise<ServerActionResponse<any>> {
     try {
-        const status = await getJobStatus(documentConvertProcessQueue, jobId);
+        const status = await getJobStatus(jobId);
+
         if (!status) {
             return {
                 success: false,
-                error: '任务不存在'
+                error: '任务不存在或无法获取状态'
             };
         }
         return {

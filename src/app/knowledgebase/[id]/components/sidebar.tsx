@@ -7,15 +7,14 @@ import { Button } from '@/components/ui/button'
 
 interface SidebarProps {
     className?: string;
-    onSelect?: (type: 'table' | 'settings') => void;
-    currentView?: 'table' | 'settings';
-    kbId?: string;
+    onSelect?: (type: any) => void;
+    currentView?: any;
 }
 
-export default function Sidebar({ className, onSelect, currentView = 'table', kbId }: SidebarProps) {
+export default function Sidebar({ className, onSelect, currentView = 'table' }: SidebarProps) {
     const { t } = useTranslate('knowledgeBase');
 
-    const handleClick = (type: 'table' | 'settings') => {
+    const handleClick = (type: any) => {
         onSelect?.(type);
     };
 

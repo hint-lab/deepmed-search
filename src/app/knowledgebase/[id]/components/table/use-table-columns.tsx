@@ -17,30 +17,29 @@ import { useTranslate } from '@/hooks/use-language';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentOptionDropdownButton } from './components/option-dropdown';
-import { useToggleDocumentEnabled } from '@/hooks/use-document';
 import { FileIcon } from '@/components/file-icon';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { DocumentProcessingBadge } from './components/processing-badge';
 import { DocumentSwitch } from './components/document-switch';
 
-export type UseKnowledgeBaseTableColumnsType = {
+export type UseTableColumnsType = {
   showChangeParserModal: () => void;
   setCurrentRecord: (record: IDocument) => void;
+  onRefresh: () => void;
 };
 
-export function useKnowledgeBaseTableColumns({
+export function useTableColumns({
   showChangeParserModal,
   setCurrentRecord,
-}: UseKnowledgeBaseTableColumnsType) {
+  onRefresh,
+}: UseTableColumnsType) {
   const { t } = useTranslate('knowledgeBase.table');
   const router = useRouter();
-  const [refreshKey, setRefreshKey] = useState(0);
-  const { loading: toggleLoading, toggleDocumentEnabled } = useToggleDocumentEnabled();
 
   const refreshData = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-  }, []);
+    onRefresh();
+  }, [onRefresh]);
 
   const onShowChangeParserModal = useCallback(
     (record: IDocument) => () => {
@@ -51,29 +50,10 @@ export function useKnowledgeBaseTableColumns({
   );
 
 
-
-  const navigateToChunkParsedResult = useCallback((documentId: string, knowledgeBaseId: string) => {
+  const navigateToChunkParsedResult = useCallback((documentId: string) => {
     router.push(`/chunks/${documentId}`);
   }, [router]);
 
-  const handleToggle = useCallback(async (document: IDocument, newEnabled: boolean) => {
-    const success = await toggleDocumentEnabled(
-      document.id,
-      newEnabled,
-      (enabled) => {
-        // 更新本地状态
-        document.enabled = enabled;
-        // 触发表格刷新
-        refreshData();
-      }
-    );
-
-    if (success) {
-      toast.success(newEnabled ? '文档已启用' : '文档已禁用');
-    } else {
-      toast.error('操作失败');
-    }
-  }, [toggleDocumentEnabled, refreshData]);
 
   const columns: ColumnDef<IDocument>[] = [
     {
@@ -126,8 +106,7 @@ export function useKnowledgeBaseTableColumns({
               <div
                 className="flex gap-2 cursor-pointer items-center"
                 onClick={() => navigateToChunkParsedResult(
-                  row.original.id,
-                  row.original.knowledgeBaseId
+                  row.original.id
                 )}
               >
                 <div className="w-4 h-4 flex-shrink-0">
@@ -239,8 +218,7 @@ export function useKnowledgeBaseTableColumns({
             documentId={document.id}
             initialEnabled={document.enabled}
             onToggle={(enabled) => {
-              // 可选：处理切换后的回调
-              console.log(`Document ${document.id} enabled: ${enabled}`);
+              // refreshData();
             }}
           />
         );

@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { ServerActionResponse } from '@/types/actions';
 import { IChangeParserConfigRequestBody } from '@/types/parser-config';
 import { IDocumentMetaRequestBody } from '@/types/document';
-import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { Prisma } from '@prisma/client';
 import { uploadFileAction } from './file-upload';
 import { IDocumentProcessingStatus } from '@/types/enums';

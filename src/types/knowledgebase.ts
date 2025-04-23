@@ -8,8 +8,7 @@ export interface IKnowledgeBase {
     description?: string | null;
     avatar?: string | null;
     chunk_num: number;
-    create_date: Date;
-    create_time: bigint;
+    created_at: Date;
     created_by: string;
     doc_num: number;
     parser_config?: any | null;
@@ -19,15 +18,12 @@ export interface IKnowledgeBase {
     status: string;
     tenant_id?: string | null;
     token_num: number;
-    update_date: Date;
-    update_time: bigint;
+    updated_at: Date;
     vector_similarity_weight: number;
     embd_id?: string | null;
     nickname?: string | null;
     language?: string | null;
     operator_permission: number;
-    createdAt: Date;
-    updatedAt: Date;
     tenant?: ITenant | null;
 }
 

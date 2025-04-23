@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import * as React from 'react';
-import { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 
 
 import { ChunkMethodDialog } from '@/components/chunk-method-dialog';
@@ -29,11 +29,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useFetchDocumentList } from '@/hooks/use-document';
 import { IDocument } from '@/types/document';
 import { getExtension } from '@/utils/document-util';
-import { useKnowledgeBaseTableColumns } from './use-table-columns';
+import { useTableColumns } from './use-table-columns';
 import { useTranslate } from '@/hooks/use-language';
 import { useChangeDocumentParser } from '@/hooks/use-document-parser';
 import { cn } from '@/lib/utils';
-import { useDeleteDocument } from '@/hooks/use-document';
 
 
 interface KnowledgeBaseTableProps {
@@ -48,7 +47,7 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
   ({ kbId }, ref) => {
     const [showChangeParserModal, setShowChangeParserModal] = useState(false);
     const [currentRecord, setCurrentRecord] = useState<IDocument | null>(null);
-    const [refreshKey, setRefreshKey] = useState(0);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const {
       documents,
       pagination,
@@ -58,7 +57,6 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
       handlePageChange,
       refreshData,
     } = useFetchDocumentList(kbId);
-    const { deleteDocument } = useDeleteDocument();
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -74,20 +72,25 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
       showChangeParserModal: internalShowChangeParserModal,
     } = useChangeDocumentParser(currentRecord?.id || '');
 
-    const columns = useKnowledgeBaseTableColumns({
-      showChangeParserModal: () => setShowChangeParserModal(true),
+    const handleRefresh = useCallback(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, []);
+
+    const columns = useTableColumns({
+      showChangeParserModal: internalShowChangeParserModal,
       setCurrentRecord,
+      onRefresh: handleRefresh
     });
 
     useImperativeHandle(ref, () => ({
       refresh: () => {
-        setRefreshKey(prev => prev + 1);
+        setRefreshTrigger(prev => prev + 1);
       }
     }));
 
     useEffect(() => {
       refreshData();
-    }, [kbId, refreshKey]);
+    }, [refreshTrigger]);
 
     const table = useReactTable({
       data: documents,
