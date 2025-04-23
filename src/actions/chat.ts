@@ -7,8 +7,8 @@ import { APIResponse } from '@/types/api';
 import { chatClient } from '@/lib/openai/chat/client';
 import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
-
-
+import { searchSimilarChunks } from '@/lib/pgvector/operations';
+import { getEmbeddings } from '@/lib/openai/embedding';
 
 /**
  * 获取对话列表
@@ -313,7 +313,7 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
 /**
  * 发送消息 (流式响应)
  */
-export const sendChatMessageStreamAction = withAuth(async (session, dialogId: string, content: string, onChunk: (chunk: string) => void): Promise<APIResponse<any>> => {
+export const sendChatMessageStreamAction = withAuth(async (session, dialogId: string, content: string, onChunk: (chunk: string) => void, knowledgeBaseId?: string): Promise<APIResponse<any>> => {
     try {
         console.log('开始发送消息 (流式):', { dialogId, content });
 
@@ -343,11 +343,21 @@ export const sendChatMessageStreamAction = withAuth(async (session, dialogId: st
 
         console.log('获取对话信息成功:', { dialogId });
 
-        // 设置系统提示词
+        // 如果提供了知识库ID，查找属于该知识库的所有chunk最接近问题的chunk
+        let contextChunks = '';
+        if (knowledgeBaseId) {
+            const queryVector = await getEmbeddings([content]);
+            const chunks = await searchSimilarChunks(queryVector[0], knowledgeBaseId, 2);
+            console.log('获取知识库所有chunk成功:', { chunks });
+            // 将检索到的 chunks 组合成上下文
+            contextChunks = chunks.map(chunk => chunk.content).join('\n\n');
+        }
+
+        // 设置系统提示词，加入检索到的上下文
         chatClient.setSystemPrompt(
             dialogId,
-            dialog.knowledgeBase
-                ? `你是一个专业的AI助手。请基于以下知识库回答问题：${dialog.knowledgeBase.name}`
+            dialog.knowledgeBaseId
+                ? `你是一个专业的AI助手。请基于以下知识库内容回答问题：\n\n${contextChunks}\n\n请仅使用上述知识库内容回答问题，如果知识库内容无法回答问题，请明确告知用户。`
                 : '你是一个专业的AI助手。'
         );
 

@@ -30,7 +30,7 @@ export interface PgVectorInsertParams {
 /**
  * 搜索相似文档
  */
-export async function searchSimilarDocuments(
+export async function searchSimilarChunks(
     queryVector: number[],
     kbId: string,
     resultLimit = 5,

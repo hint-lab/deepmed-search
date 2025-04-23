@@ -6,7 +6,8 @@ import { auth } from '@/lib/auth';
 export async function POST(req: NextRequest) {
     try {
         // 获取请求体
-        const { dialogId, content, userId } = await req.json();
+        const { dialogId, content, userId, knowledgeBaseId } = await req.json();
+        console.log('API Route: 获取请求体:', { dialogId, content, userId, knowledgeBaseId });
 
         if (!dialogId || typeof dialogId !== 'string' || !content || typeof content !== 'string' || !userId) {
             return NextResponse.json({ error: '请求参数不完整' }, { status: 400 });
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
                 }
 
                 try {
+                    if (knowledgeBaseId) {
+                        console.log('API Route:使用知识库ID:', knowledgeBaseId);
+
+                    }
                     // 调用 server action 处理流式消息
                     const response = await sendChatMessageStreamAction(
                         dialogId,
@@ -37,7 +42,8 @@ export async function POST(req: NextRequest) {
                             if (chunk) {
                                 sendEvent({ chunk });
                             }
-                        }
+                        },
+                        knowledgeBaseId
                     );
 
                     if (!response.success) {

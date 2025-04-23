@@ -109,26 +109,126 @@ export class DocumentSplitter {
             [key: string]: any;
         }
     ): DocumentChunk[] {
-        try {
-            if (!content || content.trim() === '') {
-                logger.warn('尝试分割空文档内容');
-                return [];
-            }
+        const chunks: DocumentChunk[] = [];
+        let chunkIndex = 0;
+        let startIndex = 0;
 
-            // 如果按段落分割
-            if (this.options.splitByParagraph) {
-                return this.splitByParagraph(content, metadata);
-            }
-
-            // 否则按固定大小分割
-            return this.splitBySize(content, metadata);
-        } catch (error) {
-            logger.error('分割文档失败', {
-                error: error instanceof Error ? error.message : '未知错误',
-                documentId: metadata.documentId,
-            });
-            throw error;
+        // 添加保护：如果内容为空，直接返回空数组
+        if (!content || content.trim() === '') {
+            return chunks;
         }
+
+        while (startIndex < content.length) {
+            // 1. 确定理想的结束位置
+            let idealEndIndex = Math.min(startIndex + this.options.maxChunkSize, content.length);
+            let endIndex = idealEndIndex; // 默认使用理想结束位置
+
+            // 2. 如果不是最后一个块，尝试寻找更好的分割点 (稍微向后查找)
+            if (endIndex < content.length) {
+                let bestSplitPoint = -1;
+
+                // 优先段落边界 ('\n\n')，在理想点附近查找
+                const paragraphSearchStart = Math.max(startIndex, idealEndIndex - 100); // 向前回溯一点开始查找
+                const nextParagraph = content.indexOf('\n\n', paragraphSearchStart);
+                // 确保找到的段落在合理范围内（不超过理想点太多）
+                if (nextParagraph !== -1 && nextParagraph > startIndex && nextParagraph < idealEndIndex + 100) {
+                    bestSplitPoint = nextParagraph + 2; // 包含换行符
+                }
+
+                // 如果没找到段落，尝试句子边界
+                if (bestSplitPoint === -1) {
+                    const sentenceEndings = ['. ', '! ', '? ', '。', '！', '？', '；', ';', '\n']; // 添加普通换行符作为句子分隔可能
+                    const sentenceSearchStart = Math.max(startIndex, idealEndIndex - 150); // 句子回溯范围可以大一点
+                    let bestSentenceEnd = -1;
+
+                    for (const ending of sentenceEndings) {
+                        // 从 sentenceSearchStart 开始查找第一个出现的结束符
+                        const sentenceEndIndex = content.indexOf(ending, sentenceSearchStart);
+                        // 确保找到的位置有效且在合理范围内
+                        if (sentenceEndIndex !== -1 && sentenceEndIndex > startIndex && sentenceEndIndex < idealEndIndex + 150) {
+                            const potentialEndPoint = sentenceEndIndex + ending.length;
+                            // 取最接近 idealEndIndex 但不小于 startIndex + overlapSize 的点
+                            if (potentialEndPoint > startIndex + this.options.overlapSize) {
+                                if (bestSentenceEnd === -1 || Math.abs(potentialEndPoint - idealEndIndex) < Math.abs(bestSentenceEnd - idealEndIndex)) {
+                                    bestSentenceEnd = potentialEndPoint;
+                                }
+                            }
+                        }
+                    }
+                    if (bestSentenceEnd !== -1) {
+                        bestSplitPoint = bestSentenceEnd;
+                    }
+                }
+
+                // 如果以上都没找到，可以考虑单词边界，但为简化和保证前进，我们优先使用 idealEndIndex
+                // 如果需要单词边界：
+                // if (bestSplitPoint === -1) {
+                //     const wordSearchStart = Math.max(startIndex, idealEndIndex - 50);
+                //     const lastSpace = content.lastIndexOf(' ', idealEndIndex);
+                //     if (lastSpace !== -1 && lastSpace > wordSearchStart) {
+                //         bestSplitPoint = lastSpace + 1;
+                //     }
+                // }
+
+                // 如果找到了合适的分割点，则使用它，否则坚持用 idealEndIndex
+                if (bestSplitPoint !== -1 && bestSplitPoint > startIndex) { // 确保分割点确实前进了
+                    endIndex = bestSplitPoint;
+                } else {
+                    // 未找到合适边界，强制按 idealEndIndex 切割
+                    endIndex = idealEndIndex;
+                }
+            } else {
+                // 如果是最后一个块，直接使用内容末尾作为 endIndex
+                endIndex = content.length;
+            }
+
+            // 提取当前块内容
+            const chunkContent = content.substring(startIndex, endIndex).trim();
+
+            // 只有当块内容非空时才添加
+            if (chunkContent) {
+                chunks.push({
+                    id: `${metadata.documentId}-chunk-${chunkIndex}`,
+                    content: chunkContent,
+                    metadata: {
+                        ...metadata,
+                        position: chunkIndex,
+                        startPosition: startIndex,
+                        endPosition: endIndex, // 使用实际的 endIndex
+                    },
+                });
+                chunkIndex++;
+            } else if (endIndex === content.length) {
+                // 如果到了末尾且内容为空（可能由trim导致），则结束
+                break;
+            }
+
+
+            // 3. 更新 startIndex，确保前进
+            let nextStartIndex = endIndex - this.options.overlapSize;
+
+            // 如果计算出的 nextStartIndex 没有前进，或者回退过多，则强制前进
+            // 强制 startIndex 至少是上一个 endIndex 减去 overlap 再加 1，或者直接就是 endIndex
+            // 这里选择更保守的：如果计算出的 nextStartIndex 不比当前 startIndex 大，就直接从 endIndex 开始下一个块（无重叠）
+            if (nextStartIndex <= startIndex && endIndex < content.length) {
+                // logger.warn(`无法有效重叠，下一个块将从 endIndex (${endIndex}) 开始`, { startIndex, endIndex, overlapSize: this.options.overlapSize });
+                startIndex = endIndex; // 直接从当前结束点开始，避免卡住或回退
+            } else if (endIndex === content.length) {
+                // 如果已经处理到末尾，设置 startIndex 超出长度以结束循环
+                startIndex = content.length;
+            }
+            else {
+                startIndex = nextStartIndex;
+            }
+
+            // 添加一个保险的循环退出条件（可选，防止极端情况）
+            if (chunkIndex > 10000) { // 限制最大块数
+                logger.error("分割块数过多，可能存在逻辑问题，强制退出", { documentId: metadata.documentId });
+                break;
+            }
+        }
+
+        return chunks;
     }
 
     /**
@@ -192,107 +292,6 @@ export class DocumentSplitter {
                     endPosition: chunkStartPosition + currentChunk.length,
                 },
             });
-        }
-
-        return chunks;
-    }
-
-    /**
-     * 按固定大小分割文档
-     * @param content 文档内容
-     * @param metadata 文档元数据
-     * @returns 文档块数组
-     */
-    private splitBySize(
-        content: string,
-        metadata: {
-            documentId: string;
-            documentName: string;
-            [key: string]: any;
-        }
-    ): DocumentChunk[] {
-        const chunks: DocumentChunk[] = [];
-        let startIndex = 0;
-        let chunkIndex = 0;
-
-        while (startIndex < content.length) {
-            // 计算当前块的结束位置
-            let endIndex = startIndex + this.options.maxChunkSize;
-
-            // 如果结束位置超过内容长度，设置为内容长度
-            if (endIndex > content.length) {
-                endIndex = content.length;
-            } else {
-                // 尝试在段落边界分割
-                const nextParagraph = content.indexOf('\n\n', startIndex + this.options.maxChunkSize - 100);
-                if (nextParagraph > startIndex && nextParagraph < endIndex + 100) {
-                    endIndex = nextParagraph;
-                } else {
-                    // 尝试在句子边界分割
-                    const sentenceEndings = ['. ', '! ', '? ', '。', '！', '？', '；', ';'];
-                    let bestSentenceEnd = -1;
-
-                    for (const ending of sentenceEndings) {
-                        const nextSentence = content.indexOf(ending, startIndex + this.options.maxChunkSize - 50);
-                        if (nextSentence > startIndex && nextSentence < endIndex + 50) {
-                            if (bestSentenceEnd === -1 || nextSentence < bestSentenceEnd) {
-                                bestSentenceEnd = nextSentence + ending.length;
-                            }
-                        }
-                    }
-
-                    if (bestSentenceEnd !== -1) {
-                        endIndex = bestSentenceEnd;
-                    } else {
-                        // 如果找不到句子边界，尝试在单词边界分割
-                        const lastSpace = content.lastIndexOf(' ', endIndex);
-                        if (lastSpace > startIndex + this.options.maxChunkSize * 0.8) {
-                            endIndex = lastSpace;
-                        } else {
-                            // 如果找不到合适的单词边界，尝试在标点符号处分割
-                            const punctuationMarks = [',', '，', '、', '：', ':', '；', ';'];
-                            let bestPunctuation = -1;
-
-                            for (const mark of punctuationMarks) {
-                                const nextMark = content.lastIndexOf(mark, endIndex);
-                                if (nextMark > startIndex + this.options.maxChunkSize * 0.8) {
-                                    if (bestPunctuation === -1 || nextMark > bestPunctuation) {
-                                        bestPunctuation = nextMark + 1;
-                                    }
-                                }
-                            }
-
-                            if (bestPunctuation !== -1) {
-                                endIndex = bestPunctuation;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 提取当前块内容
-            const chunkContent = content.substring(startIndex, endIndex).trim();
-
-            // 创建块
-            chunks.push({
-                id: `${metadata.documentId}-chunk-${chunkIndex}`,
-                content: chunkContent,
-                metadata: {
-                    ...metadata,
-                    position: chunkIndex,
-                    startPosition: startIndex,
-                    endPosition: endIndex,
-                },
-            });
-
-            // 更新下一个块的起始位置，考虑重叠
-            startIndex = endIndex - this.options.overlapSize;
-            chunkIndex++;
-
-            // 如果已经到达内容末尾，退出循环
-            if (startIndex >= content.length) {
-                break;
-            }
         }
 
         return chunks;

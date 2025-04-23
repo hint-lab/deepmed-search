@@ -128,6 +128,10 @@ model KnowledgeBase {
   created_at            DateTime      @default(now())  // 创建时间
   updated_at            DateTime      @default(now()) @updatedAt  // 更新时间
   created_by            String        // 创建者ID
+  chunk_size            Int           @default(1000)  // 分块大小
+  overlap_size          Int           @default(100)  // 重叠大小
+  split_by_paragraph    Boolean       @default(false)  // 按段落分割
+  separator             String[]      @default([]) // 分隔符
   documents             Document[]    // 文档列表
   tags                  Tag[]         // 标签列表
   chunks                Chunk[]       // 分块列表

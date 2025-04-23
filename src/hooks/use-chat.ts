@@ -138,7 +138,7 @@ export function useSendMessageWithSSE() {
     // 用于累积接收到的全部内容
     const accumulatedTextRef = useRef<string>('');
 
-    const sendMessageWithSSE = async (dialogId: string, content: string, userId: string) => {
+    const sendMessageWithSSE = async (dialogId: string, content: string, userId: string, knowledgeBaseId?: string) => {
         setIsLoading(true);
         setPartialResponse('');
         setError(null);
@@ -162,7 +162,7 @@ export function useSendMessageWithSSE() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ dialogId, content, userId }),
+                body: JSON.stringify({ dialogId, content, userId, knowledgeBaseId: knowledgeBaseId || null }),
                 signal, // 传递 abort 信号
             });
 

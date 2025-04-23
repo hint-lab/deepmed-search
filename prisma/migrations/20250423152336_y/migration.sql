@@ -1,5 +1,8 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "vector";
+
 -- CreateEnum
-CREATE TYPE "DocumentProcessingStatus" AS ENUM ('UNPROCESSED', 'PROCESSING', 'PROCESSED', 'FAILED');
+CREATE TYPE "DocumentProcessingStatus" AS ENUM ('UNPROCESSED', 'CONVERTING', 'INDEXING', 'SUCCESSED', 'FAILED');
 
 -- CreateEnum
 CREATE TYPE "FileUploadStatus" AS ENUM ('PENDING', 'UPLOADING', 'UPLOADED', 'FAILED');
@@ -91,9 +94,6 @@ CREATE TABLE "KnowledgeBase" (
     "description" TEXT,
     "avatar" TEXT,
     "chunk_num" INTEGER NOT NULL DEFAULT 0,
-    "create_date" TIMESTAMP(3) NOT NULL,
-    "create_time" BIGINT NOT NULL,
-    "created_by" TEXT NOT NULL,
     "doc_num" INTEGER NOT NULL DEFAULT 0,
     "parser_config" JSONB,
     "parser_id" TEXT,
@@ -102,14 +102,18 @@ CREATE TABLE "KnowledgeBase" (
     "status" TEXT NOT NULL DEFAULT 'active',
     "tenant_id" TEXT,
     "token_num" INTEGER NOT NULL DEFAULT 0,
-    "update_date" TIMESTAMP(3) NOT NULL,
-    "update_time" BIGINT NOT NULL,
     "vector_similarity_weight" DOUBLE PRECISION NOT NULL DEFAULT 0.5,
     "embd_id" TEXT,
     "language" TEXT,
     "operator_permission" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "visible" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_by" TEXT NOT NULL,
+    "chunk_size" INTEGER NOT NULL DEFAULT 1000,
+    "overlap_size" INTEGER NOT NULL DEFAULT 100,
+    "split_by_paragraph" BOOLEAN NOT NULL DEFAULT false,
+    "separator" TEXT[] DEFAULT ARRAY[]::TEXT[],
 
     CONSTRAINT "KnowledgeBase_pkey" PRIMARY KEY ("id")
 );
@@ -118,7 +122,8 @@ CREATE TABLE "KnowledgeBase" (
 CREATE TABLE "Document" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "content" TEXT,
+    "content_url" TEXT,
+    "file_url" TEXT,
     "size" INTEGER NOT NULL,
     "type" TEXT NOT NULL,
     "source_type" TEXT NOT NULL,
@@ -142,8 +147,7 @@ CREATE TABLE "Document" (
     "summary" TEXT,
     "metadata" JSONB,
     "processing_error" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
     "uploadFileId" TEXT,
 
     CONSTRAINT "Document_pkey" PRIMARY KEY ("id")
@@ -199,6 +203,7 @@ CREATE TABLE "Chunk" (
     "positions" JSONB NOT NULL,
     "tag_feas" JSONB,
     "kb_id" TEXT NOT NULL,
+    "embedding" vector(1536),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

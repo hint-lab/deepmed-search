@@ -19,12 +19,17 @@ export interface IKnowledgeBase {
     tenant_id?: string | null;
     token_num: number;
     updated_at: Date;
+    visible: boolean;
     vector_similarity_weight: number;
     embd_id?: string | null;
     nickname?: string | null;
     language?: string | null;
     operator_permission: number;
     tenant?: ITenant | null;
+    chunk_size: number;
+    overlap_size: number;
+    split_by_paragraph: boolean;
+    separator: string[];
 }
 
 // 知识库创建参数

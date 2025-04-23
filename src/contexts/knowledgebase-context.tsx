@@ -20,7 +20,7 @@ interface KnowledgeBaseContextType {
     isLoading: boolean;
     fetchKnowledgeBases: () => Promise<void>;
     createKnowledgeBase: (params: CreateIKnowledgeBaseParams) => Promise<IKnowledgeBase | null>; // 创建返回 ListItem
-    updateKnowledgeBase: (id: string, name: string, description: string, language: string) => Promise<boolean>;
+    updateKnowledgeBase: (id: string, name?: string, description?: string, language?: string, chunk_size?: number, overlap_size?: number, split_by_paragraph?: boolean, separator?: string[]) => Promise<boolean>;
     deleteKnowledgeBase: (id: string) => Promise<boolean>;
     isCreating: boolean;
     isUpdating: boolean;
@@ -128,9 +128,14 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
                     similarity_threshold: result.data.similarity_threshold ?? 0,
                     status: result.data.status ?? '',
                     tenant_id: result.data.tenant_id ?? null,
-                    token_num: 0,
+                    token_num: result.data.token_num ?? 0,
                     vector_similarity_weight: result.data.vector_similarity_weight ?? 0,
-                    operator_permission: result.data.operator_permission ?? 0
+                    operator_permission: result.data.operator_permission ?? 0,
+                    chunk_size: result.data.chunk_size ?? 1000,
+                    overlap_size: result.data.overlap_size ?? 100,
+                    split_by_paragraph: result.data.split_by_paragraph ?? false,
+                    separator: result.data.separator ?? [],
+                    visible: result.data.visible ?? true
                 };
                 setKnowledgeBases(prev => [newItem, ...prev]);
                 return newItem;
@@ -145,20 +150,29 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
         }
     }, [t, userInfo?.id]);
 
-    const updateKnowledgeBase = useCallback(async (id: string, name: string, description: string, language: string) => {
+    const updateKnowledgeBase = useCallback(async (id: string, name?: string, description?: string, language?: string, chunk_size?: number, overlap_size?: number, split_by_paragraph?: boolean, separator?: string[]) => {
         setIsUpdating(true);
         try {
             // 假设 updateKnowledgeBaseAction 返回 { success: boolean, data?: { name: string, ... } }
             // 注意：根据实际 action 定义调整参数
-            const result = await updateKnowledgeBaseAction(id, name, description, language);
+            const result = await updateKnowledgeBaseAction(id, name, description, language, chunk_size, overlap_size, split_by_paragraph, separator);
             if (result.success) { // 检查 result.data 是否存在且包含 name
                 toast.success(t('updateSuccess', '知识库更新成功'));
-                const updatedName = result.data?.name ?? name; // 使用返回的名称或传入的名称
-                setKnowledgeBases(prev => prev.map(kb =>
-                    kb.id === id ? { ...kb, name: updatedName } : kb
-                ));
+                setKnowledgeBases(prev => prev.map(kb => {
+                    if (kb.id === id) {
+                        const updatedName = result.data?.name ?? name ?? kb.name;
+                        const updatedDescription = result.data?.description ?? description ?? kb.description;
+                        return { ...kb, name: updatedName, description: updatedDescription };
+                    }
+                    return kb;
+                }));
                 if (id === currentKnowledgeBaseId) {
-                    setCurrentKnowledgeBase(prev => prev ? { ...prev, name: updatedName } : null);
+                    setCurrentKnowledgeBase(prev => {
+                        if (!prev) return null;
+                        const updatedName = result.data?.name ?? name ?? prev.name;
+                        const updatedDescription = result.data?.description ?? description ?? prev.description;
+                        return { ...prev, name: updatedName, description: updatedDescription };
+                    });
                 }
                 return true;
             }

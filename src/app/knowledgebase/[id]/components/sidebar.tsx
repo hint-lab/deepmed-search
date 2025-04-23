@@ -19,7 +19,7 @@ export default function Sidebar({ className, onSelect, currentView = 'table' }: 
     };
 
     return (
-        <div className={cn('fixed top-16 bottom-0 w-64 py-4 bg-card', className)}>
+        <div className={cn('fixed top-14 bottom-0 w-64 py-4 bg-card', className)}>
             <div className="space-y-1 px-1">
                 <Button
                     variant="ghost"

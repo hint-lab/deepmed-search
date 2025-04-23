@@ -34,7 +34,6 @@ interface BasicSettingFormProps {
 export default function BasicSettingForm({ kbId }: BasicSettingFormProps) {
   const { t } = useTranslate('knowledgeBase');
   const { currentKnowledgeBase, isLoading, updateKnowledgeBase } = useKnowledgeBase();
-  const [kbInfo, setKbInfo] = useState<IKnowledgeBase | null>(null);
   const formSchema = z.object({
     name: z.string().min(1, {
       message: t('validation.nameRequired'),
@@ -58,22 +57,23 @@ export default function BasicSettingForm({ kbId }: BasicSettingFormProps) {
 
   // 当知识库信息加载完成后，更新表单的默认值
   useEffect(() => {
-    if (kbInfo) {
+    if (currentKnowledgeBase) {
       form.reset({
-        name: kbInfo.name,
-        description: kbInfo.description || '',
+        name: currentKnowledgeBase.name,
+        description: currentKnowledgeBase.description || '',
         language: 'zh', // 默认中文
         tags: [], // 暂时为空数组
       });
     }
-  }, [kbInfo, form]);
+  }, [currentKnowledgeBase, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     updateKnowledgeBase(
       kbId,
       values.name,
       values.description,
-      values.language);
+      values.language,
+    );
     toast.success(t('form.saveSettingsSuccess'));
   }
 

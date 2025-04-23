@@ -262,6 +262,9 @@ export async function splitDocumentAction(
         maintainFormat: boolean;
         prompt?: string;
         documentName: string;
+        maxChunkSize?: number;
+        overlapSize?: number;
+        splitByParagraph?: boolean;
     }
 ): Promise<ServerActionResponse<{ chunks: DocumentChunk[]; totalChunks: number }>> {
     try {
@@ -272,9 +275,9 @@ export async function splitDocumentAction(
 
         // 创建文档分割器
         const splitter = new DocumentSplitter({
-            maxChunkSize: 1000,
-            overlapSize: 100,
-            splitByParagraph: true,
+            maxChunkSize: options.maxChunkSize || 1000,
+            overlapSize: options.overlapSize || 100,
+            splitByParagraph: options.splitByParagraph || false,
             preserveFormat: options.maintainFormat
         });
 

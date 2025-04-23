@@ -1,5 +1,3 @@
-import { User } from './user';
-import { KnowledgeBase } from './knowledgebase';
 import { IMessage } from './message';
 import { RelatedQuestion } from './system';
 
@@ -13,8 +11,6 @@ export interface IDialog {
     create_date: Date;
     update_date: Date;
     messages: IMessage[];
-    user: User;
-    knowledgeBase?: KnowledgeBase | null;
     relatedQuestions: RelatedQuestion[];
 }
 

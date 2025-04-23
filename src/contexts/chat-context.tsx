@@ -17,7 +17,7 @@ interface ChatContextType {
     isSendingMessage: boolean;
     partialResponse: string | undefined; // Expose partial response if needed by ChatMessages directly
     streamingMessageId: string | null;
-    sendMessage: (dialogId: string, content: string) => Promise<boolean>; // Simplified signature
+    sendMessage: (dialogId: string, content: string, knowledgeBaseId?: string) => Promise<boolean>; // Simplified signature
     cancelStream: () => void;
     registerMessagesSetter: (dialogId: string, setter: MessagesSetter | null) => void; // New: Register setter
 }
@@ -52,7 +52,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Updated sendMessage to use the registered setter for optimistic updates
     const sendMessage = useCallback(async (
         dialogId: string,
-        content: string
+        content: string,
+        knowledgeBaseId?: string
     ): Promise<boolean> => {
         if (!content.trim() || isSendingMessage) return false;
 
@@ -81,7 +82,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
         try {
             console.log("[Context] 开始 SSE 流式请求:", { dialogId, content, userId: userInfo.id });
-            const result = await sendMessageWithSSE(dialogId, content, userInfo.id);
+            const result = await sendMessageWithSSE(dialogId, content, userInfo.id, knowledgeBaseId);
             console.log("[Context] SSE 请求完成:", result);
 
             if (!result.success) {
@@ -161,4 +162,4 @@ export function useChat() {
         throw new Error('useChat must be used within a ChatProvider');
     }
     return context;
-} 
+}

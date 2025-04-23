@@ -13,7 +13,7 @@ export function KnowledgeBaseSettings({ kbId }: KnowledgeBaseSettingsProps) {
     const { t } = useTranslate('knowledgeBase');
 
     return (
-        <ScrollArea className="h-[calc(100vh-4rem)]">
+        <ScrollArea className="h-full">
             <div className="space-y-8">
                 <Card>
                     <CardHeader>
