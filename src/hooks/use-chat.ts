@@ -3,11 +3,9 @@
 import { toast } from 'sonner';
 import { useTranslate } from '@/hooks/use-language';
 import { useState, useEffect, useRef } from 'react';
-import { IMessage } from '@/types/message';
 import {
     fetchChatMessagesAction,
     sendChatMessageAction,
-    sendChatMessageStreamAction,
     deleteChatMessageAction,
     getRelatedQuestionsAction
 } from '@/actions/chat';

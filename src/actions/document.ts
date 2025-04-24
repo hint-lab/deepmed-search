@@ -206,6 +206,8 @@ export async function deleteDocumentAction(documentId: string): Promise<ServerAc
             where: { id: documentId }
         });
 
+
+
         if (!document) {
             return { success: false, error: '文档不存在' };
         }
@@ -218,6 +220,18 @@ export async function deleteDocumentAction(documentId: string): Promise<ServerAc
             where: { doc_id: documentId }
         });
 
+        // 更新知识库的文档数量
+        if (document) {
+            await prisma.knowledgeBase.update({
+                where: { id: document?.knowledgeBaseId },
+                data: {
+                    doc_num: {
+                        decrement: 1
+                    }
+                }
+            });
+        }
+
         // 删除文档记录
         await prisma.document.delete({
             where: { id: documentId }
@@ -229,6 +243,8 @@ export async function deleteDocumentAction(documentId: string): Promise<ServerAc
                 where: { id: uploadFileId }
             });
         }
+
+
 
         return { success: true };
     } catch (error) {

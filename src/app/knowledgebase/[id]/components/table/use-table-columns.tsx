@@ -243,6 +243,7 @@ export function useTableColumns({
               onShowChangeParserModal={onShowChangeParserModal}
               setCurrentRecord={setCurrentRecord}
               showChangeParserModal={showChangeParserModal}
+              onRefresh={refreshData}
             />
           </div >
         );

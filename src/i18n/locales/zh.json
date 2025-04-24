@@ -171,6 +171,8 @@
             "customRules": "自定义规则",
             "customRulesPlaceholder": "输入自定义分块规则",
             "customRulesDescription": "输入自定义的文本分块规则（可选）",
+            "applyBasicSettings": "应用基础设置",
+            "applyAdvancedSettings": "应用高级设置",
             "applySettings": "应用设置"
         },
         "searchFiles": "搜索文件",
@@ -288,7 +290,7 @@
         "signUp": "注册"
     },
     "search": {
-        "title": "深度搜索",
+        "title": "知识搜索",
         "searchPlaceholder": "搜索...",
         "searchDescription": "搜索文档、知识库等",
         "searchResults": "搜索结果",

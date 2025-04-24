@@ -16,6 +16,7 @@ interface DialogContextType {
     dialogs: IDialog[];
     isLoading: boolean;
     currentDialogId?: string;
+    currentDialog?: IDialog;
     refreshDialogs: () => Promise<void>;
     removeDialog: (dialogId: string) => void;
     setCurrentDialogId: (dialogId?: string) => void;
@@ -33,6 +34,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     const [dialogs, setDialogs] = useState<IDialog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentDialogId, setCurrentDialogId] = useState<string | undefined>();
+    const [currentDialog, setCurrentDialog] = useState<IDialog | undefined>();
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -84,6 +86,8 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                 toast.success(t('createSuccess', '对话创建成功'));
                 const newDialog = result.data as IDialog;
                 setDialogs(prev => [newDialog, ...prev]);
+                setCurrentDialogId(newDialog.id);
+                setCurrentDialog(newDialog);
                 return newDialog;
             }
             throw new Error(result.error || t('createError', '创建对话失败'));
@@ -148,11 +152,26 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         fetchDialogs();
     }, [fetchDialogs]);
 
+    // 当 currentDialogId 或 dialogs 变化时，更新 currentDialog
+    useEffect(() => {
+        if (currentDialogId) {
+            const foundDialog = dialogs.find(d => d.id === currentDialogId);
+            if (foundDialog !== currentDialog) {
+                setCurrentDialog(foundDialog);
+            }
+        } else {
+            if (currentDialog !== undefined) {
+                setCurrentDialog(undefined);
+            }
+        }
+    }, [currentDialogId, dialogs, currentDialog]);
+
     return (
         <DialogContext.Provider value={{
             dialogs,
             isLoading,
             currentDialogId,
+            currentDialog,
             refreshDialogs,
             removeDialog,
             setCurrentDialogId,

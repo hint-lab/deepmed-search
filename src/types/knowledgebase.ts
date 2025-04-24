@@ -28,8 +28,8 @@ export interface IKnowledgeBase {
     tenant?: ITenant | null;
     chunk_size: number;
     overlap_size: number;
-    split_by_paragraph: boolean;
-    separator: string[];
+    split_by: string;
+    separators: string[];
 }
 
 // 知识库创建参数
@@ -51,17 +51,23 @@ export interface CreateIKnowledgeBaseParams {
     operator_permission?: number;
 }
 
-// 知识库更新参数
-export interface UpdateIKnowledgeBaseParams {
+// 知识库更新基本参数
+export interface UpdateIKnowledgeBaseBasicParams {
     name?: string;
     description?: string;
     avatar?: string;
-    parser_config?: any;
-    parser_id?: string;
-    permission?: string;
+    language?: string;
+}
+
+
+// 知识库更新高级参数
+export interface UpdateIKnowledgeAdvanceParams {
+    chunk_size?: number;
+    chunk_overlap?: number;
+    separators?: string[];
+    custom_rules?: string;
+    split_by?: string;
     similarity_threshold?: number;
-    status?: string;
-    tenant_id?: string;
     vector_similarity_weight?: number;
     embd_id?: string;
     nickname?: string;

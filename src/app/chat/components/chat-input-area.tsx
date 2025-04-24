@@ -12,7 +12,7 @@ interface ChatInputAreaProps {
 }
 
 export function ChatInputArea({ dialogId }: ChatInputAreaProps) {
-    const { createDialog } = useDialog();
+    const { currentDialog, createDialog } = useDialog();
     const { userInfo } = useUser();
     const {
         inputValue,
@@ -23,7 +23,6 @@ export function ChatInputArea({ dialogId }: ChatInputAreaProps) {
         cancelStream
     } = useChat();
     const { t } = useTranslate('chat');
-
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
     };
@@ -36,11 +35,11 @@ export function ChatInputArea({ dialogId }: ChatInputAreaProps) {
         if (!dialogId) {
             const newDialog = await createDialog({ name: messageToSend, userId: userInfo?.id || '' });
             if (newDialog) {
-                await sendMessage(newDialog.id, messageToSend);
+                await sendMessage(newDialog.id, messageToSend, newDialog.knowledgeBaseId || undefined);
             }
         }
         else {
-            await sendMessage(dialogId, messageToSend);
+            await sendMessage(dialogId, messageToSend, currentDialog?.knowledgeBaseId || undefined);
         }
     };
 

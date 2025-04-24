@@ -1,6 +1,6 @@
 "use client"
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { IKnowledgeBase, CreateIKnowledgeBaseParams, UpdateIKnowledgeBaseParams } from '@/types/knowledgebase';
+import { IKnowledgeBase, CreateIKnowledgeBaseParams, UpdateIKnowledgeBaseBasicParams, UpdateIKnowledgeAdvanceParams } from '@/types/knowledgebase';
 import { useUser } from './user-context'; // 假设需要用户信息
 import { toast } from 'sonner';
 import { useTranslate } from '@/hooks/use-language'; // 假设需要翻译
@@ -20,7 +20,7 @@ interface KnowledgeBaseContextType {
     isLoading: boolean;
     fetchKnowledgeBases: () => Promise<void>;
     createKnowledgeBase: (params: CreateIKnowledgeBaseParams) => Promise<IKnowledgeBase | null>; // 创建返回 ListItem
-    updateKnowledgeBase: (id: string, name?: string, description?: string, language?: string, chunk_size?: number, overlap_size?: number, split_by_paragraph?: boolean, separator?: string[]) => Promise<boolean>;
+    updateKnowledgeBase: (id: string, basicParams?: UpdateIKnowledgeBaseBasicParams, advanceParams?: UpdateIKnowledgeAdvanceParams) => Promise<IKnowledgeBase | null>;
     deleteKnowledgeBase: (id: string) => Promise<boolean>;
     isCreating: boolean;
     isUpdating: boolean;
@@ -113,30 +113,7 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
             const result = await createKnowledgeBaseAction(params);
             if (result.success && result.data) {
                 toast.success(t('createSuccess', '知识库创建成功'));
-                const newItem: IKnowledgeBase = {
-                    id: result.data.id,
-                    name: result.data.name,
-                    description: result.data.description,
-                    doc_num: 0,
-                    updated_at: new Date(),
-                    created_at: new Date(),
-                    created_by: userInfo?.id || '',
-                    chunk_num: 0,
-                    parser_config: result.data.parser_config ?? null,
-                    parser_id: result.data.parser_id ?? null,
-                    permission: result.data.permission ?? null,
-                    similarity_threshold: result.data.similarity_threshold ?? 0,
-                    status: result.data.status ?? '',
-                    tenant_id: result.data.tenant_id ?? null,
-                    token_num: result.data.token_num ?? 0,
-                    vector_similarity_weight: result.data.vector_similarity_weight ?? 0,
-                    operator_permission: result.data.operator_permission ?? 0,
-                    chunk_size: result.data.chunk_size ?? 1000,
-                    overlap_size: result.data.overlap_size ?? 100,
-                    split_by_paragraph: result.data.split_by_paragraph ?? false,
-                    separator: result.data.separator ?? [],
-                    visible: result.data.visible ?? true
-                };
+                const newItem: IKnowledgeBase = result.data as IKnowledgeBase;
                 setKnowledgeBases(prev => [newItem, ...prev]);
                 return newItem;
             }
@@ -150,37 +127,37 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
         }
     }, [t, userInfo?.id]);
 
-    const updateKnowledgeBase = useCallback(async (id: string, name?: string, description?: string, language?: string, chunk_size?: number, overlap_size?: number, split_by_paragraph?: boolean, separator?: string[]) => {
+    const updateKnowledgeBase = useCallback(async (id: string, basicParams?: UpdateIKnowledgeBaseBasicParams, advanceParams?: UpdateIKnowledgeAdvanceParams) => {
         setIsUpdating(true);
         try {
             // 假设 updateKnowledgeBaseAction 返回 { success: boolean, data?: { name: string, ... } }
             // 注意：根据实际 action 定义调整参数
-            const result = await updateKnowledgeBaseAction(id, name, description, language, chunk_size, overlap_size, split_by_paragraph, separator);
+            const result = await updateKnowledgeBaseAction(id, basicParams, advanceParams);
             if (result.success) { // 检查 result.data 是否存在且包含 name
                 toast.success(t('updateSuccess', '知识库更新成功'));
+                const new_kb = result.data as IKnowledgeBase;
                 setKnowledgeBases(prev => prev.map(kb => {
-                    if (kb.id === id) {
-                        const updatedName = result.data?.name ?? name ?? kb.name;
-                        const updatedDescription = result.data?.description ?? description ?? kb.description;
-                        return { ...kb, name: updatedName, description: updatedDescription };
+                    if (kb.id === id && new_kb) {
+                        return new_kb;
                     }
                     return kb;
                 }));
                 if (id === currentKnowledgeBaseId) {
                     setCurrentKnowledgeBase(prev => {
                         if (!prev) return null;
-                        const updatedName = result.data?.name ?? name ?? prev.name;
-                        const updatedDescription = result.data?.description ?? description ?? prev.description;
-                        return { ...prev, name: updatedName, description: updatedDescription };
+                        if (new_kb) {
+                            return { ...prev, ...new_kb };
+                        }
+                        return prev;
                     });
                 }
-                return true;
+                return new_kb;
             }
             throw new Error(result.error || t('updateError', '更新知识库失败'));
         } catch (error) {
             console.error('Error updating knowledge base:', error);
             toast.error(error instanceof Error ? error.message : t('updateError', '更新知识库失败'));
-            return false;
+            return null;
         } finally {
             setIsUpdating(false);
         }

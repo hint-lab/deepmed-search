@@ -113,7 +113,7 @@ export function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
                     <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span className="text-xs font-semibold">
-                            {formatDate(item.updatedAt)}
+                            {formatDate(item.updated_at)}
                         </span>
                     </div>
                 </div>

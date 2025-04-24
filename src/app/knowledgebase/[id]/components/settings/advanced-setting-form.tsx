@@ -19,75 +19,38 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Textarea } from '@/components/ui/textarea';
-import ChunkMethodCard from './chunk-method-card';
+// import ChunkMethodCard from './chunk-method-card';
 import { Badge } from '@/components/ui/badge';
+
+
+
+const formSchema = z.object({
+  parser_id: z.string().min(1, {
+    message: 'parser is required',
+  }),
+  chunk_size: z.number().min(100).max(2000),
+  overlap_size: z.number().min(0).max(1000),
+  separators: z.array(z.string()).min(1, {
+    message: '至少需要一个分隔符',
+  })
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function AdvancedSettingForm() {
   const { t } = useTranslate('knowledgeBase');
   const { currentKnowledgeBase, updateKnowledgeBase } = useKnowledgeBase();
 
-  const formSchema = z.object({
-    parser_id: z.string().min(1, {
-      message: t('validation.parserRequired'),
-    }),
-    chunk_size: z.number().min(100).max(2000),
-    chunk_overlap: z.number().min(0).max(1000),
-    separators: z.array(z.string()).min(1, {
-      message: t('validation.separatorRequired', '至少需要一个分隔符'),
-    }),
-    custom_rules: z.string(),
-  });
-
-  type FormValues = z.infer<typeof formSchema>;
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      parser_id: '',
-      chunk_size: 500,
-      chunk_overlap: 100,
-      separators: [],
-      custom_rules: '',
+      parser_id: currentKnowledgeBase?.parser_id || '',
+      chunk_size: currentKnowledgeBase?.chunk_size || 500,
+      overlap_size: currentKnowledgeBase?.overlap_size || 100,
+      separators: currentKnowledgeBase?.separators || []
     },
   });
-
-  useEffect(() => {
-    const defaultSeparators = ['. ', '! ', '? ', '。', '！', '？', '；', ';', '\n'];
-
-    if (currentKnowledgeBase?.parser_config) {
-      const config = currentKnowledgeBase.parser_config as any;
-      let loadedSeparators: string[] = [];
-      if (typeof config?.separator === 'string' && config.separator.trim() !== '') {
-        loadedSeparators = [config.separator];
-      } else if (Array.isArray(config?.separators)) {
-        loadedSeparators = config.separators;
-      }
-
-      const initialSeparators = Array.from(new Set([...defaultSeparators, ...loadedSeparators]));
-
-      form.reset({
-        parser_id: config?.parser_id || '',
-        chunk_size: config?.chunk_size ?? 500,
-        chunk_overlap: config?.chunk_overlap ?? 100,
-        separators: initialSeparators.length > 0 ? initialSeparators : defaultSeparators,
-        custom_rules: config?.custom_rules || '',
-      });
-    } else {
-      form.reset({
-        ...form.getValues(),
-        separators: defaultSeparators,
-      });
-    }
-  }, [currentKnowledgeBase, form.reset]);
 
   function onSubmit(values: FormValues) {
     console.log("Submitting separators:", values.separators);
@@ -95,15 +58,15 @@ export default function AdvancedSettingForm() {
       toast.error("知识库ID不存在");
       return;
     }
+    // 仅更新高级设置相关参数
     updateKnowledgeBase(
-      currentKnowledgeBase?.id,
-      currentKnowledgeBase?.name,
-      currentKnowledgeBase?.description || '',
-      currentKnowledgeBase?.language || '',
-      values.chunk_size,
-      values.chunk_overlap,
-      false,
-      values.separators,
+      currentKnowledgeBase.id,
+      undefined,
+      {
+        chunk_size: values.chunk_size,
+        chunk_overlap: values.overlap_size,
+        separators: values.separators,
+      }
     );
   }
 
@@ -111,7 +74,6 @@ export default function AdvancedSettingForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* <ChunkMethodCard /> */}
-
         <FormField
           control={form.control}
           name="chunk_size"
@@ -137,7 +99,7 @@ export default function AdvancedSettingForm() {
 
         <FormField
           control={form.control}
-          name="chunk_overlap"
+          name="overlap_size"
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('form.chunkOverlap')} - 当前值: {field.value}</FormLabel>
@@ -242,29 +204,8 @@ export default function AdvancedSettingForm() {
           }}
         />
 
-        <FormField
-          control={form.control}
-          name="custom_rules"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('form.customRules')}</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder={t('form.customRulesPlaceholder')}
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                {t('form.customRulesDescription')}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <div className="flex justify-end">
-          <Button type="submit">{t('form.applySettings')}</Button>
+          <Button type="submit" onClick={() => onSubmit(form.getValues())}>{t('form.applySettings')}</Button>
         </div>
       </form>
     </Form>

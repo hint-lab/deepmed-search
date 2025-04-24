@@ -19,6 +19,7 @@ interface DocumentOptionsProps {
     onShowChangeParserModal: (document: IDocument) => void;
     setCurrentRecord: (record: IDocument) => void;
     showChangeParserModal: () => void;
+    onRefresh: () => void;
 }
 
 export function DocumentOptionDropdownButton({
@@ -26,6 +27,7 @@ export function DocumentOptionDropdownButton({
     onShowChangeParserModal,
     setCurrentRecord,
     showChangeParserModal,
+    onRefresh,
 }: DocumentOptionsProps) {
     const { t } = useTranslate('knowledgeBase.options');
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);

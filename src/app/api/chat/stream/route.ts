@@ -1,6 +1,6 @@
 // File: app/api/chat/stream/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { sendChatMessageStreamAction } from '@/actions/chat';
+import { getChatMessageStreamAction } from '@/actions/chat';
 import { auth } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
                     }
                     // 调用 server action 处理流式消息
-                    const response = await sendChatMessageStreamAction(
+                    const response = await getChatMessageStreamAction(
                         dialogId,
                         content,
                         (chunk: string) => {

@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { ServerActionResponse } from '@/types/actions';
 import { Prisma } from '@prisma/client'; // 导入 Prisma 类型
-import { IKnowledgeBase } from '@/types/knowledgebase';
+import { IKnowledgeBase, UpdateIKnowledgeBaseBasicParams, UpdateIKnowledgeAdvanceParams } from '@/types/knowledgebase';
 import { APIResponse } from '@/types/api';
 
 /**
@@ -95,6 +95,7 @@ function serializeBigIntAction(obj: any): any {
 
 export const createKnowledgeBaseAction = withAuth(async (session, params: { name: string, description?: string }) => {
     try {
+        const defaultSeparators = ['. ', '! ', '? ', '。', '！', '？', '；', ';', '\n'];
         const knowledgeBase = await prisma.knowledgeBase.create({
             data: {
                 name: params.name,
@@ -102,6 +103,8 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
                 created_at: new Date(),
                 updated_at: new Date(),
                 created_by: session.user.id,
+                separators: defaultSeparators,
+                split_by: "page"
             },
         });
 
@@ -113,43 +116,44 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
     }
 });
 
+
+
 export const updateKnowledgeBaseAction = withAuth(async (
     session,
     id: string,
-    name?: string,
-    description?: string,
-    language?: string,
-    chunk_size?: number,
-    overlap_size?: number,
-    split_by_paragraph?: boolean,
-    separator?: string[]
-): Promise<APIResponse<IKnowledgeBase | null>> => {
+    basicParams?: UpdateIKnowledgeBaseBasicParams,
+    advanceParams?: UpdateIKnowledgeAdvanceParams
+): Promise<APIResponse<IKnowledgeBase>> => {
     // 1. 创建一个空的 data 对象，并明确其类型
     const updateData: Prisma.KnowledgeBaseUpdateInput = {};
 
-    // 2. 检查每个参数，如果不为 undefined，则添加到 data 对象
-    if (name !== undefined) {
-        updateData.name = name;
+    if (basicParams) {
+        // 2. 检查每个参数，如果不为 undefined，则添加到 data 对象
+        if (basicParams.name !== undefined) {
+            updateData.name = basicParams.name;
+        }
+        if (basicParams.description !== undefined) {
+            updateData.description = basicParams.description;
+        }
+        updateData.language = basicParams.language;  // language 已经有默认值 null
     }
-    if (description !== undefined) {
-        updateData.description = description;
-    }
-    updateData.language = language;  // language 已经有默认值 null
-    // 对于 number 类型，需要检查是否为 null 或 undefined，0 是有效值
-    if (chunk_size !== undefined && chunk_size !== null) {
-        updateData.chunk_size = chunk_size;
-    }
-    if (overlap_size !== undefined && overlap_size !== null) {
-        updateData.overlap_size = overlap_size; // 假设 schema 中字段名为 overlap_size
-    }
-    if (split_by_paragraph !== undefined) {
-        updateData.split_by_paragraph = split_by_paragraph; // 假设 schema 中字段名为 split_by_paragraph
-    }
-    if (separator !== undefined) {
-        // 注意：Prisma 对数组类型的更新方式可能需要特定处理
-        // 如果 schema 中 separator 是 String[]，这样可能可以
-        // 如果是 Json 类型，可能需要 updateData.separator = separator as any 或 JSON.stringify(separator)
-        updateData.separator = separator; // 假设 schema 中字段名为 separator
+    if (advanceParams) {
+        // 对于 number 类型，需要检查是否为 null 或 undefined，0 是有效值
+        if (advanceParams.chunk_size !== undefined && advanceParams.chunk_size !== null) {
+            updateData.chunk_size = advanceParams.chunk_size;
+        }
+        if (advanceParams.chunk_overlap !== undefined && advanceParams.chunk_overlap !== null) {
+            updateData.overlap_size = advanceParams.chunk_overlap; // 假设 schema 中字段名为 overlap_size
+        }
+        if (advanceParams.split_by !== undefined) {
+            updateData.split_by = advanceParams.split_by; // 假设 schema 中字段名为 split_by_paragraph
+        }
+        if (advanceParams.separators !== undefined) {
+            // 注意：Prisma 对数组类型的更新方式可能需要特定处理
+            // 如果 schema 中 separator 是 String[]，这样可能可以
+            // 如果是 Json 类型，可能需要 updateData.separator = separator as any 或 JSON.stringify(separator)
+            updateData.separators = advanceParams.separators; // 假设 schema 中字段名为 separator
+        }
     }
     // 添加 updated_at （虽然 Prisma 会自动处理，但显式设置可以）
     updateData.updated_at = new Date();
@@ -159,14 +163,12 @@ export const updateKnowledgeBaseAction = withAuth(async (
     if (Object.keys(updateData).length === 1 && updateData.updated_at) { // 只包含 updated_at 时不更新
         // 或者直接返回成功，因为没有实际内容要更新
         const currentKb = await prisma.knowledgeBase.findUnique({ where: { id } });
-        return { success: true, data: currentKb }; // 返回当前数据
+        return { success: true, data: currentKb as IKnowledgeBase }; // 返回当前数据
     }
     if (Object.keys(updateData).length === 0) { // 如果完全没有更新字段
         const currentKb = await prisma.knowledgeBase.findUnique({ where: { id } });
-        return { success: true, data: currentKb };
+        return { success: true, data: currentKb as IKnowledgeBase };
     }
-
-
     // 4. 使用构建好的 data 对象进行更新
     const knowledgeBase = await prisma.knowledgeBase.update({
         where: { id },

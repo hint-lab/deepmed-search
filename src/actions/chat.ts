@@ -239,7 +239,7 @@ export const deleteChatMessageAction = withAuth(async (session, messageId: strin
 /**
  * 发送消息 (非流式响应)
  */
-export const sendChatMessageAction = withAuth(async (session, dialogId: string, content: string): Promise<APIResponse<any>> => {
+export const sendChatMessageAction = withAuth(async (session, dialogId: string, content: string, knowledgeBaseId?: string): Promise<APIResponse<any>> => {
     try {
         console.log('开始发送消息 (非流式):', { dialogId, content });
 
@@ -313,7 +313,7 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
 /**
  * 发送消息 (流式响应)
  */
-export const sendChatMessageStreamAction = withAuth(async (session, dialogId: string, content: string, onChunk: (chunk: string) => void, knowledgeBaseId?: string): Promise<APIResponse<any>> => {
+export const getChatMessageStreamAction = withAuth(async (session, dialogId: string, content: string, onChunk: (chunk: string) => void, knowledgeBaseId?: string): Promise<APIResponse<any>> => {
     try {
         console.log('开始发送消息 (流式):', { dialogId, content });
 
