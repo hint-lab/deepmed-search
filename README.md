@@ -49,6 +49,74 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 -   **File Handling**: react-dropzone (likely used in KB uploads)
 -   **Development Tools**: ESLint, Prettier, Husky
 
+## System Architecture
+
+```mermaid
+graph LR
+    subgraph "用户浏览器 (Frontend)"
+        direction LR
+        UI(Next.js UI </br> 统一搜索入口 </br> 搜索结果页 (Web/LLM/KB) </br> shadcn/ui, React Context)
+    end
+
+    subgraph "Next.js 服务器 (Backend)"
+        direction TB
+        Actions(Server Actions)
+
+        subgraph "搜索 Actions"
+            KbAction(performKbSearchAction)
+            WebAction(performWebSearchAction)
+            LlmAction(performLlmSearchAction)
+        end
+
+        subgraph "知识库管理 Actions"
+            KbMgmt(创建/列表/更新/删除 KB)
+        end
+
+        Actions --> KbAction
+        Actions --> WebAction
+        Actions --> LlmAction
+        Actions --> KbMgmt
+    end
+
+    subgraph "数据库 & 存储"
+        direction TB
+        PG_Structured(PostgreSQL </br> 结构化数据 (用户, KB元数据等) </br> Prisma)
+        PG_Vector(PostgreSQL </br> pgvector </br> 向量嵌入)
+        MinIO(MinIO </br> 文件存储 (知识库文档))
+        Redis(Redis </br> 缓存/会话)
+    end
+
+    subgraph "外部服务 / API"
+        direction TB
+        EmbeddingAPI(Embedding API </br> e.g., OpenAI)
+        WebAPIs(Web 搜索 API </br> Tavily, Jina, DDG)
+        LLMAPIs(LLM API </br> Gemini, GPT, DeepSeek, Proxy?)
+        OAuth(OAuth 提供商 </br> Google, GitHub)
+    end
+
+    UI -- "1. 用户交互 (输入查询, 选择KB/模型/引擎, 点击块)" --> Actions
+    Actions -- "8. 返回结果/状态" --> UI
+
+    KbAction -- "2. 生成 Embedding" --> EmbeddingAPI
+    KbAction -- "3. 搜索相似块" --> PG_Vector
+    KbAction <-- "4. 返回文本块" -- PG_Vector
+
+    WebAction -- "5. 调用" --> WebAPIs
+    LlmAction -- "6. 调用" --> LLMAPIs
+
+    KbMgmt -- "7. CRUD 操作" --> PG_Structured
+    KbMgmt -- "文件操作" --> MinIO
+
+    %% 一些隐含的连接
+    %% Actions -- 读取配置 --> 环境变量 (.env)
+    %% UI -- 认证检查 --> NextAuth -- 使用 --> OAuth/DB
+
+    style "用户浏览器 (Frontend)" fill:#D1E8FF,stroke:#333
+    style "Next.js 服务器 (Backend)" fill:#E0E0E0,stroke:#333
+    style "数据库 & 存储" fill:#FFF2CC,stroke:#333
+    style "外部服务 / API" fill:#FFD1DC,stroke:#333
+```
+
 ## Quick Start
 
 ### Start Dependencies with Docker Compose
@@ -69,7 +137,6 @@ docker-compose ps
 
 -   **PostgreSQL**: `localhost:5432` (User: `postgres`, Pass: `postgres`, DB: `deepmed`)
 -   **MinIO**: API: `localhost:9000`, Console: `localhost:9001` (User: `minioadmin`, Pass: `minioadmin`)
--   **PgAdmin**: `http://localhost:5050` (User: `admin@deepmed.tech`, Pass: `admin`)
 -   **Redis**: `localhost:6379` (if used)
 
 *(Remove Milvus/Attu if not used)*
@@ -158,7 +225,7 @@ yarn create:user # Create test user account (if script exists)
 This project uses [shadcn/ui](https://ui.shadcn.com/) for its component library. Add new components using:
 
 ```bash
-npx shadcn-ui@latest add <component-name>
+npx shadcn@latest add <component-name>
 ```
 Components are added to `src/components/ui`.
 
@@ -211,6 +278,76 @@ DeepMed Search 是一个基于 Next.js App Router 构建的多功能搜索应用
 -   **文件处理**: react-dropzone (可能用于知识库上传)
 -   **开发工具**: ESLint, Prettier, Husky
 
+## 系统架构
+
+```mermaid
+
+graph LR
+    subgraph "用户浏览器 (Frontend)"
+        direction LR
+        UI(Next.js UI </br> 统一搜索入口 </br> 搜索结果页 (Web/LLM/KB) </br> shadcn/ui, React Context)
+    end
+
+    subgraph "Next.js 服务器 (Backend)"
+        direction TB
+        Actions(Server Actions)
+
+        subgraph "搜索 Actions"
+            KbAction(performKbSearchAction)
+            WebAction(performWebSearchAction)
+            LlmAction(performLlmSearchAction)
+        end
+
+        subgraph "知识库管理 Actions"
+            KbMgmt(创建/列表/更新/删除 KB)
+        end
+
+        Actions --> KbAction
+        Actions --> WebAction
+        Actions --> LlmAction
+        Actions --> KbMgmt
+    end
+
+    subgraph "数据库 & 存储"
+        direction TB
+        PG_Structured(PostgreSQL </br> 结构化数据 (用户, KB元数据等) </br> Prisma)
+        PG_Vector(PostgreSQL </br> pgvector </br> 向量嵌入)
+        MinIO(MinIO </br> 文件存储 (知识库文档))
+        Redis(Redis </br> 缓存/会话)
+    end
+
+    subgraph "外部服务 / API"
+        direction TB
+        EmbeddingAPI(Embedding API </br> e.g., OpenAI)
+        WebAPIs(Web 搜索 API </br> Tavily, Jina, DDG)
+        LLMAPIs(LLM API </br> Gemini, GPT, DeepSeek, Proxy?)
+        OAuth(OAuth 提供商 </br> Google, GitHub)
+    end
+
+    UI -- "1. 用户交互 (输入查询, 选择KB/模型/引擎, 点击块)" --> Actions
+    Actions -- "8. 返回结果/状态" --> UI
+
+    KbAction -- "2. 生成 Embedding" --> EmbeddingAPI
+    KbAction -- "3. 搜索相似块" --> PG_Vector
+    KbAction <-- "4. 返回文本块" -- PG_Vector
+
+    WebAction -- "5. 调用" --> WebAPIs
+    LlmAction -- "6. 调用" --> LLMAPIs
+
+    KbMgmt -- "7. CRUD 操作" --> PG_Structured
+    KbMgmt -- "文件操作" --> MinIO
+
+    %% 一些隐含的连接
+    %% Actions -- 读取配置 --> 环境变量 (.env)
+    %% UI -- 认证检查 --> NextAuth -- 使用 --> OAuth/DB
+
+    style "用户浏览器 (Frontend)" fill:#D1E8FF,stroke:#333
+    style "Next.js 服务器 (Backend)" fill:#E0E0E0,stroke:#333
+    style "数据库 & 存储" fill:#FFF2CC,stroke:#333
+    style "外部服务 / API" fill:#FFD1DC,stroke:#333
+    
+```
+
 ## 快速开始
 
 ### 使用 Docker Compose 启动依赖服务
@@ -231,7 +368,6 @@ docker-compose ps
 
 -   **PostgreSQL**: `localhost:5432` (用户: `postgres`, 密码: `postgres`, 数据库: `deepmed`)
 -   **MinIO**: API: `localhost:9000`, 控制台: `localhost:9001` (用户: `minioadmin`, 密码: `minioadmin`)
--   **PgAdmin**: `http://localhost:5050` (用户: `admin@deepmed.tech`, 密码: `admin`)
 -   **Redis**: `localhost:6379` (如果使用)
 
 *(如果未使用 Milvus/Attu，请移除相关信息)*
@@ -320,6 +456,6 @@ yarn create:user # 创建测试用户账号 (如果脚本存在)
 本项目使用 [shadcn/ui](https://ui.shadcn.com/) 作为其组件库。使用以下命令添加新组件：
 
 ```bash
-npx shadcn-ui@latest add <component-name>
+npx shadcn@latest add <component-name>
 ```
 组件会被添加到 `src/components/ui` 目录。
