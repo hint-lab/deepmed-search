@@ -1,76 +1,63 @@
-flowchart LR
- subgraph subGraph0["User Interaction Layer"]
-        UI["User Interface Web/App"]
-  end
- subgraph subGraph1["Application Service Layer"]
-        Orchestrator["Query Orchestrator"]
-        API["API Gateway"]
-  end
- subgraph subGraph2["Retrieval Module"]
-        QueryPreprocessor["Query Preprocessor"]
-        HybridSearcher["Hybrid Searcher"]
-        VectorDB[("Vector Database Milvus")]
-        KeywordIndex[("Keyword Index Elasticsearch")]
-  end
- subgraph subGraph3["Generation Module"]
-        PromptBuilder["Prompt Builder"]
-        LLM["Large Language Model OpenAI GPT"]
-        AnswerProcessor["Answer Post-Processor and Tracing"]
-  end
- subgraph subGraph4["Core Engine Layer"]
-        subGraph2
-        subGraph3
-  end
- subgraph subGraph5["Data Processing Pipeline"]
-        DocLoaderParser["Document Loader and Parser Zerox Unstructured Data Processing"]
-        DocInput["Medical Document Input PDF DOCX TXT etc."]
-        TextChunker["Text Chunker"]
-        MetadataExtractor["Metadata Extractor"]
-        Embeddings["Embedding Model OpenAI_Text_Emebedding"]
-        TextForKeyword["Text Processing for Keywords"]
-        DocStore[("Raw Text Blocks and Metadata Storage")]
-  end
-    DocInput --> DocLoaderParser
-    DocLoaderParser --> TextChunker
-    TextChunker --> MetadataExtractor
-    MetadataExtractor --> Embeddings & TextForKeyword & DocStore
-    Embeddings --> VectorDB
-    TextForKeyword --> KeywordIndex
-    UI -- User Query --> API
-    API -- Query --> Orchestrator
-    Orchestrator -- Processed Query --> QueryPreprocessor
-    QueryPreprocessor -- Preprocessed Query --> HybridSearcher
-    HybridSearcher -- Vector Query --> VectorDB
-    HybridSearcher -- Keyword Query --> KeywordIndex
-    VectorDB -- Similar Block IDs --> HybridSearcher
-    KeywordIndex -- Relevant Block IDs --> HybridSearcher
-    HybridSearcher -- "Merge and Re-rank Block IDs" --> Orchestrator
-    Orchestrator -- Request Raw Blocks --> DocStore
-    DocStore -- Raw Text and Metadata --> Orchestrator
-    Orchestrator -- Query Context --> PromptBuilder
-    PromptBuilder -- Final Prompt --> LLM
-    LLM -- Initial Answer --> AnswerProcessor
-    AnswerProcessor -- Format Answer and References --> Orchestrator
-    Orchestrator -- Final Answer --> API
-    API -- Answer --> UI
-     UI:::user
-     Orchestrator:::app
-     API:::app
-     QueryPreprocessor:::core
-     HybridSearcher:::core
-     VectorDB:::core
-     KeywordIndex:::core
-     PromptBuilder:::core
-     LLM:::core
-     AnswerProcessor:::core
-     DocInput:::data
-     DocLoaderParser:::data
-     TextChunker:::data
-     MetadataExtractor:::data
-     Embeddings:::data
-     TextForKeyword:::data
-     DocStore:::data
-    classDef core fill:#e6f3ff,stroke:#4a90e2,stroke-width:2px,color:#2c3e50
-    classDef data fill:#f5f6fa,stroke:#7f8c8d,stroke-width:2px,color:#2c3e50
-    classDef app fill:#e8f5e9,stroke:#2ecc71,stroke-width:2px,color:#2c3e50
-    classDef user fill:#fff3cd,stroke:#f1c40f,stroke-width:2px,color:#2c3e50
+graph LR
+    subgraph Frontend[用户浏览器 Frontend]
+        direction LR
+        UI[Next.js统一搜索入口<br>搜索结果页Web/LLM/KB <br> shadcn/ui, React Context]
+    end
+
+    subgraph Backend[Next.js 服务器 Backend]
+        direction TB
+        Actions[Server Actions]
+
+        subgraph SearchActions[搜索 Actions]
+            KbAction[performKbSearchAction]
+            WebAction[performWebSearchAction]
+            LlmAction[performLlmSearchAction]
+        end
+
+        subgraph KbManagement[知识库管理 Actions]
+            KbMgmt[创建/列表/更新/删除 KB]
+        end
+
+        Actions --> KbAction
+        Actions --> WebAction
+        Actions --> LlmAction
+        Actions --> KbMgmt
+    end
+
+    subgraph DatabaseStorage[数据库 & 存储]
+        direction TB
+        PG_Structured[PostgreSQL结构化数据Prisma]
+        PG_Vector[PostgreSQL <br> pgvector <br> 向量嵌入]
+        MinIO[MinIO/文件存储/知识库文档]
+        Redis[Redis<br>缓存/会话]
+    end
+
+    subgraph ExternalServices[外部服务 / API]
+        direction TB
+        EmbeddingAPI[Embedding API <br> e.g., OpenAI]
+        WebAPIs[Web 搜索 API <br> Tavily, Jina, DDG]
+        LLMAPIs[LLM API <br> Gemini, GPT, DeepSeek, Proxy?]
+        OAuth[OAuth 提供商 <br> Google, GitHub]
+    end
+
+    UI -->|1.用户交互输入查询, 选择KB/模型/引擎, 点击块| Actions
+    Actions -->|8.返回结果/状态| UI
+
+    KbAction -->|2.生成 Embedding| EmbeddingAPI
+    KbAction -->|3.搜索相似块| PG_Vector
+    PG_Vector -->|4.返回文本块| KbAction
+
+    WebAction -->|5.调用| WebAPIs
+    LlmAction -->|6.调用| LLMAPIs
+
+    KbMgmt -->|7.CRUD 操作| PG_Structured
+    KbMgmt -->|文件操作| MinIO
+
+    %% 一些隐含的连接
+    Actions --> 读取配置 --> 环境变量.env
+    UI --> 认证检查 --> NextAuth --> 使用 --> OAuth/DB
+
+    style Frontend fill:#D1E8FF,stroke:#333
+    style Backend fill:#E0E0E0,stroke:#333
+    style DatabaseStorage fill:#FFF2CC,stroke:#333
+    style ExternalServices fill:#FFD1DC,stroke:#333
