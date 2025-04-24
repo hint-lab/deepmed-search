@@ -19,7 +19,7 @@ import {
     updateDocumentProcessingStatusAction,
     getDocumentKnowledgeBaseIdAction
 } from '@/actions/document-process';
-import { DocumentProcessingStatus } from '@/types/enums';
+import { IDocumentProcessingStatus } from '@/types/enums';
 
 
 export default function DocumentTestPage() {
@@ -250,7 +250,7 @@ export default function DocumentTestPage() {
         toast.info(`正在转换文档: ${documentId}`);
 
         try {
-            await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.CONVERTING, {
+            await updateDocumentProcessingStatusAction(documentId, IDocumentProcessingStatus.CONVERTING, {
                 progress: 0,
                 progressMsg: '开始转换'
             });
@@ -269,7 +269,7 @@ export default function DocumentTestPage() {
                 setError(response.error || '转换文档失败');
                 toast.error(response.error || '转换文档失败');
                 console.error('转换文档失败:', response.error);
-                await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
+                await updateDocumentProcessingStatusAction(documentId, IDocumentProcessingStatus.FAILED, {
                     progress: 0,
                     progressMsg: response.error || '转换失败',
                     error: response.error
@@ -279,7 +279,7 @@ export default function DocumentTestPage() {
             setError('转换文档失败: ' + (err.message || '未知错误'));
             toast.error('转换文档失败: ' + (err.message || '未知错误'));
             console.error(err);
-            await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
+            await updateDocumentProcessingStatusAction(documentId, IDocumentProcessingStatus.FAILED, {
                 progress: 0,
                 progressMsg: err.message || '转换失败',
                 error: err.message
@@ -364,7 +364,7 @@ export default function DocumentTestPage() {
         console.log(`正在索引文档块: ${documentId} (知识库: ${kbId})`);
 
         try {
-            await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.INDEXING, {
+            await updateDocumentProcessingStatusAction(documentId, IDocumentProcessingStatus.INDEXING, {
                 progress: 0,
                 progressMsg: '开始索引'
             });
@@ -385,7 +385,7 @@ export default function DocumentTestPage() {
                 setError(response.error || '索引文档块失败');
                 toast.error(response.error || '索引文档块失败');
                 console.error(response.error);
-                await updateDocumentProcessingStatusAction(documentId, DocumentProcessingStatus.FAILED, {
+                await updateDocumentProcessingStatusAction(documentId, IDocumentProcessingStatus.FAILED, {
                     progress: 0,
                     progressMsg: response.error || '转换失败',
                     error: response.error

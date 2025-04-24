@@ -9,8 +9,8 @@ import { Search, Globe, Database, FileText, Loader2, ChevronDown } from "lucide-
 import { useState } from "react"
 import { useSendQuestion } from "@/hooks/use-search"
 import MarkdownContent from "@/components/markdown-content"
-import { useTranslate } from '@/hooks/use-language' // Keep this import
-import { TFunction } from 'i18next'; // Import TFunction from i18next
+import { useTranslate } from '@/hooks/use-language'; // Import only useTranslate
+import { TFunction } from 'i18next'; // Add import for TFunction
 import { useRouter } from 'next/navigation'
 import { SearchEngineType } from '@/actions/web-search'
 import {
@@ -21,9 +21,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useKnowledgeBase } from '@/contexts/knowledgebase-context'
 
 type SearchType = 'web' | 'llm' | 'kb';
 type LlmModelType = 'gemini' | 'gpt' | 'deepseek'; // Define LLM model types
+
+// Define Knowledge Base type
+interface KnowledgeBase {
+    id: string;
+    name: string;
+}
 
 // --- Internal Search Form Component ---
 interface SearchInputFormProps {
@@ -34,10 +41,12 @@ interface SearchInputFormProps {
     isSubmittingWebOrLLM: boolean;
     isSearchStrEmpty: boolean;
     onInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    onSubmitKb: (event: React.FormEvent<HTMLFormElement>) => void;
     onLLMSelect: (model: LlmModelType) => void;
     onWebEngineSelect: (engine: SearchEngineType) => void;
-    t: TFunction; // Use imported TFunction type (no namespace needed here, it's generic)
+    onKbSelect: (kbId: string) => void;
+    availableKbs: KnowledgeBase[];
+    t: TFunction; // Uses TFunction from i18next
+    isKbListLoading: boolean;
 }
 
 const SearchInputForm: React.FC<SearchInputFormProps> = ({
@@ -48,13 +57,15 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
     isSubmittingWebOrLLM,
     isSearchStrEmpty,
     onInputChange,
-    onSubmitKb,
     onLLMSelect,
     onWebEngineSelect,
-    t
+    onKbSelect,
+    availableKbs,
+    t,
+    isKbListLoading
 }) => {
     return (
-        <form onSubmit={onSubmitKb} className="mt-6">
+        <form onSubmit={(e) => e.preventDefault()} className="mt-6">
             <div className="flex items-center focus-within:ring-2 focus-within:ring-primary/30 focus-within:ring-offset-2 focus-within:ring-offset-background rounded-lg transition-all duration-150">
                 <div className="relative flex-grow">
                     <Input
@@ -132,20 +143,43 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : ( // searchType === 'kb'
-                    <Button
-                        type="submit"
-                        disabled={disableInteractions || isSearchStrEmpty}
-                        className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border-y border-r border-border/80 bg-gradient-to-r from-green-500 to-blue-500 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
-                    >
-                        {isKbSearching ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {t("searching", "搜索中...")}
-                            </>
-                        ) : (
-                            <Search className="h-5 w-5" />
-                        )}
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                type="button"
+                                disabled={isKbListLoading || disableInteractions || isSearchStrEmpty}
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-r border-border/80 bg-gradient-to-r from-green-500 to-blue-500 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                            >
+                                {isKbSearching ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <>
+                                        <Search className="h-5 w-5 mr-1" />
+                                        <ChevronDown className="h-4 w-4 ml-1" />
+                                    </>
+                                )}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {isKbListLoading ? (
+                                <DropdownMenuItem disabled>加载知识库中...</DropdownMenuItem>
+                            ) : (
+                                <>
+                                    <DropdownMenuLabel>{t('selectKnowledgeBase', '选择知识库')}</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {availableKbs.length > 0 ? (
+                                        availableKbs.map((kb) => (
+                                            <DropdownMenuItem key={kb.id} onSelect={() => onKbSelect(kb.id)}>
+                                                {kb.name}
+                                            </DropdownMenuItem>
+                                        ))
+                                    ) : (
+                                        <DropdownMenuItem disabled>无可用知识库</DropdownMenuItem>
+                                    )}
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
             </div>
         </form>
@@ -155,7 +189,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
 // --- Internal KB Results Display Component ---
 interface KbResultsDisplayProps {
     answer: any; // Keep type flexible for now
-    t: TFunction; // Use imported TFunction type
+    t: TFunction; // Uses TFunction from i18next
 }
 
 const KbResultsDisplay: React.FC<KbResultsDisplayProps> = ({ answer, t }) => {
@@ -189,7 +223,6 @@ export default function SearchPage() {
     const [searchType, setSearchType] = useState<SearchType>('llm');
 
     const {
-        sendQuestion,
         handleSearchStrChange,
         answer,
         sendingLoading: isPending,
@@ -197,28 +230,18 @@ export default function SearchPage() {
         isSearchStrEmpty,
     } = useSendQuestion([])
 
+    // Get KB context
+    const {
+        knowledgeBases, // Use this list
+        isLoading: isKbListLoading, // Use this for loading state
+        fetchKnowledgeBases // Optional: trigger a refresh if needed, though context likely fetches on mount
+    } = useKnowledgeBase();
+
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         handleSearchStrChange(event);
     }
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleSubmitKb = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        // Ensure KB submit only happens when 'kb' tab is active
-        if (searchType !== 'kb' || isSearchStrEmpty || isSubmitting || isPending) return;
-
-        // Use isPending directly for KB loading state, isSubmitting for Web/LLM
-        // No need to setIsSubmitting(true) here, as isPending handles KB search loading
-        console.log(`Performing search with type: ${searchType} for query: ${searchStr}`);
-        try {
-            await sendQuestion(searchStr);
-        } catch (error) {
-            console.error("KB Search failed:", error);
-            // Optionally reset state or show error message
-        }
-        // isPending will automatically become false when sendQuestion finishes
-    }
 
     const handleLLMSelect = (model: LlmModelType) => {
         console.log(`handleLLMSelect called with model: ${model}, isSearchStrEmpty: ${isSearchStrEmpty}, searchStr: \"${searchStr}\"`);
@@ -231,7 +254,6 @@ export default function SearchPage() {
             console.error("Navigation failed:", e);
             setIsSubmitting(false);
         }
-        // Reset submitting state after a short delay to allow navigation/visual feedback
         setTimeout(() => setIsSubmitting(false), 500);
     };
 
@@ -246,15 +268,27 @@ export default function SearchPage() {
             console.error("Navigation failed:", e);
             setIsSubmitting(false);
         }
-        // Reset submitting state after a short delay
         setTimeout(() => setIsSubmitting(false), 500);
     };
 
-    const disableInteractions = isPending || isSubmitting;
-    const showKbResults = !isPending && !!answer && searchType === 'kb';
+    const handleKbSelect = (kbId: string) => {
+        console.log(`handleKbSelect called with kbId: ${kbId}, isSearchStrEmpty: ${isSearchStrEmpty}, searchStr: \"${searchStr}\"`);
+        if (isSearchStrEmpty) return;
+        setIsSubmitting(true); // Use isSubmitting for KB navigation indication
+        try {
+            const encodedQuery = encodeURIComponent(searchStr);
+            router.push(`/search/kb/${encodedQuery}?kbId=${kbId}`);
+        } catch (e) {
+            console.error("KB Navigation failed:", e);
+            setIsSubmitting(false);
+        }
+        setTimeout(() => setIsSubmitting(false), 500);
+    };
+
+    const disableInteractions = isPending || isSubmitting || isKbListLoading;
 
     return (
-        <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-24 sm:pt-20 ${!showKbResults && !isPending ? 'justify-center' : 'justify-start'}`}>
+        <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-24 sm:pt-20 justify-center`}>
             <div className="w-full max-w-3xl space-y-8">
                 <Tabs value={searchType} onValueChange={(value) => setSearchType(value as SearchType)} className="w-full">
                     <div className="text-center space-y-3 my-6 sm:my-8">
@@ -280,24 +314,18 @@ export default function SearchPage() {
                             searchType={searchType}
                             searchStr={searchStr}
                             disableInteractions={disableInteractions}
-                            isKbSearching={isPending && searchType === 'kb'} // Pass KB specific loading state
-                            isSubmittingWebOrLLM={isSubmitting} // Pass Web/LLM specific loading state
+                            isKbSearching={isSubmitting && searchType === 'kb'}
+                            isSubmittingWebOrLLM={isSubmitting && (searchType === 'web' || searchType === 'llm')}
                             isSearchStrEmpty={isSearchStrEmpty}
                             onInputChange={handleInputChange}
-                            onSubmitKb={handleSubmitKb}
                             onLLMSelect={handleLLMSelect}
                             onWebEngineSelect={handleWebEngineSelect}
+                            onKbSelect={handleKbSelect}
+                            availableKbs={knowledgeBases.map(kb => ({ id: kb.id, name: kb.name || `KB ${kb.id}` }))}
                             t={t}
+                            isKbListLoading={isKbListLoading}
                         />
                     </div>
-
-                    {/* Loading indicator specifically for KB search */}
-                    {isPending && searchType === 'kb' && (
-                        <div className="flex justify-center items-center space-x-3 mb-4">
-                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">{t("loadingMessage", "正在努力搜索，请稍候...")}</p>
-                        </div>
-                    )}
 
                     {/* Placeholder content for tabs */}
                     <TabsContent value="web">
@@ -307,12 +335,9 @@ export default function SearchPage() {
                         {!isPending && !answer && <p className="text-center text-sm text-muted-foreground">{t("llmSearchInfo", "LLM 内省将使用大模型生成模拟搜索结果。")}</p>}
                     </TabsContent>
                     <TabsContent value="kb">
-                        {!isPending && !answer && searchType === 'kb' && <p className="text-center text-sm text-muted-foreground">{t("kbSearchInfo", "知识库搜索将查询您已上传的文档。")}</p>}
+                        {!isPending && !answer && searchType === 'kb' && <p className="text-center text-sm text-muted-foreground">{t("kbSearchInfo", "输入查询后，点击搜索按钮选择知识库。")}</p>}
                     </TabsContent>
                 </Tabs>
-
-                {/* Use the internal KbResultsDisplay component */}
-                {showKbResults && <KbResultsDisplay answer={answer} t={t} />}
 
             </div>
         </main>
