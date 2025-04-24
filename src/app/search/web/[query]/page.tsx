@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { performWebSearch, SearchEngineType } from '@/actions/web-search';
-import { StandardSearchResult } from '@/lib/search/common';
+import { StandardSearchResult } from '@/lib/web-search/common';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,6 +79,7 @@ export default function WebSearchResultsPage() {
     const encodedQuery = Array.isArray(encodedQueryParam) ? encodedQueryParam[0] : encodedQueryParam;
 
     useEffect(() => {
+        // Decode query at the beginning of the effect
         const decodedQuery = decodeURIComponent(encodedQuery || '');
 
         // --- Determine engine INSIDE useEffect ---
@@ -95,11 +96,6 @@ export default function WebSearchResultsPage() {
         const engineToUse = getEngineForEffect();
         // --- End Determine engine ---
 
-        if (!encodedQuery) {
-            setError('Search query is missing from URL.');
-            setIsLoading(false);
-            return;
-        }
         if (!decodedQuery.trim()) {
             setError('Search query cannot be empty.');
             setIsLoading(false);

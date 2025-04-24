@@ -1,10 +1,10 @@
 'use server';
 
 import { ServerActionResponse } from '@/types/actions';
-import { searchTavily } from '@/lib/search/tavily';
-import { searchDuckDuckGo } from '@/lib/search/duckduckgo';
-import { searchJina } from '@/lib/search/jina'; // Import Jina lib function
-import { StandardSearchResult } from '@/lib/search/common'; // Import the standard interface
+import { searchTavily } from '@/lib/web-search/tavily';
+import { searchDuckDuckGo } from '@/lib/web-search/duckduckgo';
+import { searchJina } from '@/lib/web-search/jina'; // Import Jina lib function
+import { StandardSearchResult } from '@/lib/web-search/common'; // Import the standard interface
 
 // Define supported search engine types
 export type SearchEngineType = 'tavily' | 'duckduckgo' | 'jina';
