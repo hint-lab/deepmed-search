@@ -131,10 +131,11 @@ export async function performLlmSearch(query: string, options?: { model?: string
     const modelId = (model && modelMapping[model]) ? modelMapping[model] : 'gemini-2.5-flash-preview-04-17-nothinking';
     console.log(`[LLM Search Lib] Received short model: ${model}, Mapped to modelId: ${modelId}`); // Add logging
 
-    // Now use 'modelId' when interacting with the actual LLM API provider
-    const provider = getLlmProvider(modelId); // Example: Assuming you have a function to get the provider
+    // Call searchSimulator with the query and the resolved modelId
+    return searchSimulator(query, modelId);
 
+    // Remove the placeholder code below if it existed
+    // const provider = getLlmProvider(modelId); // Example: Assuming you have a function to get the provider
     // Example: provider.generate(...) or similar call using the resolved modelId
-
     // ... rest of the function uses modelId ...
 }

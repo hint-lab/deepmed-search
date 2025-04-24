@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { getResponse } from '../agent';
+import { processResearchTask } from '../index';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { AnswerAction, TrackerContext } from "../types";
@@ -106,7 +106,7 @@ Minor wording differences are acceptable as long as the core information of the 
 
   try {
     const result = await generateObject({
-      model: createGoogleGenerativeAI({ apiKey: GEMINI_API_KEY })('gemini-2.0-flash'),  // fix to gemini-2.0-flash for evaluation
+      model: createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY })('gemini-2.0-flash'),  // fix to gemini-2.0-flash for evaluation
       schema,
       prompt,
       maxTokens: 1000,
@@ -141,7 +141,7 @@ async function batchEvaluate(inputFile: string): Promise<void> {
       const {
         result: response,
         context
-      } = await getResponse(question) as { result: AnswerAction; context: TrackerContext };
+      } = await processResearchTask(question) as { result: AnswerAction; context: TrackerContext };
 
       // Get response using the streaming agent
       // const {
