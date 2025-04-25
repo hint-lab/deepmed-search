@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useState, useEffect, useRef } from 'react';
 import {
     fetchChatMessagesAction,
@@ -10,17 +10,19 @@ import {
     getRelatedQuestionsAction
 } from '@/actions/chat';
 import { MessageType } from '@/constants/chat';
+import { IMessage } from '@/types/message';
+
 
 /**
  * 获取对话消息
  */
 export function useChatMessages() {
-    const [data, setData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [chatMessages, setChatMessages] = useState<IMessage[]>([]);
+    const [isPending, setIsPending] = useState(false);
 
     const fetchChatMessages = async (dialogId: string) => {
         if (!dialogId) return;
-        setIsLoading(true);
+        setIsPending(true);
         try {
             const result = await fetchChatMessagesAction(dialogId);
             if (result.success) {
@@ -29,30 +31,14 @@ export function useChatMessages() {
                     role: msg.role as MessageType,
                     createdAt: new Date(msg.createdAt),
                 }));
-                setData(formattedMessages);
+                setChatMessages(formattedMessages);
             }
         } catch (error) {
             console.error(error);
         } finally {
-            setIsLoading(false);
+            setIsPending(false);
         }
     };
-
-    return {
-        data,
-        isLoading,
-        setData,
-        fetchChatMessages
-    };
-}
-
-/**
- * 发送消息
- */
-export function useSendMessage() {
-    const { t } = useTranslate('chat')
-    const [isPending, setIsPending] = useState(false);
-
     const sendMessage = async (dialogId: string, content: string) => {
         setIsPending(true);
         try {
@@ -60,41 +46,38 @@ export function useSendMessage() {
             if (result.success) {
                 return result.data;
             } else {
-                throw new Error(result.error || t('errors.sendMessageFailed'));
+                throw new Error(result.error);
             }
         } catch (error: any) {
-            toast.error(error.message || t('errors.sendMessageFailed'));
+            toast.error(error.message);
             return null;
         } finally {
             setIsPending(false);
         }
     };
-
-    return { sendMessage, isPending };
-}
-
-/**
- * 删除消息
- */
-export function useDeleteMessage() {
-    const { t } = useTranslate('chat')
-    const [isPending, setIsPending] = useState(false);
-
     const deleteMessage = async (messageId: string) => {
         setIsPending(true);
         try {
             const result = await deleteChatMessageAction(messageId);
             if (result.success) {
-                toast.success(t('message.deleted'));
+                return true;
             } else {
                 throw new Error(result.error);
             }
         } finally {
             setIsPending(false);
+            return false
         }
     };
-
-    return { deleteMessage, isPending };
+    return {
+        chatMessages,
+        isPending,
+        setIsPending,
+        setChatMessages,
+        fetchChatMessages,
+        sendMessage,
+        deleteMessage,
+    };
 }
 
 /**
@@ -127,7 +110,7 @@ export function useFetchRelatedQuestions(question: string) {
  * 使用 SSE 发送消息并实现流式打字机效果
  */
 export function useSendMessageWithSSE() {
-    const [isLoading, setIsLoading] = useState(false);
+    const [isPending, setIsPending] = useState(false);
     const [partialResponse, setPartialResponse] = useState('');
     const [error, setError] = useState<string | null>(null);
 
@@ -137,7 +120,7 @@ export function useSendMessageWithSSE() {
     const accumulatedTextRef = useRef<string>('');
 
     const sendMessageWithSSE = async (dialogId: string, content: string, userId: string, knowledgeBaseId?: string) => {
-        setIsLoading(true);
+        setIsPending(true);
         setPartialResponse('');
         setError(null);
         // 重置累积内容
@@ -266,7 +249,7 @@ export function useSendMessageWithSSE() {
                 error: errorMessage // 返回确定的错误消息
             };
         } finally {
-            setIsLoading(false);
+            setIsPending(false);
             abortControllerRef.current = null;
         }
     };
@@ -276,14 +259,14 @@ export function useSendMessageWithSSE() {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
-            setIsLoading(false);
+            setIsPending(false);
         }
     };
 
     return {
         sendMessageWithSSE,
         cancelStream,
-        isLoading,
+        isPending,
         partialResponse,
         error
     };

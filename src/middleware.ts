@@ -5,16 +5,16 @@ import { getToken } from 'next-auth/jwt';
 const protectedRoutes = [
     '/knowledgebase',
     '/chat',
-    '/agent',
-    '/files',
     '/search',
+    '/research',
+    '/knowledgebase',
+    '/chunks'
 ];
 
 // 公开路由
 const publicRoutes = [
     '/',
     '/login',
-    '/register',
     '/api/auth',
 ];
 
@@ -58,12 +58,10 @@ export const config = {
         // 匹配所有需要保护的路由
         '/knowledgebase/:path*',
         '/chat/:path*',
-        '/agent/:path*',
-        '/files/:path*',
+        '/research/:path*',
         '/search/:path*',
         // 匹配登录和注册页面
         '/login',
-        '/register',
         // 匹配根路径
         '/',
     ]

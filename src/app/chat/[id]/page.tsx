@@ -3,18 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useChatMessages } from '@/hooks/use-chat';
 import ChatMessages from '../components/chat-messages';
 import { useUser } from '@/contexts/user-context';
 import { MessageType } from '@/constants/chat';
 import { useChat } from '@/contexts/chat-context';
 
-
 export default function ChatPage() {
     const params = useParams();
     const dialogId = params.id as string;
     const { userInfo } = useUser();
-    const { data: messages, isLoading: isLoadingMessages, setData: setMessages, fetchChatMessages } = useChatMessages();
+    const { chatMessages, isPending, setChatMessages, fetchChatMessages } = useChat();
     const {
         initialMessage,
         setInitialMessage,

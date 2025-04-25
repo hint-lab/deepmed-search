@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { IDocument } from "@/types/document";
-import { useTranslate } from "@/hooks/use-language";
+import { useTranslate } from "@/contexts/language-context";
 import { useRenameDocument } from "@/hooks/use-document"
 import { toast } from "sonner";
 import { useState, useEffect } from "react";

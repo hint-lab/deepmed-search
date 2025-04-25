@@ -3,7 +3,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect 
 import { IKnowledgeBase, CreateIKnowledgeBaseParams, UpdateIKnowledgeBaseBasicParams, UpdateIKnowledgeAdvanceParams } from '@/types/knowledgebase';
 import { useUser } from './user-context'; // 假设需要用户信息
 import { toast } from 'sonner';
-import { useTranslate } from '@/hooks/use-language'; // 假设需要翻译
+import { useTranslate } from '@/contexts/language-context'; // 假设需要翻译
 import {
     createKnowledgeBaseAction,
     updateKnowledgeBaseAction,

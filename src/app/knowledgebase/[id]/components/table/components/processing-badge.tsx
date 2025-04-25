@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Play, RotateCw, CircleCheck, AlertTriangle } from 'lucide-react';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { IDocumentProcessingStatus } from '@/types/enums';
 import { IDocument } from '@/types/document';
 import { useState, useEffect, useRef } from 'react';

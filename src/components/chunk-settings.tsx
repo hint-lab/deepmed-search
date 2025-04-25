@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';

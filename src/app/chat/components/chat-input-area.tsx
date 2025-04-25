@@ -3,7 +3,7 @@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useChat } from '@/contexts/chat-context';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useDialog } from '@/contexts/dialog-context';
 import { useUser } from '@/contexts/user-context';
 

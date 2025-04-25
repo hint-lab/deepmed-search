@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FileText, Zap, BarChart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 
 export default function Home() {
     const router = useRouter();

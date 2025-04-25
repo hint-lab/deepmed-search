@@ -11,10 +11,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { getUserInfo } from '@/actions/user';
 import { toast } from 'sonner';
-
+import { useUser } from '@/contexts/user-context';
 
 
 const formSchema = z.object({
@@ -28,12 +28,25 @@ const formSchema = z.object({
 const LeftPanel = () => {
     const { t } = useTranslate('login');
     return (
-        <div className="relative w-3/5 bg-gradient-to-br from-background via-background/95 to-background/90">
-            <div className="relative flex flex-col items-center justify-center min-h-screen p-20">
+        <div className="relative w-3/5 bg-gradient-to-b from-background via-background to-background">
+            {/* Modern gradient backdrop */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(var(--primary-rgb)/0.15),transparent_50%)]"></div>
+            
+            {/* Animated gradient blobs */}
+            <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 dark:bg-purple-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob"></div>
+            <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 dark:bg-yellow-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-300 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+            
+            {/* Fine grid overlay */}
+            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-20 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+            
+            <div className="relative flex flex-col items-center justify-center min-h-screen p-20 z-10">
                 <div className="w-full max-w-2xl space-y-8">
                     <div className="space-y-4 text-center">
-                        <h1 className="text-4xl font-bold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-                            {t('title')}
+                        <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
+                                {t('title')}
+                            </span>
                         </h1>
                         <p className="text-xl text-muted-foreground">
                             {t('description')}
@@ -41,41 +54,41 @@ const LeftPanel = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-8">
-                        <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
+                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute -top-3 -left-3">
-                                <div className="h-6 w-6 rounded-full bg-primary/30 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
+                                <div className="h-6 w-6 rounded-full bg-blue-400/30 flex items-center justify-center">
+                                    <div className="h-3 w-3 rounded-full bg-blue-400 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">{t('features.ai.title')}</h3>
-                            <p className="text-sm text-muted-foreground/80">{t('features.ai.description')}</p>
+                            <h3 className="font-semibold mb-2 text-blue-600 dark:text-blue-400">{t('features.ai.title')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('features.ai.description')}</p>
                         </div>
-                        <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
+                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-purple-200 dark:border-purple-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute -top-3 -left-3">
-                                <div className="h-6 w-6 rounded-full bg-primary/30 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
+                                <div className="h-6 w-6 rounded-full bg-purple-400/30 flex items-center justify-center">
+                                    <div className="h-3 w-3 rounded-full bg-purple-400 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">{t('features.security.title')}</h3>
-                            <p className="text-sm text-muted-foreground/80">{t('features.security.description')}</p>
+                            <h3 className="font-semibold mb-2 text-purple-600 dark:text-purple-400">{t('features.security.title')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('features.security.description')}</p>
                         </div>
-                        <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
+                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-amber-200 dark:border-amber-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute -top-3 -left-3">
-                                <div className="h-6 w-6 rounded-full bg-primary/30 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
+                                <div className="h-6 w-6 rounded-full bg-amber-400/30 flex items-center justify-center">
+                                    <div className="h-3 w-3 rounded-full bg-amber-400 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">{t('features.speed.title')}</h3>
-                            <p className="text-sm text-muted-foreground/80">{t('features.speed.description')}</p>
+                            <h3 className="font-semibold mb-2 text-amber-600 dark:text-amber-400">{t('features.speed.title')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('features.speed.description')}</p>
                         </div>
-                        <div className="relative p-6 rounded-lg bg-background/60 backdrop-blur-md border border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
+                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-emerald-200 dark:border-emerald-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute -top-3 -left-3">
-                                <div className="h-6 w-6 rounded-full bg-primary/30 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
+                                <div className="h-6 w-6 rounded-full bg-emerald-400/30 flex items-center justify-center">
+                                    <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-primary">{t('features.reliability.title')}</h3>
-                            <p className="text-sm text-muted-foreground/80">{t('features.reliability.description')}</p>
+                            <h3 className="font-semibold mb-2 text-emerald-600 dark:text-emerald-400">{t('features.reliability.title')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('features.reliability.description')}</p>
                         </div>
                     </div>
                 </div>
@@ -86,8 +99,9 @@ const LeftPanel = () => {
 
 const Login = () => {
     const searchParams = useSearchParams();
-    const { t } = useTranslation('translation', { keyPrefix: 'login' });
+    const { t } = useTranslate('login');
     const [loading, setLoading] = useState(false);
+    const { userInfo, isLoading, isAuthenticated, updateUserInfo, refreshUserInfo } = useUser();
     const callbackUrl = searchParams.get('callbackUrl') || '/knowledgebase';
 
     useEffect(() => {
@@ -96,6 +110,13 @@ const Login = () => {
             console.error('Auth error:', error);
         }
     }, [searchParams]);
+
+    // 如果已经登录，自动跳转
+    useEffect(() => {
+        if (userInfo && !isLoading) {
+            window.location.href = callbackUrl;
+        }
+    }, [userInfo, isLoading, callbackUrl]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -156,13 +177,30 @@ const Login = () => {
         signIn('github', { callbackUrl });
     };
 
+    // 检查用户是否已登录
+    if (isAuthenticated) {
+        // 用户已登录
+    }
+
+    // 更新用户信息
+    updateUserInfo({ name: '新名字' });
+
+    // 刷新用户信息
+    const refreshUserInfoHandler = async () => {
+        await refreshUserInfo();
+    };
+
     return (
         <div className="flex min-h-screen">
             <LeftPanel />
-            <div className="w-2/5 flex items-center justify-center p-8 bg-background">
-                <Card className="w-full max-w-md border shadow-md ">
+            <div className="w-2/5 flex items-center justify-center p-8 bg-gradient-to-br from-background via-purple-50/5 dark:via-purple-900/5 to-blue-50/10 dark:to-blue-900/10 relative">
+                {/* Decorative elements */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-purple-400/10 dark:bg-purple-900/20 rounded-full blur-3xl opacity-60"></div>
+                <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10"></div>
+                
+                <Card className="w-full max-w-md border relative z-10 backdrop-blur-sm bg-card/70 shadow-xl hover:shadow-lg transition-all duration-300">
                     <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl font-bold">{t('login')}</CardTitle>
+                        <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">{t('login')}</CardTitle>
                         <CardDescription className="text-base">
                             {t('loginDescription')}
                         </CardDescription>
@@ -171,7 +209,7 @@ const Login = () => {
                         <div className="flex flex-col gap-4">
                             <Button
                                 variant="outline"
-                                className="w-full relative h-11 hover:bg-primary/5"
+                                className="w-full relative h-11 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all"
                                 onClick={handleGoogleSignIn}
                                 disabled={loading}
                             >
@@ -185,7 +223,7 @@ const Login = () => {
                             </Button>
                             <Button
                                 variant="outline"
-                                className="w-full relative h-11 hover:bg-primary/5"
+                                className="w-full relative h-11 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all"
                                 onClick={handleGithubSignIn}
                                 disabled={loading}
                             >
@@ -221,7 +259,7 @@ const Login = () => {
                                             <FormControl>
                                                 <Input
                                                     placeholder={t('emailPlaceholder')}
-                                                    className="h-11 px-2"
+                                                    className="h-11 px-4 focus:border-purple-500 focus:ring-purple-500/20"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -238,7 +276,7 @@ const Login = () => {
                                                 <FormLabel>{t('passwordLabel')}</FormLabel>
                                                 <a
                                                     href="#"
-                                                    className="text-sm text-muted-foreground hover:text-primary underline-offset-4 hover:underline"
+                                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline-offset-4 hover:underline"
                                                 >
                                                     {t('forgotPassword')}
                                                 </a>
@@ -247,7 +285,7 @@ const Login = () => {
                                                 <Input
                                                     type="password"
                                                     placeholder={t('passwordPlaceholder')}
-                                                    className="h-11 px-2"
+                                                    className="h-11 px-4 focus:border-purple-500 focus:ring-purple-500/20"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -255,7 +293,11 @@ const Login = () => {
                                         </FormItem>
                                     )}
                                 />
-                                <Button type="submit" className="w-full h-11" disabled={loading}>
+                                <Button 
+                                    type="submit" 
+                                    className="w-full h-11 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all" 
+                                    disabled={loading}
+                                >
                                     {t('login')}
                                 </Button>
                             </form>
@@ -263,7 +305,7 @@ const Login = () => {
 
                         <div className="text-center text-sm">
                             <span className="text-muted-foreground">{t('noAccount')}</span>{" "}
-                            <a href="#" className="text-foreground hover:text-primary underline underline-offset-4">
+                            <a href="#" className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline underline-offset-4">
                                 {t('signUp')}
                             </a>
                         </div>

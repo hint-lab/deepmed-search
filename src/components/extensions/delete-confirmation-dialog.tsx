@@ -12,7 +12,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "./extensions/alert-dialog";
+} from "./alert-dialog";
 import { Loader2 } from 'lucide-react';
 
 interface DeleteConfirmationDialogProps {

@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Settings, Sun, Moon, Monitor, Languages, LogOut } from 'lucide-react';
-import { useLanguageSwitcher } from '@/hooks/use-language';
+import { useLanguageContext } from '@/contexts/language-context';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export function SettingsMenu() {
     const { setTheme, theme } = useTheme();
-    const { currentLanguage, changeLanguage } = useLanguageSwitcher();
+    const { currentLanguage, changeLanguage } = useLanguageContext();
     const [mounted, setMounted] = React.useState(false);
     const router = useRouter();
 

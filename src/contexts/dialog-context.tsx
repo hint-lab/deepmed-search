@@ -4,7 +4,7 @@ import { IDialog } from '@/types/dialog';
 import { useUser } from './user-context';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import {
     createChatDialogAction,
     updateChatDialogAction,

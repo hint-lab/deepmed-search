@@ -8,7 +8,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { IDocument } from '@/types/document';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { Wrench, Pencil, MoreHorizontal, Trash2, CopyCheck } from 'lucide-react';
 import { RenameDocumentButton } from './rename-document-dialog';
 import { useState, useCallback } from 'react';

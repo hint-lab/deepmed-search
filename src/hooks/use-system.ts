@@ -1,9 +1,10 @@
 'use client';
 
-import { ISystemStatus, IToken } from '@/types/user-setting';
+import { ISystemStatus } from '@/types/system';
+import { IToken } from '@/types/token';
 import { getSystemStatus, getSystemVersion, getSystemTokenList, createSystemToken, removeSystemToken } from '@/actions/user';
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslate } from '@/contexts/language-context';
 import { toast } from 'sonner';
 
 /**
@@ -120,7 +121,7 @@ export const useFetchSystemTokenList = () => {
  * 删除系统令牌
  */
 export const useRemoveSystemToken = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslate("system");
   const [loading, setLoading] = useState(false);
 
   const removeToken = async (token: string) => {

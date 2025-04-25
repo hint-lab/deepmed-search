@@ -1,25 +1,26 @@
 'use client';
 
-import { ITenant, ITenantUser } from '@/types/user-setting';
+import { ITenant } from '@/types/tenant';
+import { IUser } from '@/types/user';
 import { addTenantUser, deleteTenantUser, listTenantUsers, listTenant, agreeTenant } from '@/actions/tenant';
 import { getTenantInfo } from '@/actions/user';
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { ApiResponse } from '@/types/api';
+import { useTranslate } from '@/contexts/language-context';
 
 /**
  * 获取租户信息
  */
 export function useFetchTenantInfo(showEmptyModelWarn = false) {
-    const { t } = useTranslation();
+    const { t } = useTranslate("tenant");
     const router = useRouter();
     const [data, setData] = useState<ITenant | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true);
             try {
                 const result = await getTenantInfo();
                 if (result.success && result.data) {
@@ -31,27 +32,23 @@ export function useFetchTenantInfo(showEmptyModelWarn = false) {
                             },
                         });
                     }
-                    const tenantData = {
+                    const tenantData: ITenant = {
                         ...result.data,
-                        avatar: '',
-                        delta_seconds: 0,
-                        email: '',
-                        nickname: result.data.name || '',
-                        role: 'owner',
-                        tenant_id: result.data.id,
-                        update_date: result.data.updatedAt.toISOString()
-                    } as ITenant;
+                        users: [],
+                        knowledgeBases: [],
+                    };
                     setData(tenantData);
                 }
             } catch (error) {
                 console.error('获取租户信息失败:', error);
+                setData(null);
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchData();
-    }, [showEmptyModelWarn, t, router]);
+    }, [showEmptyModelWarn, router]);
 
     return { data, isLoading };
 }
@@ -61,32 +58,34 @@ export function useFetchTenantInfo(showEmptyModelWarn = false) {
  */
 export const useListTenantUser = () => {
     const { data: tenantInfo } = useFetchTenantInfo();
-    const [data, setData] = useState<ITenantUser[]>([]);
+    const [data, setData] = useState<IUser[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
-        if (!tenantInfo?.id) return;
+        if (!tenantInfo?.id) {
+            return;
+        }
+        setLoading(true);
         try {
             const result = await listTenantUsers(tenantInfo.id);
             if (result.success && result.data) {
-                const userData = result.data.map(user => ({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    language: user.language,
-                    createdAt: user.createdAt
-                })) as ITenantUser[];
-                setData(userData);
+                setData(result.data as IUser[]);
             }
         } catch (error) {
             console.error('获取租户用户列表失败:', error);
+            setData([]);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
+        if (tenantInfo?.id) {
+            fetchData();
+        } else {
+            setLoading(false);
+            setData([]);
+        }
     }, [tenantInfo?.id]);
 
     return { data, loading, refetch: fetchData };
@@ -97,25 +96,26 @@ export const useListTenantUser = () => {
  */
 export const useAddTenantUser = () => {
     const { data: tenantInfo } = useFetchTenantInfo();
-    const { t } = useTranslation();
+    const { t } = useTranslate('common');
     const [loading, setLoading] = useState(false);
 
-    const addUser = async (email: string): Promise<ITenantUser> => {
-        if (!tenantInfo?.id) throw new Error('租户ID不存在');
+    const addUser = async (email: string): Promise<IUser | null> => {
+        if (!tenantInfo?.id) {
+            toast.error('Tenant ID is missing');
+            return null;
+        };
         setLoading(true);
         try {
             const result = await addTenantUser({ tenantId: tenantInfo.id, email });
             if (result.success && result.data) {
                 toast.success(t('message.added'));
-                return {
-                    id: result.data.id,
-                    name: result.data.name,
-                    email: result.data.email,
-                    language: result.data.language,
-                    createdAt: result.data.createdAt
-                };
+                return result.data as IUser;
             }
-            throw new Error(result.error);
+            toast.error(result.error || 'Failed to add user');
+            return null;
+        } catch (error: any) {
+            toast.error(error.message || 'An unexpected error occurred');
+            return null;
         } finally {
             setLoading(false);
         }
@@ -129,7 +129,7 @@ export const useAddTenantUser = () => {
  */
 export const useDeleteTenantUser = () => {
     const { data: tenantInfo } = useFetchTenantInfo();
-    const { t } = useTranslation();
+    const { t } = useTranslate('common');
     const [loading, setLoading] = useState(false);
 
     const deleteUser = async ({
@@ -138,21 +138,28 @@ export const useDeleteTenantUser = () => {
     }: {
         userId: string;
         tenantId?: string;
-    }): Promise<void> => {
-        if (!tenantId && !tenantInfo?.id) {
-            throw new Error('租户ID不存在');
+    }): Promise<boolean> => {
+        const effectiveTenantId = tenantId ?? tenantInfo?.id;
+        if (!effectiveTenantId) {
+            toast.error('Tenant ID is missing');
+            return false;
         }
         setLoading(true);
         try {
             const result = await deleteTenantUser({
-                tenantId: tenantId ?? tenantInfo?.id as string,
+                tenantId: effectiveTenantId,
                 userId,
             });
             if (result.success) {
                 toast.success(t('message.deleted'));
+                return true;
             } else {
-                throw new Error(result.error);
+                toast.error(result.error || 'Failed to delete user');
+                return false;
             }
+        } catch (error: any) {
+            toast.error(error.message || 'An unexpected error occurred');
+            return false;
         } finally {
             setLoading(false);
         }
@@ -169,23 +176,20 @@ export const useListTenant = () => {
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
             const result = await listTenant();
             if (result.success && result.data) {
-                const tenantData = result.data.map(tenant => ({
+                const tenantData: ITenant[] = result.data.map(tenant => ({
                     ...tenant,
-                    avatar: '',
-                    delta_seconds: 0,
-                    email: '',
-                    nickname: tenant.name || '',
-                    role: 'owner',
-                    tenant_id: tenant.id,
-                    update_date: tenant.updatedAt.toISOString()
-                })) as ITenant[];
+                    users: [],
+                    knowledgeBases: [],
+                }));
                 setData(tenantData);
             }
         } catch (error) {
             console.error('获取租户列表失败:', error);
+            setData([]);
         } finally {
             setLoading(false);
         }
@@ -202,30 +206,27 @@ export const useListTenant = () => {
  * 同意租户邀请
  */
 export const useAgreeTenant = () => {
-    const { t } = useTranslation();
+    const { t } = useTranslate('common');
     const [loading, setLoading] = useState(false);
 
-    const agree = async (tenantId: string): Promise<ITenant> => {
+    const agree = async (tenantId: string): Promise<ITenant | null> => {
         setLoading(true);
         try {
             const result = await agreeTenant(tenantId);
-            if (result.success && result.data) {
+            if (result.success && result.data?.tenant) {
                 toast.success(t('message.operated'));
-                return {
-                    id: result.data.id,
-                    avatar: '',
-                    delta_seconds: 0,
-                    email: '',
-                    nickname: result.data.name || '',
-                    role: 'owner',
-                    tenant_id: result.data.id,
-                    update_date: result.data.updatedAt.toISOString(),
-                    name: result.data.name || '',
-                    createdAt: result.data.createdAt,
-                    updatedAt: result.data.updatedAt
+                const agreedTenant: ITenant = {
+                    ...result.data.tenant,
+                    users: [],
+                    knowledgeBases: [],
                 };
+                return agreedTenant;
             }
-            throw new Error(result.error);
+            toast.error(result.error || 'Failed to agree to tenant invitation');
+            return null;
+        } catch (error: any) {
+            toast.error(error.message || 'An unexpected error occurred');
+            return null;
         } finally {
             setLoading(false);
         }

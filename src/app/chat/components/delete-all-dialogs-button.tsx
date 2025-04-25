@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { IDialog } from '@/types/dialog';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { DeleteConfirmationDialog } from '@/components/extensions/delete-confirmation-dialog';
 import { toast } from 'sonner';
 import { useDialog } from '@/contexts/dialog-context';
 

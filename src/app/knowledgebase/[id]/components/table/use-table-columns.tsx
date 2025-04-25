@@ -13,7 +13,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Switch } from '@/components/ui/switch';
 import { ArrowUpDown } from 'lucide-react';
 import { useCallback, useState, useRef, useEffect } from 'react';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentOptionDropdownButton } from './components/option-dropdown';

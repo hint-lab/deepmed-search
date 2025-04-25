@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useUser } from '@/contexts/user-context';
 import { useChat } from '@/contexts/chat-context';
 import { toast } from 'sonner';

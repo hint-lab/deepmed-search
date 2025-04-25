@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
 import { FileText, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button'

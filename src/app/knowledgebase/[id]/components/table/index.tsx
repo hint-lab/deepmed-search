@@ -30,7 +30,7 @@ import { useFetchDocumentList } from '@/hooks/use-document';
 import { IDocument } from '@/types/document';
 import { getExtension } from '@/utils/document-util';
 import { useTableColumns } from './use-table-columns';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useChangeDocumentParser } from '@/hooks/use-document-parser';
 import { cn } from '@/lib/utils';
 

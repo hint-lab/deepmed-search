@@ -7,11 +7,7 @@ export interface ITenant {
     name: string;
     embd_id?: string | null;
     llm_id?: string | null;
-    asr_id?: string | null;
-    parser_ids?: string | null;
-    chat_id?: string | null;
-    speech2text_id?: string | null;
-    tts_id?: string | null;
+    parser_ids?: string[] | null;
     users: IUser[];
     knowledgeBases: IKnowledgeBase[];
     createdAt: Date;

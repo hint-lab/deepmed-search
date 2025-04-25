@@ -1,63 +1,232 @@
 graph LR
     subgraph Frontend[用户浏览器 Frontend]
         direction LR
-        UI[Next.js统一搜索入口<br>搜索结果页Web/LLM/KB <br> shadcn/ui, React Context]
+        subgraph Pages[页面 src/app]
+            HomePage[首页 page.tsx]
+            SearchPage[搜索入口页 /search]
+            WebResultPage[Web搜索结果页 /search/web]
+            LlmResultPage[LLM搜索结果页 /search/llm]
+            KbResultPage[KB搜索结果页 /search/kb]
+            ResearchPage[研究页面 /research]
+            ChatPage[聊天页面 /chat]
+            KnowledgeBasePage[知识库管理页面 /knowledgebase]
+            LoginPage[登录页面 /login]
+            DevToolsPage[开发工具页面 /dev-tools]
+        end
+
+        subgraph Components[组件 src/components]
+            UI[shadcn/ui组件集]
+            FileUploader[文件上传器 file-uploader.tsx]
+            ChunkList[文本块列表 chunk-list.tsx]
+            MarkdownContent[Markdown渲染 markdown-content.tsx]
+            FileIcon[文件图标 file-icon.tsx]
+            SearchVector[向量搜索 search-vector.tsx]
+            ChunkSettings[分块设置 chunk-settings.tsx]
+            ChunkMethodDialog[分块方法对话框 chunk-method-dialog.tsx]
+            DeleteConfirmation[删除确认对话框 delete-confirmation-dialog.tsx]
+            ProtectedRoute[受保护路由 protected-route.tsx]
+            HeaderComponents[头部组件 header/*]
+            SearchComponents[搜索组件 search/*]
+            ExtensionComponents[扩展组件 extensions/*]
+        end
+
+        subgraph Hooks[钩子 src/hooks]
+            UseSearch[搜索钩子]
+            UseLanguage[语言钩子]
+            UseKBManagement[知识库管理钩子]
+        end
+
+        subgraph Contexts[上下文 src/contexts]
+            UserContext[用户上下文]
+            KnowledgeBaseContext[知识库上下文]
+        end
+
+        subgraph Utils[工具函数 src/utils]
+            CommonUtils[通用工具函数]
+            DateUtils[日期工具]
+            FormatUtils[格式化工具]
+        end
     end
 
     subgraph Backend[Next.js 服务器 Backend]
         direction TB
-        Actions[Server Actions]
-
-        subgraph SearchActions[搜索 Actions]
-            KbAction[performKbSearchAction]
-            WebAction[performWebSearchAction]
-            LlmAction[performLlmSearchAction]
+        Middleware[中间件 middleware.ts]
+        
+        subgraph ServerActions[服务器动作 src/actions]
+            KbSearchAction[知识库搜索 kb-search.ts]
+            WebSearchAction[网页搜索 web-search.ts]
+            LlmSearchAction[LLM搜索 llm-search.ts]
+            ChatAction[聊天 chat.ts]
+            DocumentAction[文档管理 document.ts]
+            KnowledgebaseAction[知识库管理 knowledgebase.ts]
+            DocumentProcessAction[文档处理 document-process.ts]
+            QueueAction[队列管理 queue.ts]
+            ResearchAction[研究 research.ts]
+            ChunkAction[文本块管理 chunk.ts]
+            FileUploadAction[文件上传 file-upload.ts]
+            MinioAction[对象存储 minio.ts]
+            SystemDiagnosticsAction[系统诊断 system-diagnostics.ts]
+            TenantAction[租户管理 tenant.ts]
+            UserAction[用户管理 user.ts]
         end
 
-        subgraph KbManagement[知识库管理 Actions]
-            KbMgmt[创建/列表/更新/删除 KB]
+        subgraph Libraries[库 src/lib]
+            PrismaClient[Prisma客户端 prisma.ts]
+            RedisClient[Redis客户端 redis-client.ts]
+            InitServer[服务器初始化 init-server.ts]
+            Auth[认证 auth.ts]
+            AuthUtils[认证工具 auth-utils.ts]
+            FileSystem[文件系统 fs.ts]
+            Utils[工具函数 utils.ts]
+            
+            subgraph OpenAI[OpenAI库 openai/]
+                EmbeddingClient[Embedding客户端]
+            end
+            
+            subgraph Pgvector[PgVector库 pgvector/]
+                VectorOperations[向量操作]
+            end
+            
+            subgraph WebSearch[Web搜索库 web-search/]
+                WebSearchCommon[通用搜索逻辑]
+                TavilyImpl[Tavily实现]
+                JinaImpl[Jina实现]
+                DDGImpl[DuckDuckGo实现]
+            end
+            
+            subgraph LlmSearch[LLM搜索库 llm-search/]
+                LlmSearchCommon[通用LLM搜索逻辑]
+                OpenAIImpl[OpenAI实现]
+                GeminiImpl[Gemini实现]
+                DeepSeekImpl[DeepSeek实现]
+            end
+            
+            subgraph DeepResearch[深度研究 deep-research/]
+                ResearchCore[研究核心逻辑]
+            end
+            
+            subgraph BullMQ[BullMQ库 bullmq/]
+                QueueManager[队列管理]
+                Workers[工作进程]
+            end
+            
+            subgraph ZeroX[ZeroX库 zerox/]
+                ZeroXClient[ZeroX客户端]
+            end
+            
+            subgraph MinioLib[MinIO库 minio/]
+                MinioClient[MinIO客户端]
+                FileManagement[文件管理]
+            end
+            
+            subgraph ChunkIndexer[分块索引器 chunk-indexer/]
+                IndexerCore[索引核心]
+                VectorIndex[向量索引]
+            end
+            
+            subgraph DocumentSplitter[文档分割 document-splitter/]
+                SplitterCore[分割核心]
+                StrategyFactory[分割策略工厂]
+            end
         end
-
-        Actions --> KbAction
-        Actions --> WebAction
-        Actions --> LlmAction
-        Actions --> KbMgmt
+        
+        subgraph TypeDefinitions[类型定义 src/types]
+            ApiTypes[API类型]
+            ModelTypes[模型类型]
+            CommonTypes[通用类型]
+        end
+        
+        subgraph I18n[国际化 src/i18n]
+            Translations[翻译文件]
+            I18nConfig[国际化配置]
+        end
+        
+        subgraph Providers[提供者 src/providers]
+            AuthProvider[认证提供者]
+            ThemeProvider[主题提供者]
+        end
+        
+        subgraph Constants[常量 src/constants]
+            ApiConstants[API常量]
+            UIConstants[UI常量]
+        end
     end
 
     subgraph DatabaseStorage[数据库 & 存储]
         direction TB
-        PG_Structured[PostgreSQL结构化数据Prisma]
-        PG_Vector[PostgreSQL <br> pgvector <br> 向量嵌入]
-        MinIO[MinIO/文件存储/知识库文档]
-        Redis[Redis<br>缓存/会话]
+        PG_Structured[PostgreSQL结构化数据<br>使用Prisma ORM]
+        PG_Vector[PostgreSQL<br>pgvector<br>向量嵌入]
+        MinIO[MinIO<br>对象存储<br>文档/知识库文件]
+        Redis[Redis<br>缓存/会话/队列]
+        
+        subgraph PrismaSchema[Prisma Schema 模型]
+            UserModel[用户模型]
+            TenantModel[租户模型]
+            DialogModel[对话模型]
+            MessageModel[消息模型]
+            KnowledgeBaseModel[知识库模型]
+            DocumentModel[文档模型]
+            ChunkModel[分块模型]
+            TagModel[标签模型]
+            SystemTokenModel[系统令牌模型]
+            UploadFileModel[上传文件模型]
+            SystemStatusModel[系统状态模型]
+            RelatedQuestionModel[相关问题模型]
+        end
     end
 
     subgraph ExternalServices[外部服务 / API]
         direction TB
-        EmbeddingAPI[Embedding API <br> e.g., OpenAI]
-        WebAPIs[Web 搜索 API <br> Tavily, Jina, DDG]
-        LLMAPIs[LLM API <br> Gemini, GPT, DeepSeek, Proxy?]
-        OAuth[OAuth 提供商 <br> Google, GitHub]
+        EmbeddingAPI[Embedding API<br>e.g., OpenAI]
+        WebAPIs[Web 搜索 API<br>Tavily, Jina, DDG]
+        LLMAPIs[LLM API<br>Gemini, GPT, DeepSeek]
+        OAuth[OAuth 提供商<br>Google, GitHub]
     end
 
-    UI -->|1.用户交互输入查询, 选择KB/模型/引擎, 点击块| Actions
-    Actions -->|8.返回结果/状态| UI
-
-    KbAction -->|2.生成 Embedding| EmbeddingAPI
-    KbAction -->|3.搜索相似块| PG_Vector
-    PG_Vector -->|4.返回文本块| KbAction
-
-    WebAction -->|5.调用| WebAPIs
-    LlmAction -->|6.调用| LLMAPIs
-
-    KbMgmt -->|7.CRUD 操作| PG_Structured
-    KbMgmt -->|文件操作| MinIO
-
-    %% 一些隐含的连接
-    Actions --> 读取配置 --> 环境变量.env
-    UI --> 认证检查 --> NextAuth --> 使用 --> OAuth/DB
-
+    %% 前端到后端的连接
+    Pages -- 用户操作 --> Components
+    Components -- 调用钩子 --> Hooks
+    Hooks -- 使用上下文 --> Contexts
+    Hooks -- 调用服务器动作 --> ServerActions
+    
+    %% 服务器动作连接
+    ServerActions -- 使用库 --> Libraries
+    ServerActions -- 使用类型 --> TypeDefinitions
+    Libraries -- 使用类型 --> TypeDefinitions
+    Libraries -- 使用常量 --> Constants
+    Libraries -- 使用国际化 --> I18n
+    
+    %% 数据库连接
+    Libraries -- 数据访问 --> PG_Structured
+    Libraries -- 向量操作 --> PG_Vector
+    Libraries -- 文件存储 --> MinIO
+    Libraries -- 缓存/队列 --> Redis
+    PG_Structured -- 模型定义 --> PrismaSchema
+    
+    %% 外部服务连接
+    OpenAI -- 调用 --> EmbeddingAPI
+    WebSearch -- 调用 --> WebAPIs
+    LlmSearch -- 调用 --> LLMAPIs
+    Auth -- 调用 --> OAuth
+    
+    %% 中间件连接
+    Middleware -- 认证/路由保护 --> Auth
+    Middleware -- 国际化处理 --> I18n
+    
+    %% 样式定义
     style Frontend fill:#D1E8FF,stroke:#333
     style Backend fill:#E0E0E0,stroke:#333
     style DatabaseStorage fill:#FFF2CC,stroke:#333
     style ExternalServices fill:#FFD1DC,stroke:#333
+    style Pages fill:#B4D7FF,stroke:#333
+    style Components fill:#B4D7FF,stroke:#333
+    style Hooks fill:#B4D7FF,stroke:#333
+    style Contexts fill:#B4D7FF,stroke:#333
+    style Utils fill:#B4D7FF,stroke:#333
+    style ServerActions fill:#CCCCCC,stroke:#333
+    style Libraries fill:#CCCCCC,stroke:#333
+    style TypeDefinitions fill:#CCCCCC,stroke:#333
+    style I18n fill:#CCCCCC,stroke:#333
+    style Providers fill:#CCCCCC,stroke:#333
+    style Constants fill:#CCCCCC,stroke:#333
+    style PrismaSchema fill:#FFF2BB,stroke:#333

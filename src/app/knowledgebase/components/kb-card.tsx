@@ -19,9 +19,10 @@ import {
 import { toast } from 'sonner';
 import { formatDate } from '@/utils/date';
 import { useRouter } from 'next/navigation';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useEffect } from 'react';
 import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+
 /**
  * 知识库卡片组件的属性接口
  */

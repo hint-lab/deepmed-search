@@ -5,7 +5,7 @@ import { KnowledgeBaseTable, KnowledgeBaseTableRef } from './components/table';
 import { KnowledgeBaseSettings } from './components/settings';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useParams } from 'next/navigation';

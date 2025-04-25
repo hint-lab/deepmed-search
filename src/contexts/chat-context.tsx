@@ -30,7 +30,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const { userInfo } = useUser();
     const {
         sendMessageWithSSE,
-        isLoading: isSendingMessage,
+        isPending: isSendingMessage,
         partialResponse,
         cancelStream: sseCancelStream, // Renamed to avoid conflict
     } = useSendMessageWithSSE();

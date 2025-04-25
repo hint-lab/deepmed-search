@@ -10,7 +10,7 @@ import { IChunk } from '@/types/chunk';
 import { IDocument } from '@/types/document';
 import { getDocumentChunksAction, toggleChunkAvailabilityAction } from '@/actions/chunk';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 

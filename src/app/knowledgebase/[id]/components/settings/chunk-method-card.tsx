@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { useSelectParserList, ParserItem } from '@/hooks/use-user-setting';
 import camelCase from 'lodash/camelCase';
 import { useMemo } from 'react';

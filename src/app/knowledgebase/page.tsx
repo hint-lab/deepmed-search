@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import { KnowledgeBaseCard } from './components/kb-card';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

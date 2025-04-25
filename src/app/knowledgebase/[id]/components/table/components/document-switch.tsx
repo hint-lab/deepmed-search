@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { Switch } from "@/components/ui/switch";
 import { setDocumentMetaAction } from '@/actions/document';
 import { toast } from 'sonner';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 
 interface DocumentSwitchProps {
     documentId: string;

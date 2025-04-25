@@ -64,8 +64,7 @@ async function createTestTenant() {
                 name: tenantName,
                 embd_id: 'test-embd-id',
                 llm_id: 'test-llm-id',
-                asr_id: 'test-asr-id',
-                parser_ids: 'test-parser-ids',
+                parser_ids: ['test-parser-ids'],
             },
         });
 

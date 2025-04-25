@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession, signOut } from "next-auth/react";
-import { useTranslate } from "@/hooks/use-language";
+import { useTranslate } from "@/contexts/language-context";
 import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash, File } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";

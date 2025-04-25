@@ -52,6 +52,7 @@
     "@types/minio": "^7.1.1",
     "@types/tesseract.js": "^2.0.0",
     "@types/uuid": "^10.0.0",
+    "@types/xml2js": "^0.4.14",
     "@xyflow/react": "^12.5.4",
     "add": "^2.0.6",
     "ai": "^4.3.9",

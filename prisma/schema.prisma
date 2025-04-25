@@ -39,11 +39,7 @@ model Tenant {
   name         String         // 租户名称
   embd_id      String?        // 嵌入模型ID
   llm_id       String?        // 语言模型ID
-  asr_id       String?        // 语音识别模型ID
-  parser_ids   String?        // 解析器ID列表
-  chat_id      String?        // 聊天模型ID
-  speech2text_id String?      // 语音转文本模型ID
-  tts_id       String?        // 文本转语音模型ID
+  parser_ids   String[]       @default([]) // 解析器ID列表 
   users        User[]         // 租户下的用户列表
   knowledgeBases KnowledgeBase[]  // 租户的知识库列表
   createdAt    DateTime      @default(now())  // 创建时间

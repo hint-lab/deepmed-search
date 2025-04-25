@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTranslate } from '@/hooks/use-language';
+import { useTranslate } from '@/contexts/language-context';
 import Sidebar from './components/sidebar';
 
 // 定义布局组件的 Props 类型
