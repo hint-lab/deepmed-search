@@ -1,38 +1,43 @@
 "use client";
-import { createContext, useContext, useState, ReactNode, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useRef, useEffect } from 'react';
 import { useSendMessageWithSSE } from '@/hooks/use-chat';
-import { useUser } from './user-context'; // Assuming user context is needed
-import { toast } from 'sonner';
-import { IMessage } from '@/types/message'; // Assuming IMessage type is needed
-import { MessageType } from '@/constants/chat'; // Assuming MessageType is needed
+import { IMessage } from '@/types/message';
+import { MessageType } from '@/constants/chat';
+import { useSession } from "next-auth/react";
+import { fetchChatMessagesAction } from '@/actions/chat';
 
 // Type for the message setter function
 type MessagesSetter = React.Dispatch<React.SetStateAction<IMessage[]>>;
 
 interface ChatContextType {
-    initialMessage: string | null;
-    setInitialMessage: (message: string | null) => void;
-    inputValue: string;
-    setInputValue: (value: string) => void;
     isSendingMessage: boolean;
-    partialResponse: string | undefined; // Expose partial response if needed by ChatMessages directly
+    partialResponse: string | undefined;
     streamingMessageId: string | null;
-    sendMessage: (dialogId: string, content: string, knowledgeBaseId?: string) => Promise<boolean>; // Simplified signature
+    sendMessage: (content: string, dialogId: string) => Promise<boolean>;
     cancelStream: () => void;
-    registerMessagesSetter: (dialogId: string, setter: MessagesSetter | null) => void; // New: Register setter
+    registerMessagesSetter: (dialogId: string, setter: MessagesSetter | null) => void;
+    messages: IMessage[];
+    setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+    isLoadingMessages: boolean;
+    loadChatHistory: (dialogId: string) => Promise<void>;
+    currentDialogId: string | null;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-    const [initialMessage, setInitialMessage] = useState<string | null>(null);
-    const [inputValue, setInputValue] = useState('');
-    const { userInfo } = useUser();
+    const { data: session } = useSession();
+    const [messages, setMessages] = useState<IMessage[]>([]);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+    const [historyLoaded, setHistoryLoaded] = useState(false);
+    const processedDialogIdRef = useRef<string | null>(null);
+    const [currentDialogId, setCurrentDialogId] = useState<string | null>(null);
+
     const {
         sendMessageWithSSE,
         isPending: isSendingMessage,
         partialResponse,
-        cancelStream: sseCancelStream, // Renamed to avoid conflict
+        cancelStream: sseCancelStream,
     } = useSendMessageWithSSE();
     const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 
@@ -42,84 +47,105 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Function to register or unregister a setter
     const registerMessagesSetter = useCallback((dialogId: string, setter: MessagesSetter | null) => {
         console.log(`[Context] ${setter ? 'Registering' : 'Unregistering'} setter for dialog: ${dialogId}`);
+        console.log(`[Context] Current setters:`, Object.keys(messagesSettersRef.current));
         if (setter) {
             messagesSettersRef.current[dialogId] = setter;
         } else {
             delete messagesSettersRef.current[dialogId];
         }
+        console.log(`[Context] Updated setters:`, Object.keys(messagesSettersRef.current));
     }, []);
 
+    // 加载聊天历史
+    const loadChatHistory = useCallback(async (dialogId: string) => {
+        if (dialogId && dialogId !== processedDialogIdRef.current) {
+            processedDialogIdRef.current = dialogId;
+            console.log("Effect 1: Starting history load for new dialogId:", dialogId);
+            setHistoryLoaded(false);
+            setMessages([]);
+            setIsLoadingMessages(true);
+
+            try {
+                const result = await fetchChatMessagesAction(dialogId);
+                if (result.success) {
+                    console.log("Effect 1: History fetch completed for dialogId:", dialogId);
+                    setMessages(result.data as IMessage[]);
+                    setHistoryLoaded(true);
+                } else {
+                    throw new Error(result.error || 'Failed to fetch messages');
+                }
+            } catch (error) {
+                console.error("Effect 1: History fetch failed:", error);
+                setHistoryLoaded(false);
+            } finally {
+                setIsLoadingMessages(false);
+            }
+        }
+    }, []);
+
+    // 处理流式响应
+    useEffect(() => {
+        if (streamingMessageId && partialResponse !== undefined) {
+            console.log(`[Context] Updating streaming message: ${streamingMessageId}`);
+            setMessages(prevMessages =>
+                prevMessages.map((msg: IMessage) =>
+                    msg.id === streamingMessageId
+                        ? { ...msg, content: partialResponse }
+                        : msg
+                )
+            );
+        }
+    }, [partialResponse, streamingMessageId]);
+
     // Updated sendMessage to use the registered setter for optimistic updates
-    const sendMessage = useCallback(async (
-        dialogId: string,
-        content: string,
-        knowledgeBaseId?: string
-    ): Promise<boolean> => {
-        if (!content.trim() || isSendingMessage) return false;
-
-        const setMessages = messagesSettersRef.current[dialogId];
-        if (!setMessages) {
-            console.error(`[Context] No messages setter registered for dialog ${dialogId}`);
-            toast.error("无法发送消息：内部错误");
-            return false;
-        }
-
-        const tempUserMessageId = `temp-user-${Date.now()}`;
-        const tempAssistantMessageId = `temp-assistant-${Date.now()}`;
-
-        if (!userInfo?.id) {
-            console.error("用户未登录");
-            toast.error("请先登录再发送消息");
-            return false;
-        }
-
-        // Perform optimistic update using registered setter
-        const optimisticUserMessage: IMessage = { id: tempUserMessageId, content, role: MessageType.User, createdAt: new Date(), updatedAt: new Date(), dialogId: dialogId, userId: userInfo.id };
-        const optimisticAssistantMessage: IMessage = { id: tempAssistantMessageId, content: '', role: MessageType.Assistant, createdAt: new Date(), updatedAt: new Date(), dialogId: dialogId, userId: userInfo.id };
-        console.log('[Context] Performing optimistic update & setting streaming ID:', tempAssistantMessageId);
-        setMessages(prev => [...prev, optimisticUserMessage, optimisticAssistantMessage]);
-        setStreamingMessageId(tempAssistantMessageId);
+    const sendMessage = useCallback(async (content: string, dialogId: string): Promise<boolean> => {
+        if (!content.trim() || isSendingMessage || !dialogId || !session?.user?.id) return false;
 
         try {
-            console.log("[Context] 开始 SSE 流式请求:", { dialogId, content, userId: userInfo.id });
-            const result = await sendMessageWithSSE(dialogId, content, userInfo.id, knowledgeBaseId);
-            console.log("[Context] SSE 请求完成:", result);
+            // 创建临时消息ID
+            const userMessageId = `temp-user-${Date.now()}`;
+            const assistantMessageId = `temp-assistant-${Date.now()}`;
 
-            if (!result.success) {
-                const isAbortError = result.error?.includes('aborted') || result.error?.includes('cancel');
-                if (!isAbortError) {
-                    console.error("[Context] 流式消息发送失败:", result.error);
-                    toast.error("发送消息失败" + (result.error ? `: ${result.error}` : ''));
-                    // Remove optimistic messages on failure
-                    setMessages(prev => prev.filter(msg => msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId));
-                } else {
-                    console.log("[Context] 流式消息请求被取消:", result.error);
-                    // Cancellation removes messages via cancelStream handler
-                }
-                return false;
-            } else {
-                console.log("[Context] 流式消息完成，最终内容长度:", result.content?.length);
-                // Update final message content via partialResponse effect in page
-                if (result.content !== undefined) {
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === tempAssistantMessageId
-                            ? { ...msg, content: result.content }
-                            : msg
-                    ));
-                }
+            // 添加用户消息和空的AI回复到消息列表
+            const userMessage: IMessage = {
+                id: userMessageId,
+                content: content,
+                role: MessageType.User,
+                dialogId: dialogId,
+                userId: session.user.id,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            const assistantMessage: IMessage = {
+                id: assistantMessageId,
+                content: '',
+                role: MessageType.Assistant,
+                dialogId: dialogId,
+                userId: session.user.id,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+
+            // 更新本地消息和注册的对话消息
+            setMessages(prev => [...prev, userMessage, assistantMessage]);
+            if (messagesSettersRef.current[dialogId]) {
+                messagesSettersRef.current[dialogId](prev => [...prev, userMessage, assistantMessage]);
+            }
+
+            // 设置正在流式传输的消息ID
+            setStreamingMessageId(assistantMessageId);
+
+            const result = await sendMessageWithSSE(dialogId, content, session.user.id);
+            if (result.success) {
                 return true;
             }
-        } catch (error) {
-            console.error("[Context] 发送流式消息失败:", error);
-            toast.error("发送消息时发生未知错误");
-            // Remove optimistic messages on error
-            setMessages(prev => prev.filter(msg => msg.id !== tempUserMessageId && msg.id !== tempAssistantMessageId));
             return false;
-        } finally {
-            console.log('[Context] Clearing streaming ID in finally block. ID was:', tempAssistantMessageId);
-            setStreamingMessageId(null);
+        } catch (error) {
+            console.error("发送消息失败:", error);
+            return false;
         }
-    }, [isSendingMessage, sendMessageWithSSE, userInfo]);
+    }, [isSendingMessage, currentDialogId, sendMessageWithSSE, session?.user?.id]);
 
     const cancelStream = useCallback(() => {
         console.log("[Context] Cancelling stream");
@@ -140,23 +166,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     return (
         <ChatContext.Provider value={{
-            initialMessage,
-            setInitialMessage,
-            inputValue,
-            setInputValue,
             isSendingMessage,
-            partialResponse, // Keep exposing partial response
+            partialResponse,
             streamingMessageId,
             sendMessage,
             cancelStream,
-            registerMessagesSetter // Expose registration function
+            registerMessagesSetter,
+            messages,
+            setMessages,
+            isLoadingMessages,
+            loadChatHistory,
+            currentDialogId
         }}>
             {children}
         </ChatContext.Provider>
     );
 }
 
-export function useChat() {
+export function useChatContext() {
     const context = useContext(ChatContext);
     if (context === undefined) {
         throw new Error('useChat must be used within a ChatProvider');

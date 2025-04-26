@@ -9,14 +9,13 @@ import { Plus, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useUser } from '@/contexts/user-context';
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 import CreateKnowledgeBaseButton from './components/create-button';
 import { IKnowledgeBase } from '@/types/knowledgebase';
-
+import { useSession } from "next-auth/react"
 export default function KnowledgeBaseListPage() {
     const { t } = useTranslate('knowledgeBase');
-    const { userInfo } = useUser();
+    const { data: session } = useSession();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [searchString, setSearchString] = useState('');
     const {
@@ -24,7 +23,7 @@ export default function KnowledgeBaseListPage() {
         isLoading,
         isCreating,
         fetchKnowledgeBases
-    } = useKnowledgeBase();
+    } = useKnowledgeBaseContext();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchString(e.target.value);
@@ -42,7 +41,7 @@ export default function KnowledgeBaseListPage() {
                 <div className="flex justify-between items-start px-[60px] p-[72px]">
                     <div className='flex flex-col space-y-2 pl-2'>
                         <span className="font-inter text-[30px] font-semibold leading-[38px] text-primary">
-                            {t('welcome')}, {userInfo?.name || t('guest')}
+                            {t('welcome')}, {session?.user?.name || t('guest')}
                         </span>
                         <p className="font-inter text-base font-normal leading-6">
                             {t('description')}

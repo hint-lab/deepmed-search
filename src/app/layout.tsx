@@ -7,7 +7,6 @@ import { I18nProvider } from '@/providers/i18n-provider';
 import '@/styles/globals.css';
 import { Toaster } from "@/components/ui/sonner"
 import Header from '@/components/header';
-import { UserProvider } from '@/contexts/user-context';
 import { initializeServer } from '@/lib/init-server';
 import { ChatProvider } from '@/contexts/chat-context';
 
@@ -41,18 +40,14 @@ export default async function RootLayout({
                     <I18nProvider>
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
-                                <UserProvider>
-
-                                    <ChatProvider>
-                                        <div className="fixed flex flex-col h-full w-full overflow-hidden">
-                                            <Header />
-                                            <main className="flex-1 overflow-auto h-full">
-                                                {children}
-                                            </main>
-                                        </div>
-                                    </ChatProvider>
-
-                                </UserProvider>
+                                <ChatProvider>
+                                    <div className="fixed flex flex-col h-full w-full overflow-hidden">
+                                        <Header />
+                                        <main className="flex-1 overflow-auto h-full">
+                                            {children}
+                                        </main>
+                                    </div>
+                                </ChatProvider>
                             </TooltipProvider>
                         </NextThemeProvider>
                     </I18nProvider>

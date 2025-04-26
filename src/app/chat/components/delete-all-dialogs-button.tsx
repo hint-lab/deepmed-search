@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { IDialog } from '@/types/dialog';
 import { DeleteConfirmationDialog } from '@/components/extensions/delete-confirmation-dialog';
 import { toast } from 'sonner';
-import { useDialog } from '@/contexts/dialog-context';
+import { useDialogContext } from '@/contexts/dialog-context';
 
 interface DeleteAllDialogsButtonProps {
     dialogs: IDialog[];
@@ -17,7 +17,7 @@ interface DeleteAllDialogsButtonProps {
 export default function DeleteAllDialogsButton({ dialogs }: DeleteAllDialogsButtonProps) {
     const { t } = useTranslate('chat');
     const router = useRouter();
-    const { refreshDialogs, deleteDialog, isDeleting } = useDialog();
+    const { refreshDialogs, deleteDialog, isDeleting } = useDialogContext();
     const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
     const handleDeleteAllDialog = async () => {

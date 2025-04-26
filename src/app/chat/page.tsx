@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
 import { useTranslate } from '@/contexts/language-context';
-import { useUser } from '@/contexts/user-context';
-import { useChat } from '@/contexts/chat-context';
+import { useChatContext } from '@/contexts/chat-context';
 import { toast } from 'sonner';
-import { useDialog } from '@/contexts/dialog-context';
+import { useDialogContext } from '@/contexts/dialog-context';
+import { useSession } from 'next-auth/react';
+import { useChatInput } from '@/hooks/use-chat-input';
+
 // Define a type for the initial prompt examples
 interface PromptExample {
   titleKey: string;
@@ -19,26 +21,26 @@ export default function ChatPage() {
 
   const { t } = useTranslate('chat');
   const router = useRouter();
-  const { createDialog, isCreating } = useDialog();
-  const { userInfo } = useUser();
-  const { setInitialMessage } = useChat();
-
+  const { createDialog, isCreating } = useDialogContext();
+  const { data: session } = useSession();
+  const { } = useChatContext();
+  const { handleSendMessage } = useChatInput();
   // Renamed createAndNavigate back to original name, it handles example clicks
   const handleExampleClick = async (promptKey: string) => {
     const messageContent = t(promptKey);
     if (!messageContent.trim() || isCreating) return; // Use isCreatingDialog for loading state
 
     try {
-      if (!userInfo?.id) {
+      if (!session?.user?.id) {
         throw new Error("用户未登录");
       }
       const defaultName = messageContent.split(' ').slice(0, 5).join(' ') || t('newChat');
-      const newDialog = await createDialog({ name: defaultName, userId: userInfo.id });
+      const newDialog = await createDialog({ name: defaultName, userId: session?.user?.id });
 
       if (!newDialog?.id) {
         throw new Error("Failed to create dialog");
       }
-      setInitialMessage(messageContent);
+      handleSendMessage(messageContent);
       router.push(`/chat/${newDialog.id}`);
     } catch (error) {
       console.error("Failed to create dialog or navigate:", error);

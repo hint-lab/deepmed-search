@@ -17,10 +17,10 @@ import { z } from 'zod';
 import { IDialog } from '@/types/dialog';
 import { DeleteConfirmationDialog } from '@/components/extensions/delete-confirmation-dialog';
 import { toast } from 'sonner';
-import { CreateChatDialogButton } from './create-dialog-button';
-import { ChatSidebarItem } from './chat-sidebar-item';
+import { CreateChatDialogButton } from './create-button';
+import { ChatSidebarItem } from './item';
 dayjs.extend(relativeTime);
-import { useDialog } from '@/contexts/dialog-context';
+import { useDialogContext } from '@/contexts/dialog-context';
 
 
 
@@ -28,7 +28,7 @@ export default function ChatSidebar() {
   const { t } = useTranslate('chat');
   const router = useRouter();
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
-  const { dialogs, deleteDialog, isDeleting, isLoading, currentDialogId } = useDialog();
+  const { dialogs, deleteDialog, currentDialog } = useDialogContext();
   const handleDeleteAllDialog = async () => {
     try {
       const deletePromises = dialogs.map(dialog => deleteDialog(dialog.id));
@@ -55,8 +55,7 @@ export default function ChatSidebar() {
 
   useEffect(() => {
     console.log(dialogs);
-    router.refresh();
-  }, [dialogs]);
+  }, []);
   return (
     <div className="w-80 border-r bg-background flex flex-col h-screen">
       <div className="flex h-14 items-center border-b px-4 justify-between">
@@ -91,11 +90,12 @@ export default function ChatSidebar() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {isLoading ? (
+        {/* {isLoading ? (
           Array.from({ length: 5 }).map((_, index) => (
             <Skeleton key={index} className="h-16 w-full rounded-lg" />
           ))
-        ) : dialogs.length === 0 ? (
+        ) :  */}
+        {dialogs.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center p-4">{t('noConversations')}</p>
         ) : (
           dialogs.map((dialog) => (
@@ -107,7 +107,7 @@ export default function ChatSidebar() {
                 description: dialog.description || '',
                 update_date: dialog.update_date ? dayjs(dialog.update_date).format('YYYY-MM-DD HH:mm:ss') : ''
               }}
-              isActive={dialog.id === currentDialogId}
+              isActive={dialog.id === currentDialog?.id}
             />
           ))
         )}

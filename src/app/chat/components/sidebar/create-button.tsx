@@ -35,10 +35,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useUser } from '@/contexts/user-context';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useDialog } from '@/contexts/dialog-context';
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useDialogContext } from '@/contexts/dialog-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
+
+
 const CreateChatDialogFormSchema = (t: Function) => z.object({
     name: z.string().min(1, { message: t('validation.chatNameRequired', 'Chat name cannot be empty') }),
     knowledgeBaseId: z.string().optional(),
@@ -50,9 +52,9 @@ export function CreateChatDialogButton() {
     const { t } = useTranslate('chat');
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
-    const { knowledgeBases, isLoading: isLoadingKnowledgeBases } = useKnowledgeBase();
-    const { userInfo } = useUser();
-    const { createDialog } = useDialog();
+    const { knowledgeBases, isLoading: isLoadingKnowledgeBases } = useKnowledgeBaseContext();
+    const { data: session } = useSession();
+    const { createDialog } = useDialogContext();
 
     const schema = CreateChatDialogFormSchema(t);
 
@@ -66,7 +68,7 @@ export function CreateChatDialogButton() {
     });
 
     const onSubmit = async (values: CreateDialogFormValues) => {
-        if (!userInfo?.id) {
+        if (!session?.user?.id) {
             toast.error(t('userNotLoggedIn', 'User not logged in'));
             return;
         }
@@ -75,7 +77,7 @@ export function CreateChatDialogButton() {
                 name: values.name,
                 description: values.description,
                 knowledgeBaseId: values.knowledgeBaseId,
-                userId: userInfo.id
+                userId: session?.user?.id
             });
             if (newDialog?.id) {
                 setIsOpen(false);

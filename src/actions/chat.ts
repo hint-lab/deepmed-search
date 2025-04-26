@@ -315,7 +315,7 @@ export const sendChatMessageAction = withAuth(async (session, dialogId: string, 
  */
 export const getChatMessageStreamAction = withAuth(async (session, dialogId: string, content: string, onChunk: (chunk: string) => void, knowledgeBaseId?: string): Promise<APIResponse<any>> => {
     try {
-        console.log('开始发送消息 (流式):', { dialogId, content });
+        console.log('开始发送消息 (流式):', { dialogId, content, userId: session.user.id });
 
         // 创建用户消息
         const userMessage = await prisma.message.create({
@@ -327,7 +327,13 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
             },
         });
 
-        console.log('用户消息创建成功:', { messageId: userMessage.id });
+        console.log('用户消息创建成功:', {
+            messageId: userMessage.id,
+            content: userMessage.content,
+            role: userMessage.role,
+            dialogId: userMessage.dialogId,
+            userId: userMessage.userId
+        });
 
         // 获取对话信息
         const dialog = await prisma.dialog.findUnique({
@@ -338,17 +344,25 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
         });
 
         if (!dialog) {
+            console.error('对话不存在:', { dialogId });
             throw new Error('对话不存在');
         }
 
-        console.log('获取对话信息成功:', { dialogId });
+        console.log('获取对话信息成功:', {
+            dialogId,
+            dialogName: dialog.name,
+            knowledgeBaseId: dialog.knowledgeBaseId
+        });
 
         // 如果提供了知识库ID，查找属于该知识库的所有chunk最接近问题的chunk
         let contextChunks = '';
         if (knowledgeBaseId) {
             const queryVector = await getEmbeddings([content]);
             const chunks = await searchSimilarChunks(queryVector[0], knowledgeBaseId, 2);
-            console.log('获取知识库所有chunk成功:', { chunks });
+            console.log('获取知识库所有chunk成功:', {
+                chunksCount: chunks.length,
+                firstChunkPreview: chunks[0]?.content?.substring(0, 100)
+            });
             // 将检索到的 chunks 组合成上下文
             contextChunks = chunks.map(chunk => chunk.content).join('\n\n');
         }
@@ -371,7 +385,12 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
             },
         });
 
-        console.log('临时助手消息创建成功:', { messageId: assistantMessage.id });
+        console.log('临时助手消息创建成功:', {
+            messageId: assistantMessage.id,
+            role: assistantMessage.role,
+            dialogId: assistantMessage.dialogId,
+            userId: assistantMessage.userId
+        });
 
         let accumulatedContent = '';
 
@@ -384,28 +403,39 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
         });
 
         // 流处理结束后，更新数据库中的完整内容
-        console.log('流处理完成，更新数据库:', {
+        console.log('流处理完成，准备更新数据库:', {
             messageId: assistantMessage.id,
             contentLength: accumulatedContent.length,
             contentPreview: accumulatedContent.substring(0, 100) + '...'
         });
 
-        await prisma.message.update({
+        // 更新消息内容
+        const updatedMessage = await prisma.message.update({
             where: { id: assistantMessage.id },
             data: {
                 content: accumulatedContent,
             },
         });
 
+        console.log('消息内容更新成功:', {
+            messageId: updatedMessage.id,
+            contentLength: updatedMessage.content.length,
+            role: updatedMessage.role
+        });
+
         // 更新对话的最后更新时间
-        await prisma.dialog.update({
+        const updatedDialog = await prisma.dialog.update({
             where: { id: dialogId },
             data: {
                 update_date: new Date(),
             },
         });
 
-        console.log('数据库更新成功');
+        console.log('对话更新时间更新成功:', {
+            dialogId: updatedDialog.id,
+            updateDate: updatedDialog.update_date
+        });
+
         revalidatePath(`/chat/${dialogId}`);
 
         return {
@@ -418,6 +448,13 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
 
     } catch (error) {
         console.error('处理流式消息失败:', error);
+        if (error instanceof Error) {
+            console.error('错误详情:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+        }
         return {
             success: false,
             error: error instanceof Error ? error.message : '处理流式消息失败'

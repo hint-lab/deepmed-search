@@ -15,30 +15,27 @@ import { LanguageContext } from '@/contexts/language-context';
 // 使用一个标记确保初始化只执行一次
 let isI18nextInitialized = false;
 
-if (typeof window !== 'undefined' && !isI18nextInitialized) {
-    i18next
-        .use(LanguageDetector) // 使用语言检测器
-        .use(initReactI18next) // 绑定 react-i18next
-        .init({
-            resources: {
-                en: { translation: enTranslation },
-                zh: { translation: zhTranslation },
-                ja: { translation: jaTranslation },
-            },
-            fallbackLng: 'zh', // 未检测到语言时的回退语言
-            interpolation: {
-                escapeValue: false, // React 已内置防 XSS 功能
-            },
-            detection: {
-                // 语言检测顺序
-                order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
-                // 指定用于缓存检测到的语言的 key
-                caches: ['localStorage'],
-            },
-        });
-    isI18nextInitialized = true;
-}
-
+i18next
+    .use(LanguageDetector) // 使用语言检测器
+    .use(initReactI18next) // 绑定 react-i18next
+    .init({
+        resources: {
+            en: { translation: enTranslation },
+            zh: { translation: zhTranslation },
+            ja: { translation: jaTranslation },
+        },
+        fallbackLng: 'zh', // 未检测到语言时的回退语言
+        interpolation: {
+            escapeValue: false, // React 已内置防 XSS 功能
+        },
+        detection: {
+            // 语言检测顺序
+            order: ['localStorage', 'navigator', 'htmlTag', 'path', 'subdomain'],
+            // 指定用于缓存检测到的语言的 key
+            caches: ['localStorage'],
+        },
+    });
+isI18nextInitialized = true;
 // --- I18nProvider 组件 ---
 export function I18nProvider({ children }: PropsWithChildren) {
     // 获取 i18next 实例 (useTranslation 必须在 i18next 初始化后调用)

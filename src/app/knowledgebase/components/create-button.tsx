@@ -21,11 +21,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useTranslate } from "@/contexts/language-context";
-import { useKnowledgeBase } from "@/contexts/knowledgebase-context";
-import { useUser } from "@/contexts/user-context";
-
-
-
+import { useKnowledgeBaseContext } from "@/contexts/knowledgebase-context";
+import { useSession } from "next-auth/react"
 
 const formSchema = z.object({
     name: z.string().min(1, "请输入知识库名称").max(50, "名称不能超过50个字符"),
@@ -44,8 +41,8 @@ const CreateKnowledgeBaseButton = ({
     hideDialog,
 }: CreateKnowledgeBaseButtonProps) => {
     const { t } = useTranslate('knowledgeBase');
-    const { createKnowledgeBase, isCreating } = useKnowledgeBase();
-    const { userInfo } = useUser();
+    const { createKnowledgeBase, isCreating } = useKnowledgeBaseContext();
+    const { data: session } = useSession();
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -58,7 +55,7 @@ const CreateKnowledgeBaseButton = ({
         createKnowledgeBase({
             name: values.name,
             description: values.description,
-            created_by: userInfo?.id || "",
+            created_by: session?.user?.id || "",
         });
         hideDialog();
     };

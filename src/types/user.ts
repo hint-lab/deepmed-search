@@ -37,4 +37,12 @@ export interface UpdateIUserParams {
     image?: string;
     language?: string;
     tenantId?: string;
-} 
+}
+
+// 用户信息模型类型定义， 遵循next-auth中的UserInfo定义
+export interface IUserInfo {
+    id: string;
+    email: string;
+    name?: string | null;
+    image?: string | null;
+}

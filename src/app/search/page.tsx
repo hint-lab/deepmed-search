@@ -21,7 +21,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context'
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context'
 
 type SearchType = 'web' | 'llm' | 'kb' | 'pubmed';
 type LlmModelType = 'gemini' | 'gpt' | 'deepseek'; // Define LLM model types
@@ -203,7 +203,7 @@ export default function SearchPage() {
     const {
         knowledgeBases,
         isLoading: isKbListLoading,
-    } = useKnowledgeBase();
+    } = useKnowledgeBaseContext();
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         handleSearchStrChange(event);

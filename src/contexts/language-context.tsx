@@ -1,6 +1,5 @@
 'use client';
-
-import React, { createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // 定义 Context 类型
@@ -13,9 +12,6 @@ export interface LanguageContextType {
 // 创建 Context (初始值为 undefined，Provider 中会提供实际值)
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-/**
- * Hook for accessing language context (currentLanguage, changeLanguage, languages).
- */
 export const useLanguageContext = () => {
     const context = useContext(LanguageContext);
     if (context === undefined) {

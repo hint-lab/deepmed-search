@@ -13,9 +13,8 @@ import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTranslate } from '@/contexts/language-context';
 import { getUserInfo } from '@/actions/user';
+import { useSession } from "next-auth/react"
 import { toast } from 'sonner';
-import { useUser } from '@/contexts/user-context';
-
 
 const formSchema = z.object({
     email: z.string().email(),
@@ -31,15 +30,15 @@ const LeftPanel = () => {
         <div className="relative w-3/5 bg-gradient-to-b from-background via-background to-background">
             {/* Modern gradient backdrop */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(var(--primary-rgb)/0.15),transparent_50%)]"></div>
-            
+
             {/* Animated gradient blobs */}
             <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 dark:bg-purple-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob"></div>
             <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 dark:bg-yellow-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
             <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-300 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-            
+
             {/* Fine grid overlay */}
             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-20 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
-            
+
             <div className="relative flex flex-col items-center justify-center min-h-screen p-20 z-10">
                 <div className="w-full max-w-2xl space-y-8">
                     <div className="space-y-4 text-center">
@@ -101,9 +100,9 @@ const Login = () => {
     const searchParams = useSearchParams();
     const { t } = useTranslate('login');
     const [loading, setLoading] = useState(false);
-    const { userInfo, isLoading, isAuthenticated, updateUserInfo, refreshUserInfo } = useUser();
+    // const { userInfo, isLoading, isAuthenticated, updateUserInfo, refreshUserInfo } = useUserInfoContext();
     const callbackUrl = searchParams.get('callbackUrl') || '/knowledgebase';
-
+    const { data: session } = useSession();
     useEffect(() => {
         const error = searchParams.get("error");
         if (error) {
@@ -113,10 +112,10 @@ const Login = () => {
 
     // 如果已经登录，自动跳转
     useEffect(() => {
-        if (userInfo && !isLoading) {
+        if (session?.user) {
             window.location.href = callbackUrl;
         }
-    }, [userInfo, isLoading, callbackUrl]);
+    }, [callbackUrl]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -178,17 +177,17 @@ const Login = () => {
     };
 
     // 检查用户是否已登录
-    if (isAuthenticated) {
+    if (session?.user) {
         // 用户已登录
     }
 
     // 更新用户信息
-    updateUserInfo({ name: '新名字' });
+    // updateUserInfo({ name: '新名字' });
 
     // 刷新用户信息
-    const refreshUserInfoHandler = async () => {
-        await refreshUserInfo();
-    };
+    // const refreshUserInfoHandler = async () => {
+    //     await refreshUserInfo();
+    // };
 
     return (
         <div className="flex min-h-screen">
@@ -197,7 +196,7 @@ const Login = () => {
                 {/* Decorative elements */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-purple-400/10 dark:bg-purple-900/20 rounded-full blur-3xl opacity-60"></div>
                 <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10"></div>
-                
+
                 <Card className="w-full max-w-md border relative z-10 backdrop-blur-sm bg-card/70 shadow-xl hover:shadow-lg transition-all duration-300">
                     <CardHeader className="space-y-1 text-center">
                         <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">{t('login')}</CardTitle>
@@ -293,9 +292,9 @@ const Login = () => {
                                         </FormItem>
                                     )}
                                 />
-                                <Button 
-                                    type="submit" 
-                                    className="w-full h-11 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all" 
+                                <Button
+                                    type="submit"
+                                    className="w-full h-11 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all"
                                     disabled={loading}
                                 >
                                     {t('login')}

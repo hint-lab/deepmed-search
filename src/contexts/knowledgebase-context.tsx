@@ -1,7 +1,6 @@
 "use client"
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { IKnowledgeBase, CreateIKnowledgeBaseParams, UpdateIKnowledgeBaseBasicParams, UpdateIKnowledgeAdvanceParams } from '@/types/knowledgebase';
-import { useUser } from './user-context'; // 假设需要用户信息
 import { toast } from 'sonner';
 import { useTranslate } from '@/contexts/language-context'; // 假设需要翻译
 import {
@@ -12,9 +11,11 @@ import {
     getKnowledgeBaseAction // 如果需要获取单个知识库信息
 } from '@/actions/knowledgebase';
 
+
+
 // 定义 ViewType
 export type ViewType = 'files' | 'settings' | 'chat';
-
+// 定义 Context 类型
 interface KnowledgeBaseContextType {
     knowledgeBases: IKnowledgeBase[]; // 列表使用 ListItem 类型
     isLoading: boolean;
@@ -38,6 +39,7 @@ interface KnowledgeBaseContextType {
     isLoadingCurrent: boolean; // 添加当前知识库加载状态
 }
 
+// 创建 Context (初始值为 undefined，Provider 中会提供实际值)
 const KnowledgeBaseContext = createContext<KnowledgeBaseContextType | undefined>(undefined);
 
 export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
@@ -49,12 +51,11 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
     const [currentView, setCurrentView] = useState<ViewType>('files');
     const [currentKnowledgeBaseId, _setCurrentKnowledgeBaseId] = useState<string | null>(null);
     const [searchString, setSearchString] = useState('');
-
     // 新增状态
     const [currentKnowledgeBase, setCurrentKnowledgeBase] = useState<IKnowledgeBase | null>(null);
     const [isLoadingCurrent, setIsLoadingCurrent] = useState(false);
 
-    const { userInfo } = useUser();
+    // const { userInfo } = useUserInfoContext();
     const { t } = useTranslate('knowledge');
 
     const filteredKnowledgeBases = knowledgeBases.filter(kb =>
@@ -125,7 +126,7 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsCreating(false);
         }
-    }, [t, userInfo?.id]);
+    }, [t]);
 
     const updateKnowledgeBase = useCallback(async (id: string, basicParams?: UpdateIKnowledgeBaseBasicParams, advanceParams?: UpdateIKnowledgeAdvanceParams) => {
         setIsUpdating(true);
@@ -217,7 +218,7 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
     );
 }
 
-export function useKnowledgeBase() {
+export function useKnowledgeBaseContext() {
     const context = useContext(KnowledgeBaseContext);
     if (context === undefined) {
         throw new Error('useKnowledgeBase must be used within a KnowledgeBaseProvider');

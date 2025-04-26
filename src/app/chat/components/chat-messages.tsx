@@ -9,14 +9,16 @@ import { MessageType } from '@/constants/chat';
 import { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Bot, User } from 'lucide-react';
+import { useChatContext } from '@/contexts/chat-context';
 
-interface ChatMessageItemProps {
-    message: IMessage;
-    isStreaming: boolean;
+interface ChatMessageItem {
+    message: IMessage,
+    isStreaming: boolean
 }
 
-function ChatMessageItem({ message, isStreaming }: ChatMessageItemProps) {
+function ChatMessageItem({ message, isStreaming }: ChatMessageItem) {
     const { t } = useTranslate('chat');
+
     const isUser = message.role === MessageType.User;
     const createdAt = message.createdAt;
     let content = message.content;
@@ -64,12 +66,9 @@ function ChatMessageItem({ message, isStreaming }: ChatMessageItemProps) {
     );
 }
 
-interface ChatMessagesProps {
-    messages: IMessage[];
-    streamingMessageId?: string | null;
-}
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, streamingMessageId }) => {
+const ChatMessages: React.FC = () => {
+    const { messages, streamingMessageId } = useChatContext()
     useEffect(() => {
         console.log("ChatMessages rendered. Messages:", messages, "Streaming ID:", streamingMessageId);
     }, [messages, streamingMessageId]);

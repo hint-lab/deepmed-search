@@ -1,8 +1,7 @@
 "use client"
 import ProtectedRoute from "@/components/protected-route";
-import ChatSidebar from "./components/chat-sidebar";
-import { useParams } from "next/navigation";
-import { ChatInputArea } from "./components/chat-input-area";
+import ChatSidebar from "./components/sidebar";
+import { ChatInputArea } from "./components/chat-input";
 import { DialogProvider } from '@/contexts/dialog-context';
 import { KnowledgeBaseProvider } from '@/contexts/knowledgebase-context';
 
@@ -11,9 +10,6 @@ export default function Layout({
 }: {
     children: React.ReactNode;
 }) {
-    const params = useParams();
-    const currentDialogId = params.id as string | undefined;
-
     return (
         <ProtectedRoute>
             <div className="fixed flex flex-col h-full w-full overflow-hidden">
@@ -23,7 +19,7 @@ export default function Layout({
                             <ChatSidebar />
                             <div className="flex-1 flex flex-col overflow-hidden">
                                 {children}
-                                <ChatInputArea dialogId={currentDialogId} />
+                                <ChatInputArea />
                             </div>
                         </KnowledgeBaseProvider>
                     </DialogProvider>

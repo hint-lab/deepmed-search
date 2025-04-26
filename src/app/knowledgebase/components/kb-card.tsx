@@ -21,7 +21,7 @@ import { formatDate } from '@/utils/date';
 import { useRouter } from 'next/navigation';
 import { useTranslate } from '@/contexts/language-context';
 import { useEffect } from 'react';
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 
 /**
  * 知识库卡片组件的属性接口
@@ -39,7 +39,7 @@ interface IKnowledgeBaseCardProps {
 export function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
     const router = useRouter();
     const { t } = useTranslate('knowledgeBase');
-    const { deleteKnowledgeBase } = useKnowledgeBase();
+    const { deleteKnowledgeBase } = useKnowledgeBaseContext();
     useEffect(() => {
         console.log(item)
     }, [item,])

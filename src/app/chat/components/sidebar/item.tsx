@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
-import { useDialog } from '@/contexts/dialog-context';
+import { useDialogContext } from '@/contexts/dialog-context';
 
 interface ChatSidebarItemProps {
     dialog: {
@@ -27,7 +27,7 @@ export function ChatSidebarItem({ dialog, isActive = false }: ChatSidebarItemPro
     const { t } = useTranslate('chat');
     const router = useRouter();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-    const { deleteDialog, isDeleting } = useDialog();
+    const { deleteDialog, isDeleting } = useDialogContext();
     const onDelete = async (dialogId: string): Promise<void> => {
         try {
             const result = await deleteDialog(dialogId);
@@ -69,8 +69,10 @@ export function ChatSidebarItem({ dialog, isActive = false }: ChatSidebarItemPro
                             setIsOpen={setShowDeleteAlert}
                             onConfirm={() => onDelete(dialog.id)}
                             isDeleting={isDeleting}
-                            title={t('deleteDialogTitle', '确认删除')}
-                            description={t('deleteDialogDescription', '确定要删除这个对话吗？此操作无法撤销。')}
+                            title={t('deleteDialogTitle')}
+                            description={t('deleteDialogDescription')}
+                            confirmText={t('deleteConfirmText')}
+                            cancelText={t('deleteCancelText')}
                         >
                             <Button
                                 variant="ghost"
