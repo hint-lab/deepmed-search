@@ -2,7 +2,6 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { IDialog } from '@/types/dialog';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { useTranslate } from '@/contexts/language-context';
 import {
     createChatDialogAction,
@@ -52,7 +51,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             }
         } catch (error) {
             console.error('Error fetching dialogs:', error);
-            toast.error(t('fetchDialogsError', '获取对话列表失败'));
         } finally {
             setIsLoading(false);
         }
@@ -69,7 +67,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         try {
             const result = await deleteChatDialogAction(id);
             if (result.success) {
-                toast.success(t('deleteSuccess', '对话删除成功'));
                 // 更新本地状态
                 setDialogs(prev => {
                     const newDialogs = prev.filter(dialog => dialog.id !== id);
@@ -103,7 +100,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         try {
             const result = await createChatDialogAction(params);
             if (result.success) {
-                toast.success(t('createSuccess', '对话创建成功'));
                 const newDialog = result.data as IDialog;
                 setDialogs(prev => [newDialog, ...prev]);
                 setCurrentDialog(newDialog);
@@ -112,7 +108,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             throw new Error(result.error || t('createError', '创建对话失败'));
         } catch (error) {
             console.error('Error creating dialog:', error);
-            toast.error(t('createError', '创建对话失败'));
             return null;
         } finally {
             setIsCreating(false);
@@ -125,7 +120,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         try {
             const result = await updateChatDialogAction(id, data);
             if (result.success) {
-                toast.success(t('updateSuccess', '对话更新成功'));
                 setDialogs(prev => prev.map(dialog =>
                     dialog.id === id ? { ...dialog, ...result.data } : dialog
                 ));
@@ -134,7 +128,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             throw new Error(result.error || t('updateError', '更新对话失败'));
         } catch (error) {
             console.error('Error updating dialog:', error);
-            toast.error(t('updateError', '更新对话失败'));
             return false;
         } finally {
             setIsUpdating(false);

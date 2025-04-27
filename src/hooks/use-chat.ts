@@ -215,8 +215,25 @@ export function useSendMessageWithSSE() {
 
                         // 处理内容块
                         if (eventData.chunk) {
+                            console.log('SSE 收到块:', {
+                                chunkLength: eventData.chunk.length,
+                                chunk: eventData.chunk.substring(0, 20) + '...',
+                                accumulated: accumulatedTextRef.current.length
+                            });
+
                             accumulatedTextRef.current += eventData.chunk;
+                            // 记录状态更新前的值
+                            console.log('即将更新 partialResponse, 当前值长度:',
+                                partialResponse ? partialResponse.length : 0);
+
+                            // 设置新的partial响应
                             setPartialResponse(accumulatedTextRef.current);
+
+                            // 记录实际设置的内容
+                            console.log('设置了新的 partialResponse:', {
+                                length: accumulatedTextRef.current.length,
+                                preview: accumulatedTextRef.current.substring(0, 20) + '...'
+                            });
                         }
                     } catch (e) {
                         console.error('解析 SSE 事件失败:', e, eventText);
@@ -235,7 +252,6 @@ export function useSendMessageWithSSE() {
         } catch (error) {
             // 增强日志记录
             console.error('发送 SSE 消息失败 (Caught in useSendMessageWithSSE):', error);
-            console.error('Type of caught error:', typeof error);
             if (error && typeof error === 'object') {
                 console.error('Properties of caught error:', Object.keys(error));
             }
@@ -249,17 +265,27 @@ export function useSendMessageWithSSE() {
                 error: errorMessage // 返回确定的错误消息
             };
         } finally {
-            setIsPending(false);
-            abortControllerRef.current = null;
+            console.log("SendMessageWithSSE finally block executing");
+            console.log(`Final accumulated content: ${accumulatedTextRef.current.substring(0, 50)}${accumulatedTextRef.current.length > 50 ? '...' : ''}`);
+
+            // 确认最终消息状态
+            if (abortControllerRef.current) {
+                abortControllerRef.current = null;
+            }
+
+            // 仅当请求不是被手动取消时才更改pending状态
+            if (!signal.aborted) {
+                setIsPending(false);
+            }
         }
     };
 
-    // 提供取消方法
     const cancelStream = () => {
         if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+            console.log('Aborting current SSE stream request');
+            abortControllerRef.current.abort('Cancel requested by user');
             abortControllerRef.current = null;
-            setIsPending(false);
+            setIsPending(false); // 确保将发送状态重置
         }
     };
 

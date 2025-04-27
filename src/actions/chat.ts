@@ -317,6 +317,23 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
     try {
         console.log('开始发送消息 (流式):', { dialogId, content, userId: session.user.id });
 
+        // --- 新增：验证对话是否存在且属于当前用户 ---
+        const dialog = await prisma.dialog.findUnique({
+            where: {
+                id: dialogId,
+                userId: session.user.id // 确保对话属于当前用户
+            },
+            include: {
+                knowledgeBase: true
+            }
+        });
+
+        if (!dialog) {
+            console.error('对话不存在或用户无权访问:', { dialogId, userId: session.user.id });
+            throw new Error('对话不存在或您无权访问');
+        }
+        // --- 验证结束 ---
+
         // 创建用户消息
         const userMessage = await prisma.message.create({
             data: {
@@ -336,17 +353,17 @@ export const getChatMessageStreamAction = withAuth(async (session, dialogId: str
         });
 
         // 获取对话信息
-        const dialog = await prisma.dialog.findUnique({
-            where: { id: dialogId },
-            include: {
-                knowledgeBase: true
-            }
-        });
+        // const dialog = await prisma.dialog.findUnique({
+        //     where: { id: dialogId },
+        //     include: {
+        //         knowledgeBase: true
+        //     }
+        // });
 
-        if (!dialog) {
-            console.error('对话不存在:', { dialogId });
-            throw new Error('对话不存在');
-        }
+        // if (!dialog) {
+        //     console.error('对话不存在:', { dialogId });
+        //     throw new Error('对话不存在');
+        // }
 
         console.log('获取对话信息成功:', {
             dialogId,

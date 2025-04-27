@@ -8,7 +8,6 @@ import { useChatContext } from '@/contexts/chat-context';
 import { toast } from 'sonner';
 import { useDialogContext } from '@/contexts/dialog-context';
 import { useSession } from 'next-auth/react';
-import { useChatInput } from '@/hooks/use-chat-input';
 
 // Define a type for the initial prompt examples
 interface PromptExample {
@@ -18,30 +17,43 @@ interface PromptExample {
 }
 
 export default function ChatPage() {
-
   const { t } = useTranslate('chat');
   const router = useRouter();
-  const { createDialog, isCreating } = useDialogContext();
   const { data: session } = useSession();
-  const { } = useChatContext();
-  const { handleSendMessage } = useChatInput();
+  const { createDialog } = useDialogContext();
+  const { setInitialMessage } = useChatContext();
   // Renamed createAndNavigate back to original name, it handles example clicks
   const handleExampleClick = async (promptKey: string) => {
     const messageContent = t(promptKey);
-    if (!messageContent.trim() || isCreating) return; // Use isCreatingDialog for loading state
+    console.log("Example clicked, prompt content:", messageContent);
+
+    if (!messageContent.trim()) {
+      console.error("Empty example prompt content");
+      return;
+    }
 
     try {
       if (!session?.user?.id) {
-        throw new Error("用户未登录");
+        console.error("User not logged in");
+        toast.error("用户未登录");
+        return;
       }
-      const defaultName = messageContent.split(' ').slice(0, 5).join(' ') || t('newChat');
-      const newDialog = await createDialog({ name: defaultName, userId: session?.user?.id });
 
-      if (!newDialog?.id) {
-        throw new Error("Failed to create dialog");
+      console.log("Creating new dialog for example...");
+      const newDialog = await createDialog({
+        name: messageContent.slice(0, 10).toString(),
+        userId: session.user.id
+      });
+
+      if (newDialog && newDialog.id) {
+        console.log(`Dialog created: ${newDialog.id}, setting initial message and navigating...`);
+        setInitialMessage(messageContent);
+        console.log("Initial message set:", messageContent);
+        router.push(`/chat/${newDialog.id}`);
+      } else {
+        console.error("Invalid dialog created:", newDialog);
+        toast.error("创建对话失败");
       }
-      handleSendMessage(messageContent);
-      router.push(`/chat/${newDialog.id}`);
     } catch (error) {
       console.error("Failed to create dialog or navigate:", error);
       toast.error(t('createChatError', 'Failed to start chat. Please try again.'));
