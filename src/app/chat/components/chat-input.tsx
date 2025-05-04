@@ -96,7 +96,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             "rounded-md h-10 px-3 transition-all",
                             isThinkingMode
                                 ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
-                                : "bg-gray-100 text-gray-600 hover:bg-blue-100 dark:text-gray-400"
+                                : "hover:bg-gray-200 dark:text-gray-400"
                         )}
                     >
                         <BrainIcon className={cn(
