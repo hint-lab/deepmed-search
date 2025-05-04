@@ -21,14 +21,14 @@ interface ChatState {
 }
 
 interface ChatContextType extends ChatState {
-    sendMessage: (content: string, isReason?: boolean) => Promise<void>;
+    sendMessage: (chatDialogId: string, content: string, isReason?: boolean) => Promise<void>;
     stopStream: () => void;
     loadMessages: (chatDialogId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
-export function ChatProvider({ children, chatDialogId }: { children: React.ReactNode; chatDialogId?: string }) {
+export function ChatProvider({ children }: { children: React.ReactNode; }) {
     const { t } = useTranslate('chat');
     const router = useRouter();
     const { data: session } = useSession();
@@ -200,7 +200,7 @@ export function ChatProvider({ children, chatDialogId }: { children: React.React
         }
     }, [updateState, router, loadMessages]);
 
-    const sendMessage = useCallback(async (content: string, isReason: boolean = false) => {
+    const sendMessage = useCallback(async (chatDialogId: string, content: string, isReason: boolean = false) => {
         if (!content.trim() || state.isStreaming) return;
 
         try {
@@ -250,7 +250,7 @@ export function ChatProvider({ children, chatDialogId }: { children: React.React
             console.error('发送消息失败:', error);
             toast.error(t('errors.sendMessageFailed'));
         }
-    }, [chatDialogId, session, state.isStreaming, createChatDialog, router, t, startStream, updateState]);
+    }, [session, state.isStreaming, createChatDialog, router, t, startStream, updateState]);
 
     const stopStream = useCallback(() => {
         if (abortControllerRef.current) {
@@ -260,12 +260,6 @@ export function ChatProvider({ children, chatDialogId }: { children: React.React
         updateState({ isStreaming: false });
     }, [updateState]);
 
-    // 加载初始消息
-    useEffect(() => {
-        if (chatDialogId) {
-            loadMessages(chatDialogId);
-        }
-    }, [chatDialogId, loadMessages]);
 
     return (
         <ChatContext.Provider value={{

@@ -1,6 +1,6 @@
 // File: app/api/chat/stream/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getChatMessageStream } from '@/actions/chat';
+import { getChatMessageStream } from '@/actions/chat-message';
 
 export async function GET(req: NextRequest) {
     return new Response('Method not allowed', { status: 405 });

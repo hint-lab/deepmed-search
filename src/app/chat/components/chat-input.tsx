@@ -6,7 +6,9 @@ import { BrainIcon, StopCircleIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useChatContext } from '@/contexts/chat-context';
 import { useState, useRef } from 'react';
-
+import { useChatDialogContext } from '@/contexts/chat-dialog-context';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 // Define props interface
 interface ChatInputProps {
     dialogId: string | undefined;
@@ -17,12 +19,15 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
     const [inputValue, setInputValue] = useState('');
     const [isThinkingMode, setIsThinkingMode] = useState(false);
     const [showThinkingAnimation, setShowThinkingAnimation] = useState(false);
-
+    const { data: session } = useSession();
+    const router = useRouter();
     const {
         isStreaming,
         sendMessage,
         stopStream
     } = useChatContext();
+
+    const { createChatDialog } = useChatDialogContext();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
@@ -47,7 +52,17 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
 
     const handleSendMessage = async () => {
         if (!inputValue.trim() || isStreaming) return;
-        await sendMessage(inputValue, isThinkingMode);
+        if (dialogId) {
+            await sendMessage(dialogId, inputValue, isThinkingMode);
+        } else {
+            const dialog = await createChatDialog({ name: inputValue, userId: session?.user?.id ?? '' });
+
+            if (dialog) {
+                sendMessage(dialog.id, inputValue, isThinkingMode);
+            }
+            router.push(`/chat/${dialog?.id}`);
+
+        }
         setInputValue('');
     };
 
@@ -81,7 +96,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             "rounded-md h-10 px-3 transition-all",
                             isThinkingMode
                                 ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
-                                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400"
+                                : "bg-gray-100 text-gray-600 hover:bg-blue-100 dark:text-gray-400"
                         )}
                     >
                         <BrainIcon className={cn(
@@ -100,7 +115,11 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                         )}
                         <Input
                             ref={inputRef}
-                            placeholder={isThinkingMode ? '输入思考内容...' : '你想知道什么？'}
+                            placeholder={
+                                dialogId
+                                    ? (isThinkingMode ? '输入思考内容...' : '你想知道什么？')
+                                    : '请输入内容，系统将自动新建对话'
+                            }
                             value={inputValue}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
@@ -119,7 +138,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                     <Button
                         onClick={handleSendMessage}
                         disabled={isStreaming || !inputValue.trim()}
-                        aria-label={isThinkingMode ? '思考' : '发送'}
+                        aria-label={isThinkingMode ? '思考' : (dialogId ? '发送' : '新建对话并发送')}
                         variant={isThinkingMode ? "outline" : "default"}
                         size="sm"
                         className={cn(
@@ -132,7 +151,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                         {isStreaming ? (
                             <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent rounded-md" role="status" aria-label="loading"></span>
                         ) : (
-                            <span>发送</span>
+                            <span>{dialogId ? '发送' : '新建对话并发送'}</span>
                         )}
                     </Button>
 

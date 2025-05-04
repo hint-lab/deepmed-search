@@ -3,10 +3,43 @@
 import { useEffect, useRef } from 'react';
 import { useChatContext } from '@/contexts/chat-context';
 import ChatMessageItem from './message-item';
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define props interface
 interface ChatMessagesProps {
     dialogId: string;
+}
+
+// Loading Skeleton Component
+function MessagesSkeleton() {
+    return (
+        <div className="space-y-4 px-6 py-4">
+            {/* Simulate Assistant Message */}
+            <div className="flex gap-2 justify-start">
+                <Skeleton className="h-7 w-7 rounded-full shrink-0" />
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                </div>
+            </div>
+            {/* Simulate User Message */}
+            <div className="flex gap-2 justify-end">
+                <div className="space-y-2 items-end flex flex-col">
+                    <Skeleton className="h-4 w-[220px]" />
+                </div>
+                <Skeleton className="h-7 w-7 rounded-full shrink-0" />
+            </div>
+            {/* Simulate Assistant Message */}
+            <div className="flex gap-2 justify-start">
+                <Skeleton className="h-7 w-7 rounded-full shrink-0" />
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-[240px]" />
+                    <Skeleton className="h-4 w-[180px]" />
+                    <Skeleton className="h-4 w-[210px]" />
+                </div>
+            </div>
+        </div>
+    );
 }
 
 // Accept props object and destructure dialogId
@@ -59,6 +92,7 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
                     userId: '',
                     dialogId: dialogId,
                     isThinking: currentReasoning.length > 0,
+                    thinkingContent: currentReasoning,
                 });
             } else {
                 // 如果存在，更新内容
@@ -66,6 +100,7 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
                     ...allMessages[existingMessageIndex],
                     content: currentContent,
                     isThinking: currentReasoning.length > 0,
+                    thinkingContent: currentReasoning,
                 };
             }
         }
@@ -74,7 +109,6 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
             <ChatMessageItem
                 key={message.id}
                 message={message}
-                thinkingContent={message.isThinking ? currentReasoning : ''}
                 isStreaming={isStreaming && message.id === currentMessageId}
                 isThinking={message.isThinking || false}
                 streamingState={
@@ -90,11 +124,9 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
     };
 
     return (
-        <div className="space-y-4 overflow-y-auto py-4 px-6">
+        <div className="flex-1 space-y-4 overflow-y-auto py-4 px-6">
             {isLoading ? (
-                <div className="flex justify-center items-center h-20">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
-                </div>
+                <MessagesSkeleton />
             ) : (
                 renderMessages()
             )}

@@ -93,6 +93,9 @@ export const sendChatMessageAction = withAuth(async (
             // 使用 chatClient 处理思考模式输出
             const response = await chatClient.chat(dialogId, content, true);
 
+            console.log('思考模式，生成AI思考回复成功:', {
+                response: response
+            });
             // 将思考结果保存到数据库
             const assistantMessage = await prisma.message.create({
                 data: {
@@ -100,16 +103,12 @@ export const sendChatMessageAction = withAuth(async (
                     role: MessageType.ReasonReply,
                     dialogId,
                     userId: session.user.id,
-                    // 思考模式需要在 message 表中记录 thinkingContent
-                    thinkingContent: response.metadata.reasoningContent ? JSON.stringify({ content: response.content, reasoningContent: response.metadata.reasoningContent }) : undefined,
+                    // 直接保存思考过程文本
+                    thinkingContent: response.metadata.reasoningContent ?? undefined,
                     isThinking: true
                 },
             });
 
-            console.log('思考回复已创建:', {
-                messageId: assistantMessage.id,
-                contentLength: response.content.length
-            });
 
             revalidatePath(`/chat/${dialogId}`);
             return {
@@ -265,7 +264,7 @@ export async function getChatMessageStream(
                             where: { id: assistantMessageId },
                             data: {
                                 content: accumulatedContent,
-                                thinkingContent: JSON.stringify({ content: accumulatedContent, reasoningContent: reasoningContent }),
+                                thinkingContent: reasoningContent,
                                 isThinking: true,
                             },
                         });

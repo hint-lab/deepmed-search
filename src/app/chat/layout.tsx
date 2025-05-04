@@ -4,9 +4,9 @@ import ChatSidebar from "./components/sidebar";
 import { ChatDialogProvider } from '@/contexts/chat-dialog-context';
 import { KnowledgeBaseProvider } from '@/contexts/knowledgebase-context';
 import { SidebarProvider, useSidebarContext } from '@/contexts/sidebar-context';
-import { ChatProvider } from '@/contexts/chat-context';
 import { cn } from "@/lib/utils";
 
+import { ChatProvider } from '@/contexts/chat-context';
 // Inner layout component to access context
 function ChatLayoutContent({ children }: { children: React.ReactNode }) {
     const { isCollapsed } = useSidebarContext();
