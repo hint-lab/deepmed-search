@@ -8,7 +8,7 @@ import { Loader2, AlertTriangle, ArrowLeft, FileText, DatabaseZap, Search, X } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from "@/components/ui/badge"; // Import Badge 
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 import { Skeleton } from "@/components/ui/skeleton";
 // Import Dialog components
 import {
@@ -145,7 +145,7 @@ export default function KbSearchResultsPage() {
         currentKnowledgeBase,
         setCurrentKnowledgeBaseId,
         isLoadingCurrent: isLoadingKbDetails
-    } = useKnowledgeBase();
+    } = useKnowledgeBaseContext();
 
     // --- Modal State ---
     const [selectedChunk, setSelectedChunk] = useState<ChunkResult | null>(null);

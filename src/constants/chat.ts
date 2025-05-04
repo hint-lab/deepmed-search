@@ -1,6 +1,8 @@
 export enum MessageType {
   Assistant = 'assistant',
   User = 'user',
+  Reason = 'reason',         // 思考模式的用户问题
+  ReasonReply = 'reasonReply' // 思考模式的AI回复
 }
 
 export enum ChatVariableEnabledField {

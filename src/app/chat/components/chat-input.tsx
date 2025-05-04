@@ -2,153 +2,154 @@
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useTranslate } from '@/contexts/language-context';
-import { useParams } from 'next/navigation';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { BrainIcon, StopCircleIcon, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useChatContext } from '@/contexts/chat-context';
-import { useDialogContext } from '@/contexts/dialog-context';
-import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useState, useRef } from 'react';
 
-export function ChatInputArea() {
-    const { t } = useTranslate('chat');
-    const params = useParams();
-    const dialogIdFromParams = params?.id as string | undefined;
+// Define props interface
+interface ChatInputProps {
+    dialogId: string | undefined;
+}
 
-    const [inputValue, setInputValue] = useState('');
-    const {
-        isSendingMessage,
-        streamingMessageId,
-        sendMessage: contextSendMessage,
-        cancelStream,
-        setInitialMessage,
-        currentDialogId
-    } = useChatContext();
-    const { createDialog } = useDialogContext();
-    const { data: session } = useSession();
-    const router = useRouter();
+export function ChatInputArea({ dialogId }: ChatInputProps) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const [inputValue, setInputValue] = useState('');
+    const [isThinkingMode, setIsThinkingMode] = useState(false);
+    const [showThinkingAnimation, setShowThinkingAnimation] = useState(false);
 
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const {
+        isStreaming,
+        sendMessage,
+        stopStream
+    } = useChatContext();
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);
-    }, []);
+    };
 
-    const handleSendMessage = useCallback(async () => {
-        const messageContent = inputValue.trim();
-        console.log("[ChatInput] 处理发送消息:", messageContent);
-
-        if (!messageContent || isSendingMessage) {
-            console.log("[ChatInput] 消息为空或正在发送中，跳过");
-            return;
-        }
-
-        if (dialogIdFromParams) {
-            // 已有对话，直接发送
-            console.log("[ChatInput] 在现有对话中发送消息:", dialogIdFromParams);
-            const success = await contextSendMessage(dialogIdFromParams, messageContent);
-            if (success) {
-                console.log("[ChatInput] 发送成功，清空输入框");
-                setInputValue('');
+    const toggleThinkingMode = () => {
+        setIsThinkingMode(prev => {
+            const newValue = !prev;
+            if (newValue) {
+                setShowThinkingAnimation(true);
+                setTimeout(() => setShowThinkingAnimation(false), 1000);
             }
-            else {
-                console.error("[ChatInput] 发送失败");
-                toast.error(t('errors.sendMessageFailed'));
+            return newValue;
+        });
+
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
             }
-        } else if (session?.user) {
-            // 没有对话，新建并跳转
-            console.log("[ChatInput] 创建新对话并设置初始消息");
+        }, 0);
+    };
 
-            try {
-                // 使用sessionStorage备份初始消息
-                sessionStorage.setItem('pendingInitialMessage', messageContent);
-                console.log("[ChatInput] 已在sessionStorage保存初始消息");
+    const handleSendMessage = async () => {
+        if (!inputValue.trim() || isStreaming) return;
+        await sendMessage(inputValue, isThinkingMode);
+        setInputValue('');
+    };
 
-                const newDialog = await createDialog({
-                    name: messageContent.slice(0, 10),
-                    description: 'New Dialog Description',
-                    userId: session.user.id
-                });
-
-                if (newDialog && newDialog.id) {
-                    console.log("[ChatInput] 对话创建成功，ID:", newDialog.id);
-                    setInputValue('');
-                    setInitialMessage(messageContent);
-                    console.log("[ChatInput] 初始消息已设置，准备跳转");
-
-                    // 跳转前再检查一次
-                    console.log("[ChatInput] Context中的initialMessage:", messageContent);
-
-                    router.push(`/chat/${newDialog.id}`);
-                } else {
-                    console.error("[ChatInput] 创建对话失败");
-                    toast.error(t('errors.sendMessageFailed'));
-                }
-            } catch (error) {
-                console.error("[ChatInput] 处理过程中出错:", error);
-                toast.error(t('errors.sendMessageFailed'));
-            }
-        } else {
-            console.error("[ChatInput] 用户未登录");
-            toast.error(t('errors.sendMessageFailed'));
-        }
-    }, [
-        inputValue,
-        isSendingMessage,
-        contextSendMessage,
-        dialogIdFromParams,
-        createDialog,
-        session,
-        router,
-        t,
-        setInitialMessage
-    ]);
-
-    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
-    }, [handleSendMessage]);
-
-    useEffect(() => {
-        console.log("ChatInputArea rendered. Dialog ID from params:", dialogIdFromParams, "Current Dialog ID from context:", currentDialogId);
-    }, [dialogIdFromParams, currentDialogId]);
-
-    useEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [dialogIdFromParams, currentDialogId]);
+    };
 
     return (
-        <div className="border-t p-4 bg-background shadow-inner">
-            <div className="flex items-center space-x-2 max-w-4xl mx-auto">
-                <Input
-                    ref={inputRef}
-                    placeholder={t('messagePlaceholder')}
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    disabled={isSendingMessage}
-                    className={`flex-1 resize-none ${isSendingMessage ? 'bg-gray-100 text-gray-400' : ''}`}
-                />
-                <Button
-                    onClick={handleSendMessage}
-                    disabled={isSendingMessage || !inputValue.trim()}
-                    aria-label={t('send')}
-                >
-                    {isSendingMessage ? (
-                        <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent text-white rounded-full" role="status" aria-label="loading"></span>
-                    ) : t('send')}
-                </Button>
-                <Button
-                    onClick={cancelStream}
-                    disabled={!streamingMessageId}
-                    aria-label={t('cancelStream')}
-                >
-                    {t('cancelStream')}
-                </Button>
+        <div className={cn(
+            "w-full p-1 border-t transition-all duration-300 relative bg-white/90 dark:bg-gray-900/90",
+            isThinkingMode && "border-blue-200 dark:border-blue-800"
+        )}>
+            {showThinkingAnimation && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-72 h-72 bg-blue-400/10 rounded-md filter blur-3xl animate-pulse" />
+                </div>
+            )}
+
+            <div className="w-full py-2.5 px-2 relative z-10">
+                <div className="flex items-center space-x-2">
+                    {/* 思考模式按钮 */}
+                    <Button
+                        type="button"
+                        variant={isThinkingMode ? "outline" : "ghost"}
+                        size="sm"
+                        onClick={toggleThinkingMode}
+                        className={cn(
+                            "rounded-md h-10 px-3 transition-all",
+                            isThinkingMode
+                                ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
+                                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400"
+                        )}
+                    >
+                        <BrainIcon className={cn(
+                            "w-5 h-5",
+                            isThinkingMode ? "text-blue-500" : "text-gray-500"
+                        )} />
+                        <span className="ml-2">深度思考</span>
+                    </Button>
+
+                    {/* 输入框 */}
+                    <div className="flex-1 relative">
+                        {isThinkingMode && (
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center z-10 ">
+                                <Sparkles className="w-4 h-4 text-blue-500" />
+                            </div>
+                        )}
+                        <Input
+                            ref={inputRef}
+                            placeholder={isThinkingMode ? '输入思考内容...' : '你想知道什么？'}
+                            value={inputValue}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            disabled={isStreaming}
+                            className={cn(
+                                "h-10 transition-all duration-200",
+                                isThinkingMode
+                                    ? "pl-10 border-blue-200 focus-visible:ring-blue-400 focus-visible:border-blue-400 bg-blue-50/50 text-blue-900 dark:border-blue-800 dark:bg-blue-900/10"
+                                    : "border-gray-200 dark:border-gray-700",
+                                isStreaming ? "bg-gray-100 text-gray-400" : ""
+                            )}
+                        />
+                    </div>
+
+                    {/* 发送按钮 */}
+                    <Button
+                        onClick={handleSendMessage}
+                        disabled={isStreaming || !inputValue.trim()}
+                        aria-label={isThinkingMode ? '思考' : '发送'}
+                        variant={isThinkingMode ? "outline" : "default"}
+                        size="sm"
+                        className={cn(
+                            "rounded-md h-10 transition-all px-4",
+                            isThinkingMode
+                                ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
+                                : ""
+                        )}
+                    >
+                        {isStreaming ? (
+                            <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent rounded-md" role="status" aria-label="loading"></span>
+                        ) : (
+                            <span>发送</span>
+                        )}
+                    </Button>
+
+                    {/* 取消流式传输按钮 */}
+                    {isStreaming && (
+                        <Button
+                            onClick={stopStream}
+                            aria-label="取消"
+                            variant="outline"
+                            size="sm"
+                            className="rounded-md h-10 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                        >
+                            <StopCircleIcon className="w-4 h-4 mr-1" />
+                            <span>取消</span>
+                        </Button>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -93,7 +93,16 @@ export default function Header() {
                             <Menu className="h-5 w-5" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-60 sm:w-72">
+                    <SheetContent
+                        side="left"
+                        className="w-60 sm:w-72"
+                        aria-label="导航菜单"
+                        role="navigation"
+                    >
+                        <SheetHeader>
+                            <SheetTitle>导航菜单</SheetTitle>
+                            {/* <SheetDescription>网站导航菜单</SheetDescription> */}
+                        </SheetHeader>
                         <div className="mb-4 py-4">
                             {/* Logo or other content */}
                         </div>

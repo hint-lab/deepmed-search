@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { IDialog } from '@/types/dialog';
 import { DeleteConfirmationDialog } from '@/components/extensions/delete-confirmation-dialog';
 import { toast } from 'sonner';
-import { useDialogContext } from '@/contexts/dialog-context';
+import { useChatDialogContext } from '@/contexts/chat-dialog-context';
 
 interface DeleteAllDialogsButtonProps {
     dialogs: IDialog[];
@@ -17,12 +17,12 @@ interface DeleteAllDialogsButtonProps {
 export default function DeleteAllDialogsButton({ dialogs }: DeleteAllDialogsButtonProps) {
     const { t } = useTranslate('chat');
     const router = useRouter();
-    const { refreshDialogs, deleteDialog, isDeleting } = useDialogContext();
+    const { refreshChatDialogs, deleteChatDialog, isDeleting } = useChatDialogContext();
     const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
     const handleDeleteAllDialog = async () => {
         try {
-            const deletePromises = dialogs.map(dialog => deleteDialog(dialog.id));
+            const deletePromises = dialogs.map(dialog => deleteChatDialog(dialog.id));
             const results = await Promise.allSettled(deletePromises);
 
             const failedDeletions = results.filter(result => result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.success));
@@ -33,7 +33,7 @@ export default function DeleteAllDialogsButton({ dialogs }: DeleteAllDialogsButt
             } else {
                 toast.success(t('deleteAllSuccess', '所有对话已删除'));
                 // 使用 DialogContext 刷新对话列表
-                await refreshDialogs();
+                await refreshChatDialogs();
             }
 
             router.push('/chat');

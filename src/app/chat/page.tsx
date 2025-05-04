@@ -1,14 +1,8 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
 import { useTranslate } from '@/contexts/language-context';
-import { useChatContext } from '@/contexts/chat-context';
-import { toast } from 'sonner';
-import { useDialogContext } from '@/contexts/dialog-context';
-import { useSession } from 'next-auth/react';
-
+import { ChatInputArea } from './components/chat-input';
 // Define a type for the initial prompt examples
 interface PromptExample {
   titleKey: string;
@@ -18,47 +12,6 @@ interface PromptExample {
 
 export default function ChatPage() {
   const { t } = useTranslate('chat');
-  const router = useRouter();
-  const { data: session } = useSession();
-  const { createDialog } = useDialogContext();
-  const { setInitialMessage } = useChatContext();
-  // Renamed createAndNavigate back to original name, it handles example clicks
-  const handleExampleClick = async (promptKey: string) => {
-    const messageContent = t(promptKey);
-    console.log("Example clicked, prompt content:", messageContent);
-
-    if (!messageContent.trim()) {
-      console.error("Empty example prompt content");
-      return;
-    }
-
-    try {
-      if (!session?.user?.id) {
-        console.error("User not logged in");
-        toast.error("用户未登录");
-        return;
-      }
-
-      console.log("Creating new dialog for example...");
-      const newDialog = await createDialog({
-        name: messageContent.slice(0, 10).toString(),
-        userId: session.user.id
-      });
-
-      if (newDialog && newDialog.id) {
-        console.log(`Dialog created: ${newDialog.id}, setting initial message and navigating...`);
-        setInitialMessage(messageContent);
-        console.log("Initial message set:", messageContent);
-        router.push(`/chat/${newDialog.id}`);
-      } else {
-        console.error("Invalid dialog created:", newDialog);
-        toast.error("创建对话失败");
-      }
-    } catch (error) {
-      console.error("Failed to create dialog or navigate:", error);
-      toast.error(t('createChatError', 'Failed to start chat. Please try again.'));
-    }
-  };
 
   // Definitions for examples, capabilities, limitations remain the same
   const examples: PromptExample[] = [
@@ -75,8 +28,8 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="flex flex-col flex-1 bg-muted/30 overflow-hidden">
-      <div className="flex flex-col items-center justify-center flex-1 p-8 overflow-auto">
+    <div className="absolute inset-0 top-14 flex flex-col flex-1 bg-muted/30 overflow-hidden pt-14">
+      <div className="flex flex-col items-center justify-start flex-1 p-8 overflow-y-auto">
         <div className="max-w-4xl w-full">
           <h1 className="text-2xl lg:text-3xl font-semibold text-center mb-10">
             {t('welcomeTitle', 'How can I help you today?')}
@@ -88,7 +41,7 @@ export default function ChatPage() {
               {examples.map((ex, i) => {
                 const Icon = ex.icon;
                 return (
-                  <Card key={`ex-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors cursor-pointer" onClick={() => handleExampleClick(ex.promptKey)}>
+                  <Card key={`ex-${i}`} className="min-h-32 p-4 bg-background/50 hover:bg-background/80 transition-colors " >
                     <div className="flex items-start gap-3">
                       <Icon className="w-5 h-5 mt-0.5 shrink-0" />
                       <div>
@@ -139,6 +92,7 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-    </div>
+      <ChatInputArea dialogId={undefined} />
+    </div >
   );
 }

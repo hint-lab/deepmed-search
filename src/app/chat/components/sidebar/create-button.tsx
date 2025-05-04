@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useDialogContext } from '@/contexts/dialog-context';
+import { useChatDialogContext } from '@/contexts/chat-dialog-context';
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 
 
@@ -54,7 +54,7 @@ export function CreateChatDialogButton() {
     const [isOpen, setIsOpen] = useState(false);
     const { knowledgeBases, isLoading: isLoadingKnowledgeBases } = useKnowledgeBaseContext();
     const { data: session } = useSession();
-    const { createDialog } = useDialogContext();
+    const { createChatDialog } = useChatDialogContext();
 
     const schema = CreateChatDialogFormSchema(t);
 
@@ -73,7 +73,7 @@ export function CreateChatDialogButton() {
             return;
         }
         try {
-            const newDialog = await createDialog({
+            const newDialog = await createChatDialog({
                 name: values.name,
                 description: values.description,
                 knowledgeBaseId: values.knowledgeBaseId,

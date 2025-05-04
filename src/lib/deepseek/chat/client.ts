@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import {
-    OpenAIConfig,
+    DeepSeekConfig,
     Message,
     ChatResponse,
     Tool,
@@ -47,24 +47,24 @@ function convertMessagesToApiFormat(messages: any[]): any[] {
 export class ChatClient {
     private static instance: ChatClient;
     private client: OpenAI;
-    private config: OpenAIConfig;
+    private config: DeepSeekConfig;
     private historyMap: Map<string, MessageHistory>;
     private tools: Tool[] = [];
     private reasonModel: string;
     private constructor() {
         this.config = validateConfig({
-            apiKey: process.env.OPENAI_API_KEY || '',
-            baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
-            organization: process.env.OPENAI_ORGANIZATION,
-            model: process.env.OPENAI_API_MODEL || 'gpt-4o-mini',
+            apiKey: process.env.DEEPSEEK_API_KEY || '',
+            baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
+            organization: process.env.DEEPSEEK_ORGANIZATION,
+            model: process.env.DEEPSEEK_API_MODEL || 'deepseek-chat',
             temperature: 0.7,
             maxTokens: 2000,
             systemPrompt: '你是一个专业的AI助手。'
         });
 
         // 设置思考模式专用模型
-        this.reasonModel = process.env.OPENAI_API_REASON_MODEL || 'o4-mini';
-        logger.info('思考模式使用模型:', this.reasonModel);
+        this.reasonModel = process.env.DEEPSEEK_API_REASON_MODEL || 'deepseek-reasoner';
+        logger.info('Thinking mode model:', this.reasonModel);
 
         this.client = new OpenAI({
             baseURL: this.config.baseUrl,
@@ -107,21 +107,73 @@ export class ChatClient {
 
     // 过滤历史记录中的思考消息，保留系统消息和思考消息
     private filterReasonMessages(messages: any[]): any[] {
-        return messages.filter(msg =>
+        // 首先过滤出系统消息和思考相关消息
+        const filteredMessages = messages.filter(msg =>
             msg.role === 'system' ||
             msg.role === MessageType.Reason ||
             msg.role === 'reason'
         );
+
+        // 确保消息序列中用户和助手的消息交替出现
+        const result: any[] = [];
+        let lastRole: string | null = null;
+
+        for (const msg of filteredMessages) {
+            const currentRole = convertToStandardRole(msg.role);
+
+            // 如果是系统消息，直接添加
+            if (currentRole === 'system') {
+                result.push(msg);
+                continue;
+            }
+
+            // 如果是用户消息，且上一条不是用户消息，则添加
+            if (currentRole === 'user' && lastRole !== 'user') {
+                result.push(msg);
+                lastRole = 'user';
+                continue;
+            }
+
+            // 如果是助手消息，且上一条是用户消息，则添加
+            if (currentRole === 'assistant' && lastRole === 'user') {
+                result.push(msg);
+                lastRole = 'assistant';
+                continue;
+            }
+        }
+
+        // 如果最后一条消息不是用户消息，则移除最后一条消息
+        if (result.length > 0 && convertToStandardRole(result[result.length - 1].role) !== 'user') {
+            result.pop();
+        }
+
+        return result;
+    }
+
+    // 多轮对话时，确保不发送前一轮的reasoning_content
+    private removeReasoningContent(messages: any[]): any[] {
+        return messages.map(msg => {
+            // 确保从API响应中删除reasoning_content字段
+            if (msg.reasoning_content) {
+                const { reasoning_content, ...restMsg } = msg;
+                return restMsg;
+            }
+            return msg;
+        });
     }
 
     // 过滤历史记录中的思考消息，不发送思考相关消息给模型
     private filterNonReasonMessages(messages: any[]): any[] {
-        return messages.filter(msg =>
+        // 先过滤消息类型
+        const filteredMessages = messages.filter(msg =>
             msg.role !== MessageType.Reason &&
             msg.role !== MessageType.ReasonReply &&
             msg.role !== 'reason' &&
             msg.role !== 'reasonReply'
         );
+
+        // 然后移除reasoning_content字段
+        return this.removeReasoningContent(filteredMessages);
     }
 
     // 处理用户输入
@@ -143,21 +195,24 @@ export class ChatClient {
                 // 转换为 API 支持的格式
                 const apiMessages = convertMessagesToApiFormat(reasonMessages);
 
-                // 使用思考专用模型生成响应
+                // 使用思考专用模型生成响应 - 根据文档DeepSeek推理模型不支持temperature等参数
                 const completion = await this.client.chat.completions.create({
                     model: this.reasonModel,
                     messages: apiMessages,
-                    temperature: this.config.temperature,
-                    reasoning_effort: "medium",
-                    max_completion_tokens: this.config.maxTokens,
                 });
 
+                // 获取思维链内容和最终答案
+                const message = completion.choices[0]?.message as any;
+                const reasoningContent = message?.reasoning_content || '';
+                const content = message?.content || '';
+
                 const response = {
-                    content: completion.choices[0]?.message?.content || '',
+                    content: content,
                     metadata: {
                         model: this.reasonModel,
                         timestamp: new Date().toISOString(),
-                        isReason: true
+                        isReason: true,
+                        reasoningContent: reasoningContent
                     }
                 };
 
@@ -236,8 +291,7 @@ export class ChatClient {
                 model: this.config.model!,
                 messages: apiMessages,
                 temperature: this.config.temperature,
-                max_completion_tokens: this.config.maxTokens,
-                stop: this.config.stop,
+                max_tokens: this.config.maxTokens,
             });
             logger.info("generateResponse completion", completion)
             return {
@@ -418,6 +472,17 @@ export class ChatClient {
                 // 过滤历史记录，只获取思考相关的消息
                 const reasonMessages = this.filterReasonMessages(history.getMessages());
 
+                // 检查消息序列是否有效
+                if (reasonMessages.length === 0) {
+                    throw new Error('没有有效的消息序列');
+                }
+
+                // 确保最后一条消息是用户消息
+                const lastMessage = reasonMessages[reasonMessages.length - 1];
+                if (convertToStandardRole(lastMessage.role) !== 'user') {
+                    throw new Error('最后一条消息必须是用户消息');
+                }
+
                 // 转换为 API 支持的格式
                 const apiMessages = convertMessagesToApiFormat(reasonMessages);
 
@@ -425,44 +490,55 @@ export class ChatClient {
                 const stream = await this.client.chat.completions.create({
                     model: this.reasonModel,
                     messages: apiMessages,
-                    temperature: 1,
-                    max_completion_tokens: this.config.maxTokens,
                     stream: true,
                 });
 
-                let fullResponse = '';
+                let reasoningContent = '';
+                let finalContent = '';
+                let currentlyProcessingReasoning = true;
+
                 for await (const chunk of stream) {
-                    const content = chunk.choices[0]?.delta?.content || '';
-                    if (content) {
-                        fullResponse += content;
-                        onChunk(content);
+                    const delta = chunk.choices[0]?.delta as any;
+
+                    if (delta?.reasoning_content) {
+                        reasoningContent += delta.reasoning_content;
+                        onChunk(`[REASONING]${delta.reasoning_content}`);
+                    } else if (delta?.content) {
+                        if (currentlyProcessingReasoning) {
+                            currentlyProcessingReasoning = false;
+                            onChunk(`[END_REASONING][CONTENT]`);
+                        }
+                        finalContent += delta.content;
+                        onChunk(delta.content);
                     }
                 }
 
-                // 添加思考结果到历史
-                history.addMessage({
-                    role: MessageType.ReasonReply,
-                    content: fullResponse,
-                } as any);
-
-                return {
-                    content: fullResponse,
+                // 构建响应对象
+                const response: ChatResponse = {
+                    content: finalContent,
                     metadata: {
                         model: this.reasonModel,
                         timestamp: new Date().toISOString(),
-                        isReason: true
+                        isReason: true,
+                        reasoningContent: reasoningContent
                     }
                 };
+
+                // 只有当有内容时才添加到历史记录
+                if (finalContent || reasoningContent) {
+                    history.addMessage({
+                        role: MessageType.ReasonReply,
+                        content: finalContent,
+                        metadata: {
+                            reasoningContent: reasoningContent
+                        }
+                    } as any);
+                }
+
+                return response;
             } catch (error) {
                 logger.error('思考模式流式响应错误:', error);
-                return {
-                    content: '',
-                    metadata: {
-                        model: this.reasonModel,
-                        timestamp: new Date().toISOString(),
-                        isReason: true
-                    }
-                };
+                throw error; // 让上层处理错误
             }
         }
 
@@ -483,18 +559,29 @@ export class ChatClient {
                 messages: apiMessages,
                 temperature: this.config.temperature,
                 max_completion_tokens: this.config.maxTokens,
-                stop: this.config.stop,
                 stream: true,
             });
 
-            let fullResponse = '';
+            let reasoningContent = '';
+            let finalContent = '';
+
             for await (const chunk of stream) {
-                const content = chunk.choices[0]?.delta?.content || '';
-                if (content) {
-                    fullResponse += content;
-                    onChunk(content);
+                // 处理思维链内容
+                const delta = chunk.choices[0]?.delta as any;
+                if (delta?.reasoning_content) {
+                    reasoningContent += delta.reasoning_content;
+                    // 将思维链内容传给处理函数
+                    onChunk(delta.reasoning_content);
+                }
+                // 处理最终回答内容
+                else if (delta?.content) {
+                    finalContent += delta.content;
+                    onChunk(delta.content);
                 }
             }
+
+            // 合并思维链和最终回答
+            const fullResponse = finalContent || reasoningContent;
 
             const response: ChatResponse = {
                 content: fullResponse,

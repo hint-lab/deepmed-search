@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { searchPubMed, PubMedArticle, PubMedSearchResult } from '@/lib/pubmed';
+import { PubMedArticle } from '@/lib/pubmed/types';
+import { searchPubMedAction } from '@/actions/pubmed-search';
 
 const PubMedResultItem = ({ pmid, title, authors, journal, pubdate }: PubMedArticle) => {
     const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
@@ -116,14 +117,17 @@ export default function PubMedSearchResultsPage() {
         console.log(`Fetching PubMed results for: "${decodedQuery}", Page: ${pageToFetch}`);
 
         try {
-            const response: PubMedSearchResult = await searchPubMed(decodedQuery, resultsPerPage, pageToFetch);
+            const response = await searchPubMedAction(decodedQuery, resultsPerPage, pageToFetch);
 
-            console.log(`Fetched ${response.articles.length} PubMed articles for page ${pageToFetch}. Total found: ${response.count}`);
-            setCurrentPageResults(response.articles);
-            if (totalCount === 0) {
-                setTotalCount(response.count);
+            if (response.success && response.data) {
+                console.log(`Fetched ${response.data.articles.length} PubMed articles for page ${pageToFetch}. Total found: ${response.data.count}`);
+                setCurrentPageResults(response.data.articles);
+                if (totalCount === 0) {
+                    setTotalCount(response.data.count);
+                }
+            } else {
+                throw new Error(response.error || '搜索失败');
             }
-
         } catch (err: any) {
             console.error("PubMed search failed:", err);
             setError(err.message || 'Failed to fetch PubMed results.');

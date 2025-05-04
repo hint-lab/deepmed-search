@@ -16,17 +16,13 @@ import { useDeleteDocument } from '@/hooks/use-document';
 import { IDocumentProcessingStatus } from '@/types/enums';
 interface DocumentOptionsProps {
     document: IDocument;
-    onShowChangeParserModal: (document: IDocument) => void;
     setCurrentRecord: (record: IDocument) => void;
-    showChangeParserModal: () => void;
     onRefresh: () => void;
 }
 
 export function DocumentOptionDropdownButton({
     document,
-    onShowChangeParserModal,
     setCurrentRecord,
-    showChangeParserModal,
     onRefresh,
 }: DocumentOptionsProps) {
     const { t } = useTranslate('knowledgeBase.options');
@@ -68,7 +64,6 @@ export function DocumentOptionDropdownButton({
                         <DropdownMenuItem
                             onClick={() => {
                                 setCurrentRecord(document);
-                                showChangeParserModal();
                             }}
                             disabled={isProcessing}
                         >

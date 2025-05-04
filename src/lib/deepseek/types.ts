@@ -1,5 +1,5 @@
-// OpenAI API 响应类型
-export interface OpenAIResponse {
+// DeepSeek API 响应类型
+export interface DeepSeekResponse {
     id: string;
     object: string;
     created: number;
@@ -8,6 +8,7 @@ export interface OpenAIResponse {
         message: {
             role: string;
             content: string;
+            reasoning_content?: string; // 思维链内容
             function_call?: {
                 name: string;
                 arguments: string;
@@ -23,8 +24,8 @@ export interface OpenAIResponse {
     };
 }
 
-// OpenAI 流式响应类型
-export interface OpenAIStreamResponse {
+// DeepSeek 流式响应类型
+export interface DeepSeekStreamResponse {
     id: string;
     object: string;
     created: number;
@@ -33,15 +34,15 @@ export interface OpenAIStreamResponse {
         delta: {
             content?: string;
             role?: string;
-            reasoning_content?: string; // DeepSeek推理模型思维链内容
+            reasoning_content?: string; // 思维链内容
         };
         finish_reason: string | null;
         index: number;
     }[];
 }
 
-// OpenAI 配置类型
-export interface OpenAIConfig {
+// DeepSeek 配置类型
+export interface DeepSeekConfig {
     baseUrl: string;
     apiKey: string;
     organization?: string;

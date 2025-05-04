@@ -333,9 +333,16 @@
         "cancelButton": "取消",
         "createButton": "创建",
         "cancelStream": "取消发送",
+        "think": "思考",
+        "thinkingMode": "深度思考",
+        "thinkingPlaceholder": "我会先思考一下，再回答您的问题",
+        "deleteAllDialogTitle": "是否要删除所有对话记录",
+        "deleteAllDialogDescription": "此操作将删除所有对话记录，包括未发送的消息。",
         "validation": {
             "chatNameRequired": "请输入聊天名称"
         },
+        "deleteCancelText": "撤销删除",
+        "deleteConfirmText": "确定删除",
         "errors": {
             "sendMessageFailed": "发送消息失败",
             "dialogNotFound": "对话不存在或已被删除",

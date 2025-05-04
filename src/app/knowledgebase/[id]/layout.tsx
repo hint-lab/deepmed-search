@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslate } from '@/contexts/language-context';
 import Sidebar from './components/sidebar';
@@ -15,7 +15,7 @@ interface KnowledgeBaseLayoutProps {
 export default function KnowledgeBaseLayout({ children }: KnowledgeBaseLayoutProps) {
     const params = useParams();
     const { t } = useTranslate('knowledgeBase');
-    const { currentView, setCurrentView, setCurrentKnowledgeBaseId } = useKnowledgeBase();
+    const { currentView, setCurrentView, setCurrentKnowledgeBaseId } = useKnowledgeBaseContext();
     const kbId = params?.id as string;
 
     // 在布局组件中处理初始视图设置

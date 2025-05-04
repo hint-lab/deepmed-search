@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
-import { useDialogContext } from '@/contexts/dialog-context';
+import { useChatDialogContext } from '@/contexts/chat-dialog-context';
 
 interface ChatSidebarItemProps {
     dialog: {
@@ -27,10 +27,10 @@ export function ChatSidebarItem({ dialog, isActive = false }: ChatSidebarItemPro
     const { t } = useTranslate('chat');
     const router = useRouter();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-    const { deleteDialog, isDeleting } = useDialogContext();
+    const { deleteChatDialog, isDeleting } = useChatDialogContext();
     const onDelete = async (dialogId: string): Promise<void> => {
         try {
-            const result = await deleteDialog(dialogId);
+            const result = await deleteChatDialog(dialogId);
             setShowDeleteAlert(false);
             if (result.success) {
                 toast.success(t('deleteSuccess'));

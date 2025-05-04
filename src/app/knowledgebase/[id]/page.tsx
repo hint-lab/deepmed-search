@@ -10,7 +10,7 @@ import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { DocumentUploadButton } from './components/upload-button';
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 
 /**
  * 知识库详情页面组件
@@ -18,7 +18,7 @@ import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
  */
 export default function KnowledgeBasePage() {
     const params = useParams();
-    const { currentView, currentKnowledgeBase, isLoadingCurrent } = useKnowledgeBase();
+    const { currentView, currentKnowledgeBase, isLoadingCurrent } = useKnowledgeBaseContext();
     const kbId = params?.id as string;
     const tableRef = useRef<KnowledgeBaseTableRef>(null);
     const { t } = useTranslate('knowledgeBase');

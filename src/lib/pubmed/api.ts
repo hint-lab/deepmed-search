@@ -11,6 +11,27 @@ const EUTILS_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
 const parser = new xml2js.Parser({ explicitArray: false });
 
 /**
+ * 创建支持超时的AbortSignal (兼容服务器端)
+ */
+function createTimeoutSignal(timeoutMs: number): AbortSignal | undefined {
+    // 检查环境是否支持AbortSignal
+    if (typeof AbortSignal === 'undefined') {
+        console.warn('AbortSignal is not supported in this environment');
+        return undefined;
+    }
+
+    // 检查是否支持timeout方法
+    if (typeof AbortSignal.timeout === 'function') {
+        return AbortSignal.timeout(timeoutMs);
+    }
+
+    // 如果不支持timeout方法，手动创建
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), timeoutMs);
+    return controller.signal;
+}
+
+/**
  * 从PubMed搜索文章 (支持分页)
  * @param term 搜索关键词
  * @param retmax 每页最大结果数量 (default: 10)
@@ -56,11 +77,15 @@ export async function searchPubMed(
     let webEnv: string | undefined;
 
     try {
+        // 使用修改后的timeout逻辑
+        const timeoutSignal = createTimeoutSignal(20000); // 20秒超时
+
         // Fetch ESearch results
         const esearchRes = await fetch(esearchUrl.toString(), {
             headers: { 'Accept': 'application/xml, text/xml, */*' },
-            ...(typeof AbortSignal !== 'undefined' ? { signal: AbortSignal.timeout(20000) } : {}) // 20s timeout
+            ...(timeoutSignal ? { signal: timeoutSignal } : {})
         });
+
         if (!esearchRes.ok) {
             throw new Error(`ESearch request failed: ${esearchRes.status} ${esearchRes.statusText}`);
         }
@@ -113,6 +138,10 @@ export async function searchPubMed(
         retryCount++;
         try {
             console.log(`ESummary attempt #${retryCount} for page ${page} (retstart: ${retstart})`);
+
+            // 使用修改后的timeout逻辑
+            const timeoutSignal = createTimeoutSignal(30000); // 30秒超时
+
             // Try POST first (often preferred for ESummary with history)
             let response: Response | null = null;
             try {
@@ -123,17 +152,21 @@ export async function searchPubMed(
                         'Accept': 'application/xml, text/xml, */*',
                     },
                     body: esummaryParams.toString(),
-                    ...(typeof AbortSignal !== 'undefined' ? { signal: AbortSignal.timeout(30000) } : {}) // 30s timeout
+                    ...(timeoutSignal ? { signal: timeoutSignal } : {})
                 });
             } catch (postError: any) {
                 console.warn(`ESummary POST attempt #${retryCount} failed: ${postError.message}. Trying GET.`);
                 // Fallback to GET if POST fails
                 const getUrl = new URL(esummaryUrl);
                 esummaryParams.forEach((value, key) => getUrl.searchParams.set(key, value));
+
+                // 重新创建超时信号
+                const getTimeoutSignal = createTimeoutSignal(30000);
+
                 response = await fetch(getUrl.toString(), {
                     method: 'GET',
                     headers: { 'Accept': 'application/xml, text/xml, */*' },
-                    ...(typeof AbortSignal !== 'undefined' ? { signal: AbortSignal.timeout(30000) } : {})
+                    ...(getTimeoutSignal ? { signal: getTimeoutSignal } : {})
                 });
             }
 

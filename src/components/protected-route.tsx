@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -22,7 +23,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (status === "loading") {
         return (
             <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin h-8 w-8 border-b-2 border-primary"></div>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }

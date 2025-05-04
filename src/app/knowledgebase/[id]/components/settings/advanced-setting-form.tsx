@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useTranslate } from '@/contexts/language-context';
-import { useKnowledgeBase } from '@/contexts/knowledgebase-context';
+import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -40,7 +40,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function AdvancedSettingForm() {
   const { t } = useTranslate('knowledgeBase');
-  const { currentKnowledgeBase, updateKnowledgeBase } = useKnowledgeBase();
+  const { currentKnowledgeBase, updateKnowledgeBase } = useKnowledgeBaseContext();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),

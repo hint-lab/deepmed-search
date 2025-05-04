@@ -17,20 +17,18 @@ import { useTranslate } from '@/contexts/language-context';
 import { formatBytes } from '@/utils/bytes';
 import { ColumnMeta } from '@/types/columnMeta';
 import { DocumentOptionDropdownButton } from './components/option-dropdown';
-import { FileIcon } from '@/components/file-icon';
+import { FileIcon } from '@/components/extensions/file-icon';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { DocumentProcessingBadge } from './components/processing-badge';
 import { DocumentSwitch } from './components/document-switch';
 
 export type UseTableColumnsType = {
-  showChangeParserModal: () => void;
   setCurrentRecord: (record: IDocument) => void;
   onRefresh: () => void;
 };
 
 export function useTableColumns({
-  showChangeParserModal,
   setCurrentRecord,
   onRefresh,
 }: UseTableColumnsType) {
@@ -41,13 +39,6 @@ export function useTableColumns({
     onRefresh();
   }, [onRefresh]);
 
-  const onShowChangeParserModal = useCallback(
-    (record: IDocument) => () => {
-      setCurrentRecord(record);
-      showChangeParserModal();
-    },
-    [setCurrentRecord, showChangeParserModal],
-  );
 
 
   const navigateToChunkParsedResult = useCallback((documentId: string) => {
@@ -240,9 +231,7 @@ export function useTableColumns({
           <div className="flex items-center gap-2">
             <DocumentOptionDropdownButton
               document={document}
-              onShowChangeParserModal={onShowChangeParserModal}
               setCurrentRecord={setCurrentRecord}
-              showChangeParserModal={showChangeParserModal}
               onRefresh={refreshData}
             />
           </div >

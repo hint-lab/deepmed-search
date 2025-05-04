@@ -31,7 +31,6 @@ import { IDocument } from '@/types/document';
 import { getExtension } from '@/utils/document-util';
 import { useTableColumns } from './use-table-columns';
 import { useTranslate } from '@/contexts/language-context';
-import { useChangeDocumentParser } from '@/hooks/use-document-parser';
 import { cn } from '@/lib/utils';
 
 
@@ -64,20 +63,12 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
 
     const { t } = useTranslate('knowledgeBase.table');
 
-    const {
-      changeParserLoading,
-      onChangeParserOk,
-      changeParserVisible,
-      hideChangeParserModal,
-      showChangeParserModal: internalShowChangeParserModal,
-    } = useChangeDocumentParser(currentRecord?.id || '');
 
     const handleRefresh = useCallback(() => {
       setRefreshTrigger(prev => prev + 1);
     }, []);
 
     const columns = useTableColumns({
-      showChangeParserModal: internalShowChangeParserModal,
       setCurrentRecord,
       onRefresh: handleRefresh
     });
@@ -266,10 +257,10 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
             parserId={currentRecord.parser_id || ''}
             parserConfig={currentRecord.parser_config}
             documentExtension={getExtension(currentRecord.name)}
-            onOk={onChangeParserOk}
+            onOk={() => { }}
             visible={showChangeParserModal}
             hideModal={() => setShowChangeParserModal(false)}
-            loading={changeParserLoading}
+            loading={false}
           />
         )}
       </div>

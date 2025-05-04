@@ -8,7 +8,6 @@ import '@/styles/globals.css';
 import { Toaster } from "@/components/ui/sonner"
 import Header from '@/components/header';
 import { initializeServer } from '@/lib/init-server';
-import { ChatProvider } from '@/contexts/chat-context';
 
 // 初始化服务器端服务
 // 这只会在服务器端执行一次
@@ -40,14 +39,12 @@ export default async function RootLayout({
                     <I18nProvider>
                         <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
                             <TooltipProvider>
-                                <ChatProvider>
-                                    <div className="fixed flex flex-col h-full w-full overflow-hidden">
-                                        <Header />
-                                        <main className="flex-1 overflow-auto h-full">
-                                            {children}
-                                        </main>
-                                    </div>
-                                </ChatProvider>
+                                <div className="fixed flex flex-col h-full w-full overflow-hidden">
+                                    <Header />
+                                    <main className="flex-1 overflow-auto h-full">
+                                        {children}
+                                    </main>
+                                </div>
                             </TooltipProvider>
                         </NextThemeProvider>
                     </I18nProvider>
