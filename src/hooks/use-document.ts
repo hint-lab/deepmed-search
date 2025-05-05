@@ -46,6 +46,26 @@ export function useFetchDocumentList(kbId: string) {
         }
     }, [kbId]);
 
+    // Function to remove a document from the local state
+    const removeDocumentLocally = useCallback((documentId: string) => {
+        setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== documentId));
+        setPagination((prevPagination) => ({
+            ...prevPagination,
+            total: Math.max(0, prevPagination.total - 1), // Decrement total count
+        }));
+        // Optionally, adjust current page if the last item on a page is deleted?
+        // This logic can be complex, might be simpler to let it be until next fetch.
+    }, []);
+
+    // Function to update the enabled status of a document locally
+    const updateDocumentEnabledLocally = useCallback((documentId: string, newEnabled: boolean) => {
+        setDocuments((prevDocs) =>
+            prevDocs.map((doc) =>
+                doc.id === documentId ? { ...doc, enabled: newEnabled } : doc
+            )
+        );
+    }, []);
+
     const handleSearch = useCallback((value: string) => {
         setSearchString(value);
         fetchDocuments(1, pagination.pageSize, value);
@@ -69,6 +89,8 @@ export function useFetchDocumentList(kbId: string) {
         handlePageChange,
         setPagination,
         refreshData,
+        removeDocumentLocally,
+        updateDocumentEnabledLocally,
     };
 }
 

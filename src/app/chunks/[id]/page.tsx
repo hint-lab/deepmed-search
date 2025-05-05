@@ -30,6 +30,7 @@ export default function ChunksPage() {
             try {
                 const response = await getDocumentChunksAction(id);
                 if (response.success && response.data) {
+                    console.log('Fetched document data:', response.data.document);
                     setDocument(response.data.document);
                     setChunks(response.data.chunks);
                 }
@@ -66,11 +67,28 @@ export default function ChunksPage() {
     };
 
     const renderPreview = () => {
-        if (!document?.file_url) {
-            return <p className="text-center text-gray-500 p-10">{t('noPreview')}</p>;
+        // Check if document exists first
+        if (!document) {
+            return <p className="text-center text-gray-500 p-10">{t('noDocumentData')}</p>; // Added case for no document
         }
 
-        if (document.type === 'application/pdf') {
+        // 1. Check for Markdown first
+        if (document.type === 'text/markdown' || document.name.endsWith('.md') || document.name.endsWith('.markdown')) {
+            // Use markdown_content for preview
+            if (document.markdown_content) {
+                return (
+                    <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify">
+                        <ReactMarkdown>{document.markdown_content}</ReactMarkdown>
+                    </div>
+                );
+            } else {
+                // Handle case where it's markdown type but content is missing
+                return <p className="text-center text-gray-500 p-10">{t('markdownContentMissing')}</p>;
+            }
+        }
+
+        // 2. Check for PDF with a valid file_url
+        if (document.type === 'application/pdf' && document.file_url) {
             return (
                 <iframe
                     src={document.file_url}
@@ -80,16 +98,13 @@ export default function ChunksPage() {
             );
         }
 
-        if (document.type === 'text/markdown' || document.name.endsWith('.md') || document.name.endsWith('.markdown')) {
-            // Assuming document.content contains the markdown text or can be fetched
-            return (
-                <div className="w-full h-full p-4 overflow-auto">
-                    <ReactMarkdown>{document.markdown_content}</ReactMarkdown>
-                </div>
-            );
+        // 3. Handle cases where file_url exists but type is not supported for preview
+        if (document.file_url) {
+            return <p className="text-center text-gray-500 p-10">{t('previewNotSupported')}</p>;
         }
 
-        return <p className="text-center text-gray-500 p-10">{t('previewNotSupported')}</p>;
+        // 4. Fallback: No specific preview available (e.g., no file_url and not markdown)
+        return <p className="text-center text-gray-500 p-10">{t('noPreview')}</p>;
     };
 
     if (loading) {

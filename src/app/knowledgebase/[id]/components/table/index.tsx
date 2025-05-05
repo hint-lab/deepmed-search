@@ -55,6 +55,8 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
       handleSearch,
       handlePageChange,
       refreshData,
+      removeDocumentLocally,
+      updateDocumentEnabledLocally,
     } = useFetchDocumentList(kbId);
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -70,7 +72,9 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
 
     const columns = useTableColumns({
       setCurrentRecord,
-      onRefresh: handleRefresh
+      onRefresh: handleRefresh,
+      removeDocumentLocally: removeDocumentLocally,
+      updateDocumentEnabledLocally: updateDocumentEnabledLocally
     });
 
     useImperativeHandle(ref, () => ({
@@ -164,14 +168,18 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
 
     return (
       <div className="w-full">
-        <div className="rounded-md border bg-card shadow-sm">
+        <div className="rounded-md border bg-card shadow-sm ">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id} >
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} className="h-12 px-4 text-slate-600 font-medium">
+                      <TableHead
+                        key={header.id}
+                        className={cn("h-12 px-4 text-slate-600 font-medium",
+                          (header.column.columnDef.meta as any)?.headerClassName)}
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(

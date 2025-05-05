@@ -14,20 +14,24 @@ import { RenameDocumentButton } from './rename-document-dialog';
 import { useState, useCallback } from 'react';
 import { useDeleteDocument } from '@/hooks/use-document';
 import { IDocumentProcessingStatus } from '@/types/enums';
+import { toast } from 'sonner';
+
 interface DocumentOptionsProps {
     document: IDocument;
     setCurrentRecord: (record: IDocument) => void;
     onRefresh: () => void;
+    removeDocumentLocally: (documentId: string) => void;
 }
 
 export function DocumentOptionDropdownButton({
     document,
     setCurrentRecord,
     onRefresh,
+    removeDocumentLocally
 }: DocumentOptionsProps) {
     const { t } = useTranslate('knowledgeBase.options');
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-    const { deleteDocument } = useDeleteDocument();
+    const { deleteDocument, deleteLoading } = useDeleteDocument();
     const isProcessing = document.processing_status === IDocumentProcessingStatus.CONVERTING || document.processing_status === IDocumentProcessingStatus.INDEXING;
 
     const handleRenameClick = useCallback(() => {
@@ -35,19 +39,32 @@ export function DocumentOptionDropdownButton({
     }, []);
 
     const handleRenameSuccess = useCallback(() => {
-    }, []);
+        onRefresh();
+    }, [onRefresh]);
+
+    const handleDeleteClick = async () => {
+        if (!document) return;
+        try {
+            await deleteDocument(document.id);
+            toast.success(t('deleteSuccess', '文档已成功删除'));
+            removeDocumentLocally(document.id);
+        } catch (error: any) {
+            console.error("Failed to delete document:", error);
+            toast.error(t('deleteError', '删除文档失败'), {
+                description: error.message
+            });
+        }
+    };
 
     return (
         <>
             <section className="flex gap-2 items-center">
-
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8"
-                            disabled={isProcessing}
                         >
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
@@ -77,8 +94,8 @@ export function DocumentOptionDropdownButton({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                            disabled={isProcessing}
-                            onClick={() => deleteDocument(document.id)}
+                            onClick={handleDeleteClick}
+                            disabled={deleteLoading}
                         >
                             <Trash2 className="h-4 w-4" />{t('delete')}
                         </DropdownMenuItem>

@@ -13,7 +13,7 @@ interface DocumentProcessingBadgeProps {
     onRefresh?: () => void;
 }
 
-const POLLING_INTERVAL = 5000;
+const POLLING_INTERVAL = 50000;
 
 export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcessingBadgeProps) {
     const { t } = useTranslate('knowledgeBase.table');
@@ -29,25 +29,37 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
             const result = await getDocumentStatusAction(document.id);
             if (result.success && result.data) {
                 const newStatus = result.data.processing_status;
+                const oldStatus = status; // 保存当前状态
                 setCurrentProgressMsg(result.data.progress_msg);
-                if (newStatus !== status) {
+
+                if (newStatus !== oldStatus) { // 只有状态实际变化时才更新
                     setStatus(newStatus);
-                    if (newStatus === IDocumentProcessingStatus.SUCCESSED || newStatus === IDocumentProcessingStatus.FAILED) {
+
+                    const isNowFinal = newStatus === IDocumentProcessingStatus.SUCCESSED || newStatus === IDocumentProcessingStatus.FAILED;
+                    const wasPreviouslyFinal = oldStatus === IDocumentProcessingStatus.SUCCESSED || oldStatus === IDocumentProcessingStatus.FAILED;
+
+                    if (isNowFinal) {
                         stopPolling();
-                        onRefresh?.();
-                    }
-                    else if (newStatus === IDocumentProcessingStatus.CONVERTING || newStatus === IDocumentProcessingStatus.INDEXING) {
-                        // 保持轮询激活状态
+                        // 只有当状态从非最终变为最终时才刷新
+                        if (!wasPreviouslyFinal) {
+                            console.log(`[Polling] Document ${document.id} changed from ${oldStatus} to final state ${newStatus}. Refreshing table.`);
+                            onRefresh?.();
+                        }
+                    } else if (newStatus === IDocumentProcessingStatus.CONVERTING || newStatus === IDocumentProcessingStatus.INDEXING) {
+                        // 保持轮询激活状态 (无需操作)
                     } else {
-                        stopPolling();
+                        stopPolling(); // 其他未知状态也停止轮询
                     }
+                } else if (newStatus !== IDocumentProcessingStatus.CONVERTING && newStatus !== IDocumentProcessingStatus.INDEXING) {
+                    // 如果状态没变，但已经不是处理中状态，也停止轮询
+                    stopPolling();
                 }
             } else {
-                console.error("获取文档状态失败:", result.error);
+                console.error(`[Polling] 获取文档 ${document.id} 状态失败:`, result.error);
                 stopPolling();
             }
         } catch (error) {
-            console.error('轮询文档状态时出错:', error);
+            console.error(`[Polling] 轮询文档 ${document.id} 状态时出错:`, error);
             stopPolling();
         }
     };

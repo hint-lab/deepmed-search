@@ -121,7 +121,12 @@ export async function insertVectors({
             const metadata = metadataList[i];
             const vector = vectors[i];
             const content = contents[i];
-            const generatedChunkId = `chunk_${currentDocId}_${i}`;
+            const uniqueChunkId = metadata.chunkId;
+
+            if (!uniqueChunkId) {
+                logger.warn(`Chunk at index ${i} in batch for doc ${currentDocId} is missing chunkId in metadata. Skipping.`);
+                continue;
+            }
 
             try {
                 // 2.1 检查文档是否存在且属于该知识库
@@ -130,25 +135,25 @@ export async function insertVectors({
                     select: { id: true }
                 });
                 if (!document) {
-                    logger.warn(`文档 ${currentDocId} 不存在或不属于知识库 ${kbId}，跳过 chunk ${generatedChunkId}`);
+                    logger.warn(`文档 ${currentDocId} 不存在或不属于知识库 ${kbId}，跳过 chunk ${uniqueChunkId}`);
                     continue; // Skip this chunk
                 }
 
                 // 2.2 检查 chunk_id 是否已存在
                 const existingChunk = await prisma.chunk.findUnique({
-                    where: { chunk_id: generatedChunkId },
+                    where: { chunk_id: uniqueChunkId },
                     select: { id: true } // Only need to know if it exists
                 });
 
                 if (existingChunk) {
-                    logger.info(`Chunk ID ${generatedChunkId} 已存在，跳过插入。`);
+                    logger.info(`Chunk ID ${uniqueChunkId} 已存在，跳过插入。`);
                     continue; // Skip this chunk
                 }
 
                 // 2.3 创建不包含向量的记录
                 const chunk = await prisma.chunk.create({
                     data: {
-                        chunk_id: generatedChunkId,
+                        chunk_id: uniqueChunkId,
                         content_with_weight: content,
                         available_int: 1,
                         doc_id: currentDocId,
@@ -173,7 +178,7 @@ export async function insertVectors({
 
             } catch (innerError) {
                 // Log error for this specific chunk but continue with others
-                logger.error(`处理 chunk ${generatedChunkId} 失败:`, {
+                logger.error(`处理 chunk ${uniqueChunkId} 失败:`, {
                     error: innerError instanceof Error ? innerError.message : innerError,
                     docId: currentDocId,
                     index: i

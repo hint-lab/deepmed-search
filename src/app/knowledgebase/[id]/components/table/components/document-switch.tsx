@@ -8,34 +8,36 @@ import { useTranslate } from '@/contexts/language-context';
 
 interface DocumentSwitchProps {
     documentId: string;
-    initialEnabled: boolean;
-    onToggle?: (enabled: boolean) => void;
+    checked: boolean;
+    onToggle: (newCheckedState: boolean) => void;
 }
 
-export function DocumentSwitch({ documentId, initialEnabled, onToggle }: DocumentSwitchProps) {
-    const [localEnabled, setLocalEnabled] = useState(initialEnabled);
+export function DocumentSwitch({ documentId, checked, onToggle }: DocumentSwitchProps) {
     const { t } = useTranslate('knowledgeBase.table.fileStatus');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleToggle = useCallback(async (checked: boolean) => {
+    const handleCheckedChange = useCallback(async (newCheckedState: boolean) => {
+        setIsLoading(true);
         try {
             const result = await setDocumentMetaAction({
                 id: documentId,
-                meta: JSON.stringify({ enabled: checked })
+                meta: JSON.stringify({ enabled: newCheckedState })
             });
 
             if (!result.success) {
-                throw new Error(result.error);
+                throw new Error(result.error || t('toggleError'));
             }
 
-            // 成功后更新本地状态
-            setLocalEnabled(checked);
-            // 通知父组件
-            onToggle?.(checked);
+            onToggle(newCheckedState);
             toast.success(t('toggleSuccess'));
-        } catch (error) {
-            // 发生错误时恢复原始状态
-            setLocalEnabled(!checked);
-            toast.error(t('toggleError'));
+
+        } catch (error: any) {
+            console.error("Failed to update document enabled status:", error);
+            toast.error(t('toggleError'), {
+                description: error.message
+            });
+        } finally {
+            setIsLoading(false);
         }
     }, [documentId, onToggle, t]);
 
@@ -43,8 +45,9 @@ export function DocumentSwitch({ documentId, initialEnabled, onToggle }: Documen
         <Switch
             id={`status-${documentId}`}
             className="scale-75"
-            checked={localEnabled}
-            onCheckedChange={handleToggle}
+            checked={checked}
+            onCheckedChange={handleCheckedChange}
+            disabled={isLoading}
         />
     );
 } 

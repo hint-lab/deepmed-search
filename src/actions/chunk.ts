@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { ServerActionResponse } from '@/types/actions';
 import { revalidatePath } from 'next/cache';
+import logger from '@/utils/logger';
 
 /**
  * 获取文档的所有分块
@@ -29,27 +30,33 @@ export async function getDocumentChunksAction(documentId: string): Promise<Serve
             orderBy: { chunk_id: 'asc' }
         });
 
+        logger.info(`[getDocumentChunksAction] Fetched ${chunks.length} chunks from DB for doc ${documentId}.`, { documentId });
+
+        const mappedChunks = chunks.map(chunk => ({
+            id: chunk.id,
+            chunk_id: chunk.chunk_id,
+            doc_id: chunk.doc_id,
+            content_with_weight: chunk.content_with_weight,
+            available_int: chunk.available_int,
+            doc_name: chunk.doc_name,
+            img_id: chunk.img_id,
+            important_kwd: chunk.important_kwd,
+            question_kwd: chunk.question_kwd,
+            tag_kwd: chunk.tag_kwd,
+            positions: chunk.positions,
+            tag_feas: chunk.tag_feas,
+            kb_id: chunk.kb_id,
+            createdAt: chunk.createdAt,
+            updatedAt: chunk.updatedAt
+        }));
+
+        logger.info(`[getDocumentChunksAction] Returning ${mappedChunks.length} mapped chunks for doc ${documentId}.`, { documentId });
+
         return {
             success: true,
             data: {
                 document,
-                chunks: chunks.map(chunk => ({
-                    id: chunk.id,
-                    chunk_id: chunk.chunk_id,
-                    doc_id: chunk.doc_id,
-                    content_with_weight: chunk.content_with_weight,
-                    available_int: chunk.available_int,
-                    doc_name: chunk.doc_name,
-                    img_id: chunk.img_id,
-                    important_kwd: chunk.important_kwd,
-                    question_kwd: chunk.question_kwd,
-                    tag_kwd: chunk.tag_kwd,
-                    positions: chunk.positions,
-                    tag_feas: chunk.tag_feas,
-                    kb_id: chunk.kb_id,
-                    createdAt: chunk.createdAt,
-                    updatedAt: chunk.updatedAt
-                }))
+                chunks: mappedChunks
             }
         };
     } catch (error) {

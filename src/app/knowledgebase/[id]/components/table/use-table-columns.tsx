@@ -26,11 +26,15 @@ import { DocumentSwitch } from './components/document-switch';
 export type UseTableColumnsType = {
   setCurrentRecord: (record: IDocument) => void;
   onRefresh: () => void;
+  removeDocumentLocally: (documentId: string) => void;
+  updateDocumentEnabledLocally: (documentId: string, newEnabled: boolean) => void;
 };
 
 export function useTableColumns({
   setCurrentRecord,
   onRefresh,
+  removeDocumentLocally,
+  updateDocumentEnabledLocally,
 }: UseTableColumnsType) {
   const { t } = useTranslate('knowledgeBase.table');
   const router = useRouter();
@@ -129,20 +133,22 @@ export function useTableColumns({
         return <div className="font-medium">{formatDate(date)}</div>;
       },
       meta: {
-        cellClassName: 'w-48',
+        headerClassName: 'hidden md:table-cell',
+        cellClassName: 'w-48 hidden md:table-cell',
       } as ColumnMeta,
     },
-    {
-      accessorKey: 'parser_id',
-      header: t('documentChunkMethod'),
-      cell: ({ row }) => {
-        const parserId = row.getValue('parser_id') as string;
-        return <div>{parserId || '-'}</div>;
-      },
-      meta: {
-        cellClassName: 'w-48',
-      } as ColumnMeta,
-    },
+    // {
+    //   accessorKey: 'parser_id',
+    //   header: t('documentChunkMethod'),
+    //   cell: ({ row }) => {
+    //     const parserId = row.getValue('parser_id') as string;
+    //     return <div>{parserId || '-'}</div>;
+    //   },
+    //   meta: {
+    //     headerClassName: 'hidden md:table-cell',
+    //     cellClassName: 'w-48 hidden md:table-cell',
+    //   } as ColumnMeta,
+    // },
     {
       accessorKey: 'processing_status',
       header: t('documentProcessingStatus.title'),
@@ -157,7 +163,7 @@ export function useTableColumns({
     {
       accessorKey: 'chunk_num',
       header: ({ column }) => (
-        <div className="text-right">
+        <div className="text-right hidden md:table-cell">
           {t('documentChunkNum')}
         </div>
       ),
@@ -166,13 +172,14 @@ export function useTableColumns({
         return <div className="text-right">{chunk_count === undefined ? "-" : chunk_count}</div>;
       },
       meta: {
-        cellClassName: 'w-48',
+        headerClassName: 'hidden md:table-cell',
+        cellClassName: 'w-48 hidden md:table-cell text-right',
       } as ColumnMeta,
     },
     {
       accessorKey: 'token_num',
       header: ({ column }) => (
-        <div className="text-right">
+        <div className="text-right hidden md:table-cell">
           {t('documentWordCount')}
         </div>
       ),
@@ -181,13 +188,14 @@ export function useTableColumns({
         return <div className="text-right">{count === undefined ? "-" : count}</div>;
       },
       meta: {
-        cellClassName: 'w-48',
+        headerClassName: 'hidden md:table-cell',
+        cellClassName: 'w-48 hidden md:table-cell text-right',
       } as ColumnMeta,
     },
     {
       accessorKey: 'size',
       header: ({ column }) => (
-        <div className="text-right">
+        <div className="text-right hidden md:table-cell">
           {t('documentSize')}
         </div>
       ),
@@ -196,7 +204,8 @@ export function useTableColumns({
         return <div className="text-right">{formatBytes(size)}</div>;
       },
       meta: {
-        cellClassName: 'w-48',
+        headerClassName: 'hidden md:table-cell',
+        cellClassName: 'w-48 hidden md:table-cell text-right',
       } as ColumnMeta,
     },
     {
@@ -204,13 +213,14 @@ export function useTableColumns({
       header: t('enabled'),
       cell: ({ row }) => {
         const document = row.original;
+        const handleToggleEnabled = (newEnabled: boolean) => {
+          updateDocumentEnabledLocally(document.id, newEnabled);
+        };
         return (
           <DocumentSwitch
             documentId={document.id}
-            initialEnabled={document.enabled}
-            onToggle={(enabled) => {
-              // refreshData();
-            }}
+            checked={document.enabled}
+            onToggle={handleToggleEnabled}
           />
         );
       },
@@ -233,6 +243,7 @@ export function useTableColumns({
               document={document}
               setCurrentRecord={setCurrentRecord}
               onRefresh={refreshData}
+              removeDocumentLocally={removeDocumentLocally}
             />
           </div >
         );
