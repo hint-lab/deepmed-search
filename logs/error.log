@@ -1,0 +1,1 @@
+2025-05-05 19:48:36:4836 [31merror[39m: [31m错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。[39m

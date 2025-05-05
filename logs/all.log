@@ -1,0 +1,4 @@
+2025-05-05 19:48:36:4836 [32minfo[39m: [32m初始化 Redis 客户端，连接至: localhost:6379[39m
+2025-05-05 19:48:36:4836 [31merror[39m: [31m错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。[39m
+2025-05-05 19:48:36:4836 [33mwarn[39m: [33m警告: SEARCH_PROVIDER 是 'jina' 但 JINA_API_KEY 未设置。[39m
+2025-05-05 19:48:36:4836 [32minfo[39m: [32m有效配置摘要 (来自环境变量或默认值):[39m

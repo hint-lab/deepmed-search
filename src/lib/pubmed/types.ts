@@ -5,6 +5,8 @@ export interface PubMedArticle {
     journal: string;
     pubdate: string;
     abstract?: string; // Optional: If fetched via EFetch
+    pmcid?: string; // Optional: PubMed Central ID
+    doi?: string;   // Optional: Digital Object Identifier
 }
 
 export interface PubMedSearchResult {

@@ -2,14 +2,108 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, AlertTriangle, ArrowLeft, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { PubMedArticle } from '@/lib/pubmed/types';
 import { searchPubMedAction } from '@/actions/pubmed-search';
+import { collectPubMedToKnowledgeBaseAction } from '@/actions/collect-pubmed';
+import { getUserKnowledgeBasesAction } from '@/actions/knowledgebase';
+import { toast } from 'sonner';
 
-const PubMedResultItem = ({ pmid, title, authors, journal, pubdate }: PubMedArticle) => {
+interface SimpleKnowledgeBase {
+    id: string;
+    name: string;
+}
+
+const PubMedResultItem = ({ pmid, title, authors, journal, pubdate, abstract }: PubMedArticle) => {
     const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
+    const articleDetailUrl = `/search/pubmed/article/${pmid}`;
+    const [showAbstract, setShowAbstract] = useState(false);
+
+    const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
+    const [knowledgeBases, setKnowledgeBases] = useState<SimpleKnowledgeBase[]>([]);
+    const [selectedKbId, setSelectedKbId] = useState<string | undefined>(undefined);
+    const [isFetchingKbs, setIsFetchingKbs] = useState(false);
+    const [isCollectingToKb, setIsCollectingToKb] = useState(false);
+    const [kbFetchError, setKbFetchError] = useState<string | null>(null);
+
+    const handleOpenModal = async (isOpen: boolean) => {
+        setIsCollectModalOpen(isOpen);
+        if (isOpen && knowledgeBases.length === 0 && !isFetchingKbs) {
+            setIsFetchingKbs(true);
+            setKbFetchError(null);
+            console.log("Fetching user knowledge bases...");
+            try {
+                const response = await getUserKnowledgeBasesAction();
+                if (response.success && response.data) {
+                    setKnowledgeBases(response.data);
+                    console.log("Fetched KBs:", response.data);
+                } else {
+                    throw new Error(response.error || "无法加载知识库列表。");
+                }
+            } catch (error: any) {
+                setKbFetchError(error.message || "加载知识库时出错。");
+                toast.error("加载知识库列表失败", { description: error.message });
+            } finally {
+                setIsFetchingKbs(false);
+            }
+        }
+        if (!isOpen) {
+            setSelectedKbId(undefined);
+        }
+    };
+
+    const handleConfirmCollect = async () => {
+        if (!selectedKbId) {
+            toast.warning("请选择一个知识库。", { id: 'kb-select-warn' });
+            return;
+        }
+        setIsCollectingToKb(true);
+        try {
+            const articleData = {
+                knowledgeBaseId: selectedKbId,
+                pmid, title, authors, journal, pubdate, abstract, pubmedUrl
+            };
+            const dataToCollect = { ...articleData, abstract: abstract || undefined };
+
+            console.log("Collecting to KB:", dataToCollect);
+            const response = await collectPubMedToKnowledgeBaseAction(dataToCollect);
+
+            if (response.success) {
+                toast.success(`文章 "${title.substring(0, 30)}..." 已收藏!`, {
+                    description: `文档 ID: ${response.data?.documentId}`,
+                });
+                handleOpenModal(false);
+            } else {
+                throw new Error(response.error || '收藏失败');
+            }
+        } catch (err: any) {
+            console.error("Collection error:", err);
+            toast.error(`收藏失败: ${err.message}`);
+        } finally {
+            setIsCollectingToKb(false);
+        }
+    };
 
     if (!pmid) {
         return (
@@ -22,22 +116,104 @@ const PubMedResultItem = ({ pmid, title, authors, journal, pubdate }: PubMedArti
         );
     }
 
+    const displayAbstract = abstract || "摘要信息需要通过更新 searchPubMedAction 获取...";
+
     return (
         <div className="mb-7 break-inside-avoid border-b pb-4">
-            <a href={pubmedUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-green-700 dark:text-green-600 block mb-1 hover:underline break-words">
-                PMID: {pmid}
-            </a>
-            <a href={pubmedUrl} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
-                <h3 className="text-xl md:text-2xl text-blue-800 dark:text-blue-400 hover:underline font-medium break-words">
-                    {title || 'No title available'}
-                </h3>
-            </a>
-            <p className="text-sm text-gray-700 dark:text-gray-400 mb-1">
-                <strong>Authors:</strong> {authors || 'No authors listed'}
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-500">
-                {journal || 'No journal listed'} ({pubdate || 'No publication date'})
-            </p>
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex-1 min-w-0">
+                    <Link href={articleDetailUrl} className="text-sm text-green-700 dark:text-green-600 block mb-1 hover:underline break-words">
+                        PMID: {pmid}
+                    </Link>
+                    <Link href={articleDetailUrl} className="block mb-1.5">
+                        <h3 className="text-xl md:text-2xl text-blue-800 dark:text-blue-400 hover:underline font-medium break-words text-justify">
+                            {title || 'No title available'}
+                        </h3>
+                    </Link>
+                    <p className="text-sm text-gray-700 dark:text-gray-400 mb-1 break-words">
+                        <strong>Authors:</strong> {authors || 'No authors listed'}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-500 mb-3 break-words">
+                        {journal || 'No journal listed'} ({pubdate || 'No publication date'})
+                    </p>
+
+                    <div className="mt-3">
+                        <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 h-auto text-xs text-muted-foreground hover:text-primary"
+                            onClick={() => setShowAbstract(!showAbstract)}
+                            disabled={!abstract}
+                        >
+                            {showAbstract ? '隐藏摘要' : '显示摘要'}
+                        </Button>
+                        {showAbstract && (
+                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 leading-relaxed prose prose-sm max-w-none break-words text-justify">
+                                {displayAbstract}
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex-shrink-0 mt-1">
+                    <Dialog open={isCollectModalOpen} onOpenChange={handleOpenModal}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-[120px]">
+                                <Library className="mr-1.5 h-4 w-4" />
+                                收藏到库
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                                <DialogTitle>收藏到知识库</DialogTitle>
+                                <DialogDescription className="break-words">
+                                    选择一个知识库来保存这篇文章: <br />
+                                    <strong className="break-words">"{title}"</strong>
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="kb-select" className="text-right col-span-1">
+                                        知识库
+                                    </Label>
+                                    <div className="col-span-3">
+                                        {isFetchingKbs && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {!isFetchingKbs && kbFetchError && <span className="text-xs text-destructive">{kbFetchError}</span>}
+                                        {!isFetchingKbs && !kbFetchError && knowledgeBases.length === 0 && <span className="text-xs text-muted-foreground">没有可用的知识库。</span>}
+                                        {!isFetchingKbs && !kbFetchError && knowledgeBases.length > 0 && (
+                                            <Select value={selectedKbId} onValueChange={setSelectedKbId}>
+                                                <SelectTrigger id="kb-select" className="w-full">
+                                                    <SelectValue placeholder="请选择知识库..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {knowledgeBases.map(kb => (
+                                                        <SelectItem key={kb.id} value={kb.id}>
+                                                            {kb.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button type="button" variant="secondary">取消</Button>
+                                </DialogClose>
+                                <Button
+                                    type="button"
+                                    onClick={handleConfirmCollect}
+                                    disabled={isFetchingKbs || isCollectingToKb || !selectedKbId || knowledgeBases.length === 0}
+                                >
+                                    {isCollectingToKb ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    确认收藏
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
         </div>
     );
 };
@@ -121,8 +297,9 @@ export default function PubMedSearchResultsPage() {
 
             if (response.success && response.data) {
                 console.log(`Fetched ${response.data.articles.length} PubMed articles for page ${pageToFetch}. Total found: ${response.data.count}`);
-                setCurrentPageResults(response.data.articles);
-                if (totalCount === 0) {
+                const articlesWithAbstract = response.data.articles.map(a => ({ ...a, abstract: a.abstract || undefined }));
+                setCurrentPageResults(articlesWithAbstract);
+                if (pageToFetch === 1) {
                     setTotalCount(response.data.count);
                 }
             } else {
@@ -132,13 +309,16 @@ export default function PubMedSearchResultsPage() {
             console.error("PubMed search failed:", err);
             setError(err.message || 'Failed to fetch PubMed results.');
             setCurrentPageResults([]);
+            if (pageToFetch === 1) setTotalCount(0);
         } finally {
             setIsLoading(false);
         }
-    }, [decodedQuery, resultsPerPage, totalCount]);
+    }, [decodedQuery, resultsPerPage]);
 
     useEffect(() => {
         setCurrentPage(1);
+        setTotalCount(0);
+        setCurrentPageResults([]);
         fetchResults(1);
     }, [decodedQuery, fetchResults]);
 
@@ -148,7 +328,7 @@ export default function PubMedSearchResultsPage() {
     }, [totalCount, resultsPerPage]);
 
     const handlePageChange = (newPage: number) => {
-        if (newPage < 1 || newPage > totalPages || newPage === currentPage) {
+        if (newPage < 1 || newPage > totalPages || newPage === currentPage || isLoading) {
             return;
         }
         console.log(`Changing page to: ${newPage}`);
@@ -163,13 +343,13 @@ export default function PubMedSearchResultsPage() {
 
     return (
         <main className="container mx-auto max-w-5xl py-8 px-4 mt-16 min-h-screen">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
                 <Button variant="outline" size="sm" onClick={() => router.back()}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     返回搜索
                 </Button>
                 {!isLoading && totalCount > 0 && (
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground text-right">
                         找到约 {totalCount} 条结果
                     </span>
                 )}
@@ -180,15 +360,22 @@ export default function PubMedSearchResultsPage() {
                 <p className="text-sm text-muted-foreground mt-1">PubMed 搜索结果</p>
             </div>
 
-            {isLoading && (
+            {isLoading && currentPage === 1 && (
                 <div className="space-y-6">
                     <div className="flex justify-center items-center space-x-3 mb-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p className="text-lg text-muted-foreground">正在搜索 PubMed (第 {currentPage} 页)...</p>
+                        <p className="text-lg text-muted-foreground">正在搜索 PubMed...</p>
                     </div>
                     {Array(resultsPerPage).fill(0).map((_, index) => (
                         <PubMedResultItemSkeleton key={`skel-${index}`} />
                     ))}
+                </div>
+            )}
+
+            {isLoading && currentPage > 1 && (
+                <div className="flex justify-center items-center space-x-3 my-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <p className="text-md text-muted-foreground">正在加载第 {currentPage} 页...</p>
                 </div>
             )}
 
@@ -202,22 +389,23 @@ export default function PubMedSearchResultsPage() {
             )}
 
             {!isLoading && !error && totalCount === 0 && currentPageResults.length === 0 && (
-                <p className="text-center text-muted-foreground my-10 p-10">未能找到与"{query}"相关的任何 PubMed 文章。</p>
+                <p className="text-center text-muted-foreground my-10 p-10">未能找到与 "{query}" 相关的任何 PubMed 文章。</p>
             )}
 
-            {!isLoading && !error && currentPageResults.length > 0 && (
-                <>
-                    <div className="space-y-6">
-                        {currentPageResults.map((article) => (
-                            <PubMedResultItem key={article.pmid} {...article} />
-                        ))}
-                    </div>
-                    <PaginationControls
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
-                </>
+            <div className="space-y-6">
+                {!isLoading && !error && currentPageResults.length > 0 && (
+                    currentPageResults.map((article) => (
+                        <PubMedResultItem key={article.pmid} {...article} />
+                    ))
+                )}
+            </div>
+
+            {totalPages > 1 && (
+                <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                />
             )}
         </main>
     );

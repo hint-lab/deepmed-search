@@ -84,7 +84,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                             <Button
                                 type="button"
                                 disabled={disableInteractions || isSearchStrEmpty}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-r border-border/80 bg-gradient-to-r from-blue-500 to-purple-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-500 to-purple-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isSubmittingWebOrLLM ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -116,7 +116,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                             <Button
                                 type="button"
                                 disabled={disableInteractions || isSearchStrEmpty}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-r border-border/80 bg-gradient-to-r from-purple-600 to-indigo-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-purple-600 to-indigo-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isSubmittingWebOrLLM ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -148,7 +148,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                             <Button
                                 type="button"
                                 disabled={isKbListLoading || disableInteractions || isSearchStrEmpty}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-r border-border/80 bg-gradient-to-r from-green-500 to-blue-500 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-green-500 to-blue-500 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isKbSearching ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -349,7 +349,7 @@ export default function SearchPage() {
                                         type="submit"
                                         // Disable PubMed button during navigation or if input empty
                                         disabled={isSubmitting || isSearchStrEmpty}
-                                        className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-r border-border/80 bg-gradient-to-r from-teal-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                        className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-teal-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                                     >
                                         {isSubmitting ? (
                                             <Loader2 className="h-5 w-5 animate-spin" />

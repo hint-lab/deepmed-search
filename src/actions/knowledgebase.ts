@@ -560,4 +560,40 @@ export async function getAllInvisibleKnowledgeBasesAction(): Promise<ServerActio
             error: error instanceof Error ? error.message : '获取所有不可见知识库失败'
         };
     }
-} 
+}
+
+interface SimpleKnowledgeBase {
+    id: string;
+    name: string;
+}
+
+/**
+ * Fetches a list of knowledge bases accessible by the current user.
+ */
+export const getUserKnowledgeBasesAction = withAuth(async (
+    session
+): Promise<APIResponse<SimpleKnowledgeBase[]>> => {
+    try {
+        // This query assumes KBs are primarily associated via `created_by`.
+        // Adjust the `where` clause based on your multi-tenancy or permission model if needed.
+        const knowledgeBases = await prisma.knowledgeBase.findMany({
+            where: {
+                created_by: session.user.id // Simple check: user created the KB
+                // OR potentially check tenant membership if using tenants:
+                // tenant_id: session.user.tenantId
+            },
+            select: {
+                id: true,
+                name: true,
+            },
+            orderBy: {
+                name: 'asc',
+            },
+        });
+
+        return { success: true, data: knowledgeBases };
+    } catch (error) {
+        console.error("Failed to fetch user knowledge bases:", error);
+        return { success: false, error: "无法加载知识库列表。" };
+    }
+}); 

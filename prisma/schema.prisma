@@ -5,136 +5,137 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]  // Enable the postgresqlExtensions. Currently in preview
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"] // Enable the postgresqlExtensions. Currently in preview
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [vector] // Add the pgvector extension
 }
+
 /// 用户模型
 /// 存储系统用户信息，包括认证和偏好设置
 model User {
-  id              String           @id @default(cuid())  // 用户唯一标识
-  email           String           @unique  // 用户邮箱（唯一）
-  name            String?          // 用户名称
-  image           String?          // 用户头像URL
-  password        String           // 用户密码（加密存储）
-  language        String           @default("en")  // 用户首选语言
-  tenantId        String?          // 所属租户ID
-  tenant          Tenant?          @relation(fields: [tenantId], references: [id])  // 租户关联
-  dialogs         Dialog[]         // 用户的对话列表
-  messages        Message[]        // 用户的消息列表
-  systemTokens    SystemToken[]    // 用户的系统令牌列表
-  createdAt       DateTime         @default(now())  // 创建时间
-  updatedAt       DateTime         @updatedAt       // 更新时间
+  id                      String                   @id @default(cuid()) // 用户唯一标识
+  email                   String                   @unique // 用户邮箱（唯一）
+  name                    String? // 用户名称
+  image                   String? // 用户头像URL
+  password                String // 用户密码（加密存储）
+  language                String                   @default("en") // 用户首选语言
+  tenantId                String? // 所属租户ID
+  tenant                  Tenant?                  @relation(fields: [tenantId], references: [id]) // 租户关联
+  dialogs                 Dialog[] // 用户的对话列表
+  messages                Message[] // 用户的消息列表
+  systemTokens            SystemToken[] // 用户的系统令牌列表
+  createdAt               DateTime                 @default(now()) // 创建时间
+  updatedAt               DateTime                 @updatedAt // 更新时间
 }
 
 /// 租户模型
 /// 多租户系统中的租户信息
 model Tenant {
-  id           String         @id @default(cuid())  // 租户唯一标识
-  name         String         // 租户名称
-  embd_id      String?        // 嵌入模型ID
-  llm_id       String?        // 语言模型ID
-  parser_ids   String[]       @default([]) // 解析器ID列表 
-  users        User[]         // 租户下的用户列表
-  knowledgeBases KnowledgeBase[]  // 租户的知识库列表
-  createdAt    DateTime      @default(now())  // 创建时间
-  updatedAt    DateTime      @updatedAt       // 更新时间
+  id             String          @id @default(cuid()) // 租户唯一标识
+  name           String // 租户名称
+  embd_id        String? // 嵌入模型ID
+  llm_id         String? // 语言模型ID
+  parser_ids     String[]        @default([]) // 解析器ID列表 
+  users          User[] // 租户下的用户列表
+  knowledgeBases KnowledgeBase[] // 租户的知识库列表
+  createdAt      DateTime        @default(now()) // 创建时间
+  updatedAt      DateTime        @updatedAt // 更新时间
 }
 
 /// 对话模型
 /// 存储用户与系统的对话记录
 model Dialog {
-  id              String      @id @default(cuid())  // 对话唯一标识
-  name            String      // 对话名称
-  description     String?     // 对话描述
-  userId          String      // 用户ID
-  knowledgeBaseId String?     // 关联的知识库ID
-  create_date     DateTime    @default(now())  // 创建日期
-  update_date     DateTime    @updatedAt       // 更新日期
-  messages        Message[]   // 对话中的消息列表
-  user            User        @relation(fields: [userId], references: [id])  // 用户关联
-  knowledgeBase   KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])  // 知识库关联
-  relatedQuestions RelatedQuestion[]  // 相关问题列表
+  id               String            @id @default(cuid()) // 对话唯一标识
+  name             String // 对话名称
+  description      String? // 对话描述
+  userId           String // 用户ID
+  knowledgeBaseId  String? // 关联的知识库ID
+  create_date      DateTime          @default(now()) // 创建日期
+  update_date      DateTime          @updatedAt // 更新日期
+  messages         Message[] // 对话中的消息列表
+  user             User              @relation(fields: [userId], references: [id]) // 用户关联
+  knowledgeBase    KnowledgeBase?    @relation(fields: [knowledgeBaseId], references: [id]) // 知识库关联
+  relatedQuestions RelatedQuestion[] // 相关问题列表
 
-  @@index([userId])  // 用户ID索引
-  @@index([knowledgeBaseId])  // 知识库ID索引
+  @@index([userId]) // 用户ID索引
+  @@index([knowledgeBaseId]) // 知识库ID索引
 }
 
 /// 消息模型
 /// 存储对话中的单条消息
 model Message {
-  id        String   @id @default(cuid())  // 消息唯一标识
-  content   String   // 消息内容
-  role      String   @default("user")  // 消息角色（用户/系统）
-  dialogId  String   // 所属对话ID
-  dialog    Dialog   @relation(fields: [dialogId], references: [id])  // 对话关联
-  userId    String   // 用户ID
-  user      User     @relation(fields: [userId], references: [id])  // 用户关联
-  createdAt DateTime @default(now())  // 创建时间
-  updatedAt DateTime @updatedAt       // 更新时间
-  thinkingContent String?  // 思考模式内容（JSON格式）
-  isThinking Boolean @default(false)  // 是否为思考模式
+  id              String   @id @default(cuid()) // 消息唯一标识
+  content         String // 消息内容
+  role            String   @default("user") // 消息角色（用户/系统）
+  dialogId        String // 所属对话ID
+  dialog          Dialog   @relation(fields: [dialogId], references: [id]) // 对话关联
+  userId          String // 用户ID
+  user            User     @relation(fields: [userId], references: [id]) // 用户关联
+  createdAt       DateTime @default(now()) // 创建时间
+  updatedAt       DateTime @updatedAt // 更新时间
+  thinkingContent String? // 思考模式内容（JSON格式）
+  isThinking      Boolean  @default(false) // 是否为思考模式
 }
 
 /// 系统状态模型
 /// 记录系统运行状态信息
 model SystemStatus {
-  id        String   @id @default(cuid())  // 状态记录唯一标识
-  status    String   // 状态值
-  message   String?  // 状态描述
-  updatedAt DateTime @updatedAt  // 更新时间
+  id        String   @id @default(cuid()) // 状态记录唯一标识
+  status    String // 状态值
+  message   String? // 状态描述
+  updatedAt DateTime @updatedAt // 更新时间
 }
 
 /// 系统令牌模型
 /// 存储用户的系统访问令牌
 model SystemToken {
-  id         String    @id @default(cuid())  // 令牌唯一标识
-  name       String    // 令牌名称
-  token      String    @unique  // 令牌值（唯一）
-  userId     String    // 用户ID
-  user       User      @relation(fields: [userId], references: [id])  // 用户关联
-  createdAt  DateTime  @default(now())  // 创建时间
+  id         String    @id @default(cuid()) // 令牌唯一标识
+  name       String // 令牌名称
+  token      String    @unique // 令牌值（唯一）
+  userId     String // 用户ID
+  user       User      @relation(fields: [userId], references: [id]) // 用户关联
+  createdAt  DateTime  @default(now()) // 创建时间
   lastUsedAt DateTime? // 最后使用时间
 }
 
 /// 知识库模型
 /// 存储系统知识库信息
 model KnowledgeBase {
-  id                    String        @id @default(cuid())  // 知识库唯一标识
-  name                  String        // 知识库名称
-  description           String?       // 知识库描述
-  avatar                String?       // 知识库头像
-  chunk_num             Int           @default(0)  // 分块数量
-  doc_num               Int           @default(0)  // 文档数量
-  parser_config         Json?         // 解析器配置
-  parser_id             String?       // 解析器ID
-  permission            String?       // 权限设置
-  similarity_threshold  Float         @default(0.7)  // 相似度阈值
-  status                String        @default("active")  // 知识库状态
-  tenant_id             String?       // 租户ID
-  token_num             Int           @default(0)  // token数量
-  vector_similarity_weight Float      @default(0.5)  // 向量相似度权重
-  embd_id               String?       // 嵌入模型ID 
-  language              String?       // 语言设置
-  operator_permission   Int           @default(0)  // 操作权限
-  visible               Boolean       @default(true)  // 知识库可见性
-  created_at            DateTime      @default(now())  // 创建时间
-  updated_at            DateTime      @default(now()) @updatedAt  // 更新时间
-  created_by            String        // 创建者ID
-  chunk_size            Int           @default(1000)  // 分块大小
-  overlap_size          Int           @default(100)  // 重叠大小
-  split_by              String        @default("page")  // 按段落分割
-  separators             String[]      @default([]) // 分隔符
-  documents             Document[]    // 文档列表
-  tags                  Tag[]         // 标签列表
-  chunks                Chunk[]       // 分块列表
-  dialogs               Dialog[]      // 对话列表
-  tenant                Tenant?       @relation(fields: [tenant_id], references: [id])  // 租户关联
+  id                       String     @id @default(cuid()) // 知识库唯一标识
+  name                     String // 知识库名称
+  description              String? // 知识库描述
+  avatar                   String? // 知识库头像
+  chunk_num                Int        @default(0) // 分块数量
+  doc_num                  Int        @default(0) // 文档数量
+  parser_config            Json? // 解析器配置
+  parser_id                String? // 解析器ID
+  permission               String? // 权限设置
+  similarity_threshold     Float      @default(0.7) // 相似度阈值
+  status                   String     @default("active") // 知识库状态
+  tenant_id                String? // 租户ID
+  token_num                Int        @default(0) // token数量
+  vector_similarity_weight Float      @default(0.5) // 向量相似度权重
+  embd_id                  String? // 嵌入模型ID 
+  language                 String? // 语言设置
+  operator_permission      Int        @default(0) // 操作权限
+  visible                  Boolean    @default(true) // 知识库可见性
+  created_at               DateTime   @default(now()) // 创建时间
+  updated_at               DateTime   @default(now()) @updatedAt // 更新时间
+  created_by               String // 创建者ID
+  chunk_size               Int        @default(1000) // 分块大小
+  overlap_size             Int        @default(100) // 重叠大小
+  split_by                 String     @default("page") // 按段落分割
+  separators               String[]   @default([]) // 分隔符
+  documents                Document[] // 文档列表
+  tags                     Tag[] // 标签列表
+  chunks                   Chunk[] // 分块列表
+  dialogs                  Dialog[] // 对话列表
+  tenant                   Tenant?    @relation(fields: [tenant_id], references: [id]) // 租户关联
 }
 
 /// 文档处理状态枚举
@@ -166,109 +167,109 @@ enum FileUploadStatus {
 /// 文档模型
 /// 存储知识库中的文档信息
 model Document {
-  id              String    @id @default(cuid())  // 文档唯一标识
-  name            String    // 文档名称 
-  content_url     String?   // 文档内容在对象存储中的URL
-  file_url        String?   // 文件在对象存储中的URL
-  size            Int       // 文档大小（字节）
-  type            String    // 文档类型（如 pdf, docx 等）
-  source_type     String    // 来源类型（如 upload, url 等）
-  processing_status DocumentProcessingStatus @default(UNPROCESSED)  // 处理状态
-  thumbnail       String?   // 文档缩略图URL
-  chunk_num       Int       @default(0)  // 文档分块数量
-  token_num       Int       @default(0)  // 文档token数量
-  progress        Int       @default(0)  // 处理进度（0-100）
-  progress_msg    String?   // 进度消息
-  process_begin_at DateTime? // 处理开始时间
-  process_duation Int       @default(0)  // 处理持续时间（秒）
-  create_date     DateTime  // 创建日期
-  create_time     BigInt    // 创建时间戳
-  update_date     DateTime  // 更新日期
-  update_time     BigInt    // 更新时间戳
-  created_by      String    // 创建者ID
-  knowledgeBaseId String    // 知识库ID
-  parser_id       String?   // 解析器ID
-  parser_config   Json      // 解析器配置
-  markdown_content String?   @db.Text  // Markdown格式内容
-  summary         String?   @db.Text  // 文档摘要
-  metadata        Json?     // 元数据
-  processing_error String?  @db.Text  // 处理错误信息
-  enabled          Boolean   @default(true)  // 是否启用
-  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])  // 知识库关联
-  tags            Tag[]     // 标签列表
-  chunks          Chunk[]   // 分块列表
-  uploadFile      UploadFile? @relation(fields: [uploadFileId], references: [id])  // 上传文件关联
-  uploadFileId    String?    @unique  // 上传文件ID
+  id                String                   @id @default(cuid()) // 文档唯一标识
+  name              String // 文档名称 
+  content_url       String? // 文档内容在对象存储中的URL
+  file_url          String? // 文件在对象存储中的URL
+  size              Int // 文档大小（字节）
+  type              String // 文档类型（如 pdf, docx 等）
+  source_type       String // 来源类型（如 upload, url 等）
+  processing_status DocumentProcessingStatus @default(UNPROCESSED) // 处理状态
+  thumbnail         String? // 文档缩略图URL
+  chunk_num         Int                      @default(0) // 文档分块数量
+  token_num         Int                      @default(0) // 文档token数量
+  progress          Int                      @default(0) // 处理进度（0-100）
+  progress_msg      String? // 进度消息
+  process_begin_at  DateTime? // 处理开始时间
+  process_duation   Int                      @default(0) // 处理持续时间（秒）
+  create_date       DateTime // 创建日期
+  create_time       BigInt // 创建时间戳
+  update_date       DateTime // 更新日期
+  update_time       BigInt // 更新时间戳
+  created_by        String // 创建者ID
+  knowledgeBaseId   String // 知识库ID
+  parser_id         String? // 解析器ID
+  parser_config     Json // 解析器配置
+  markdown_content  String?                  @db.Text // Markdown格式内容
+  summary           String?                  @db.Text // 文档摘要
+  metadata          Json? // 元数据
+  processing_error  String?                  @db.Text // 处理错误信息
+  enabled           Boolean                  @default(true) // 是否启用
+  knowledgeBase     KnowledgeBase            @relation(fields: [knowledgeBaseId], references: [id]) // 知识库关联
+  tags              Tag[] // 标签列表
+  chunks            Chunk[] // 分块列表
+  uploadFile        UploadFile?              @relation(fields: [uploadFileId], references: [id]) // 上传文件关联
+  uploadFileId      String?                  @unique // 上传文件ID
 }
 
 /// 上传文件模型
 /// 存储用户上传的文件信息
 model UploadFile {
-  id              String    @id @default(cuid())  // 文件唯一标识
-  name            String    @db.VarChar(255)  // 文件名
-  location        String    @db.VarChar(500)  // 文件存储位置
-  size            Int       // 文件大小（字节）
-  type            String    @db.VarChar(100)  // 文件MIME类型
-  thumbnail       String?   @db.VarChar(500)  // 缩略图URL
-  status          FileUploadStatus @default(PENDING)  // 上传状态
-  upload_progress Int       @default(0)  // 上传进度（0-100）
-  error_message   String?   // 错误信息
-  create_date     DateTime  // 创建日期
-  create_time     BigInt    // 创建时间戳
-  created_by      String    @db.VarChar(100)  // 创建者ID
-  parser_id       String?   @db.VarChar(100)  // 解析器ID
-  parser_config   Json      // 解析器配置
-  summary         String?   @db.Text  // 文件摘要
-  metadata        Json?     // 元数据
-  createdAt       DateTime  @default(now())  // 创建时间
-  updatedAt       DateTime  @updatedAt       // 更新时间
+  id              String           @id @default(cuid()) // 文件唯一标识
+  name            String           @db.VarChar(255) // 文件名
+  location        String           @db.VarChar(500) // 文件存储位置
+  size            Int // 文件大小（字节）
+  type            String           @db.VarChar(100) // 文件MIME类型
+  thumbnail       String?          @db.VarChar(500) // 缩略图URL
+  status          FileUploadStatus @default(PENDING) // 上传状态
+  upload_progress Int              @default(0) // 上传进度（0-100）
+  error_message   String? // 错误信息
+  create_date     DateTime // 创建日期
+  create_time     BigInt // 创建时间戳
+  created_by      String           @db.VarChar(100) // 创建者ID
+  parser_id       String?          @db.VarChar(100) // 解析器ID
+  parser_config   Json // 解析器配置
+  summary         String?          @db.Text // 文件摘要
+  metadata        Json? // 元数据
+  createdAt       DateTime         @default(now()) // 创建时间
+  updatedAt       DateTime         @updatedAt // 更新时间
   document        Document? // 关联的文档
 
-  @@index([createdAt])  // 创建时间索引
+  @@index([createdAt]) // 创建时间索引
 }
 
 /// 标签模型
 /// 用于文档分类和组织
 model Tag {
-  id             String        @id @default(cuid())  // 标签唯一标识
-  name           String        // 标签名称
-  knowledgeBase  KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])  // 知识库关联
-  knowledgeBaseId String       // 知识库ID
-  documents      Document[]    // 关联的文档列表
-  createdAt      DateTime      @default(now())  // 创建时间
-  updatedAt      DateTime      @updatedAt       // 更新时间
+  id              String        @id @default(cuid()) // 标签唯一标识
+  name            String // 标签名称
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id]) // 知识库关联
+  knowledgeBaseId String // 知识库ID
+  documents       Document[] // 关联的文档列表
+  createdAt       DateTime      @default(now()) // 创建时间
+  updatedAt       DateTime      @updatedAt // 更新时间
 }
 
 /// 文档分块模型
 /// 存储文档的分块内容
 model Chunk {
-  id                String    @id @default(cuid())  // 分块唯一标识
-  chunk_id          String    @unique  // 分块ID（唯一）
-  content_with_weight String  // 带权重的分块内容
-  available_int     Int       @default(1)  // 可用性标记
-  doc_id            String    // 文档ID
-  doc_name          String    // 文档名称
-  img_id            String?   // 图片ID
-  important_kwd     String[]  // 重要关键词列表
-  question_kwd      String[]  // 问题关键词列表
-  tag_kwd           String[]  // 标签关键词列表
-  positions         Json      // 位置信息
-  tag_feas          Json?     // 标签特征
-  kb_id             String    // 知识库ID
-  embedding         Unsupported("vector(1536)")?  // 向量嵌入，支持 pgvector
-  knowledgeBase     KnowledgeBase @relation(fields: [kb_id], references: [id])  // 知识库关联
-  document          Document      @relation(fields: [doc_id], references: [id])  // 文档关联
-  createdAt         DateTime  @default(now())  // 创建时间
-  updatedAt         DateTime  @updatedAt       // 更新时间
+  id                  String                       @id @default(cuid()) // 分块唯一标识
+  chunk_id            String                       @unique // 分块ID（唯一）
+  content_with_weight String // 带权重的分块内容
+  available_int       Int                          @default(1) // 可用性标记
+  doc_id              String // 文档ID
+  doc_name            String // 文档名称
+  img_id              String? // 图片ID
+  important_kwd       String[] // 重要关键词列表
+  question_kwd        String[] // 问题关键词列表
+  tag_kwd             String[] // 标签关键词列表
+  positions           Json // 位置信息
+  tag_feas            Json? // 标签特征
+  kb_id               String // 知识库ID
+  embedding           Unsupported("vector(1536)")? // 向量嵌入，支持 pgvector
+  knowledgeBase       KnowledgeBase                @relation(fields: [kb_id], references: [id]) // 知识库关联
+  document            Document                     @relation(fields: [doc_id], references: [id]) // 文档关联
+  createdAt           DateTime                     @default(now()) // 创建时间
+  updatedAt           DateTime                     @updatedAt // 更新时间
 }
 
 /// 相关问题模型
 /// 存储对话中的相关问题
 model RelatedQuestion {
-  id        String   @id @default(cuid())  // 问题唯一标识
-  question  String   // 问题内容
-  dialogId  String   // 对话ID
-  dialog    Dialog   @relation(fields: [dialogId], references: [id])  // 对话关联
-  createdAt DateTime @default(now())  // 创建时间
-  updatedAt DateTime @updatedAt       // 更新时间
+  id        String   @id @default(cuid()) // 问题唯一标识
+  question  String // 问题内容
+  dialogId  String // 对话ID
+  dialog    Dialog   @relation(fields: [dialogId], references: [id]) // 对话关联
+  createdAt DateTime @default(now()) // 创建时间
+  updatedAt DateTime @updatedAt // 更新时间
 }
