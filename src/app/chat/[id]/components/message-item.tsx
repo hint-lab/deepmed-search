@@ -21,6 +21,15 @@ interface ChatMessageItemProps {
     }
 }
 
+// 定义引用相关的接口
+interface Reference {
+    reference_id: number;
+    doc_id: string;
+    doc_name: string;
+    content: string;
+    type?: string;
+}
+
 function ChatMessageItem({
     message,
     isStreaming,
@@ -29,6 +38,7 @@ function ChatMessageItem({
 }: ChatMessageItemProps) {
     const [showReasoning, setShowReasoning] = useState(true);
     const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
+    const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
 
     const normalizedRole =
         message.role === MessageType.User || message.role === 'reason'
@@ -62,6 +72,53 @@ function ChatMessageItem({
         setExpandedIndexes(prev =>
             prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
         );
+    };
+
+    const renderMessage = (msg: IMessage): React.ReactNode => {
+        if (!msg.metadata?.references) return msg.content;
+
+        // 用引用替换掉 [1], [2] 等标记
+        let content = msg.content;
+        msg.metadata.references.forEach((ref: Reference) => {
+            const marker = `[${ref.reference_id}]`;
+            content = content.replace(
+                marker,
+                `<span class="reference" data-ref-id="${ref.reference_id}" data-doc-id="${ref.doc_id}">
+                    [${ref.reference_id}]
+                </span>`
+            );
+        });
+
+        return (
+            <ReactMarkdown
+            >
+                {content}
+            </ReactMarkdown>
+        );
+    };
+
+    // 处理引用点击
+    const handleReferenceClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('reference')) {
+            const refId = target.dataset.refId;
+            if (!refId || !message.metadata?.references) return;
+
+            const reference = message.metadata.references.find((r: Reference) =>
+                r.reference_id === parseInt(refId)
+            );
+
+            if (reference) {
+                // 显示引用详情
+                setSelectedReference(reference);
+            }
+        }
+    };
+
+    // 显示引用详情的函数
+    const showReferenceDetail = (reference: Reference) => {
+        setSelectedReference(reference);
+        // 如果需要额外的显示逻辑，可以在这里添加
     };
 
     return (
@@ -131,7 +188,7 @@ function ChatMessageItem({
                                     isStreaming && "animate-blinking-cursor"
                                 )}>
                                     <ReactMarkdown>
-                                        {renderWithReferences(displayFinalContent)}
+                                        {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
                                     </ReactMarkdown>
                                 </div>
                                 {isStreaming && (
@@ -153,7 +210,7 @@ function ChatMessageItem({
                                     isStreaming && !isUser && "animate-blinking-cursor"
                                 )}>
                                     <ReactMarkdown>
-                                        {displayFinalContent || ''}
+                                        {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
                                     </ReactMarkdown>
                                 </div>
                             </div>
@@ -164,9 +221,13 @@ function ChatMessageItem({
                                 "prose prose-sm dark:prose-invert max-w-none",
                                 isStreaming && !isUser && "animate-blinking-cursor"
                             )}>
-                                <ReactMarkdown>
-                                    {displayFinalContent || ''}
-                                </ReactMarkdown>
+                                {message.metadata?.references ?
+                                    renderMessage(message)
+                                    : (
+                                        <ReactMarkdown>
+                                            {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
+                                        </ReactMarkdown>
+                                    )}
                             </div>
                         )}
                         {message.metadata?.kbChunks && (
@@ -182,12 +243,12 @@ function ChatMessageItem({
                                                 <div
                                                     key={i}
                                                     id={`kb-ref-${i + 1}`}
-                                                    className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md border-l-4 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
+                                                    className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md hover:border-l-6 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
                                                     onClick={() => toggleExpand(i)}
                                                 >
                                                     <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
-                                                        {chunk.docName}
-                                                        <span className="ml-2 text-blue-400">{expanded ? '收起' : '展开'}</span>
+                                                        {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
+                                                        <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? '收起' : '展开'}</span>
                                                     </div>
                                                     <div className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}>
                                                         <ReactMarkdown
@@ -202,7 +263,7 @@ function ChatMessageItem({
                                                                 ),
                                                             }}
                                                         >
-                                                            {chunk.content}
+                                                            {typeof chunk.content === 'string' ? chunk.content : ''}
                                                         </ReactMarkdown>
                                                     </div>
                                                 </div>
@@ -223,6 +284,24 @@ function ChatMessageItem({
                 </Avatar>
             )}
 
+            {/* 引用详情弹窗 */}
+            {selectedReference && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedReference(null)}>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold">引用详情</h3>
+                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setSelectedReference(null)}>
+                                关闭
+                            </button>
+                        </div>
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown>
+                                {selectedReference.content || '无内容'}
+                            </ReactMarkdown>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -232,9 +311,13 @@ function renderWithReferences(answer: string) {
     const replaced = answer.replace(/\[(\d+)\]/g, (match, p1) => {
         return `<a href="#kb-ref-${p1}" class="text-blue-500 underline">[${p1}]</a>`;
     });
-    return <ReactMarkdown children={replaced} components={{
-        a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
-    }} />;
+    return <ReactMarkdown
+        // @ts-ignore children属性可以是string类型
+        children={replaced}
+        components={{
+            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+        }}
+    />;
 }
 
 export default ChatMessageItem;

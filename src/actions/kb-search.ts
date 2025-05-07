@@ -14,17 +14,19 @@ export interface ChunkResult {
     metadata?: Record<string, any>; // Optional: other metadata
 }
 
-// Define the options type for the action, including kbId
+// Define the options type for the action, including kbId and mode
 interface KbSearchOptions {
     topK?: number;
-    kbId?: string; // Add kbId here
+    kbId?: string;
+    mode?: 'vector' | 'bm25' | 'hybrid'; // 新增
 }
 
-// Define the schema for the action input, adding kbId validation
+// Define the schema for the action input, adding kbId and mode validation
 const KbSearchInputSchema = z.object({
     query: z.string().min(1, "Query cannot be empty."),
-    kbId: z.string().min(1, "Knowledge base ID is required."), // Make kbId required
+    kbId: z.string().min(1, "Knowledge base ID is required."),
     topK: z.number().int().positive().optional().default(5),
+    mode: z.enum(['vector', 'bm25', 'hybrid']).optional().default('vector'), // 新增
 });
 
 /**
@@ -35,10 +37,10 @@ const KbSearchInputSchema = z.object({
  */
 export async function performKbSearchAction(
     query: string,
-    options?: KbSearchOptions // Use the updated options type
+    options?: KbSearchOptions
 ): Promise<{ success: boolean; data?: ChunkResult[]; error?: string }> {
     try {
-        // Validate input, including kbId
+        // Validate input, including kbId and mode
         const validation = KbSearchInputSchema.safeParse({ query, ...options });
         if (!validation.success) {
             console.error("[KB Action] Invalid input:", validation.error.format());
@@ -46,19 +48,29 @@ export async function performKbSearchAction(
             return { success: false, error: validation.error.errors.map(e => e.message).join(' ') || "Invalid search parameters." };
         }
 
-        const { query: validatedQuery, topK, kbId } = validation.data;
+        const { query: validatedQuery, topK, kbId, mode } = validation.data;
 
-        console.log(`[KB Action] Performing search for query: "${validatedQuery}" in KB ID: ${kbId} with topK: ${topK}`);
+        console.log(`[KB Action] Performing search for query: "${validatedQuery}" in KB ID: ${kbId} with topK: ${topK} and mode: ${mode}`);
 
         // 1. Generate embedding for the single query string using getEmbedding
         console.log("[KB Action] Generating embedding for query...");
-        // @ts-ignore // Temporarily ignore potential linter issue
-        const queryEmbedding = await getEmbedding(validatedQuery, 'text-embedding-3-small');
+        let queryEmbedding: number[] = [];
+        if (mode !== 'bm25') {
+            // 只有向量/混合检索时才生成 embedding
+            queryEmbedding = await getEmbedding(validatedQuery, 'text-embedding-3-small');
+        }
         console.log("[KB Action] Embedding generated.");
 
         // 2. Search for similar chunks in the specified knowledge base
         console.log(`[KB Action] Searching similar chunks in vector DB for kbId: ${kbId}...`);
-        const similarChunks = await searchSimilarChunks(queryEmbedding, kbId, topK);
+        const similarChunks = await searchSimilarChunks(
+            queryEmbedding,
+            kbId,
+            topK,
+            '',
+            mode,
+            validatedQuery // bm25/hybrid 需要原始文本
+        );
         console.log(`[KB Action] Found ${similarChunks.length} similar chunks.`);
 
         // 3. Map the results to the ChunkResult format

@@ -5,11 +5,22 @@ import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
 import { chatClient } from '@/lib/deepseek/chat/client';
+import { kbReferenceTool } from '@/lib/deepseek/chat/tools';
 import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
 import { searchSimilarChunks } from '@/lib/pgvector/operations';
 import { getEmbeddings } from '@/lib/openai/embedding';
 import { auth } from '@/lib/auth';
+import { ChunkResponse } from '@/lib/deepseek';
+
+interface ReferenceData {
+    type: string;
+    reference_id: number;
+    doc_id: string;
+    doc_name: string;
+    content: string;
+    // 添加其他你可能需要的属性
+}
 
 
 export const fetchChatMessagesAction = withAuth(async (
@@ -31,8 +42,9 @@ export const fetchChatMessagesAction = withAuth(async (
         // 转换消息类型以匹配 IMessage 接口
         const formattedMessages: IMessage[] = messages.map(msg => ({
             ...msg,
-            thinkingContent: msg.thinkingContent || undefined
-        }));
+            thinkingContent: msg.thinkingContent || undefined,
+            metadata: msg.metadata ?? undefined
+        })) as any;
 
         return {
             success: true,
@@ -54,8 +66,7 @@ export const sendChatMessageAction = withAuth(async (
     session,
     dialogId: string,
     content: string,
-    isReason: boolean = false,
-    knowledgeBaseId?: string
+    isReason: boolean = false
 ): Promise<APIResponse<any>> => {
     try {
         console.log('开始发送消息 (非流式):', { dialogId, content, isReason });
@@ -121,12 +132,10 @@ export const sendChatMessageAction = withAuth(async (
         }
 
         // 设置系统提示词
-        chatClient.setSystemPrompt(
-            dialogId,
-            dialog.knowledgeBase
-                ? `你是一个专业的AI助手。请基于以下知识库回答问题：${dialog.knowledgeBase.name}`
-                : '你是一个专业的AI助手。'
-        );
+        const systemPrompt = `
+        你可以通过调用 kb_reference 工具来引用知识库片段。每当你需要引用知识库内容时，请调用该工具，并传递文档ID、片段ID和片段内容。
+        `;
+        chatClient.setSystemPrompt(dialogId, systemPrompt);
 
         // 使用 chatClient 处理非流式输出
         const response = await chatClient.chat(dialogId, content);
@@ -235,8 +244,8 @@ export async function getChatMessageStream(
                     await chatClient.chatStream(
                         dialogId,
                         content,
-                        (chunk: string) => {
-                            if (chunk) {
+                        (chunk: ChunkResponse) => {
+                            if (typeof chunk === 'string') {
                                 if (chunk.startsWith('[REASONING]')) {
                                     const reasoningChunk = chunk.substring('[REASONING]'.length);
                                     reasoningContent += reasoningChunk;
@@ -254,6 +263,9 @@ export async function getChatMessageStream(
                                         sendEvent({ type: 'content', chunk: chunk });
                                     }
                                 }
+                            } else {
+                                // 如果 chunk 是对象，可以在这里添加特定处理逻辑，例如函数调用相关的
+                                console.log("Received object chunk:", chunk);
                             }
                         },
                         true
@@ -297,7 +309,7 @@ export async function getChatMessageStream(
                     if (isUsingKB && dialog.knowledgeBase) {
                         try {
                             const queryVector = await getEmbeddings([content]);
-                            const chunks = await searchSimilarChunks(queryVector[0], dialog.knowledgeBase.id, 3);
+                            const chunks = await searchSimilarChunks(queryVector[0], dialog.knowledgeBase.id, 5);
 
                             // 发送知识库片段信息给前端
                             sendEvent({
@@ -331,33 +343,72 @@ export async function getChatMessageStream(
                             console.error("Error retrieving knowledge base context:", kbError);
                         }
                     }
-
+                    chatClient.setTools([kbReferenceTool]);
                     chatClient.setSystemPrompt(
                         dialogId,
                         contextChunks
-                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题：\n\n${contextChunks}\n\n请根据以下知识库片段回答问题，并在引用片段内容时用[1]、[2]等编号标注出处。例如：“……[1]”。片段如下：
+                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题：\n\n${contextChunks}\n\n请根据以下知识库片段回答问题，并在引用片段内容时用[1]、[2]等编号标注出处。例如："……[1]"。片段如下：
                             [1] 片段内容A
                             [2] 片段内容B`
                             : '你是一个专业的AI助手。'
                     );
 
                     let accumulatedContent = '';
-                    await chatClient.chatStream(
+                    let references: ReferenceData[] = [];
+
+                    await chatClient.chatWithFunctionsStream(
                         dialogId,
                         content,
-                        (chunk: string) => {
-                            if (chunk) {
+                        (chunk: ChunkResponse) => {
+                            if (typeof chunk === 'string') {
                                 accumulatedContent += chunk;
-                                sendEvent({ type: 'content', chunk: chunk });
+                                sendEvent({ type: 'content', chunk });
+                            } else if (chunk.type === 'function_call') {
+                                sendEvent({ type: 'tool_call_start', tool: chunk.name, args: chunk.arguments });
+                            } else if (chunk.type === 'function_result') {
+                                try {
+                                    const refData = JSON.parse(chunk.content);
+                                    if (refData.type === 'reference') {
+                                        references.push(refData as ReferenceData);
+                                        sendEvent({
+                                            type: 'reference',
+                                            ref_id: refData.reference_id,
+                                            doc_id: refData.doc_id,
+                                            doc_name: refData.doc_name,
+                                            content: refData.content
+                                        });
+
+                                        accumulatedContent += `[${refData.reference_id}]`;
+                                    }
+                                } catch (e) {
+                                    console.error('解析引用工具结果失败:', e);
+                                    // 确保 chunk.content 是字符串，如果不是则进行转换或提供默认值
+                                    const contentToAppend = typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content);
+                                    accumulatedContent += contentToAppend;
+                                    sendEvent({ type: 'content', chunk: contentToAppend });
+                                }
                             }
                         },
                         false
                     );
 
                     if (assistantMessageId) {
+                        // 获取现有的元数据，以便合并
+                        const existingMessage = await prisma.message.findUnique({
+                            where: { id: assistantMessageId },
+                            select: { metadata: true }
+                        });
+                        const existingMetadata = (existingMessage?.metadata as any) || {}; // 类型断言为 any 或更具体的类型
+
                         await prisma.message.update({
                             where: { id: assistantMessageId },
-                            data: { content: accumulatedContent },
+                            data: {
+                                content: accumulatedContent,
+                                metadata: {
+                                    ...existingMetadata,
+                                    references: references
+                                }
+                            },
                         });
                     }
 

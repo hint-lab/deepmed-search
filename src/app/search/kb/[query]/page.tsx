@@ -152,6 +152,8 @@ export default function KbSearchResultsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     // --- End Modal State ---
 
+    const [kbSearchMode, setKbSearchMode] = useState<'vector' | 'bm25' | 'hybrid'>('vector');
+
     useEffect(() => {
         const decodedQuery = decodeURIComponent(encodedQuery || '');
 
@@ -184,7 +186,7 @@ export default function KbSearchResultsPage() {
             console.log(`[KB Page] Calling Action for query: "${decodedQuery}" in KB ID: ${kbId}`);
             try {
                 // Pass kbId to the action
-                const response = await performKbSearchAction(decodedQuery, { topK: 50, kbId: kbId });
+                const response = await performKbSearchAction(decodedQuery, { topK: 50, kbId: kbId, mode: kbSearchMode });
 
                 if (response.success && response.data) {
                     console.log(`[KB Page] Received ${response.data.length} chunk results from Action.`);
@@ -208,7 +210,7 @@ export default function KbSearchResultsPage() {
 
         fetchKbResults();
         // Add kbId to dependency array - fetch again if kbId changes (though unlikely on this page)
-    }, [encodedQuery, kbId, setCurrentKnowledgeBaseId]);
+    }, [encodedQuery, kbId, setCurrentKnowledgeBaseId, kbSearchMode]);
 
     // --- Client-side Pagination Logic ---
     const { currentResults, totalPages } = useMemo(() => {

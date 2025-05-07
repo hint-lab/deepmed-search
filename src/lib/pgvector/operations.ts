@@ -15,6 +15,7 @@ interface SearchResult {
     positions: string;
     tag_feas: string;
     distance: number;
+    // distance 越小，表示两个向量越相似（即语义越接近）
 }
 
 // pgvector 向量插入参数类型
@@ -28,47 +29,127 @@ export interface PgVectorInsertParams {
 }
 
 /**
- * 搜索相似文档
+ * 搜索相似文档，支持BM25 与 Embedding混合检索
  */
 export async function searchSimilarChunks(
     queryVector: number[],
     kbId: string,
     resultLimit = 5,
-    filter = ''
+    filter = '',
+    mode: 'vector' | 'bm25' | 'hybrid' = 'vector',
+    queryText: string = '', // bm25/hybrid 时需要原始文本
+    bm25Weight: number = 0.5, // <-- New parameter
+    vectorWeight: number = 0.5 // <-- New parameter
 ) {
     try {
-        // 构建 SQL 查询
-        let sqlQuery = Prisma.sql`
-            SELECT 
-                c.id, 
-                c.chunk_id, 
-                c.content_with_weight, 
-                c.doc_id, 
-                c.doc_name, 
-                c.positions, 
-                c.tag_feas,
-                c.embedding <-> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)} as distance
-            FROM "Chunk" c
-            WHERE c.kb_id = ${kbId}
-            AND c.available_int = 1
-        `;
-
-        // 添加过滤条件（如果有）
-        if (filter) {
-            sqlQuery = Prisma.sql`${sqlQuery} AND ${Prisma.raw(filter)}`;
+        let sqlQuery;
+        if (mode === 'vector') {
+            sqlQuery = Prisma.sql`
+                SELECT 
+                    c.id, 
+                    c.chunk_id, 
+                    c.content_with_weight, 
+                    c.doc_id, 
+                    c.doc_name, 
+                    c.positions, 
+                    c.tag_feas,
+                    c.embedding <-> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)} as distance
+                FROM "Chunk" c
+                WHERE c.kb_id = ${kbId}
+                AND c.available_int = 1
+            `;
+            if (filter) {
+                sqlQuery = Prisma.sql`${sqlQuery} AND ${Prisma.raw(filter)}`;
+            }
+            sqlQuery = Prisma.sql`
+                ${sqlQuery}
+                ORDER BY distance ASC
+                LIMIT ${resultLimit}
+            `;
+        } else if (mode === 'bm25') {
+            sqlQuery = Prisma.sql`
+                SELECT 
+                    c.id, 
+                    c.chunk_id, 
+                    c.content_with_weight, 
+                    c.doc_id, 
+                    c.doc_name, 
+                    c.positions, 
+                    c.tag_feas,
+                    ts_rank_cd(to_tsvector('simple', c.content_with_weight), plainto_tsquery('simple', ${queryText})) as bm25_score
+                FROM "Chunk" c
+                WHERE c.kb_id = ${kbId}
+                AND c.available_int = 1
+            `;
+            if (filter) {
+                sqlQuery = Prisma.sql`${sqlQuery} AND ${Prisma.raw(filter)}`;
+            }
+            sqlQuery = Prisma.sql`
+                ${sqlQuery}
+                ORDER BY bm25_score DESC
+                LIMIT ${resultLimit}
+            `;
+        } else if (mode === 'hybrid') {
+            // 先分别查 topN，再合并
+            const bm25Sql = Prisma.sql`
+                SELECT 
+                    c.id, 
+                    c.chunk_id, 
+                    c.content_with_weight, 
+                    c.doc_id, 
+                    c.doc_name, 
+                    c.positions, 
+                    c.tag_feas,
+                    ts_rank_cd(to_tsvector('simple', c.content_with_weight), plainto_tsquery('simple', ${queryText})) as bm25_score
+                FROM "Chunk" c
+                WHERE c.kb_id = ${kbId}
+                AND c.available_int = 1
+                ORDER BY bm25_score DESC
+                LIMIT ${resultLimit}
+            `;
+            const vectorSql = Prisma.sql`
+                SELECT 
+                    c.id, 
+                    c.chunk_id, 
+                    c.content_with_weight, 
+                    c.doc_id, 
+                    c.doc_name, 
+                    c.positions, 
+                    c.tag_feas,
+                    c.embedding <-> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)} as distance
+                    -- distance 越小，表示两个向量越相似（即语义越接近）
+                FROM "Chunk" c
+                WHERE c.kb_id = ${kbId}
+                AND c.available_int = 1
+                ORDER BY distance ASC
+                LIMIT ${resultLimit}
+            `;
+            // 分别查两次，合并去重后按简单加权排序
+            const bm25Results = await prisma.$queryRaw<any[]>(bm25Sql);
+            const vectorResults = await prisma.$queryRaw<any[]>(vectorSql);
+            // 合并去重
+            const all = [...bm25Results, ...vectorResults];
+            const unique = Array.from(new Map(all.map(item => [item.chunk_id, item])).values());
+            // 简单加权排序（可根据实际需求调整）
+            unique.sort((a, b) => {
+                const aScore = (a.bm25_score || 0) * bm25Weight - (a.distance || 0) * vectorWeight;
+                const bScore = (b.bm25_score || 0) * bm25Weight - (b.distance || 0) * vectorWeight;
+                return bScore - aScore;
+            });
+            return unique.slice(0, resultLimit).map(result => ({
+                id: result.id,
+                chunk_id: result.chunk_id,
+                content: result.content_with_weight,
+                doc_id: result.doc_id,
+                doc_name: result.doc_name,
+                positions: result.positions,
+                tag_feas: result.tag_feas,
+                distance: result.distance,
+                bm25_score: result.bm25_score
+            }));
         }
-
-        // 添加排序和限制
-        sqlQuery = Prisma.sql`
-            ${sqlQuery}
-            ORDER BY distance ASC
-            LIMIT ${resultLimit}
-        `;
-
-        // 执行查询
-        const results = await prisma.$queryRaw<SearchResult[]>(sqlQuery);
-
-        // 格式化结果
+        if (!sqlQuery) throw new Error('No SQL query generated');
+        const results = await prisma.$queryRaw<any[]>(sqlQuery);
         return results.map(result => ({
             id: result.id,
             chunk_id: result.chunk_id,
@@ -77,7 +158,8 @@ export async function searchSimilarChunks(
             doc_name: result.doc_name,
             positions: result.positions,
             tag_feas: result.tag_feas,
-            distance: result.distance
+            distance: result.distance,
+            bm25_score: result.bm25_score
         }));
     } catch (error) {
         logger.error('搜索相似文档失败:', { error: error instanceof Error ? error.message : error });

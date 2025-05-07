@@ -102,7 +102,13 @@ export interface Tool {
 }
 
 // 流式响应处理器类型
-export type ChunkHandler = (chunk: string) => void;
+export type ChunkResponse = string | {
+    type: string;
+    [key: string]: any;
+};
+export type ChunkHandler = (chunk: ChunkResponse) => void;
+// 定义 ChunkResponse 和 ReferenceData 类型 (如果它们不在此文件的顶部)
+
 
 // 聊天历史记录类型
 export interface ChatHistory {

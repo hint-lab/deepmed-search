@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Globe, Database, FileText, Loader2, ChevronDown, FlaskConical } from "lucide-react"
+import { Search, Globe, Database, FileText, Loader2, ChevronDown, FlaskConical, Check } from "lucide-react"
 import { useState } from "react"
 import { useSendQuestion } from "@/hooks/use-search"
 import MarkdownContent from "@/components/extensions/markdown-content"
@@ -23,6 +23,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context'
 import { SearchSuggestions } from '@/components/search-suggestions'
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider"
 
 type SearchType = 'web' | 'llm' | 'kb' | 'pubmed';
 type LlmModelType = 'gemini' | 'gpt' | 'deepseek'; // Define LLM model types
@@ -48,6 +56,11 @@ interface SearchInputFormProps {
     availableKbs: KnowledgeBase[];
     t: TFunction; // Uses TFunction from i18next
     isKbListLoading: boolean;
+    kbSearchMode: 'vector' | 'bm25' | 'hybrid';
+    onKbModeChange: (mode: 'vector' | 'bm25' | 'hybrid') => void;
+    bm25Weight: number;
+    vectorWeight: number;
+    onKbModeWeightChange: (type: string, value: number) => void;
 }
 
 const SearchInputForm: React.FC<SearchInputFormProps> = ({
@@ -63,7 +76,12 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
     onKbSelect,
     availableKbs,
     t,
-    isKbListLoading
+    isKbListLoading,
+    kbSearchMode,
+    onKbModeChange,
+    bm25Weight,
+    vectorWeight,
+    onKbModeWeightChange
 }) => {
     return (
         <form onSubmit={(e) => e.preventDefault()} className="mt-6">
@@ -76,7 +94,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         onChange={onInputChange}
                         placeholder={t("searchPlaceholder", "输入您的问题或关键词...")}
                         disabled={disableInteractions}
-                        className="h-12 text-base rounded-l-lg rounded-r-none border-r-0 border border-border/80 px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="rounded-l-lg rounded-r-none h-12 text-base border-r-0 border border-border/80 px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                 </div>
                 {searchType === 'web' ? (
@@ -161,23 +179,66 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                                 )}
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-96">
                             {isKbListLoading ? (
                                 <DropdownMenuItem disabled>加载知识库中...</DropdownMenuItem>
                             ) : (
-                                <>
-                                    <DropdownMenuLabel>{t('selectKnowledgeBase', '选择知识库')}</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {availableKbs.length > 0 ? (
-                                        availableKbs.map((kb) => (
-                                            <DropdownMenuItem key={kb.id} onSelect={() => onKbSelect(kb.id)}>
-                                                {kb.name}
-                                            </DropdownMenuItem>
-                                        ))
-                                    ) : (
-                                        <DropdownMenuItem disabled>无可用知识库</DropdownMenuItem>
-                                    )}
-                                </>
+                                <div className="flex">
+                                    <div className="w-1/2 pr-2 border-r">
+                                        <DropdownMenuLabel>{t('selectKnowledgeBase', '选择知识库')}</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {availableKbs.length > 0 ? (
+                                            availableKbs.map((kb) => (
+                                                <DropdownMenuItem key={kb.id} onSelect={() => onKbSelect(kb.id)}>
+                                                    {kb.name}
+                                                </DropdownMenuItem>
+                                            ))
+                                        ) : (
+                                            <DropdownMenuItem disabled>无可用知识库</DropdownMenuItem>
+                                        )}
+                                    </div>
+                                    <div className="w-1/2 pl-2">
+                                        <DropdownMenuLabel>{t('selectSearchMode', '选择检索模式')}</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('vector')}>
+                                            {kbSearchMode === 'vector' && <Check className="mr-2 h-4 w-4" />}
+                                            向量检索
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('bm25')}>
+                                            {kbSearchMode === 'bm25' && <Check className="mr-2 h-4 w-4" />}
+                                            BM25检索
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('hybrid')}>
+                                            {kbSearchMode === 'hybrid' && <Check className="mr-2 h-4 w-4" />}
+                                            混合检索
+                                        </DropdownMenuItem>
+                                        {kbSearchMode === 'hybrid' && (
+                                            <div className="flex flex-col gap-2 mt-2 w-full items-end">
+                                                <div className="w-full flex flex-col items-end">
+                                                    <div className="flex items-center justify-between w-full mb-1">
+                                                        <span className="text-xs text-muted-foreground">BM25权重</span>
+                                                        <span className="text-xs text-muted-foreground">向量权重</span>
+                                                    </div>
+                                                    <Slider
+                                                        min={0}
+                                                        max={1}
+                                                        step={0.01}
+                                                        value={[bm25Weight]}
+                                                        onValueChange={([val]) => {
+                                                            onKbModeWeightChange('bm25', val)
+                                                            onKbModeWeightChange('vector', 1 - val)
+                                                        }}
+                                                        className="w-full"
+                                                    />
+                                                    <div className="flex justify-between w-full mt-1">
+                                                        <span className="text-xs">{bm25Weight.toFixed(2)}</span>
+                                                        <span className="text-xs">{(1 - bm25Weight).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -245,17 +306,17 @@ export default function SearchPage() {
         // This might involve calling a function returned by useSendQuestion
         // For now, let's keep the navigation logic if that was intended, but ideally
         // this should trigger the search *within* this page using isPending state.
-        // --- Keeping original navigation logic for now --- 
+        // --- Keeping original navigation logic for now ---
         setIsSubmitting(true);
         try {
             const encodedQuery = encodeURIComponent(searchStr);
             // If useSendQuestion handles KB search, remove router.push
-            router.push(`/search/kb/${encodedQuery}?kbId=${kbId}`);
+            router.push(`/search/kb/${encodedQuery}?kbId=${kbId}&mode=${kbSearchMode}`);
         } catch (e) {
             console.error("KB Navigation failed:", e);
             setIsSubmitting(false);
         }
-        // --- End original navigation logic --- 
+        // --- End original navigation logic ---
     };
 
     const handlePubMedSubmit = () => {
@@ -278,6 +339,19 @@ export default function SearchPage() {
     const handleTabChange = (value: string) => {
         const newSearchType = value as SearchType;
         setSearchType(newSearchType);
+    };
+
+    const [kbSearchMode, setKbSearchMode] = useState<'vector' | 'bm25' | 'hybrid'>('vector');
+    const [bm25Weight, setBm25Weight] = useState(0.5);
+    const [vectorWeight, setVectorWeight] = useState(0.5);
+
+    const onKbModeChange = (mode: 'vector' | 'bm25' | 'hybrid') => {
+        setKbSearchMode(mode);
+    };
+
+    const onKbModeWeightChange = (type: string, value: number) => {
+        if (type === 'bm25') setBm25Weight(value);
+        else setVectorWeight(value);
     };
 
     return (
@@ -328,6 +402,11 @@ export default function SearchPage() {
                                 t={t}
                                 // Pass KB list loading state specifically for KB dropdown disabling
                                 isKbListLoading={isKbListLoading}
+                                kbSearchMode={kbSearchMode}
+                                onKbModeChange={onKbModeChange}
+                                bm25Weight={bm25Weight}
+                                vectorWeight={vectorWeight}
+                                onKbModeWeightChange={onKbModeWeightChange}
                             />
                         )}
                         {/* Render PubMed form only for its tab */}
@@ -390,8 +469,6 @@ export default function SearchPage() {
                         </div>
                     </TabsContent>
                 </Tabs>
-
-
 
                 {/* Displaying LLM/KB loading - No changes needed here */}
                 {(searchType === 'llm' || searchType === 'kb') && isPending && (

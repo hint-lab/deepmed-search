@@ -44,6 +44,7 @@ function convertMessagesToApiFormat(messages: any[]): any[] {
     }));
 }
 
+
 export class ChatClient {
     private static instance: ChatClient;
     private client: OpenAI;
@@ -620,6 +621,93 @@ export class ChatClient {
     getConversationHistory(dialogId: string): Message[] {
         const history = this.getHistory(dialogId);
         return history.getMessages();
+    }
+
+    // 流式函数调用
+    async chatWithFunctionsStream(dialogId: string, input: string, onChunk: ChunkHandler, isReason: boolean = false): Promise<ChatResponse> {
+        // 复用现有代码
+        const history = this.getHistory(dialogId);
+
+        history.addMessage({
+            role: isReason ? MessageType.Reason : MessageType.User,
+            content: input,
+        } as any);
+
+        try {
+            const messagesForModel = this.filterNonReasonMessages(history.getMessages());
+            const apiMessages = convertMessagesToApiFormat(messagesForModel);
+
+            // 流式请求，使用 tools 代替 functions
+            const stream = await this.client.chat.completions.create({
+                model: this.config.model!,
+                messages: apiMessages,
+                tools: this.tools.map((tool) => ({
+                    type: "function",
+                    function: {
+                        name: tool.name,
+                        description: tool.description,
+                        parameters: tool.parameters._def
+                    }
+                })),
+                stream: true,
+            });
+
+            let currentToolCall: { id?: string; name?: string } | null = null;
+            let currentArguments = '';
+            let finalContent = '';
+
+            for await (const chunk of stream) {
+                const delta = chunk.choices[0]?.delta;
+
+                // 处理工具调用
+                if (delta?.tool_calls && delta.tool_calls.length > 0) {
+                    const toolCall = delta.tool_calls[0];
+
+                    if (toolCall.function?.name && !currentToolCall) {
+                        currentToolCall = {
+                            id: toolCall.id,
+                            name: toolCall.function.name
+                        };
+                        onChunk({ type: 'function_call', name: toolCall.function.name, arguments: '' });
+                    }
+
+                    if (toolCall.function?.arguments) {
+                        currentArguments += toolCall.function.arguments;
+                    }
+
+                    // 当工具调用完成
+                    if (chunk.choices[0]?.finish_reason === 'tool_calls' && currentToolCall?.name) {
+                        try {
+                            const args = JSON.parse(currentArguments);
+                            const tool = this.tools.find(t => t.name === currentToolCall?.name);
+                            if (tool) {
+                                const result = await tool.handler(args);
+                                onChunk({ type: 'function_result', content: result });
+                            }
+                        } catch (e) {
+                            logger.error('工具执行错误:', e);
+                        }
+
+                        currentToolCall = null;
+                        currentArguments = '';
+                    }
+                } else if (delta?.content) {
+                    finalContent += delta.content;
+                    onChunk(delta.content);
+                }
+            }
+
+            return {
+                content: finalContent,
+                metadata: {
+                    model: this.config.model!,
+                    timestamp: new Date().toISOString(),
+                }
+            };
+        } catch (error) {
+            logger.error('流式函数调用错误:', error);
+            throw error;
+        }
     }
 }
 
