@@ -28,6 +28,7 @@ function ChatMessageItem({
     streamingState = { reasoningContent: '', content: '' }
 }: ChatMessageItemProps) {
     const [showReasoning, setShowReasoning] = useState(true);
+    const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
 
     const normalizedRole =
         message.role === MessageType.User || message.role === 'reason'
@@ -52,6 +53,16 @@ function ChatMessageItem({
     const createdAt = message.createdAt;
     const messageId = message.id;
     const timestamp = createdAt ? dayjs(createdAt).format('HH:mm') : '--:--';
+
+    useEffect(() => {
+        console.log("message.metadata", message.metadata)
+    }, [])
+
+    const toggleExpand = (idx: number) => {
+        setExpandedIndexes(prev =>
+            prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
+        );
+    };
 
     return (
         <div key={messageId} className={cn("flex gap-2 mb-4", isUser ? "justify-end" : "justify-start")}>
@@ -120,7 +131,7 @@ function ChatMessageItem({
                                     isStreaming && "animate-blinking-cursor"
                                 )}>
                                     <ReactMarkdown>
-                                        {displayFinalContent}
+                                        {renderWithReferences(displayFinalContent)}
                                     </ReactMarkdown>
                                 </div>
                                 {isStreaming && (
@@ -158,6 +169,49 @@ function ChatMessageItem({
                                 </ReactMarkdown>
                             </div>
                         )}
+                        {message.metadata?.kbChunks && (
+                            <div className="mt-2 text-xs text-gray-500">
+                                <details className="group">
+                                    <summary className="cursor-pointer font-medium transition-colors hover:text-blue-500">
+                                        来源：{message.metadata.kbName}（{message.metadata.kbChunks.length} 个片段）
+                                    </summary>
+                                    <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
+                                        {message.metadata.kbChunks.map((chunk, i) => {
+                                            const expanded = expandedIndexes.includes(i);
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    id={`kb-ref-${i + 1}`}
+                                                    className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md border-l-4 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
+                                                    onClick={() => toggleExpand(i)}
+                                                >
+                                                    <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
+                                                        {chunk.docName}
+                                                        <span className="ml-2 text-blue-400">{expanded ? '收起' : '展开'}</span>
+                                                    </div>
+                                                    <div className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}>
+                                                        <ReactMarkdown
+                                                            components={{
+                                                                a: ({ node, ...props }) => (
+                                                                    <a
+                                                                        {...props}
+                                                                        className="text-blue-600 underline break-all"
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                    />
+                                                                ),
+                                                            }}
+                                                        >
+                                                            {chunk.content}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </details>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -168,8 +222,19 @@ function ChatMessageItem({
                     </AvatarFallback>
                 </Avatar>
             )}
+
         </div>
     );
+}
+
+function renderWithReferences(answer: string) {
+    // 替换 [1]、[2] 为锚点链接
+    const replaced = answer.replace(/\[(\d+)\]/g, (match, p1) => {
+        return `<a href="#kb-ref-${p1}" class="text-blue-500 underline">[${p1}]</a>`;
+    });
+    return <ReactMarkdown children={replaced} components={{
+        a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+    }} />;
 }
 
 export default ChatMessageItem;

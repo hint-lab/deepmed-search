@@ -167,8 +167,8 @@ export async function getChatMessageStream(
     dialogId: string,
     content: string,
     userId: string,
-    knowledgeBaseId?: string,
-    isReason: boolean = false
+    isReason: boolean = false,
+    isUsingKB: boolean = false,
 ) {
     let assistantMessageId: string | null = null;
     const encoder = new TextEncoder();
@@ -294,11 +294,39 @@ export async function getChatMessageStream(
                     sendEvent({ type: 'assistant_message_id', id: assistantMessageId });
 
                     let contextChunks = '';
-                    if (knowledgeBaseId && dialog.knowledgeBase) {
+                    if (isUsingKB && dialog.knowledgeBase) {
                         try {
                             const queryVector = await getEmbeddings([content]);
-                            const chunks = await searchSimilarChunks(queryVector[0], knowledgeBaseId, 3);
+                            const chunks = await searchSimilarChunks(queryVector[0], dialog.knowledgeBase.id, 3);
+
+                            // 发送知识库片段信息给前端
+                            sendEvent({
+                                type: 'kb_chunks',
+                                chunks: chunks.map((chunk: any) => ({
+                                    content: chunk.content,
+                                    doc_name: chunk.doc_name,
+                                    distance: chunk.distance
+                                }))
+                            });
+
                             contextChunks = chunks.map((chunk: { content: string }) => chunk.content).join('\n\n---\n\n');
+
+                            // 将知识库名称和片段存入消息元数据
+                            if (assistantMessageId) {
+                                await prisma.message.update({
+                                    where: { id: assistantMessageId },
+                                    data: {
+                                        metadata: {
+                                            kbName: dialog.knowledgeBase.name,
+                                            kbChunks: chunks.map((chunk: any) => ({
+                                                content: chunk.content,
+                                                docName: chunk.doc_name,
+                                                distance: chunk.distance
+                                            }))
+                                        }
+                                    }
+                                });
+                            }
                         } catch (kbError) {
                             console.error("Error retrieving knowledge base context:", kbError);
                         }
@@ -307,7 +335,9 @@ export async function getChatMessageStream(
                     chatClient.setSystemPrompt(
                         dialogId,
                         contextChunks
-                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题：\n\n${contextChunks}\n\n请仅使用上述知识库内容回答问题，如果知识库内容无法回答问题，请明确告知用户。`
+                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题：\n\n${contextChunks}\n\n请根据以下知识库片段回答问题，并在引用片段内容时用[1]、[2]等编号标注出处。例如：“……[1]”。片段如下：
+                            [1] 片段内容A
+                            [2] 片段内容B`
                             : '你是一个专业的AI助手。'
                     );
 

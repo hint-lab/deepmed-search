@@ -1,5 +1,5 @@
 import ChatMessages from './components/chat-messages';
-import { ChatInputArea } from '@/app/chat/components/chat-input';
+import { ChatInputArea } from './components/chat-input';
 interface ChatPageProps {
     params: {
         id: string;

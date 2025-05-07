@@ -5,10 +5,19 @@ export interface IMessage {
     role: string;
     dialogId: string;
     userId: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: Date | string;
+    updatedAt: Date | string;
     thinkingContent?: string;
     isThinking?: boolean;
+    metadata?: {
+        kbName?: string;
+        kbChunks?: {
+            content: string;
+            docName: string;
+            distance: number;
+        }[];
+        [key: string]: any;
+    };
 }
 
 // 消息创建参数

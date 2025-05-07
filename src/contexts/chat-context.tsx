@@ -18,10 +18,12 @@ interface ChatState {
     currentContent: string;
     currentReasoning: string;
     error: string | null;
+    kbChunks: any[];
+    isUsingKbForCurrentMessage: boolean;
 }
 
 interface ChatContextType extends ChatState {
-    sendMessage: (chatDialogId: string, content: string, isReason?: boolean) => Promise<void>;
+    sendMessage: (chatDialogId: string, content: string, isReason?: boolean, isUsingKB?: boolean) => Promise<void>;
     stopStream: () => void;
     loadMessages: (chatDialogId: string) => Promise<void>;
 }
@@ -42,7 +44,9 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
         currentMessageId: null,
         currentContent: '',
         currentReasoning: '',
-        error: null
+        error: null,
+        kbChunks: [],
+        isUsingKbForCurrentMessage: false
     });
 
     const updateState = useCallback((updates: Partial<ChatState> | ((prev: ChatState) => Partial<ChatState>)) => {
@@ -78,12 +82,14 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
         chatDialogId,
         content,
         userId,
-        isReason = false
+        isReason = false,
+        isUsingKB = false,
     }: {
         chatDialogId: string;
         content: string;
         userId: string;
         isReason?: boolean;
+        isUsingKB?: boolean;
     }) => {
         // 添加 AI 助手的临时消息
         const tempAssistantMessage: IMessage = {
@@ -114,8 +120,8 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                 chatDialogId,
                 content,
                 userId,
-                undefined,
-                isReason
+                isReason,
+                isUsingKB
             );
 
             const reader = stream.getReader();
@@ -182,6 +188,11 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                 )
                             }));
                             router.refresh();
+                        } else if (data.type === 'kb_chunks') {
+                            updateState(prev => ({
+                                kbChunks: data.chunks,
+                                isUsingKbForCurrentMessage: true
+                            }));
                         }
                     } catch (e) {
                         console.error('解析流数据失败:', e);
@@ -200,7 +211,7 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
         }
     }, [updateState, router, loadMessages]);
 
-    const sendMessage = useCallback(async (chatDialogId: string, content: string, isReason: boolean = false) => {
+    const sendMessage = useCallback(async (chatDialogId: string, content: string, isReason: boolean = false, isUsingKB: boolean = false) => {
         if (!content.trim() || state.isStreaming) return;
 
         try {
@@ -225,12 +236,14 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                     chatDialogId,
                     content,
                     userId: session?.user?.id || '',
-                    isReason
+                    isReason,
+                    isUsingKB
                 });
             } else if (session?.user) {
                 const messageData = {
                     content,
-                    isThinking: isReason
+                    isThinking: isReason,
+                    isUsingKB: isUsingKB
                 };
                 sessionStorage.setItem('pendingInitialMessage', JSON.stringify(messageData));
 

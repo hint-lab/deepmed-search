@@ -180,10 +180,22 @@ export const updateKnowledgeBaseAction = withAuth(async (
 });
 
 export const deleteKnowledgeBaseAction = withAuth(async (session, id: string) => {
+    // 先删 Chunk
+    await prisma.chunk.deleteMany({
+        where: {
+            document: {
+                knowledgeBaseId: id
+            }
+        }
+    });
+    // 再删 Document
+    await prisma.document.deleteMany({
+        where: { knowledgeBaseId: id }
+    });
+    // 最后删知识库
     await prisma.knowledgeBase.delete({
         where: { id },
     });
-
     revalidatePath('/knowledgebase');
     return { success: true };
 });

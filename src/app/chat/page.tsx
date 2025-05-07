@@ -2,7 +2,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
 import { useTranslate } from '@/contexts/language-context';
-import { ChatInputArea } from './components/chat-input';
 // Define a type for the initial prompt examples
 interface PromptExample {
   titleKey: string;
@@ -28,9 +27,9 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="absolute inset-0 top-14 flex flex-col flex-1 bg-muted/30 overflow-hidden pt-14">
+    <div className="absolute inset-0 flex flex-col flex-1 bg-muted/30 overflow-hidden">
       <div className="flex flex-col items-center justify-start flex-1 p-8 overflow-y-auto">
-        <div className="max-w-4xl w-full">
+        <div className="flex flex-col max-w-4xl w-full h-full justify-center items-center">
           <h1 className="text-2xl lg:text-3xl font-semibold text-center mb-10">
             {t('welcomeTitle', 'How can I help you today?')}
           </h1>
@@ -92,7 +91,6 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-      <ChatInputArea dialogId={undefined} />
     </div >
   );
 }

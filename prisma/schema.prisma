@@ -80,6 +80,7 @@ model Message {
   updatedAt       DateTime @updatedAt // 更新时间
   thinkingContent String? // 思考模式内容（JSON格式）
   isThinking      Boolean  @default(false) // 是否为思考模式
+  metadata        Json?
 }
 
 /// 系统状态模型

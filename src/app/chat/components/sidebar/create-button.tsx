@@ -34,6 +34,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
+    SelectSeparator
 } from "@/components/ui/select";
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -76,7 +77,7 @@ export function CreateChatDialogButton() {
             const newDialog = await createChatDialog({
                 name: values.name,
                 description: values.description,
-                knowledgeBaseId: values.knowledgeBaseId,
+                knowledgeBaseId: values.knowledgeBaseId === 'none' || values.knowledgeBaseId === null ? undefined : values.knowledgeBaseId as string,
                 userId: session?.user?.id
             });
             if (newDialog?.id) {
@@ -149,9 +150,12 @@ export function CreateChatDialogButton() {
                                                 sideOffset={4}
                                                 className="w-[--radix-select-trigger-width] max-h-[--radix-select-content-available-height]"
                                             >
-
+                                                <SelectItem value="none">
+                                                    {t('noKnowledgeBase', '不选择知识库')}
+                                                </SelectItem>
+                                                <SelectSeparator className='mx-2' />
                                                 {knowledgeBases.map((kb) => (
-                                                    <SelectItem key={kb.id} value={kb.id} defaultChecked>
+                                                    <SelectItem key={kb.id} value={kb.id}>
                                                         {kb.name}
                                                     </SelectItem>
                                                 ))}

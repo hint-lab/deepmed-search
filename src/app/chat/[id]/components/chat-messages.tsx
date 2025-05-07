@@ -73,10 +73,6 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
     const renderMessages = () => {
         // 如果有正在流式处理的消息，将其添加到消息列表中
         const allMessages = [...messages];
-        console.log('currentMessageId:', currentMessageId);
-        console.log('isStreaming:', isStreaming);
-        console.log('currentContent:', currentContent);
-        console.log('currentReasoning:', currentReasoning);
         if (isStreaming && currentMessageId) {
             // 检查是否已经存在当前消息
             const existingMessageIndex = allMessages.findIndex(msg => msg.id === currentMessageId);
