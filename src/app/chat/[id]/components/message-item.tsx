@@ -68,7 +68,7 @@ function ChatMessageItem({
                 isUser
                     ? "bg-primary text-primary-foreground border-transparent"
                     : "bg-muted text-card-foreground border-border",
-                isStreaming && !isUser && isThinkingModeRender ? "animate-pulse border-blue-500 border-2" : ""
+                isStreaming && !isUser && isThinkingModeRender ? "border-blue-500 border-2" : ""
             )}>
                 {isThinkingModeRender ? (
                     <div className="flex flex-col gap-3">
