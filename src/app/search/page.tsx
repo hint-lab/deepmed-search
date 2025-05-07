@@ -22,6 +22,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context'
+import { SearchSuggestions } from '@/components/search-suggestions'
 
 type SearchType = 'web' | 'llm' | 'kb' | 'pubmed';
 type LlmModelType = 'gemini' | 'gpt' | 'deepseek'; // Define LLM model types
@@ -340,14 +341,19 @@ export default function SearchPage() {
                                             value={searchStr}
                                             onChange={handleInputChange}
                                             placeholder={t("pubmedPlaceholder", "输入 PubMed 查询词...")}
-                                            // Disable input only during navigation attempt
                                             disabled={isSubmitting}
                                             className="h-12 text-base rounded-l-lg rounded-r-none border-r-0 border border-border/80 px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
+                                        />
+                                        <SearchSuggestions
+                                            query={searchStr}
+                                            onSuggestionClick={(suggestion) => {
+                                                handleSearchStrChange({ target: { value: suggestion } } as React.ChangeEvent<HTMLInputElement>);
+                                            }}
+                                            className="top-full"
                                         />
                                     </div>
                                     <Button
                                         type="submit"
-                                        // Disable PubMed button during navigation or if input empty
                                         disabled={isSubmitting || isSearchStrEmpty}
                                         className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-teal-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                                     >

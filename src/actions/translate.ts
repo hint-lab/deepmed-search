@@ -2,7 +2,7 @@
 
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
-import { chatClient } from '@/lib/openai/chat/client'; // 假设使用 chatClient
+import { chatClient } from '@/lib/deepseek/chat/client'; // 假设使用 chatClient
 
 // --- Language Code to Full Name Mapping ---
 // (可以根据需要扩展更多语言)

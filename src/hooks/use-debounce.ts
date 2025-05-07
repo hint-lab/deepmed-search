@@ -16,13 +16,15 @@ import { useEffect, useState } from 'react';
  * // 自定义延迟时间
  * const debouncedValue = useDebounce(searchText, 1000);
  */
-export function useDebounce<T>(value: T, delay?: number): T {
+export function useDebounce<T>(value: T, delay: number): T {
     // 存储防抖后的值
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
     useEffect(() => {
         // 设置定时器，在延迟时间后更新值
-        const timer = setTimeout(() => setDebouncedValue(value), delay || 500);
+        const timer = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
 
         // 清理函数：在组件卸载或值变化时清除定时器
         return () => {

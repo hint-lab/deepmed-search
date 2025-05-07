@@ -394,9 +394,23 @@ export default function PubMedSearchResultsPage() {
 
             <div className="space-y-6">
                 {!isLoading && !error && currentPageResults.length > 0 && (
-                    currentPageResults.map((article) => (
-                        <PubMedResultItem key={article.pmid} {...article} />
-                    ))
+                    currentPageResults.map((article) => {
+                        // Ensure all properties are strings
+                        const safeArticle = {
+                            pmid: String(article.pmid),
+                            title: String(article.title || ''),
+                            authors: String(article.authors || ''),
+                            journal: String(article.journal || ''),
+                            pubdate: String(article.pubdate || ''),
+                            abstract: article.abstract ? String(article.abstract) : undefined
+                        };
+                        return (
+                            <PubMedResultItem 
+                                key={safeArticle.pmid} 
+                                {...safeArticle}
+                            />
+                        );
+                    })
                 )}
             </div>
 
