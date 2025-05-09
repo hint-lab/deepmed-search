@@ -11,15 +11,11 @@ BEGIN
       WHERE cfgname = 'jieba_cfg'
   ) THEN
       -- 创建中文全文搜索配置
-      EXECUTE 'CREATE TEXT SEARCH CONFIGURATION jieba_cfg (PARSER = jieba_parser)';
+      EXECUTE 'CREATE TEXT SEARCH CONFIGURATION jieba_cfg (PARSER = jieba)';
       EXECUTE 'ALTER TEXT SEARCH CONFIGURATION jieba_cfg ADD MAPPING FOR n,v,a,i,e,l WITH simple';
       RAISE NOTICE 'Text search configuration jieba_cfg created.';
   ELSE
       RAISE NOTICE 'Text search configuration jieba_cfg already exists.';
   END IF;
 END;
-$BLOCK$;
-
--- 为content_with_weight列创建或更新GIN索引
-CREATE INDEX IF NOT EXISTS idx_chunk_content_fts_chinese
-ON "Chunk" USING GIN (to_tsvector('jieba_cfg', content_with_weight)); 
+$BLOCK$; 

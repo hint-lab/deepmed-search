@@ -28,71 +28,100 @@ export interface PgVectorInsertParams {
     docName: string;
 }
 
+// 搜索参数接口
+export interface SearchParams {
+    queryText?: string;
+    queryVector?: number[];
+    kbId: string;
+    resultLimit?: number;
+    filter?: string;
+    bm25Weight?: number;
+    vectorWeight?: number;
+    bm25Threshold?: number;    // BM25 相似度阈值
+    vectorThreshold?: number;  // 向量相似度阈值
+    minSimilarity?: number;    // 最终相似度阈值
+}
+
 /**
  * 搜索相似文档，支持BM25 与 Embedding混合检索
  */
-export async function searchSimilarChunks(
-    queryText: string = '',
-    queryVector: number[],
-    kbId: string,
+export async function searchSimilarChunks({
+    queryText = '',
+    queryVector = [],
+    kbId,
     resultLimit = 5,
     filter = '',
-    bm25Weight: number = 0.5,
-    vectorWeight: number = 0.5
-) {
+    bm25Weight = 0.5,
+    vectorWeight = 0.5,
+    bm25Threshold = 0.2,      // 默认 BM25 阈值
+    vectorThreshold = 0.7,    // 默认向量相似度阈值
+    minSimilarity = 0.5       // 默认最终相似度阈值
+}: SearchParams) {
     try {
-        console.log(queryText, queryVector, kbId, resultLimit, filter, bm25Weight, vectorWeight)
+        console.log('Search params:', { queryText, queryVector, kbId, resultLimit, filter, bm25Weight, vectorWeight, bm25Threshold, vectorThreshold, minSimilarity });
         let sqlQuery;
 
         // 检查向量是否为空 - 纯BM25模式
         if (!queryVector.length) {
             sqlQuery = Prisma.sql`
-                SELECT 
-                    c.id, 
-                    c.chunk_id, 
-                    c.content_with_weight, 
-                    c.doc_id, 
-                    c.doc_name, 
-                    c.positions, 
-                    c.tag_feas,
-                    ts_rank_cd(to_tsvector('chinese_fts_config', c.content_with_weight), websearch_to_tsquery('chinese_fts_config', ${queryText}), 32) * 10000 as bm25_similarity,
-                    0 as vector_similarity,
-                    ts_rank_cd(to_tsvector('chinese_fts_config', c.content_with_weight), websearch_to_tsquery('chinese_fts_config', ${queryText}), 32) * 10000 as similarity
-                FROM "Chunk" c
-                WHERE c.kb_id = ${kbId}
-                AND c.available_int = 1
+                WITH ranked_results AS (
+                    SELECT 
+                        c.id, 
+                        c.chunk_id, 
+                        c.content_with_weight, 
+                        c.doc_id, 
+                        c.doc_name, 
+                        c.positions, 
+                        c.tag_feas,
+                        ts_rank_cd(to_tsvector('jieba_cfg', c.content_with_weight), plainto_tsquery('jieba_cfg', ${queryText}), 32) as bm25_similarity,
+                        0 as vector_similarity,
+                        ts_rank_cd(to_tsvector('jieba_cfg', c.content_with_weight), plainto_tsquery('jieba_cfg', ${queryText}), 32) as similarity
+                    FROM "Chunk" c
+                    WHERE c.kb_id = ${kbId}
+                    AND c.available_int = 1
+                    AND ts_rank_cd(to_tsvector('jieba_cfg', c.content_with_weight), plainto_tsquery('jieba_cfg', ${queryText}), 32) >= ${bm25Threshold}
+                )
+                SELECT * FROM ranked_results
             `;
         } else {
             // 有向量 - 混合模式或向量模式
             sqlQuery = Prisma.sql`
-                SELECT 
-                    c.id, 
-                    c.chunk_id, 
-                    c.content_with_weight, 
-                    c.doc_id, 
-                    c.doc_name, 
-                    c.positions, 
-                    c.tag_feas,
-                    ts_rank_cd(to_tsvector('chinese_fts_config', c.content_with_weight), websearch_to_tsquery('chinese_fts_config', ${queryText}), 32) * 10000  as bm25_similarity,
-                    1 - (c.embedding <=> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)}) as vector_similarity,
-                    (
-                        ts_rank_cd(to_tsvector('chinese_fts_config', c.content_with_weight), websearch_to_tsquery('chinese_fts_config', ${queryText}), 32) * ${bm25Weight} + 
-                        (1 - (c.embedding <=> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)})) * ${vectorWeight}
-                    ) as similarity
-                FROM "Chunk" c
-                WHERE c.kb_id = ${kbId}
-                AND c.available_int = 1
+                WITH ranked_results AS (
+                    SELECT 
+                        c.id, 
+                        c.chunk_id, 
+                        c.content_with_weight, 
+                        c.doc_id, 
+                        c.doc_name, 
+                        c.positions, 
+                        c.tag_feas,
+                        ts_rank_cd(to_tsvector('jieba_cfg', c.content_with_weight), plainto_tsquery('jieba_cfg', ${queryText}), 32) as bm25_similarity,
+                        1 - (c.embedding <=> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)}) as vector_similarity,
+                        (
+                            ts_rank_cd(to_tsvector('jieba_cfg', c.content_with_weight), plainto_tsquery('jieba_cfg', ${queryText}), 32) * ${bm25Weight} + 
+                            (1 - (c.embedding <=> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)})) * ${vectorWeight}
+                        ) as similarity
+                    FROM "Chunk" c
+                    WHERE c.kb_id = ${kbId}
+                    AND c.available_int = 1
+                    AND (
+                        ts_rank_cd(to_tsvector('jieba_cfg', c.content_with_weight), plainto_tsquery('jieba_cfg', ${queryText}), 32) >= ${bm25Threshold}
+                        OR (1 - (c.embedding <=> ${Prisma.raw(`'[${queryVector.join(',')}]'::vector`)})) >= ${vectorThreshold}
+                    )
+                )
+                SELECT * FROM ranked_results
             `;
         }
 
         // 添加filter条件
         if (filter) {
-            sqlQuery = Prisma.sql`${sqlQuery} AND ${Prisma.raw(filter)}`;
+            sqlQuery = Prisma.sql`${sqlQuery} WHERE ${Prisma.raw(filter)}`;
         }
 
-        // 添加排序和限制
+        // 添加最终相似度过滤、排序和限制
         sqlQuery = Prisma.sql`
             ${sqlQuery}
+            WHERE similarity >= ${minSimilarity}
             ORDER BY similarity DESC
             LIMIT ${resultLimit}
         `;
