@@ -2,16 +2,21 @@
 
 import { z } from 'zod';
 // Import the necessary functions
-import { searchSimilarChunks } from '@/lib/pgvector/operations';
+import { searchSimilarChunks, ChunkSearchResult } from '@/lib/pgvector/operations';
 import { getEmbedding } from '@/lib/openai/embedding';
 
-// Define the structure for a single chunk result
 export interface ChunkResult {
     id: string;
-    text: string; // The actual text content of the chunk
-    score: number; // Relevance score from the search
-    source?: string; // Optional: source document name/ID
-    metadata?: Record<string, any>; // Optional: other metadata
+    text: string;
+    score: number;
+    source?: string;
+    metadata?: {
+        doc_id: string;
+        page?: number;
+        bm25_similarity?: number;
+        vector_similarity?: number;
+        [key: string]: any;
+    };
 }
 
 // Define the options type for the action, including kbId and mode
@@ -19,6 +24,8 @@ interface KbSearchOptions {
     topK?: number;
     kbId?: string;
     mode?: 'vector' | 'bm25' | 'hybrid'; // 新增
+    bm25Weight?: number;
+    vectorWeight?: number;
 }
 
 // Define the schema for the action input, adding kbId and mode validation
@@ -27,6 +34,8 @@ const KbSearchInputSchema = z.object({
     kbId: z.string().min(1, "Knowledge base ID is required."),
     topK: z.number().int().positive().optional().default(5),
     mode: z.enum(['vector', 'bm25', 'hybrid']).optional().default('vector'), // 新增
+    bm25Weight: z.number().optional().default(0.5),
+    vectorWeight: z.number().optional().default(0.5),
 });
 
 /**
@@ -64,46 +73,52 @@ export async function performKbSearchAction(
         // 2. Search for similar chunks in the specified knowledge base
         console.log(`[KB Action] Searching similar chunks in vector DB for kbId: ${kbId}...`);
         const similarChunks = await searchSimilarChunks(
+            validatedQuery, // bm25/hybrid 需要原始文本
             queryEmbedding,
             kbId,
             topK,
             '',
-            mode,
-            validatedQuery // bm25/hybrid 需要原始文本
+            options?.bm25Weight,
+            options?.vectorWeight
         );
         console.log(`[KB Action] Found ${similarChunks.length} similar chunks.`);
 
+        console.log(`[KB Action] Raw similar chunks:`, JSON.stringify(similarChunks.slice(0, 2), null, 2));
+
         // 3. Map the results to the ChunkResult format
-        const results: ChunkResult[] = similarChunks.map(chunk => ({
-            id: chunk.chunk_id,
-            text: chunk.content,
-            score: chunk.distance,
-            source: chunk.doc_name,
-            metadata: {
-                doc_id: chunk.doc_id,
+        const results = similarChunks.map(chunk => {
+            let score = 0;
+            console.log(chunk.bm25_similarity, chunk.vector_similarity)
+            if (mode === 'bm25') {
+                score = chunk.bm25_similarity || 0;
+            } else if (mode === 'vector') {
+                score = chunk.vector_similarity || 0;
+            } else { // hybrid
+                // 混合模式，如果返回中有组合分数则使用
+                score = chunk.similarity || 0;
             }
-        }));
+
+            return {
+                id: chunk.chunk_id,
+                text: chunk.content_with_weight,
+                score: score,
+                source: chunk.doc_name,
+                metadata: {
+                    doc_id: chunk.doc_id,
+                    bm25_similarity: chunk.bm25_similarity || 0,
+                    vector_similarity: chunk.vector_similarity || 0,
+                }
+            };
+        });
 
         return { success: true, data: results };
 
     } catch (error: any) {
         console.error("[KB Action] Error performing KB search:", error);
-        // Provide more specific error messages if possible
-        let errorMessage = "An unexpected error occurred during knowledge base search.";
-        if (error instanceof Error) { // Check if it's an Error object
-            if (error.message.includes('embedding')) {
-                errorMessage = "Failed to generate embeddings for the query.";
-            } else if (error.message.includes('vector search')) { // Adapt based on actual errors
-                errorMessage = "Failed to search the knowledge base.";
-            } else {
-                errorMessage = error.message;
-            }
-        } else {
-            errorMessage = String(error); // Handle non-Error objects
-        }
+        // 处理错误...
         return {
             success: false,
-            error: errorMessage
+            error: "An unexpected error occurred during knowledge base search."
         };
     }
 }

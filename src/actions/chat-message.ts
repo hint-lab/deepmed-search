@@ -12,6 +12,7 @@ import { searchSimilarChunks } from '@/lib/pgvector/operations';
 import { getEmbeddings } from '@/lib/openai/embedding';
 import { auth } from '@/lib/auth';
 import { ChunkResponse } from '@/lib/deepseek';
+import { Micro_5 } from 'next/font/google';
 
 interface ReferenceData {
     type: string;
@@ -309,7 +310,9 @@ export async function getChatMessageStream(
                     if (isUsingKB && dialog.knowledgeBase) {
                         try {
                             const queryVector = await getEmbeddings([content]);
-                            const chunks = await searchSimilarChunks(queryVector[0], dialog.knowledgeBase.id, 5);
+                            const chunks = await searchSimilarChunks(queryVector[0], dialog.knowledgeBase.id, 5,
+                                undefined, 'hybrid', content, 1.0, 0.0
+                            );
 
                             // 发送知识库片段信息给前端
                             sendEvent({

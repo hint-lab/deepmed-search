@@ -22,14 +22,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context'
-import { SearchSuggestions } from '@/components/search-suggestions'
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "@/components/ui/select";
+import { SearchSuggestions } from '@/components/search-suggestions' 
 import { Slider } from "@/components/ui/slider"
 
 type SearchType = 'web' | 'llm' | 'kb' | 'pubmed';

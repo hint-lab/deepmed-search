@@ -79,9 +79,7 @@ const KbChunkItem = ({ id, text, score, source, metadata, onClick, ...rest }: Kb
                     variant="secondary" // Use secondary variant for subtle background
                     className="ml-auto text-xs px-2 py-0.5 font-medium" // Removed border-transparent, kept font-medium
                 >
-                    {/* Assuming lower score (distance) is better, uncomment prefix if needed */}
-                    {/* 距离: {score.toFixed(3)} */}
-                    分数: {score.toFixed(3)}
+                    分数: {typeof score === 'number' ? score.toFixed(3) : 'N/A'}
                 </Badge>
             </div>
             <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
@@ -141,6 +139,25 @@ export default function KbSearchResultsPage() {
     const encodedQueryParam = params.query;
     const encodedQuery = Array.isArray(encodedQueryParam) ? encodedQueryParam[0] : encodedQueryParam;
     const kbId = searchParams.get('kbId'); // Read kbId from URL
+    const kbSearchMode = searchParams.get('mode') as 'vector' | 'bm25' | 'hybrid' || 'vector';
+
+    // 根据搜索模式设置权重
+    let bm25Weight = 0.5;
+    let vectorWeight = 0.5;
+
+    // 根据搜索模式自动设置权重
+    if (kbSearchMode === 'bm25') {
+        bm25Weight = 1.0;
+        vectorWeight = 0.0;
+    } else if (kbSearchMode === 'vector') {
+        bm25Weight = 0.0;
+        vectorWeight = 1.0;
+    } else if (kbSearchMode === 'hybrid') {
+        // 对于混合模式，尝试从URL获取自定义权重，否则使用默认值
+        bm25Weight = parseFloat(searchParams.get('bm25Weight') || '0.5');
+        vectorWeight = parseFloat(searchParams.get('vectorWeight') || '0.5');
+    }
+
     const {
         currentKnowledgeBase,
         setCurrentKnowledgeBaseId,
@@ -151,8 +168,6 @@ export default function KbSearchResultsPage() {
     const [selectedChunk, setSelectedChunk] = useState<ChunkResult | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     // --- End Modal State ---
-
-    const [kbSearchMode, setKbSearchMode] = useState<'vector' | 'bm25' | 'hybrid'>('vector');
 
     useEffect(() => {
         const decodedQuery = decodeURIComponent(encodedQuery || '');
@@ -186,14 +201,17 @@ export default function KbSearchResultsPage() {
             console.log(`[KB Page] Calling Action for query: "${decodedQuery}" in KB ID: ${kbId}`);
             try {
                 // Pass kbId to the action
-                const response = await performKbSearchAction(decodedQuery, { topK: 50, kbId: kbId, mode: kbSearchMode });
+                const response = await performKbSearchAction(decodedQuery, {
+                    topK: 20,
+                    kbId: kbId,
+                    mode: kbSearchMode,
+                    bm25Weight: bm25Weight,
+                    vectorWeight: vectorWeight,
+                });
 
                 if (response.success && response.data) {
                     console.log(`[KB Page] Received ${response.data.length} chunk results from Action.`);
-                    // --- Sort results by score (assuming score is distance, lower is better) ---
-                    const sortedResults = response.data.sort((a, b) => a.score - b.score);
-                    // --- End Sorting ---
-                    setAllResults(sortedResults); // Set the sorted results
+                    setAllResults(response.data); // Set the sorted results
                 } else {
                     console.error("[KB Page] Action failed:", response.error);
                     setError(response.error || 'Failed to fetch knowledge base results via Action.');
@@ -210,7 +228,7 @@ export default function KbSearchResultsPage() {
 
         fetchKbResults();
         // Add kbId to dependency array - fetch again if kbId changes (though unlikely on this page)
-    }, [encodedQuery, kbId, setCurrentKnowledgeBaseId, kbSearchMode]);
+    }, [encodedQuery, kbId, setCurrentKnowledgeBaseId, kbSearchMode, bm25Weight, vectorWeight]);
 
     // --- Client-side Pagination Logic ---
     const { currentResults, totalPages } = useMemo(() => {

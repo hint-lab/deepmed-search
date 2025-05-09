@@ -77,23 +77,61 @@ function ChatMessageItem({
     const renderMessage = (msg: IMessage): React.ReactNode => {
         if (!msg.metadata?.references) return msg.content;
 
-        // 用引用替换掉 [1], [2] 等标记
-        let content = msg.content;
-        msg.metadata.references.forEach((ref: Reference) => {
-            const marker = `[${ref.reference_id}]`;
-            content = content.replace(
-                marker,
-                `<span class="reference" data-ref-id="${ref.reference_id}" data-doc-id="${ref.doc_id}">
-                    [${ref.reference_id}]
-                </span>`
-            );
-        });
+        // 用正则表达式找出所有引用标记 [1], [2] 等
+        const content = msg.content;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
 
+        // 正则表达式匹配 [数字] 形式的引用
+        const regex = /\[(\d+)\]/g;
+
+        while ((match = regex.exec(content)) !== null) {
+            // 添加引用标记前的文本
+            if (match.index > lastIndex) {
+                parts.push(content.substring(lastIndex, match.index));
+            }
+
+            // 找到对应的引用
+            const refId = parseInt(match[1]);
+            const reference = msg.metadata.references.find(
+                (r: Reference) => r.reference_id === refId
+            );
+
+            // 添加可点击的引用标记
+            parts.push(
+                <a
+                    key={`ref-${refId}-${match.index}`}
+                    href="#"
+                    className="text-blue-500 underline cursor-pointer"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        if (reference) {
+                            setSelectedReference(reference);
+                        }
+                    }}
+                >
+                    [{match[1]}]
+                </a>
+            );
+
+            lastIndex = match.index + match[0].length;
+        }
+
+        // 添加剩余的文本
+        if (lastIndex < content.length) {
+            parts.push(content.substring(lastIndex));
+        }
+
+        // 返回包含文本和可点击引用的混合内容
         return (
-            <ReactMarkdown
-            >
-                {content}
-            </ReactMarkdown>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+                {parts.map((part, index) =>
+                    typeof part === 'string' ?
+                        <ReactMarkdown key={`text-${index}`}>{part}</ReactMarkdown> :
+                        part
+                )}
+            </div>
         );
     };
 
