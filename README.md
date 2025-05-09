@@ -5,6 +5,8 @@
 <a name="english"></a>
 # DeepMed Search
 
+> **Note:** This project is still a work in progress. Some features may be incomplete or subject to change.
+
 DeepMed Search is a versatile search application built with the Next.js App Router, featuring a unified interface for Web Search, LLM Introspection, and Knowledge Base (KB) Search.
 
 ## Features
@@ -19,6 +21,8 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 -   **Knowledge Base Search**:
     -   Select specific Knowledge Base to search within via dropdown.
     -   Retrieves and displays relevant text chunks based on semantic similarity.
+    -   Supports hybrid search combining vector similarity and traditional BM25 text search.
+    -   Native Chinese text search support using pg_jieba segmentation.
     -   Results show source document, relevance score, and page number (if available).
     -   Clickable results open a modal dialog showing the full chunk text and details.
 -   **Knowledge Base Management**: Context and actions available for listing, creating, updating, and deleting knowledge bases (implies corresponding UI features).
@@ -52,185 +56,67 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 ## System Architecture
 
 ```mermaid
-
-graph LR
-    subgraph Frontend["用户浏览器 Frontend"]
-        direction TB
-
-        subgraph AppPages["页面 src/app"]
-            LoginUI["登录页 (/login)"]
-            SignupUI["注册页面"]
-            SearchPageUI["搜索入口页 (/search)"]
-            WebResultsPageUI["网页结果页 (/search/web/[query])"]
-            LlmResultsPageUI["LLM结果页 (/search/llm/[query])"]
-            KbResultsPageUI["KB结果页 (/search/kb/[query])"]
-            KbListPageUI["知识库列表页 (/knowledge)"]
-            KbDetailLayoutUI["知识库详情布局 (/knowledge/[kbId])"]
-            %% KbFilesUI, KbSettingsUI, KbChatUI 在详情布局内
-        end
-
-        subgraph ContextsHooks["Contexts and Hooks src/contexts, src/hooks"]
-            %% Contexts
-            UserContext["UserContext (contexts/user-context)"]
-            KbContext["KnowledgeBaseContext (contexts/knowledgebase-context)"]
-            %% Hooks
-            UseSendQuestionHook["useSendQuestion (hooks/use-search)"]
-            UseTranslateHook["useTranslate (hooks/use-language)"]
-            UseKbManagementHook["useKbManagement (用于管理页面的交互)"]
-            UseChatHook["useChat Hook (用于聊天交互)"]
-        end
-
-        subgraph ComponentsUI["UI and 自定义组件 src/components"]
-            SharedUIComps["shadcn/ui 组件 (components/ui)"]
-            SearchFormInternal["SearchInputForm (内嵌组件)"]
-            KbChunkItemInternal["KbChunkItem (内嵌组件)"]
-            KbChunkModal["文本块详情 Dialog"]
-            FileUploadComponent["文件上传组件"]
-            MarkdownComponent["MarkdownContent"]
-            PaginationControlsInternal["PaginationControls (内嵌组件)"]
-        end
-
-        %% 前端内部交互
-        %% Pages use Hooks & Contexts
-        AppPages --> ContextsHooks
-        AppPages --> ComponentsUI
-
-        %% Hooks use Contexts / other Hooks
-        UseKbManagementHook --> KbContext
-        UseChatHook --> UserContext
-        UseSendQuestionHook --> Actions["Server Actions (间接)"] 
-        %% "Hook 本身不直接调, 而是返回调用函数"
-
-        %% Context Usage Examples
-        SearchPageUI --> KbContext
-        SearchPageUI --> UseTranslateHook
-        KbResultsPageUI --> KbContext
-        KbResultsPageUI --> UseTranslateHook
-        KbListPageUI --> KbContext
-        KbListPageUI --> UseKbManagementHook
-        KbDetailLayoutUI --> KbContext
-        KbDetailLayoutUI --> UseKbManagementHook
-        %% KbChatUI uses UseChatHook
-
-        KbChunkItemInternal --> KbChunkModal
+graph TD
+    subgraph Frontend["Frontend (Next.js)"]
+        UI["User Interface<br/>(React Components)"]
+        Hooks["Hooks and Contexts<br/>(State Management)"]
     end
 
-    subgraph Backend["Next.js 服务器 Backend"]
-        direction TB
-        ServerActions["Server Actions (src/actions)"]
-        NextAuth["NextAuth (认证/会话)"]
-        LibLayer["核心逻辑/库 (src/lib)"]
-
-        subgraph Actions["Actions (src/actions)"]
-            AuthActions["auth.ts"]
-            KbSearchAction["kb-search.ts"]
-            WebSearchAction["web-search.ts"]
-            LlmSearchAction["llm-search.ts"]
-            KbMgmtActions["knowledgebase.ts"]
-            FileActions["file.ts (假设)"]
-            ChatActions["chat.ts (假设)"]
-        end
-
-        subgraph Lib["Libraries (src/lib)"]
-            %% Core Logic / DB
-            PrismaSchema["prisma/schema.prisma (定义模型)"]
-            PrismaClientLib["数据库客户端 (由Prisma生成)"]
-            PgVectorOpsLib["pgvector/operations.ts (封装向量搜索/插入)"]
-
-            %% AI / External Services
-            OpenAIEmbedLib["openai/embedding.ts (getEmbedding)"]
-            LlmSearchLib["llm-search/search.ts (searchSimulator, config)"]
-            WebSearchCommonLib["web-search/common.ts (类型, 引擎实现)"]
-            TavilyClient["Tavily 客户端/封装 (假设)"]
-            JinaClient["Jina 客户端/封装 (假设)"]
-            %% LLM API 客户端/封装 (若直接调用)
-
-            %% Utilities / Config
-            ConfigLib["config/ (各种配置)"]
-            UtilsLib["utils/ (通用工具函数, logger)"]
-            TypesLib["types/ (共享类型定义)"]
-            I18nLib["i18n/ (国际化资源)"]
-        end
-
-        %% 后端内部交互: Actions use Libs
-        ServerActions --> LibLayer
-
-        KbSearchAction --> OpenAIEmbedLib
-        KbSearchAction --> PgVectorOpsLib
-        LlmSearchAction --> LlmSearchLib 
-        %% LlmSearchLib 可能调用 LLM API Client
-        WebSearchAction --> WebSearchCommonLib 
-        %% WebSearchCommonLib 调用 Tavily/Jina Client
-        KbMgmtActions --> PrismaClientLib
-        KbMgmtActions --> MinIOClient["MinIO 客户端/封装 (假设)"]
-        FileActions --> MinIOClient
-        FileActions --> OpenAIEmbedLib
-        FileActions --> PgVectorOpsLib
-        FileActions --> PrismaClientLib
-        ChatActions --> KbSearchAction 
-        %% 复用搜索逻辑
-        ChatActions --> LlmSearchLib 
-        %% 或直接的 LLM Client
-
-        %% Lib interactions
-        PgVectorOpsLib --> PrismaClientLib 
-        %% (pgvector通常需要SQL执行)
-        LlmSearchLib --> OpenAIEmbedLib 
-        %% (如果LLM需要Embedding)
-
-        %% NextAuth Interaction
-        NextAuth --> PrismaClientLib
+    subgraph Backend["Backend (Next.js Server)"]
+        Actions["Server Actions<br/>(Request Handling)"]
+        Lib["Core Libraries<br/>(Business Logic)"]
+        Auth["Authentication<br/>(NextAuth)"]
     end
 
-    subgraph DatabaseStorage["数据库 & 存储"]
-        direction TB
-        PG_StructuredDb["(PostgreSQL) 结构化数据"]
-        PG_VectorDb["(PostgreSQL) pgvector"]
-        MinIO_Store["MinIO 文件存储"]
-        Redis_Cache["Redis 缓存/会话"]
+    subgraph Storage["Data Storage"]
+        PG["PostgreSQL<br/>(pgvector + pg_jieba)"]
+        Files["File Storage<br/>(MinIO)"]
     end
 
-    subgraph ExternalServices["外部服务 / API"]
-        direction TB
-        EmbeddingService["Embedding API"]
-        WebServiceAPIs["Web 搜索 API"]
-        LlmServiceAPIs["LLM API"]
-        OAuthProviders["OAuth 提供商"]
+    subgraph External["External Services"]
+        OpenAI["OpenAI API<br/>(Embeddings)"]
+        SearchAPI["Search APIs<br/>(Tavily/Jina/DuckDuckGo)"]
+        LLMAPI["LLM APIs<br/>(GPT/DeepSeek/Gemini)"]
     end
 
-    %% 主要流程连线 (Page -> Action -> Lib -> External/DB)
-    AppPages -->|"1. 调用 Action"| ServerActions
-    ServerActions -->|"2. 调用 Lib"| LibLayer
-    LibLayer -->|"3. 调用外部API"| ExternalServices
-    LibLayer -->|"4. 读写数据库"| DatabaseStorage
-    LibLayer -->|"5. 返回给 Action"| ServerActions
-    ServerActions -->|"6. 返回给 Page"| AppPages
+    %% Connections
+    UI <--> Hooks
+    Hooks --> Actions
+    Actions --> Lib
+    Lib --> PG
+    Lib --> Files
+    Lib --> OpenAI
+    Lib --> SearchAPI
+    Lib --> LLMAPI
+    Auth <--> PG
 
-    %% 认证
-    AppPages -->|"触发认证"| NextAuth
-    NextAuth --> OAuthProviders
-    NextAuth --> PG_StructuredDb
+    %% Styles
+    classDef frontend fill:#D1E8FF,stroke:#333
+    classDef backend fill:#E0E0E0,stroke:#333
+    classDef database fill:#FFF2CC,stroke:#333
+    classDef external fill:#FFD1DC,stroke:#333
 
-    %% 样式
-    style Frontend fill:#D1E8FF,stroke:#333
-    style Backend fill:#E0E0E0,stroke:#333
-    style DatabaseStorage fill:#FFF2CC,stroke:#333
-    style ExternalServices fill:#FFD1DC,stroke:#333
+    class Frontend frontend
+    class Backend backend
+    class Storage database
+    class External external
 ```
 
 ## Quick Start
 
 ### Start Dependencies with Docker Compose
 
-*(Review your `docker-compose.yml` to confirm services)*
+本项目使用Docker Compose管理开发环境的依赖服务，特别是包含了配置好的PostgreSQL（已安装pgvector和pg_jieba扩展）。
 
 ```bash
-# Start required services (e.g., PostgreSQL, Redis, MinIO)
-docker-compose up -d
+# 启动所需服务
+docker-compose up -d postgres
 
-# Check service status
+# 查看服务状态
 docker-compose ps
 ```
+
+PostgreSQL服务会自动初始化并支持向量搜索和中文分词。初始化脚本位于`pgvector-zh/init.sql`。
 
 ### Service Access Points
 
@@ -330,10 +216,47 @@ npx shadcn@latest add <component-name>
 ```
 Components are added to `src/components/ui`.
 
+## 故障排除
+
+### 知识库搜索问题
+
+如果知识库搜索返回空结果或结果不符合预期，可以尝试以下解决方案：
+
+1. **检查数据库扩展**：
+   确保 PostgreSQL 数据库已正确安装并启用 `pgvector` 和 `pg_jieba` 扩展：
+   ```bash
+   yarn db:test
+   ```
+   如果测试失败，请尝试重新初始化：
+   ```bash
+   yarn db:init
+   ```
+
+2. **调整搜索参数**：
+   您可以在 `src/lib/pgvector/operations.ts` 中修改 `searchSimilarChunks` 函数的默认参数：
+   - 降低 `minSimilarity` 阈值可以获得更多结果
+   - 调整 `bm25Weight` 和 `vectorWeight` 的比值可以平衡关键词匹配和语义理解
+   - 对于中文搜索，建议同时使用向量搜索和全文搜索（混合模式）
+
+3. **索引问题**：
+   如果修改了搜索逻辑或重置了数据库，可能需要重新创建索引：
+   ```bash
+   psql $DATABASE_URL -f scripts/chunk.sql
+   ```
+
+4. **检查嵌入模型**：
+   确保您的 OpenAI API 密钥和基本 URL 配置正确，这对生成文档嵌入至关重要。
+
+5. **中文搜索提示**：
+   - 对于中文搜索，使用较短、较为明确的搜索关键词通常效果更好
+   - 如果搜索结果为空，系统会诚实告知用户并建议尝试其他相关问题
+
 ---
 
 <a name="中文"></a>
 # DeepMed Search
+
+> **注意：** 本项目仍在开发中。部分功能可能不完整或将来会有变更。
 
 DeepMed Search 是一个基于 Next.js App Router 构建的多功能搜索应用程序，提供统一的网页搜索、LLM 内省和知识库（KB）搜索界面。
 
@@ -349,6 +272,8 @@ DeepMed Search 是一个基于 Next.js App Router 构建的多功能搜索应用
 -   **知识库搜索**:
     -   通过下拉菜单选择要搜索的特定知识库。
     -   基于语义相似度检索并显示相关的文本块。
+    -   支持混合搜索，结合向量相似度和传统 BM25 文本搜索。
+    -   使用 pg_jieba 分词支持中文文本搜索。
     -   结果显示来源文档、相关性分数和页码（如果可用）。
     -   点击结果项会弹出模态对话框，显示完整的文本块内容和详细信息。
 -   **知识库管理**: 提供了用于列出、创建、更新和删除知识库的 Context 和 Server Actions（意味着存在相应的管理界面）。
@@ -361,7 +286,7 @@ DeepMed Search 是一个基于 Next.js App Router 构建的多功能搜索应用
 -   **框架**: Next.js 14+ (App Router)
 -   **语言**: TypeScript
 -   **UI**: React 19 (或最新版), Tailwind CSS, shadcn/ui, Radix UI, Lucide Icons
--   **数据库**: PostgreSQL (用于结构化数据，且很可能通过 pgvector 存储向量)
+-   **数据库**: PostgreSQL (用于结构化数据，且很通过 pgvector 存储向量)
 -   **ORM**: Prisma
 -   **向量嵌入**: OpenAI API (或兼容接口) 用于生成文本嵌入。
 -   **状态管理**: React Context API (`KnowledgeBaseContext`), React Query (如果在其他地方使用)
@@ -382,185 +307,72 @@ DeepMed Search 是一个基于 Next.js App Router 构建的多功能搜索应用
 ## 系统架构
 
 ```mermaid
-graph LR
-    subgraph Frontend[用户浏览器 Frontend]
-        direction TB
-
-        subgraph AppPages [页面 (`src/app`)]
-            LoginUI("登录页 (`/login`)")
-            SignupUI("注册页面")
-            SearchPageUI("搜索入口页 (`/search`)")
-            WebResultsPageUI("网页结果页 (`/search/web/[query]`)")
-            LlmResultsPageUI("LLM结果页 (`/search/llm/[query]`)")
-            KbResultsPageUI("KB结果页 (`/search/kb/[query]`)")
-            KbListPageUI("知识库列表页 (`/knowledge`)")
-            KbDetailLayoutUI("知识库详情布局 (`/knowledge/[kbId]`)")
-            %% KbFilesUI, KbSettingsUI, KbChatUI 在详情布局内
-        end
-
-        subgraph ContextsHooks [Contexts & Hooks (`src/contexts`, `src/hooks`)]
-             %% Contexts
-             UserContext("UserContext (`contexts/user-context`)")
-             KbContext("KnowledgeBaseContext (`contexts/knowledgebase-context`)")
-             %% Hooks
-             UseSendQuestionHook("useSendQuestion (`hooks/use-search`)")
-             UseTranslateHook("useTranslate (`hooks/use-language`)")
-             UseKbManagementHook("useKbManagement (假设, 用于管理页面的交互)")
-             UseChatHook("useChat Hook (假设, 用于聊天交互)")
-        end
-
-        subgraph ComponentsUI [UI & 自定义组件 (`src/components`)]
-             SharedUIComps("shadcn/ui 组件 (`components/ui`)")
-             SearchFormInternal("SearchInputForm (内嵌组件)")
-             KbChunkItemInternal("KbChunkItem (内嵌组件)")
-             KbChunkModal("文本块详情 Dialog")
-             FileUploadComponent("文件上传组件")
-             MarkdownComponent("MarkdownContent")
-             PaginationControlsInternal("PaginationControls (内嵌组件)")
-        end
-
-        %% 前端内部交互
-        %% Pages use Hooks & Contexts
-        AppPages -- 使用 --> ContextsHooks
-        AppPages -- 使用 --> ComponentsUI
-
-        %% Hooks use Contexts / other Hooks
-        UseKbManagementHook -- 使用 --> KbContext
-        UseChatHook -- 可能使用 --> UserContext
-        UseSendQuestionHook -- 可能调用 --> Actions["Server Actions (间接)"] %% Hook 本身不直接调, 而是返回调用函数
-
-        %% Context Usage Examples
-        SearchPageUI -- 使用 --> KbContext
-        SearchPageUI -- 使用 --> UseTranslateHook
-        KbResultsPageUI -- 使用 --> KbContext
-        KbResultsPageUI -- 使用 --> UseTranslateHook
-        KbListPageUI -- 使用 --> KbContext
-        KbListPageUI -- 使用 --> UseKbManagementHook
-        KbDetailLayoutUI -- 使用 --> KbContext
-        KbDetailLayoutUI -- 使用 --> UseKbManagementHook
-        %% KbChatUI uses UseChatHook
-
-        KbChunkItemInternal -- 触发 --> KbChunkModal
-
+graph TD
+    subgraph Frontend["Frontend (Next.js)"]
+        UI["User Interface<br/>(React Components)"]
+        Hooks["Hooks and Contexts<br/>(State Management)"]
     end
 
-    subgraph Backend[Next.js 服务器 Backend]
-        direction TB
-        ServerActions("Server Actions (`src/actions`)")
-        NextAuth("NextAuth (认证/会话)")
-        LibLayer("核心逻辑/库 (`src/lib`)")
-
-        subgraph Actions [Actions (`src/actions`)]
-             AuthActions("auth.ts")
-             KbSearchAction("kb-search.ts")
-             WebSearchAction("web-search.ts")
-             LlmSearchAction("llm-search.ts")
-             KbMgmtActions("knowledgebase.ts")
-             FileActions("file.ts (假设)")
-             ChatActions("chat.ts (假设)")
-        end
-
-        subgraph Lib [Libraries (`src/lib`)]
-             %% Core Logic / DB
-             PrismaSchema("prisma/schema.prisma (定义模型)")
-             PrismaClientLib("数据库客户端 (由Prisma生成)")
-             PgVectorOpsLib("pgvector/operations.ts (封装向量搜索/插入)")
-
-             %% AI / External Services
-             OpenAIEmbedLib("openai/embedding.ts (getEmbedding)")
-             LlmSearchLib("llm-search/search.ts (searchSimulator, config)")
-             WebSearchCommonLib("web-search/common.ts (类型, 引擎实现)")
-             TavilyClient("Tavily 客户端/封装 (假设)")
-             JinaClient("Jina 客户端/封装 (假设)")
-             %% LLM API 客户端/封装 (若直接调用)
-
-             %% Utilities / Config
-             ConfigLib("config/ (各种配置)")
-             UtilsLib("utils/ (通用工具函数, logger)")
-             TypesLib("types/ (共享类型定义)")
-             I18nLib("i18n/ (国际化资源)")
-        end
-
-        %% 后端内部交互: Actions use Libs
-        ServerActions -- 调用 --> LibLayer
-
-        KbSearchAction -- 调用 --> OpenAIEmbedLib
-        KbSearchAction -- 调用 --> PgVectorOpsLib
-        LlmSearchAction -- 调用 --> LlmSearchLib %% LlmSearchLib 可能调用 LLM API Client
-        WebSearchAction -- 调用 --> WebSearchCommonLib %% WebSearchCommonLib 调用 Tavily/Jina Client
-        KbMgmtActions -- 调用 --> PrismaClientLib
-        KbMgmtActions -- 可能调用 --> MinIOClient["MinIO 客户端/封装 (假设)"]
-        FileActions -- 调用 --> MinIOClient
-        FileActions -- 调用 --> OpenAIEmbedLib
-        FileActions -- 调用 --> PgVectorOpsLib
-        FileActions -- 调用 --> PrismaClientLib
-        ChatActions -- 可能调用 --> KbSearchAction %% 复用搜索逻辑
-        ChatActions -- 可能调用 --> LlmSearchLib %% 或直接的 LLM Client
-
-        %% Lib interactions
-        PgVectorOpsLib -- 使用 --> PrismaClientLib %% (pgvector通常需要SQL执行)
-        LlmSearchLib -- 可能调用 --> OpenAIEmbedLib %% (如果LLM需要Embedding)
-
-        %% NextAuth Interaction
-        NextAuth -- 交互 --> PrismaClientLib
+    subgraph Backend["Backend (Next.js Server)"]
+        Actions["Server Actions<br/>(Request Handling)"]
+        Lib["Core Libraries<br/>(Business Logic)"]
+        Auth["Authentication<br/>(NextAuth)"]
     end
 
-    subgraph DatabaseStorage[数据库 & 存储]
-        direction TB
-        PG_StructuredDb("(PostgreSQL) 结构化数据")
-        PG_VectorDb("(PostgreSQL) pgvector")
-        MinIO_Store("MinIO 文件存储")
-        Redis_Cache("Redis 缓存/会话")
+    subgraph Storage["Data Storage"]
+        PG["PostgreSQL<br/>(pgvector + pg_jieba)"]
+        Files["File Storage<br/>(MinIO)"]
     end
 
-    subgraph ExternalServices[外部服务 / API]
-        direction TB
-        EmbeddingService("Embedding API")
-        WebServiceAPIs("Web 搜索 API")
-        LlmServiceAPIs("LLM API")
-        OAuthProviders("OAuth 提供商")
+    subgraph External["External Services"]
+        OpenAI["OpenAI API<br/>(Embeddings)"]
+        SearchAPI["Search APIs<br/>(Tavily/Jina/DuckDuckGo)"]
+        LLMAPI["LLM APIs<br/>(GPT/DeepSeek/Gemini)"]
     end
 
-    %% 主要流程连线 (Page -> Action -> Lib -> External/DB)
-    AppPages -- "1. 调用 Action" --> ServerActions
-    ServerActions -- "2. 调用 Lib" --> LibLayer
-    LibLayer -- "3. 调用外部API" --> ExternalServices
-    LibLayer -- "4. 读写数据库" --> DatabaseStorage
-    LibLayer -- "5. 返回给 Action" --> ServerActions
-    ServerActions -- "6. 返回给 Page" --> AppPages
+    %% Connections
+    UI <--> Hooks
+    Hooks --> Actions
+    Actions --> Lib
+    Lib --> PG
+    Lib --> Files
+    Lib --> OpenAI
+    Lib --> SearchAPI
+    Lib --> LLMAPI
+    Auth <--> PG
 
-    %% 认证
-    AppPages -- "触发认证" --> NextAuth
-    NextAuth -- 交互 --> OAuthProviders
-    NextAuth -- 读写用户 --> PG_StructuredDb
+    %% Styles
+    classDef frontend fill:#D1E8FF,stroke:#333
+    classDef backend fill:#E0E0E0,stroke:#333
+    classDef database fill:#FFF2CC,stroke:#333
+    classDef external fill:#FFD1DC,stroke:#333
 
-    %% 样式
-    style Frontend fill:#D1E8FF,stroke:#333
-    style Backend fill:#E0E0E0,stroke:#333
-    style DatabaseStorage fill:#FFF2CC,stroke:#333
-    style ExternalServices fill:#FFD1DC,stroke:#333
+    class Frontend frontend
+    class Backend backend
+    class Storage database
+    class External external
 ```
 
 ## 快速开始
 
 ### 使用 Docker Compose 启动依赖服务
 
-*(请检查你的 `docker-compose.yml` 文件确认服务列表)*
+本项目使用Docker Compose管理开发环境的依赖服务，特别是包含了配置好的PostgreSQL（已安装pgvector和pg_jieba扩展）。
 
 ```bash
-# 启动所需服务 (例如 PostgreSQL, Redis, MinIO)
-docker-compose up -d
+# 启动所需服务
+docker-compose up -d postgres
 
 # 查看服务状态
 docker-compose ps
 ```
 
+PostgreSQL服务会自动初始化并支持向量搜索和中文分词。初始化脚本位于`pgvector-zh/init.sql`。
+
 ### 服务访问地址
 
-*(根据你的 `docker-compose.yml` 调整)*
-
 -   **PostgreSQL**: `localhost:5432` (用户: `postgres`, 密码: `postgres`, 数据库: `deepmed`)
--   **MinIO**: API: `localhost:9000`, 控制台: `localhost:9001` (用户: `minioadmin`, 密码: `minioadmin`)
+-   **MinIO**: API: `localhost:9000`, 控制台: `localhost:9001` (用户: `minioadmin`, 密码: `minioadmin`)（如果使用MinIO存储文件）
 -   **Redis**: `localhost:6379` (如果使用)
 
 *(如果未使用 Milvus/Attu，请移除相关信息)*
@@ -619,10 +431,40 @@ npx prisma migrate dev --name <migration-name>
 ### 知识库向量搜索设置
 
 -   知识库搜索依赖向量嵌入。请确保通过环境变量 (`OPENAI_API_KEY`, `OPENAI_BASE_URL`) 配置了嵌入模型的提供者（例如 OpenAI）。
--   应用程序似乎使用 PostgreSQL 及其 `pgvector` 扩展来存储和搜索向量 (`@/lib/pgvector/operations`)。请确保你的 PostgreSQL 数据库已安装并启用了 `pgvector` 扩展。
--   文档处理和嵌入生成可能发生在文件上传到知识库的过程中（具体逻辑此处未完全展示）。
+-   应用程序使用 PostgreSQL 及其 `pgvector` 扩展来存储和搜索向量 (`@/lib/pgvector/operations`)。请确保你的 PostgreSQL 数据库已安装并启用了 `pgvector` 扩展。
+-   本应用还使用 `pg_jieba` 扩展支持中文分词，为全文搜索提供更好的中文支持。
+-   文档处理和嵌入生成发生在文件上传到知识库的过程中。
 
-*(移除旧的 Milvus 连接示例)*
+#### 向量搜索与混合搜索
+
+应用支持三种搜索模式：
+- **向量搜索**：基于文本语义相似度的搜索（通过embeddings）
+- **全文搜索**：基于BM25算法的传统文本搜索
+- **混合搜索**：结合向量搜索和全文搜索的结果，平衡语义理解和关键词匹配
+
+搜索参数可在代码中调整，关键参数包括：
+- `bm25Weight` 和 `vectorWeight`：控制两种搜索模式的权重比例
+- `bm25Threshold` 和 `vectorThreshold`：控制各自搜索模式的最低阈值
+- `minSimilarity`：结果的最终相似度阈值
+
+#### PostgreSQL 扩展设置
+
+对于开发环境，可以使用项目中的初始化脚本：
+
+```bash
+# 首先创建数据库结构
+yarn db:push
+
+# 初始化所需的PostgreSQL扩展
+yarn db:init
+
+# 验证扩展安装和配置是否正确
+yarn db:test
+```
+
+对于生产环境，需要手动确保PostgreSQL已安装以下扩展：
+- `pgvector`：用于向量存储和相似度搜索
+- `pg_jieba`：用于中文分词支持
 
 ## 可用脚本
 
@@ -652,3 +494,73 @@ yarn create:user # 创建测试用户账号 (如果脚本存在)
 npx shadcn@latest add <component-name>
 ```
 组件会被添加到 `src/components/ui` 目录。
+
+## 故障排除
+
+### 知识库搜索问题
+
+如果知识库搜索返回空结果或结果不符合预期，可以尝试以下解决方案：
+
+1. **检查数据库扩展**：
+   确保 PostgreSQL 数据库已正确安装并启用 `pgvector` 和 `pg_jieba` 扩展：
+   ```bash
+   yarn db:test
+   ```
+   如果测试失败，请尝试重新初始化：
+   ```bash
+   yarn db:init
+   ```
+
+2. **调整搜索参数**：
+   您可以在 `src/lib/pgvector/operations.ts` 中修改 `searchSimilarChunks` 函数的默认参数：
+   - 降低 `minSimilarity` 阈值可以获得更多结果
+   - 调整 `bm25Weight` 和 `vectorWeight` 的比值可以平衡关键词匹配和语义理解
+   - 对于中文搜索，建议同时使用向量搜索和全文搜索（混合模式）
+
+3. **索引问题**：
+   如果修改了搜索逻辑或重置了数据库，可能需要重新创建索引：
+   ```bash
+   psql $DATABASE_URL -f scripts/chunk.sql
+   ```
+
+4. **检查嵌入模型**：
+   确保您的 OpenAI API 密钥和基本 URL 配置正确，这对生成文档嵌入至关重要。
+
+5. **中文搜索提示**：
+   - 对于中文搜索，使用较短、较为明确的搜索关键词通常效果更好
+   - 如果搜索结果为空，系统会诚实告知用户并建议尝试其他相关问题
+
+## 示例操作
+
+### 创建知识库并上传文档
+
+以下是一些常见操作的步骤示例：
+
+1. **启动应用**:
+   ```bash
+   # 启动数据库服务
+   docker-compose up -d postgres
+   
+   # 启动应用
+   yarn dev
+   ```
+
+2. **创建知识库**:
+   - 访问 `/knowledge` 页面
+   - 点击"创建知识库"按钮
+   - 填写名称、描述等必要信息
+   - 确认创建
+
+3. **上传文档**:
+   - 进入新创建的知识库详情页
+   - 导航到"文件"标签
+   - 点击上传区域或拖放文件
+   - 支持的文件格式包括：PDF、DOCX、TXT等
+   - 文件上传后会自动处理，生成向量嵌入
+
+4. **搜索知识库**:
+   - 访问主搜索页面 `/search`
+   - 选择"知识库"tab
+   - 从下拉菜单选择要搜索的知识库
+   - 在搜索框中输入查询内容并搜索
+   - 系统会返回最相关的文档片段
