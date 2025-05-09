@@ -158,24 +158,7 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                         : msg
                                 )
                             }));
-                        } else if (data.type === 'reasoning') {
-                            updateState(prev => ({
-                                currentReasoning: prev.currentReasoning + data.chunk,
-                                isStreaming: true
-                            }));
-                        } else if (data.type === 'transition') {
-                            updateState(prev => ({
-                                currentReasoning: prev.currentReasoning + data.message,
-                                isStreaming: true
-                            }));
-                        } else if (data.error) {
-                            updateState(prev => ({
-                                error: data.error,
-                                isStreaming: false,
-                                messages: prev.messages.filter(msg => msg.id !== prev.currentMessageId)
-                            }));
-                        } else if (data.done) {
-                            // 更新最后一条消息的内容
+                        } else if (data.type === 'done') {
                             updateState(prev => ({
                                 isStreaming: false,
                                 currentContent: '',
@@ -192,6 +175,29 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                             updateState(prev => ({
                                 kbChunks: data.chunks,
                                 isUsingKbForCurrentMessage: true
+                            }));
+                        } else if (data.type === 'reference') {
+                            // 处理引用数据
+                            updateState(prev => ({
+                                messages: prev.messages.map(msg =>
+                                    msg.id === prev.currentMessageId
+                                        ? {
+                                            ...msg,
+                                            metadata: {
+                                                ...msg.metadata,
+                                                references: [
+                                                    ...(msg.metadata?.references || []),
+                                                    {
+                                                        ref_id: data.ref_id,
+                                                        doc_id: data.doc_id,
+                                                        doc_name: data.doc_name,
+                                                        content: data.content
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                        : msg
+                                )
                             }));
                         }
                     } catch (e) {

@@ -72,15 +72,14 @@ export async function performKbSearchAction(
 
         // 2. Search for similar chunks in the specified knowledge base
         console.log(`[KB Action] Searching similar chunks in vector DB for kbId: ${kbId}...`);
-        const similarChunks = await searchSimilarChunks(
-            validatedQuery, // bm25/hybrid 需要原始文本
-            queryEmbedding,
+        const similarChunks = await searchSimilarChunks({
+            queryText: validatedQuery,
+            queryVector: queryEmbedding,
             kbId,
-            topK,
-            '',
-            options?.bm25Weight,
-            options?.vectorWeight
-        );
+            resultLimit: topK,
+            bm25Weight: options?.bm25Weight,
+            vectorWeight: options?.vectorWeight
+        });
         console.log(`[KB Action] Found ${similarChunks.length} similar chunks.`);
 
         console.log(`[KB Action] Raw similar chunks:`, JSON.stringify(similarChunks.slice(0, 2), null, 2));

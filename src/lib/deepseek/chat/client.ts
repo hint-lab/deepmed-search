@@ -567,17 +567,19 @@ export class ChatClient {
             let finalContent = '';
 
             for await (const chunk of stream) {
-                // 处理思维链内容
-                const delta = chunk.choices[0]?.delta as any;
-                if (delta?.reasoning_content) {
-                    reasoningContent += delta.reasoning_content;
-                    // 将思维链内容传给处理函数
-                    onChunk(delta.reasoning_content);
-                }
-                // 处理最终回答内容
-                else if (delta?.content) {
+                const delta = chunk.choices[0]?.delta;
+                // 打印整个chunk和delta对象的详细信息
+                // console.log('完整chunk对象:', JSON.stringify(chunk, null, 2));
+                // console.log('delta对象:', JSON.stringify(delta, null, 2));
+                // logger.debug('收到数据块:', JSON.stringify(delta));
+
+                // 处理内容
+                if (delta?.content) {
+                    // console.log('接收到内容:', delta.content);
                     finalContent += delta.content;
                     onChunk(delta.content);
+                } else {
+                    // console.log('delta无内容字段');
                 }
             }
 
@@ -637,65 +639,189 @@ export class ChatClient {
             const messagesForModel = this.filterNonReasonMessages(history.getMessages());
             const apiMessages = convertMessagesToApiFormat(messagesForModel);
 
-            // 流式请求，使用 tools 代替 functions
+            logger.info(`发送聊天请求: ${dialogId}, 消息数: ${apiMessages.length}`);
+            console.log('API配置:', {
+                model: this.config.model,
+                temperature: this.config.temperature,
+                max_tokens: this.config.maxTokens,
+                tools: this.tools.length > 0 ? this.tools.map(t => t.name) : 'none'
+            });
+
+            // 使用更简单的方式处理工具调用，与chatStream类似
             const stream = await this.client.chat.completions.create({
                 model: this.config.model!,
                 messages: apiMessages,
-                tools: this.tools.map((tool) => ({
+                tools: this.tools.length > 0 ? this.tools.map((tool) => ({
                     type: "function",
                     function: {
                         name: tool.name,
                         description: tool.description,
                         parameters: tool.parameters._def
                     }
-                })),
+                })) : undefined,
+                temperature: this.config.temperature,
+                max_tokens: this.config.maxTokens,
                 stream: true,
             });
 
-            let currentToolCall: { id?: string; name?: string } | null = null;
-            let currentArguments = '';
             let finalContent = '';
+            let toolCalls = [];
+            // 定义明确的类型
+            interface ToolCall {
+                id: string;
+                name: string;
+                arguments: string;
+            }
+            let currentToolCall: ToolCall | null = null;
+            let currentArguments = '';
 
             for await (const chunk of stream) {
                 const delta = chunk.choices[0]?.delta;
+                // 打印整个chunk和delta对象的详细信息
+                // console.log('完整chunk对象:', JSON.stringify(chunk, null, 2));
+                // console.log('delta对象:', JSON.stringify(delta, null, 2));
+                // logger.debug('收到数据块:', JSON.stringify(delta));
+
+                // 处理内容
+                if (delta?.content) {
+                    // console.log('接收到内容:', delta.content);
+                    finalContent += delta.content;
+                    onChunk(delta.content);
+                } else {
+                    // console.log('delta无内容字段');
+                }
 
                 // 处理工具调用
                 if (delta?.tool_calls && delta.tool_calls.length > 0) {
                     const toolCall = delta.tool_calls[0];
 
+                    // 初始化工具调用
                     if (toolCall.function?.name && !currentToolCall) {
                         currentToolCall = {
-                            id: toolCall.id,
-                            name: toolCall.function.name
+                            id: toolCall.id || `tool-${Date.now()}`,
+                            name: toolCall.function.name,
+                            arguments: ''
                         };
-                        onChunk({ type: 'function_call', name: toolCall.function.name, arguments: '' });
+                        logger.info(`开始工具调用: ${toolCall.function.name}`);
                     }
 
-                    if (toolCall.function?.arguments) {
+                    // 累积参数
+                    if (toolCall.function?.arguments && currentToolCall) {
                         currentArguments += toolCall.function.arguments;
+                        currentToolCall.arguments = currentArguments;
                     }
 
-                    // 当工具调用完成
-                    if (chunk.choices[0]?.finish_reason === 'tool_calls' && currentToolCall?.name) {
+                    // 工具调用完成
+                    if (chunk.choices[0]?.finish_reason === 'tool_calls' && currentToolCall) {
+                        logger.info(`工具调用完成, 参数: ${currentArguments}`);
+
                         try {
-                            const args = JSON.parse(currentArguments);
-                            const tool = this.tools.find(t => t.name === currentToolCall?.name);
-                            if (tool) {
-                                const result = await tool.handler(args);
-                                onChunk({ type: 'function_result', content: result });
-                            }
-                        } catch (e) {
-                            logger.error('工具执行错误:', e);
-                        }
+                            const jsonArgs = JSON.parse(currentArguments);
+                            onChunk({
+                                type: 'function_call',
+                                name: currentToolCall.name,
+                                arguments: currentArguments
+                            });
 
-                        currentToolCall = null;
-                        currentArguments = '';
+                            // 执行工具 - 使用非空断言，因为我们已经在上面检查了 currentToolCall 非空
+                            const toolName = currentToolCall.name;
+                            const tool = this.tools.find(t => t.name === toolName);
+                            if (tool) {
+                                const result = await tool.handler(jsonArgs);
+                                const resultStr = JSON.stringify(result);
+
+                                console.log(`工具 ${toolName} 执行结果:`, resultStr);
+
+                                onChunk({
+                                    type: 'function_result',
+                                    content: resultStr
+                                });
+
+                                // 添加工具结果
+                                toolCalls.push({
+                                    call: currentToolCall,
+                                    result: resultStr
+                                });
+                            } else {
+                                console.error(`找不到工具: ${toolName}`);
+                                onChunk(`错误: 找不到工具 ${toolName}`);
+                            }
+
+                            currentToolCall = null;
+                            currentArguments = '';
+                        } catch (e: any) {
+                            logger.error('工具执行错误:', e);
+                            onChunk(`工具执行错误: ${e.message}`);
+                        }
                     }
-                } else if (delta?.content) {
-                    finalContent += delta.content;
-                    onChunk(delta.content);
                 }
             }
+
+            // 如果有工具调用，需要发送额外请求获取最终响应
+            if (toolCalls.length > 0) {
+                logger.info(`处理 ${toolCalls.length} 个工具调用结果`, toolCalls);
+                console.log(`工具调用详情:`, JSON.stringify(toolCalls, null, 2));
+
+                // 构建带有工具调用和结果的消息
+                const messagesWithTools = [...apiMessages];
+
+                // 添加assistant消息(带工具调用)
+                let assistantMsg: any = { role: 'assistant' };
+
+                if (toolCalls.length > 0) {
+                    assistantMsg.tool_calls = toolCalls.map(tc => ({
+                        id: tc.call.id,
+                        type: 'function',
+                        function: {
+                            name: tc.call.name,
+                            arguments: tc.call.arguments
+                        }
+                    }));
+                } else {
+                    assistantMsg.content = '';
+                }
+
+                messagesWithTools.push(assistantMsg);
+
+                // 添加工具结果
+                for (const tc of toolCalls) {
+                    messagesWithTools.push({
+                        role: 'tool',
+                        tool_call_id: tc.call.id,
+                        content: tc.result
+                    });
+                }
+
+                // 获取最终响应
+                const finalResponse = await this.client.chat.completions.create({
+                    model: this.config.model!,
+                    messages: messagesWithTools,
+                    temperature: this.config.temperature,
+                    max_tokens: this.config.maxTokens,
+                    stream: true
+                });
+
+                console.log('发送第二阶段请求，消息为:', JSON.stringify(messagesWithTools, null, 2));
+
+                for await (const finalChunk of finalResponse) {
+                    const finalDelta = finalChunk.choices[0]?.delta;
+                    console.log('第二阶段响应chunk:', JSON.stringify(finalChunk, null, 2));
+                    console.log('第二阶段delta:', JSON.stringify(finalDelta, null, 2));
+                    if (finalDelta?.content) {
+                        console.log('第二阶段接收到内容:', finalDelta.content);
+                        finalContent += finalDelta.content;
+                        onChunk(finalDelta.content);
+                    } else {
+                        console.log('第二阶段delta无内容字段');
+                    }
+                }
+            }
+
+            // 添加结果到历史
+            history.addMessage({
+                role: MessageType.Assistant,
+                content: finalContent,
+            } as any);
 
             return {
                 content: finalContent,
@@ -704,8 +830,9 @@ export class ChatClient {
                     timestamp: new Date().toISOString(),
                 }
             };
-        } catch (error) {
+        } catch (error: any) {
             logger.error('流式函数调用错误:', error);
+            onChunk(`错误: ${error.message}`);
             throw error;
         }
     }

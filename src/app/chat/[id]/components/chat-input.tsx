@@ -51,7 +51,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
 
 
         if (dialogId) {
-            await sendMessage(dialogId, inputValue, isThinkingMode, true);
+            await sendMessage(dialogId, inputValue, isThinkingMode, isUsingKnowledgeBase);
         } else {
             toast.error('dialogId not found')
 

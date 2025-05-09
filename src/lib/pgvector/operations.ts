@@ -54,7 +54,7 @@ export async function searchSimilarChunks({
     bm25Weight = 0.5,
     vectorWeight = 0.5,
     bm25Threshold = 0.2,      // 默认 BM25 阈值
-    vectorThreshold = 0.7,    // 默认向量相似度阈值
+    vectorThreshold = 0.4,    // 默认向量相似度阈值
     minSimilarity = 0.5       // 默认最终相似度阈值
 }: SearchParams) {
     try {

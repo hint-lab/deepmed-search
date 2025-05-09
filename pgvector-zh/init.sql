@@ -18,4 +18,4 @@ BEGIN
       RAISE NOTICE 'Text search configuration jieba_cfg already exists.';
   END IF;
 END;
-$BLOCK$; 
+$BLOCK$;

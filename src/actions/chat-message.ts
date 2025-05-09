@@ -8,11 +8,10 @@ import { chatClient } from '@/lib/deepseek/chat/client';
 import { kbReferenceTool } from '@/lib/deepseek/chat/tools';
 import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
-import { searchSimilarChunks } from '@/lib/pgvector/operations';
+import { searchSimilarChunks, ChunkSearchResult } from '@/lib/pgvector/operations';
 import { getEmbeddings } from '@/lib/openai/embedding';
 import { auth } from '@/lib/auth';
 import { ChunkResponse } from '@/lib/deepseek';
-import { Micro_5 } from 'next/font/google';
 
 interface ReferenceData {
     type: string;
@@ -309,22 +308,44 @@ export async function getChatMessageStream(
                     let contextChunks = '';
                     if (isUsingKB && dialog.knowledgeBase) {
                         try {
+                            console.log("开始获取知识库内容...");
                             const queryVector = await getEmbeddings([content]);
-                            const chunks = await searchSimilarChunks(queryVector[0], dialog.knowledgeBase.id, 5,
-                                undefined, 'hybrid', content, 1.0, 0.0
-                            );
+                            console.log("向量嵌入生成完成:", queryVector[0].length);
 
-                            // 发送知识库片段信息给前端
-                            sendEvent({
-                                type: 'kb_chunks',
-                                chunks: chunks.map((chunk: any) => ({
-                                    content: chunk.content,
-                                    doc_name: chunk.doc_name,
-                                    distance: chunk.distance
-                                }))
+                            const chunks = await searchSimilarChunks({
+                                queryText: content,
+                                queryVector: queryVector[0],
+                                kbId: dialog.knowledgeBase.id,
+                                resultLimit: 5,
+                                bm25Weight: 0.5,
+                                vectorWeight: 0.5,
+                                bm25Threshold: 0.2,
+                                vectorThreshold: 0.2,
+                                minSimilarity: 0.2
                             });
 
-                            contextChunks = chunks.map((chunk: { content: string }) => chunk.content).join('\n\n---\n\n');
+                            if (chunks.length === 0) {
+                                console.log("未找到任何相关片段，将告知用户");
+                                sendEvent({
+                                    type: 'kb_chunks',
+                                    chunks: []
+                                });
+                            } else {
+                                console.log(`找到 ${chunks.length} 个相关片段:`,
+                                    chunks.map(c => ({ id: c.chunk_id, similarity: c.similarity })));
+
+                                // 发送知识库片段信息给前端
+                                sendEvent({
+                                    type: 'kb_chunks',
+                                    chunks: chunks.map((chunk: ChunkSearchResult) => ({
+                                        content: chunk.content_with_weight,
+                                        doc_name: chunk.doc_name,
+                                        similarity: chunk.similarity
+                                    }))
+                                });
+
+                                contextChunks = chunks.map((chunk: ChunkSearchResult) => chunk.content_with_weight).join('\n\n---\n\n');
+                            }
 
                             // 将知识库名称和片段存入消息元数据
                             if (assistantMessageId) {
@@ -333,29 +354,51 @@ export async function getChatMessageStream(
                                     data: {
                                         metadata: {
                                             kbName: dialog.knowledgeBase.name,
-                                            kbChunks: chunks.map((chunk: any) => ({
-                                                content: chunk.content,
+                                            kbChunks: chunks.map((chunk: ChunkSearchResult) => ({
+                                                content: chunk.content_with_weight,
                                                 docName: chunk.doc_name,
-                                                distance: chunk.distance
+                                                similarity: chunk.similarity
                                             }))
                                         }
                                     }
                                 });
                             }
                         } catch (kbError) {
-                            console.error("Error retrieving knowledge base context:", kbError);
+                            console.error("获取知识库内容失败:", kbError);
                         }
                     }
-                    chatClient.setTools([kbReferenceTool]);
+
+                    console.log("设置系统提示和工具...");
+
+                    // 是否找到了相关片段
+                    const hasRelevantChunks = contextChunks.trim().length > 0;
+
+                    // 先设置系统提示
                     chatClient.setSystemPrompt(
                         dialogId,
-                        contextChunks
-                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题：\n\n${contextChunks}\n\n请根据以下知识库片段回答问题，并在引用片段内容时用[1]、[2]等编号标注出处。例如："……[1]"。片段如下：
-                            [1] 片段内容A
-                            [2] 片段内容B`
-                            : '你是一个专业的AI助手。'
+                        hasRelevantChunks
+                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题。
+                            
+${contextChunks}
+
+当你引用知识库内容时，请在句子后标注来源，例如[1]、[2]等。引用时使用kb_reference工具标记引用的内容。
+
+如果问题超出了以上知识范围，请诚实地表明你不知道，不要编造答案。只回答基于以上知识库内容的问题。`
+                            : `你是一个专业的AI助手。
+
+注意：针对用户的问题，我没有在知识库中找到相关内容。请诚实地告诉用户你没有相关信息，不要编造答案。可以礼貌地建议用户尝试其他相关问题或提供更多细节。`
                     );
 
+                    // 只有在有相关片段时才设置工具
+                    if (hasRelevantChunks) {
+                        console.log("找到相关片段，设置引用工具");
+                        chatClient.setTools([kbReferenceTool]);
+                    } else {
+                        console.log("未找到相关片段，不设置引用工具");
+                        chatClient.setTools([]);
+                    }
+
+                    console.log("开始生成回复...");
                     let accumulatedContent = '';
                     let references: ReferenceData[] = [];
 
@@ -363,16 +406,22 @@ export async function getChatMessageStream(
                         dialogId,
                         content,
                         (chunk: ChunkResponse) => {
+                            console.log("收到流响应:", typeof chunk === 'string' ? chunk : JSON.stringify(chunk));
+
                             if (typeof chunk === 'string') {
                                 accumulatedContent += chunk;
                                 sendEvent({ type: 'content', chunk });
                             } else if (chunk.type === 'function_call') {
+                                console.log("工具调用:", chunk.name, chunk.arguments);
                                 sendEvent({ type: 'tool_call_start', tool: chunk.name, args: chunk.arguments });
                             } else if (chunk.type === 'function_result') {
+                                console.log("工具结果:", chunk.content);
                                 try {
                                     const refData = JSON.parse(chunk.content);
                                     if (refData.type === 'reference') {
                                         references.push(refData as ReferenceData);
+
+                                        // 发送引用事件通知前端
                                         sendEvent({
                                             type: 'reference',
                                             ref_id: refData.reference_id,
@@ -381,11 +430,15 @@ export async function getChatMessageStream(
                                             content: refData.content
                                         });
 
-                                        accumulatedContent += `[${refData.reference_id}]`;
+                                        // 在文本中添加引用标记
+                                        const refMark = `[${refData.reference_id}]`;
+                                        accumulatedContent += refMark;
+                                        sendEvent({ type: 'content', chunk: refMark });
+
+                                        console.log("添加引用标记:", refMark);
                                     }
                                 } catch (e) {
-                                    console.error('解析引用工具结果失败:', e);
-                                    // 确保 chunk.content 是字符串，如果不是则进行转换或提供默认值
+                                    console.error('解析引用工具结果失败:', e, '原始内容:', chunk.content);
                                     const contentToAppend = typeof chunk.content === 'string' ? chunk.content : JSON.stringify(chunk.content);
                                     accumulatedContent += contentToAppend;
                                     sendEvent({ type: 'content', chunk: contentToAppend });
@@ -395,13 +448,15 @@ export async function getChatMessageStream(
                         false
                     );
 
+                    console.log("流式回复完成, 内容长度:", accumulatedContent.length);
+
                     if (assistantMessageId) {
                         // 获取现有的元数据，以便合并
                         const existingMessage = await prisma.message.findUnique({
                             where: { id: assistantMessageId },
                             select: { metadata: true }
                         });
-                        const existingMetadata = (existingMessage?.metadata as any) || {}; // 类型断言为 any 或更具体的类型
+                        const existingMetadata = (existingMessage?.metadata as any) || {};
 
                         await prisma.message.update({
                             where: { id: assistantMessageId },
@@ -416,7 +471,7 @@ export async function getChatMessageStream(
                     }
 
                     sendEvent({
-                        done: true,
+                        type: 'done',
                         messageId: assistantMessageId,
                         contentLength: accumulatedContent.length,
                         hasReasoning: false
