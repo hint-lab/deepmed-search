@@ -12,6 +12,7 @@ import rehypeRaw from 'rehype-raw'; // 支持直接渲染 HTML
 import { ServerActionResponse } from '@/types/actions'; // 导入 ServerActionResponse 类型
 import ThinkStatusDisplay from './components/think';
 
+
 // 定义步骤详情的类型 (应与后端返回一致)
 interface StepDetail {
     step: number;

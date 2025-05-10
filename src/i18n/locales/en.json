@@ -120,6 +120,7 @@
             "selected": "Selected",
             "total": "Total",
             "page": "Page",
+            "enabled": "Enabled",
             "totalPages": "Total Pages",
             "currentPage": "Current Page",
             "convertToMarkdown": "Convert",
@@ -139,6 +140,14 @@
             "basicTitle": "Basic Settings",
             "advancedTitle": "Advanced Settings"
         },
+        "languages": {
+            "zh": "Simplified Chinese",
+            "en": "English",
+            "ja": "Japanese",
+            "ar": "Arabic",
+            "ko": "Korean",
+            "fr": "French"
+        },
         "validation": {
             "nameRequired": "Please enter knowledge base name",
             "languageRequired": "Please select a language",
@@ -156,15 +165,17 @@
             "languageDescription": "Select the primary language for the knowledge base",
             "saveSettings": "Save Settings",
             "chunkSize": "Chunk Size",
-            "chunkSizeDescription": "Set the maximum number of characters per text chunk (100-2000)",
+            "chunkSizeDescription": "Set the maximum number of characters per text chunk",
             "chunkOverlap": "Chunk Overlap",
-            "chunkOverlapDescription": "Set the number of overlapping characters between adjacent text chunks (0-1000)",
+            "chunkOverlapDescription": "Set the number of overlapping characters between adjacent text chunks",
             "separator": "Separator",
             "separatorPlaceholder": "Enter custom separator",
             "separatorDescription": "Custom separator for text chunking (optional)",
             "customRules": "Custom Rules",
             "customRulesPlaceholder": "Enter custom chunking rules",
             "customRulesDescription": "Enter custom text chunking rules (optional)",
+            "applyBasicSettings": "Apply Basic Settings",
+            "applyAdvancedSettings": "Apply Advanced Settings",
             "applySettings": "Apply Settings"
         },
         "searchFiles": "Search Files",
@@ -281,8 +292,35 @@
         "noAccount": "Don't have an account?",
         "signUp": "Sign Up"
     },
+    "register": {
+        "title": "Create Account",
+        "description": "Create your account to start using DeepMed Search",
+        "registerWithGoogle": "Sign up with Google",
+        "registerWithGithub": "Sign up with Github",
+        "nameLabel": "Username",
+        "namePlaceholder": "Please enter your username",
+        "emailLabel": "Email",
+        "emailPlaceholder": "Please enter your email",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Please enter your password",
+        "registerDescription": "Start using DeepMed Search!",
+        "confirmPasswordLabel": "Confirm Password",
+        "confirmPasswordPlaceholder": "Please enter your password again",
+        "register": "Register",
+        "orContinueWith": "Or continue with",
+        "hasAccount": "Already have an account?",
+        "login": "Login",
+        "errors": {
+            "registerFailed": "Registration failed",
+            "passwordsNotMatch": "Passwords do not match",
+            "userExists": "User already exists"
+        },
+        "success": {
+            "registerSuccess": "Registration successful"
+        }
+    },
     "search": {
-        "title": "Deep Search",
+        "title": "Knowledge Search",
         "searchPlaceholder": "Search...",
         "searchDescription": "Search documents, knowledge bases, etc.",
         "searchResults": "Search Results",
@@ -311,9 +349,11 @@
         "currentChat": "Current Chat",
         "newChat": "New Chat",
         "startNewChat": "Start a new conversation...",
+        "createSuccess": "Created successfully",
         "justNow": "Just now",
         "delete": "Delete",
         "more": "More",
+        "cancel": "Cancel",
         "noDescription": "No description",
         "noConversations": "No conversations yet.",
         "createChatTitle": "Create New Chat",
@@ -323,9 +363,16 @@
         "cancelButton": "Cancel",
         "createButton": "Create",
         "cancelStream": "Cancel Sending",
+        "think": "Thinking",
+        "thinkingMode": "Deep Thinking",
+        "thinkingPlaceholder": "I'll think about it before answering your question",
+        "deleteAllDialogTitle": "Delete All Conversations",
+        "deleteAllDialogDescription": "This will delete all conversation history, including unsent messages.",
         "validation": {
             "chatNameRequired": "Please enter a chat name"
         },
+        "deleteCancelText": "Cancel Delete",
+        "deleteConfirmText": "Confirm Delete",
         "errors": {
             "sendMessageFailed": "Failed to send message",
             "dialogNotFound": "Conversation not found or has been deleted",

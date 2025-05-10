@@ -105,6 +105,9 @@ export default function BasicSettingForm() {
                   <SelectItem value="zh">{t('languages.zh')}</SelectItem>
                   <SelectItem value="en">{t('languages.en')}</SelectItem>
                   <SelectItem value="ja">{t('languages.ja')}</SelectItem>
+                  <SelectItem value="ar">{t('languages.ar')}</SelectItem>
+                  <SelectItem value="ko">{t('languages.ko')}</SelectItem>
+                  <SelectItem value="fr">{t('languages.fr')}</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>

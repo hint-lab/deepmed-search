@@ -26,7 +26,7 @@ function ChatLayoutContent({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default function Layout({
+export default function ChatLayout({
     children,
 }: {
     children: React.ReactNode;

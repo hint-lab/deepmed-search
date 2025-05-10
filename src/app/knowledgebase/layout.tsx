@@ -1,17 +1,16 @@
-
-import ProtectedRoute from "@/components/protected-route";
+import ProtectedRoute from '@/components/protected-route';
 import { KnowledgeBaseProvider } from '@/contexts/knowledgebase-context'
 
-export default async function Layout({
+export default function KnowledgeBaseLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     return (
-        <ProtectedRoute >
+        <ProtectedRoute>
             <KnowledgeBaseProvider>
                 {children}
             </KnowledgeBaseProvider>
-        </ProtectedRoute >
-    )
+        </ProtectedRoute>
+    );
 }

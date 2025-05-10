@@ -10,7 +10,7 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings, Sun, Moon, Monitor, Languages, LogOut } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, Globe, LogOut } from 'lucide-react';
 import { useLanguageContext } from '@/contexts/language-context';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -36,11 +36,14 @@ export function SettingsMenu() {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 lg:h-9 lg:w-fit lg:px-2">
-                        <Languages className="h-4 w-4" />
+                        <Globe className="h-4 w-4" />
                         <span className="ml-2 hidden lg:inline">
                             {currentLanguage === 'zh' && '语言'}
                             {currentLanguage === 'en' && 'Language'}
                             {currentLanguage === 'ja' && '言語'}
+                            {currentLanguage === 'ar' && 'اللغة'}
+                            {currentLanguage === 'ko' && '언어'}
+                            {currentLanguage === 'fr' && 'Langue'}
                         </span>
                     </Button>
                 </DropdownMenuTrigger>
@@ -59,6 +62,21 @@ export function SettingsMenu() {
                         🇯🇵
                         <span className="ml-2">日本語</span>
                         {currentLanguage === 'ja' && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => changeLanguage('ar')}>
+                        🇸🇦
+                        <span className="ml-2">العربية</span>
+                        {currentLanguage === 'ar' && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => changeLanguage('ko')}>
+                        🇰🇷
+                        <span className="ml-2">한국어</span>
+                        {currentLanguage === 'ko' && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => changeLanguage('fr')}>
+                        🇫🇷
+                        <span className="ml-2">Français</span>
+                        {currentLanguage === 'fr' && <span className="ml-auto">✓</span>}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

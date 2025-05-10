@@ -1,11 +1,11 @@
 {
     "common": {
         "delete": "削除",
-        "deleteModalTitle": "本当に削除しますか？",
+        "deleteModalTitle": "削除してもよろしいですか？",
         "ok": "OK",
         "cancel": "キャンセル",
         "total": "合計",
-        "rename": "名前を変更",
+        "rename": "名前変更",
         "name": "名前",
         "save": "保存",
         "namePlaceholder": "名前を入力してください",
@@ -14,7 +14,7 @@
         "edit": "編集",
         "upload": "アップロード",
         "english": "英語",
-        "chinese": "簡体中国語",
+        "chinese": "簡体字中国語",
         "language": "言語",
         "languageMessage": "言語を選択してください！",
         "languagePlaceholder": "言語を選択",
@@ -26,7 +26,7 @@
         "preview": "プレビュー",
         "move": "移動",
         "warn": "警告",
-        "action": "アクション",
+        "action": "操作",
         "pleaseSelect": "選択してください",
         "pleaseInput": "入力してください",
         "submit": "送信"
@@ -41,31 +41,31 @@
     },
     "home": {
         "title": "DeepMed Search",
-        "subtitle": "あなたのインテリジェントな医療文書アシスタント。文書処理をより簡単かつ効率的にします",
+        "subtitle": "インテリジェントな医療文書アシスタントで、文書処理をより簡単に効率的に",
         "getStarted": "始める",
-        "viewDocs": "ドキュメントを表示",
+        "viewDocs": "ドキュメントを見る",
         "features": {
-            "title": "主な機能",
+            "title": "主要機能",
             "documentProcessing": {
                 "title": "インテリジェントな医療文書処理",
-                "description": "複数の文書形式をサポートし、重要な情報を自動的に識別・抽出します"
+                "description": "複数の文書形式をサポートし、重要な情報を自動的に識別して抽出"
             },
             "documentQA": {
                 "title": "インテリジェントな医療文書Q&A",
-                "description": "文書の内容を解析し、あらゆる文書形式に対応したインテリジェントなQ&Aを提供します"
+                "description": "文書形式に関係なく、内容を解析してインテリジェントなQ&Aを提供"
             },
             "quickConversion": {
                 "title": "クイック変換",
-                "description": "ワンクリックで文書形式を変換し、元の書式とスタイルを保持します"
+                "description": "ワンクリックで文書形式を変換、元のフォーマットとスタイルを保持"
             },
             "dataAnalysis": {
                 "title": "データ分析",
-                "description": "文書の内容をインテリジェントに分析し、データの可視化レポートを生成します"
+                "description": "文書内容をインテリジェントに分析し、データ可視化レポートを生成"
             }
         },
         "cta": {
-            "title": "始めますか？",
-            "subtitle": "インテリジェントな医療文書処理の未来を体験するために、私たちに参加してください",
+            "title": "始める準備はできていますか？",
+            "subtitle": "インテリジェントな医療文書処理の未来を体験しましょう",
             "register": "今すぐ登録"
         }
     },
@@ -77,41 +77,41 @@
         "delete": "ナレッジベースを削除",
         "edit": "ナレッジベースを編集",
         "name": "ナレッジベース名",
-        "description": "今日、どのナレッジベースを使用しますか？",
+        "description": "今日はどのナレッジベースを使用しますか？",
         "documents": "ドキュメント",
-        "createTime": "作成日",
-        "updateTime": "更新日",
+        "createTime": "作成日時",
+        "updateTime": "更新日時",
         "creator": "作成者",
         "status": "ステータス",
-        "action": "アクション",
-        "createSuccess": "作成に成功しました",
-        "createError": "作成に失敗しました",
-        "deleteSuccess": "削除に成功しました",
-        "deleteError": "削除に失敗しました",
-        "editSuccess": "編集に成功しました",
-        "editError": "編集に失敗しました",
+        "action": "操作",
+        "createSuccess": "作成成功",
+        "createError": "作成失敗",
+        "deleteSuccess": "削除成功",
+        "deleteError": "削除失敗",
+        "editSuccess": "編集成功",
+        "editError": "編集失敗",
         "namePlaceholder": "ナレッジベース名を入力してください",
         "descriptionPlaceholder": "ナレッジベースの説明を入力してください",
         "createKnowledgeBase": "新しいナレッジベースを作成",
-        "createKnowledgeBaseDescription": "ドキュメントを管理するための新しいナレッジベースを作成します",
+        "createKnowledgeBaseDescription": "ドキュメントを管理するための新しいナレッジベースを作成",
         "createdAt": "作成日",
         "updatedAt": "更新日",
-        "confirmDelete": "削除を確認",
+        "confirmDelete": "削除の確認",
         "confirm": "確認",
         "welcome": "おかえりなさい",
         "guest": "ゲスト",
         "searchKnowledgePlaceholder": "ナレッジベースを検索",
         "noData": "データがありません",
         "noMoreData": "これ以上のデータはありません",
-        "documentTable": "ドキュメントリスト",
+        "documentTable": "ドキュメント一覧",
         "table": {
             "documentName": "ドキュメント名",
             "documentUploadDate": "アップロード日",
             "documentType": "ドキュメントタイプ",
             "delete": "削除",
             "documentSize": "ドキュメントサイズ",
-            "documentUploader": "アップローダー",
-            "documentAction": "ファイルアクション",
+            "documentUploader": "アップロード者",
+            "documentAction": "ファイル操作",
             "noResults": "データがありません",
             "documentProcessStage": "ファイル処理段階",
             "documentChunkMethod": "チャンク方法",
@@ -120,24 +120,33 @@
             "selected": "選択済み",
             "total": "合計",
             "page": "ページ",
+            "enabled": "有効",
             "totalPages": "総ページ数",
             "currentPage": "現在のページ",
             "convertToMarkdown": "変換",
             "documentProcessingStatus": {
-                "title": "処理ステータス",
+                "title": "処理状態",
                 "converting": "変換中",
                 "successed": "処理成功",
                 "failed": "処理失敗",
                 "error": "エラー",
                 "indexing": "インデックス作成中"
             },
-            "documentEnable": "有効化",
-            "viewDetails": "詳細を表示"
+            "documentEnable": "有効",
+            "viewDetails": "詳細を見る"
         },
         "settings": {
             "title": "設定",
             "basicTitle": "基本設定",
-            "advancedTitle": "高度な設定"
+            "advancedTitle": "詳細設定"
+        },
+        "languages": {
+            "zh": "簡体字中国語",
+            "en": "英語",
+            "ja": "日本語",
+            "ar": "アラビア語",
+            "ko": "韓国語",
+            "fr": "フランス語"
         },
         "validation": {
             "nameRequired": "ナレッジベース名を入力してください",
@@ -147,24 +156,26 @@
         "form": {
             "name": "ナレッジベース名",
             "namePlaceholder": "ナレッジベース名を入力してください",
-            "nameDescription": "これはナレッジベースのユニークな識別子になります",
+            "nameDescription": "これはあなたのナレッジベースの一意の識別子となります",
             "description": "説明",
             "descriptionPlaceholder": "ナレッジベースの説明を入力してください",
-            "descriptionDescription": "このナレッジベースの用途を簡単に説明してください",
+            "descriptionDescription": "このナレッジベースの目的を簡単に説明してください",
             "language": "言語",
             "languagePlaceholder": "ナレッジベースの言語を選択",
-            "languageDescription": "ナレッジベースの主要言語を選択してください",
+            "languageDescription": "ナレッジベースの主要言語を選択",
             "saveSettings": "設定を保存",
             "chunkSize": "チャンクサイズ",
-            "chunkSizeDescription": "テキストチャンクごとの最大文字数を設定（100-2000）",
+            "chunkSizeDescription": "テキストチャンクあたりの最大文字数を設定",
             "chunkOverlap": "チャンクオーバーラップ",
-            "chunkOverlapDescription": "隣接するテキストチャンク間のオーバーラップ文字数を設定（0-1000）",
-            "separator": "セパレーター",
-            "separatorPlaceholder": "カスタムセパレーターを入力",
-            "separatorDescription": "テキストチャンク用のカスタムセパレーター（任意）",
+            "chunkOverlapDescription": "隣接するテキストチャンク間の重複文字数を設定",
+            "separator": "区切り文字",
+            "separatorPlaceholder": "カスタム区切り文字を入力",
+            "separatorDescription": "テキストチャンクのカスタム区切り文字（オプション）",
             "customRules": "カスタムルール",
             "customRulesPlaceholder": "カスタムチャンクルールを入力",
-            "customRulesDescription": "カスタムのテキストチャンクルールを入力（任意）",
+            "customRulesDescription": "カスタムテキストチャンクルールを入力（オプション）",
+            "applyBasicSettings": "基本設定を適用",
+            "applyAdvancedSettings": "詳細設定を適用",
             "applySettings": "設定を適用"
         },
         "searchFiles": "ファイルを検索",
@@ -172,7 +183,7 @@
         "uploadDate": "アップロード日",
         "chunkMethod": "チャンク方法",
         "selectChunkMethod": "チャンク方法を選択",
-        "parsingStatus": "解析ステータス",
+        "parsingStatus": "解析状態",
         "noResults": "データがありません",
         "processChunks": "チャンクを処理",
         "processing": "処理中",
@@ -180,19 +191,19 @@
         "completed": "完了",
         "processingError": "処理エラー",
         "changeChunkMethod": "チャンク方法を変更",
-        "rename": "名前を変更",
+        "rename": "名前変更",
         "fileStatus": {
-            "title": "ファイルステータス",
+            "title": "ファイル状態",
             "processing": "処理中",
             "error": "エラー",
             "success": "成功",
             "pending": "保留中"
         },
         "options": {
-            "title": "アクション",
+            "title": "操作",
             "delete": "削除",
             "changeChunkMethod": "チャンク方法を変更",
-            "rename": "名前を変更",
+            "rename": "名前変更",
             "copyId": "IDをコピー"
         },
         "docParser": {
@@ -210,40 +221,40 @@
             "resume": "履歴書",
             "table": "表",
             "one": "単一ドキュメント",
-            "knowledgeGraph": "ナレッジグラフ"
+            "knowledgeGraph": "知識グラフ"
         }
     },
     "chunks": {
         "totalChunks": "総チャンク数",
         "totalTokens": "総トークン数",
         "chunks": "チャンク内容",
-        "original": "オリジナル内容",
+        "original": "元の内容",
         "preview": "ドキュメントプレビュー",
         "chunk": "チャンク",
         "tokens": "トークン数",
-        "noContent": "コンテンツがありません",
+        "noContent": "内容がありません",
         "noPreview": "プレビューが利用できません",
-        "previewNotSupported": "このファイルタイプのプレビューはサポートされていません",
+        "previewNotSupported": "このファイルタイプはプレビューをサポートしていません",
         "noChunks": "チャンク内容がありません",
-        "updateSuccess": "ステータス更新に成功しました",
-        "updateError": "ステータス更新に失敗しました",
+        "updateSuccess": "状態の更新に成功しました",
+        "updateError": "状態の更新に失敗しました",
         "fetchError": "チャンクデータの取得に失敗しました"
     },
     "login": {
         "title": "DeepMed Search",
-        "description": "RAG+Search統合のインテリジェントな医療文書アシスタント。文書処理をより簡単かつ効率的にします",
+        "description": "RAG+Searchを統合したインテリジェントな医療文書アシスタントで、文書処理をより簡単に効率的に",
         "features": {
             "ai": {
                 "title": "AI駆動",
-                "description": "高精度な処理を保証する高度な機械学習技術"
+                "description": "高度な機械学習技術による正確な処理"
             },
             "security": {
-                "title": "セキュア",
-                "description": "エンタープライズグレードのセキュリティと暗号化"
+                "title": "セキュリティ",
+                "description": "エンタープライズレベルのセキュリティと暗号化"
             },
             "speed": {
                 "title": "高速",
-                "description": "雷のような処理速度と応答時間"
+                "description": "高速な処理とレスポンス時間"
             },
             "reliability": {
                 "title": "信頼性",
@@ -253,17 +264,17 @@
         "form": {
             "title": "ログイン",
             "description": "おかえりなさい、アカウントにログインしてください",
-            "googleSignIn": "Googleで続行",
-            "githubSignIn": "GitHubで続行",
-            "orContinueWith": "または以下で続行",
-            "emailLabel": "メール",
+            "googleSignIn": "Googleで続ける",
+            "githubSignIn": "GitHubで続ける",
+            "orContinueWith": "または以下で続ける",
+            "emailLabel": "メールアドレス",
             "emailPlaceholder": "メールアドレスを入力してください",
             "passwordLabel": "パスワード",
             "passwordPlaceholder": "パスワードを入力してください",
-            "forgotPassword": "パスワードを忘れましたか？",
+            "forgotPassword": "パスワードをお忘れですか？",
             "submit": "ログイン",
-            "noAccount": "アカウントがありませんか？",
-            "signUp": "サインアップ"
+            "noAccount": "アカウントをお持ちでないですか？",
+            "signUp": "登録"
         },
         "errors": {
             "loginFailed": "ログインに失敗しました"
@@ -271,27 +282,54 @@
         "login": "ログイン",
         "loginDescription": "おかえりなさい！アカウントにログインしてください。",
         "loginWithGoogle": "Googleでログイン",
-        "loginWithGithub": "GitHubでログイン",
-        "orContinueWith": "または以下で続行",
-        "emailLabel": "メール",
+        "loginWithGithub": "Githubでログイン",
+        "orContinueWith": "または以下で続ける",
+        "emailLabel": "メールアドレス",
         "emailPlaceholder": "メールアドレスを入力してください",
         "passwordLabel": "パスワード",
         "passwordPlaceholder": "パスワードを入力してください",
-        "forgotPassword": "パスワードを忘れましたか？",
-        "noAccount": "アカウントがありませんか？",
-        "signUp": "サインアップ"
+        "forgotPassword": "パスワードをお忘れですか？",
+        "noAccount": "アカウントをお持ちでないですか？",
+        "signUp": "登録"
+    },
+    "register": {
+        "title": "アカウント作成",
+        "description": "DeepMed Searchの使用を開始するためにアカウントを作成してください",
+        "registerWithGoogle": "Googleで登録",
+        "registerWithGithub": "Githubで登録",
+        "nameLabel": "ユーザー名",
+        "namePlaceholder": "ユーザー名を入力してください",
+        "emailLabel": "メールアドレス",
+        "emailPlaceholder": "メールアドレスを入力してください",
+        "passwordLabel": "パスワード",
+        "passwordPlaceholder": "パスワードを入力してください",
+        "registerDescription": "DeepMed Searchの使用を開始！",
+        "confirmPasswordLabel": "パスワード確認",
+        "confirmPasswordPlaceholder": "パスワードを再入力してください",
+        "register": "登録",
+        "orContinueWith": "または以下で続ける",
+        "hasAccount": "すでにアカウントをお持ちですか？",
+        "login": "ログイン",
+        "errors": {
+            "registerFailed": "登録に失敗しました",
+            "passwordsNotMatch": "パスワードが一致しません",
+            "userExists": "このユーザーは既に存在します"
+        },
+        "success": {
+            "registerSuccess": "登録に成功しました"
+        }
     },
     "search": {
-        "title": "ディープサーチ",
+        "title": "ナレッジ検索",
         "searchPlaceholder": "検索...",
         "searchDescription": "ドキュメント、ナレッジベースなどを検索",
         "searchResults": "検索結果",
         "noResults": "検索結果がありません"
     },
     "upload": {
-        "uploadFile": "ファイルのアップロード",
+        "uploadFile": "ファイルをアップロード",
         "uploading": "アップロード中",
-        "uploadDescription": "PDF、Word、Excel、PPT、画像などのアップロードをサポート",
+        "uploadDescription": "PDF、Word、Excel、PPT、画像などのファイルをアップロードできます",
         "dragAndDrop": "ここにファイルをドラッグ＆ドロップ",
         "supportedFormats": "またはクリックして選択",
         "or": "または",
@@ -300,8 +338,8 @@
         "upload": "アップロード",
         "error": "エラー",
         "pleaseSelectFile": "ファイルを選択してください",
-        "uploadSuccess": "アップロードに成功しました",
-        "uploadFailed": "アップロードに失敗しました"
+        "uploadSuccess": "アップロード成功",
+        "uploadFailed": "アップロード失敗"
     },
     "chat": {
         "title": "チャット",
@@ -310,53 +348,62 @@
         "send": "送信",
         "currentChat": "現在のチャット",
         "newChat": "新しいチャット",
-        "startNewChat": "新しい会話を始める...",
-        "justNow": "たった今",
+        "startNewChat": "新しい会話を開始...",
+        "createSuccess": "作成成功",
+        "justNow": "今",
         "delete": "削除",
-        "more": "もっと",
-        "noDescription": "説明がありません",
+        "more": "その他",
+        "cancel": "キャンセル",
+        "noDescription": "説明なし",
         "noConversations": "まだ会話がありません。",
         "createChatTitle": "新しいチャットを作成",
-        "createChatDescription": "新しいチャットセッションに名前を付けます。",
+        "createChatDescription": "新しいチャットセッションに名前を付けてください。",
         "chatNameLabel": "名前",
         "chatNamePlaceholder": "例：プロジェクトディスカッション",
         "cancelButton": "キャンセル",
         "createButton": "作成",
         "cancelStream": "送信をキャンセル",
+        "think": "思考中",
+        "thinkingMode": "深い思考",
+        "thinkingPlaceholder": "質問に答える前に考えさせてください",
+        "deleteAllDialogTitle": "すべての会話を削除",
+        "deleteAllDialogDescription": "これにより、未送信のメッセージを含むすべての会話履歴が削除されます。",
         "validation": {
             "chatNameRequired": "チャット名を入力してください"
         },
+        "deleteCancelText": "削除をキャンセル",
+        "deleteConfirmText": "削除を確認",
         "errors": {
             "sendMessageFailed": "メッセージの送信に失敗しました",
-            "dialogNotFound": "会話が見つからないか、削除されています",
+            "dialogNotFound": "会話が見つからないか、既に削除されています",
             "deleteFailed": "削除に失敗しました。後でもう一度お試しください"
         },
-        "welcomeTitle": "今日、どのようにお手伝いしましょうか？",
-        "startTypingPrompt": "メッセージを送信して新しい会話を始めます。",
+        "welcomeTitle": "今日はどのようにお手伝いできますか？",
+        "startTypingPrompt": "メッセージを送信して新しい会話を開始してください。",
         "examples": {
             "heading": "例",
-            "title1": "医学的概念を説明",
+            "title1": "医学概念の説明",
             "prompt1": "遺伝子編集とは何か簡単に説明してください",
-            "title2": "健康アドバイスのプロンプト",
-            "prompt2": "睡眠の質を改善するための実際的なヒントのリストを提供してください"
+            "title2": "健康アドバイスのヒント",
+            "prompt2": "睡眠の質を改善するための実用的なヒントのリストを提供してください"
         },
         "capabilities": {
-            "heading": "能力",
+            "heading": "機能",
             "title1": "以前の会話を記憶",
-            "desc1": "このセッションで以前に議論した医学のトピックを思い出すことができます",
+            "desc1": "このセッションで以前に議論した医学トピックを覚えています",
             "title2": "フォローアップの修正を提供",
-            "desc2": "ユーザーが私の医学的な回答に基づいて修正や追加の質問をすることができます"
+            "desc2": "私の医学的回答に基づいて、ユーザーが修正や追加の質問を行うことができます"
         },
         "limitations": {
-            "heading": "制限",
+            "heading": "制限事項",
             "title1": "不正確な情報を生成する可能性",
-            "desc1": "時には不正確または誤解を招く医学情報を提供する可能性があります",
+            "desc1": "時々、不正確または誤解を招く医学情報を提供する可能性があります",
             "title2": "医学知識の制限",
             "desc2": "2023年以降の医学の進歩や研究に関する知識は限られています"
         },
         "deleteDialogTitle": "会話を削除",
         "deleteDialogDescription": "この会話を削除してもよろしいですか？この操作は元に戻せません。",
-        "deleteSuccess": "会話が削除されました",
+        "deleteSuccess": "会話を削除しました",
         "deleteError": "会話の削除に失敗しました",
         "knowledgeBaseLabel": "ナレッジベース",
         "selectKnowledgeBase": "ナレッジベースを選択",

@@ -1,0 +1,412 @@
+{
+    "common": {
+        "delete": "Supprimer",
+        "deleteModalTitle": "Êtes-vous sûr de vouloir supprimer ?",
+        "ok": "OK",
+        "cancel": "Annuler",
+        "total": "Total",
+        "rename": "Renommer",
+        "name": "Nom",
+        "save": "Enregistrer",
+        "namePlaceholder": "Veuillez entrer un nom",
+        "next": "Suivant",
+        "create": "Créer",
+        "edit": "Modifier",
+        "upload": "Télécharger",
+        "english": "Anglais",
+        "chinese": "Chinois simplifié",
+        "language": "Langue",
+        "languageMessage": "Veuillez sélectionner une langue !",
+        "languagePlaceholder": "Sélectionner une langue",
+        "copy": "Copier",
+        "copied": "Copié",
+        "comingSoon": "Bientôt disponible",
+        "download": "Télécharger",
+        "close": "Fermer",
+        "preview": "Aperçu",
+        "move": "Déplacer",
+        "warn": "Avertissement",
+        "action": "Action",
+        "pleaseSelect": "Veuillez sélectionner",
+        "pleaseInput": "Veuillez saisir",
+        "submit": "Soumettre"
+    },
+    "nav": {
+        "knowledgeBase": "Base de connaissances",
+        "chat": "Discussion",
+        "search": "Recherche",
+        "research": "Recherche",
+        "fileManagement": "Gestion de fichiers",
+        "development-tools": "Outils de développement"
+    },
+    "home": {
+        "title": "DeepMed Search",
+        "subtitle": "Votre assistant intelligent de documents médicaux, rendant le traitement des documents plus simple et plus efficace",
+        "getStarted": "Commencer",
+        "viewDocs": "Voir les documents",
+        "features": {
+            "title": "Fonctionnalités principales",
+            "documentProcessing": {
+                "title": "Traitement intelligent de documents médicaux",
+                "description": "Prend en charge plusieurs formats de documents, identifie et extrait automatiquement les informations clés"
+            },
+            "documentQA": {
+                "title": "Questions-réponses intelligentes sur documents médicaux",
+                "description": "Analyse le contenu du document et fournit des questions-réponses intelligentes pour tout format de document"
+            },
+            "quickConversion": {
+                "title": "Conversion rapide",
+                "description": "Conversion de format de document en un clic, préservant le formatage et le style d'origine"
+            },
+            "dataAnalysis": {
+                "title": "Analyse de données",
+                "description": "Analyse intelligemment le contenu du document et génère des rapports de visualisation de données"
+            }
+        },
+        "cta": {
+            "title": "Prêt à commencer ?",
+            "subtitle": "Rejoignez-nous pour découvrir l'avenir du traitement intelligent des documents médicaux",
+            "register": "S'inscrire maintenant"
+        }
+    },
+    "knowledgeBase": {
+        "title": "Base de connaissances",
+        "create": "Créer une base de connaissances",
+        "import": "Importer une base de connaissances",
+        "export": "Exporter une base de connaissances",
+        "delete": "Supprimer la base de connaissances",
+        "edit": "Modifier la base de connaissances",
+        "name": "Nom de la base de connaissances",
+        "description": "Quelle base de connaissances souhaitez-vous utiliser aujourd'hui ?",
+        "documents": "Documents",
+        "createTime": "Créé le",
+        "updateTime": "Mis à jour le",
+        "creator": "Créateur",
+        "status": "Statut",
+        "action": "Action",
+        "createSuccess": "Créé avec succès",
+        "createError": "Échec de la création",
+        "deleteSuccess": "Supprimé avec succès",
+        "deleteError": "Échec de la suppression",
+        "editSuccess": "Modifié avec succès",
+        "editError": "Échec de la modification",
+        "namePlaceholder": "Veuillez entrer le nom de la base de connaissances",
+        "descriptionPlaceholder": "Veuillez entrer la description de la base de connaissances",
+        "createKnowledgeBase": "Créer une nouvelle base de connaissances",
+        "createKnowledgeBaseDescription": "Créer une nouvelle base de connaissances pour gérer vos documents",
+        "createdAt": "Créé le",
+        "updatedAt": "Mis à jour le",
+        "confirmDelete": "Confirmer la suppression",
+        "confirm": "Confirmer",
+        "welcome": "Bienvenue",
+        "guest": "Invité",
+        "searchKnowledgePlaceholder": "Rechercher dans la base de connaissances",
+        "noData": "Aucune donnée disponible",
+        "noMoreData": "Pas plus de données",
+        "documentTable": "Liste des documents",
+        "table": {
+            "documentName": "Nom du document",
+            "documentUploadDate": "Date de téléchargement",
+            "documentType": "Type de document",
+            "delete": "Supprimer",
+            "documentSize": "Taille du document",
+            "documentUploader": "Téléchargeur",
+            "documentAction": "Action sur le fichier",
+            "noResults": "Aucune donnée disponible",
+            "documentProcessStage": "Étape de traitement du fichier",
+            "documentChunkMethod": "Méthode de découpage",
+            "documentChunkNum": "Nombre de segments",
+            "documentWordCount": "Nombre de mots",
+            "selected": "Sélectionné",
+            "total": "Total",
+            "page": "Page",
+            "enabled": "Activé",
+            "totalPages": "Pages totales",
+            "currentPage": "Page actuelle",
+            "convertToMarkdown": "Convertir",
+            "documentProcessingStatus": {
+                "title": "État du traitement",
+                "converting": "Conversion en cours",
+                "successed": "Traitement réussi",
+                "failed": "Échec du traitement",
+                "error": "Erreur",
+                "indexing": "Indexation en cours"
+            },
+            "documentEnable": "Activer",
+            "viewDetails": "Voir les détails"
+        },
+        "settings": {
+            "title": "Paramètres",
+            "basicTitle": "Paramètres de base",
+            "advancedTitle": "Paramètres avancés"
+        },
+        "languages": {
+            "zh": "Chinois simplifié",
+            "en": "Anglais",
+            "ja": "Japonais",
+            "ar": "Arabe",
+            "ko": "Coréen",
+            "fr": "Français"
+        },
+        "validation": {
+            "nameRequired": "Veuillez entrer le nom de la base de connaissances",
+            "languageRequired": "Veuillez sélectionner une langue",
+            "parserRequired": "Veuillez sélectionner une méthode de découpage"
+        },
+        "form": {
+            "name": "Nom de la base de connaissances",
+            "namePlaceholder": "Veuillez entrer le nom de la base de connaissances",
+            "nameDescription": "Ce sera l'identifiant unique pour votre base de connaissances",
+            "description": "Description",
+            "descriptionPlaceholder": "Veuillez entrer la description de la base de connaissances",
+            "descriptionDescription": "Décrivez brièvement l'objectif de cette base de connaissances",
+            "language": "Langue",
+            "languagePlaceholder": "Sélectionner la langue de la base de connaissances",
+            "languageDescription": "Sélectionnez la langue principale pour la base de connaissances",
+            "saveSettings": "Enregistrer les paramètres",
+            "chunkSize": "Taille du segment",
+            "chunkSizeDescription": "Définir le nombre maximum de caractères par segment de texte",
+            "chunkOverlap": "Chevauchement des segments",
+            "chunkOverlapDescription": "Définir le nombre de caractères qui se chevauchent entre les segments de texte adjacents",
+            "separator": "Séparateur",
+            "separatorPlaceholder": "Entrer un séparateur personnalisé",
+            "separatorDescription": "Séparateur personnalisé pour la segmentation du texte (optionnel)",
+            "customRules": "Règles personnalisées",
+            "customRulesPlaceholder": "Entrer des règles de découpage personnalisées",
+            "customRulesDescription": "Entrer des règles de segmentation de texte personnalisées (optionnel)",
+            "applyBasicSettings": "Appliquer les paramètres de base",
+            "applyAdvancedSettings": "Appliquer les paramètres avancés",
+            "applySettings": "Appliquer les paramètres"
+        },
+        "searchFiles": "Rechercher des fichiers",
+        "noDatasetId": "ID de l'ensemble de données non trouvé",
+        "uploadDate": "Date de téléchargement",
+        "chunkMethod": "Méthode de découpage",
+        "selectChunkMethod": "Sélectionner la méthode de découpage",
+        "parsingStatus": "État d'analyse",
+        "noResults": "Aucune donnée disponible",
+        "processChunks": "Traiter les segments",
+        "processing": "Traitement en cours",
+        "error": "Erreur",
+        "completed": "Terminé",
+        "processingError": "Erreur de traitement",
+        "changeChunkMethod": "Changer la méthode de découpage",
+        "rename": "Renommer",
+        "fileStatus": {
+            "title": "État du fichier",
+            "processing": "Traitement en cours",
+            "error": "Erreur",
+            "success": "Succès",
+            "pending": "En attente"
+        },
+        "options": {
+            "title": "Actions",
+            "delete": "Supprimer",
+            "changeChunkMethod": "Changer la méthode de découpage",
+            "rename": "Renommer",
+            "copyId": "Copier l'ID"
+        },
+        "docParser": {
+            "methodTitle": "Configuration",
+            "presentation": "Présentation",
+            "methodExamples": "Exemples",
+            "methodExamplesDescription": "Exemples",
+            "dialogueExamplesTitle": "Exemples",
+            "methodEmpty": "Par défaut",
+            "book": "Livre",
+            "laws": "Lois",
+            "manual": "Manuel",
+            "picture": "Image",
+            "paper": "Article",
+            "resume": "CV",
+            "table": "Tableau",
+            "one": "Document unique",
+            "knowledgeGraph": "Graphe de connaissances"
+        }
+    },
+    "chunks": {
+        "totalChunks": "Total des segments",
+        "totalTokens": "Total des jetons",
+        "chunks": "Contenu du segment",
+        "original": "Contenu original",
+        "preview": "Aperçu du document",
+        "chunk": "Segment",
+        "tokens": "Nombre de jetons",
+        "noContent": "Aucun contenu disponible",
+        "noPreview": "Aucun aperçu disponible",
+        "previewNotSupported": "Aperçu non pris en charge pour ce type de fichier",
+        "noChunks": "Aucun contenu de segment disponible",
+        "updateSuccess": "Statut mis à jour avec succès",
+        "updateError": "Échec de la mise à jour du statut",
+        "fetchError": "Échec de la récupération des données de segment"
+    },
+    "login": {
+        "title": "DeepMed Search",
+        "description": "Assistant de documents médicaux intelligent intégré RAG+Search, rendant le traitement des documents plus simple et plus efficace",
+        "features": {
+            "ai": {
+                "title": "Propulsé par l'IA",
+                "description": "Technologie d'apprentissage automatique hautement avancée pour un traitement précis"
+            },
+            "security": {
+                "title": "Sécurisé",
+                "description": "Sécurité et cryptage de niveau entreprise"
+            },
+            "speed": {
+                "title": "Rapide",
+                "description": "Traitement ultra-rapide et temps de réponse éclair"
+            },
+            "reliability": {
+                "title": "Fiable",
+                "description": "Disponibilité de 99,9% et cohérence"
+            }
+        },
+        "form": {
+            "title": "Connexion",
+            "description": "Bienvenue, veuillez vous connecter à votre compte",
+            "googleSignIn": "Continuer avec Google",
+            "githubSignIn": "Continuer avec GitHub",
+            "orContinueWith": "Ou continuer avec",
+            "emailLabel": "Email",
+            "emailPlaceholder": "Veuillez entrer votre email",
+            "passwordLabel": "Mot de passe",
+            "passwordPlaceholder": "Veuillez entrer votre mot de passe",
+            "forgotPassword": "Mot de passe oublié ?",
+            "submit": "Connexion",
+            "noAccount": "Vous n'avez pas de compte ?",
+            "signUp": "S'inscrire"
+        },
+        "errors": {
+            "loginFailed": "Échec de la connexion"
+        },
+        "login": "Connexion",
+        "loginDescription": "Bienvenue ! Veuillez vous connecter à votre compte.",
+        "loginWithGoogle": "Se connecter avec Google",
+        "loginWithGithub": "Se connecter avec GitHub",
+        "orContinueWith": "Ou continuer avec",
+        "emailLabel": "Email",
+        "emailPlaceholder": "Veuillez entrer votre email",
+        "passwordLabel": "Mot de passe",
+        "passwordPlaceholder": "Veuillez entrer votre mot de passe",
+        "forgotPassword": "Mot de passe oublié ?",
+        "noAccount": "Vous n'avez pas de compte ?",
+        "signUp": "S'inscrire"
+    },
+    "register": {
+        "title": "Créer un compte",
+        "description": "Créez votre compte pour commencer à utiliser DeepMed Search",
+        "registerWithGoogle": "S'inscrire avec Google",
+        "registerWithGithub": "S'inscrire avec Github",
+        "nameLabel": "Nom d'utilisateur",
+        "namePlaceholder": "Veuillez entrer votre nom d'utilisateur",
+        "emailLabel": "Email",
+        "emailPlaceholder": "Veuillez entrer votre email",
+        "passwordLabel": "Mot de passe",
+        "passwordPlaceholder": "Veuillez entrer votre mot de passe",
+        "registerDescription": "Commencez à utiliser DeepMed Search !",
+        "confirmPasswordLabel": "Confirmer le mot de passe",
+        "confirmPasswordPlaceholder": "Veuillez entrer à nouveau votre mot de passe",
+        "register": "S'inscrire",
+        "orContinueWith": "Ou continuer avec",
+        "hasAccount": "Vous avez déjà un compte ?",
+        "login": "Connexion",
+        "errors": {
+            "registerFailed": "Échec de l'inscription",
+            "passwordsNotMatch": "Les mots de passe ne correspondent pas",
+            "userExists": "L'utilisateur existe déjà"
+        },
+        "success": {
+            "registerSuccess": "Inscription réussie"
+        }
+    },
+    "search": {
+        "title": "Recherche de connaissances",
+        "searchPlaceholder": "Rechercher...",
+        "searchDescription": "Rechercher des documents, des bases de connaissances, etc.",
+        "searchResults": "Résultats de recherche",
+        "noResults": "Aucun résultat de recherche"
+    },
+    "upload": {
+        "uploadFile": "Télécharger un fichier",
+        "uploading": "Téléchargement en cours",
+        "uploadDescription": "Prend en charge le téléchargement de PDF, Word, Excel, PPT, images et plus encore",
+        "dragAndDrop": "Glisser-déposer les fichiers ici",
+        "supportedFormats": "Ou cliquer pour sélectionner",
+        "or": "ou",
+        "selectFile": "Sélectionner un fichier",
+        "cancel": "Annuler",
+        "upload": "Télécharger",
+        "error": "Erreur",
+        "pleaseSelectFile": "Veuillez sélectionner un fichier",
+        "uploadSuccess": "Téléchargement réussi",
+        "uploadFailed": "Échec du téléchargement"
+    },
+    "chat": {
+        "title": "Discussion",
+        "searchPlaceholder": "Rechercher des conversations...",
+        "messagePlaceholder": "Saisir un message...",
+        "send": "Envoyer",
+        "currentChat": "Discussion actuelle",
+        "newChat": "Nouvelle discussion",
+        "startNewChat": "Commencer une nouvelle conversation...",
+        "createSuccess": "Créé avec succès",
+        "justNow": "À l'instant",
+        "delete": "Supprimer",
+        "more": "Plus",
+        "cancel": "Annuler",
+        "noDescription": "Aucune description",
+        "noConversations": "Pas encore de conversations.",
+        "createChatTitle": "Créer une nouvelle discussion",
+        "createChatDescription": "Donnez un nom à votre nouvelle session de discussion.",
+        "chatNameLabel": "Nom",
+        "chatNamePlaceholder": "Ex., Discussion de projet",
+        "cancelButton": "Annuler",
+        "createButton": "Créer",
+        "cancelStream": "Annuler l'envoi",
+        "think": "Réflexion",
+        "thinkingMode": "Réflexion profonde",
+        "thinkingPlaceholder": "Je vais réfléchir avant de répondre à votre question",
+        "deleteAllDialogTitle": "Supprimer toutes les conversations",
+        "deleteAllDialogDescription": "Cela supprimera tout l'historique des conversations, y compris les messages non envoyés.",
+        "validation": {
+            "chatNameRequired": "Veuillez entrer un nom de discussion"
+        },
+        "deleteCancelText": "Annuler la suppression",
+        "deleteConfirmText": "Confirmer la suppression",
+        "errors": {
+            "sendMessageFailed": "Échec de l'envoi du message",
+            "dialogNotFound": "Conversation introuvable ou supprimée",
+            "deleteFailed": "Échec de la suppression, veuillez réessayer plus tard"
+        },
+        "welcomeTitle": "Comment puis-je vous aider aujourd'hui ?",
+        "startTypingPrompt": "Envoyez un message pour commencer une nouvelle conversation.",
+        "examples": {
+            "heading": "Exemples",
+            "title1": "Expliquer des concepts médicaux",
+            "prompt1": "Expliquez brièvement ce qu'est l'édition génétique",
+            "title2": "Conseils de santé",
+            "prompt2": "Fournir une liste de conseils pratiques pour améliorer la qualité du sommeil"
+        },
+        "capabilities": {
+            "heading": "Capacités",
+            "title1": "Se souvenir des conversations précédentes",
+            "desc1": "Je peux me rappeler des sujets médicaux dont nous avons discuté plus tôt dans cette session",
+            "title2": "Fournir des corrections de suivi",
+            "desc2": "Permet aux utilisateurs de corriger ou de poser des questions supplémentaires basées sur mes réponses médicales"
+        },
+        "limitations": {
+            "heading": "Limitations",
+            "title1": "Peut générer des informations inexactes",
+            "desc1": "Je peux parfois fournir des informations médicales incorrectes ou trompeuses",
+            "title2": "Limitation des connaissances médicales",
+            "desc2": "Mes connaissances sur les avancées médicales et la recherche après 2023 sont limitées"
+        },
+        "deleteDialogTitle": "Supprimer la conversation",
+        "deleteDialogDescription": "Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action ne peut pas être annulée.",
+        "deleteSuccess": "Conversation supprimée",
+        "deleteError": "Échec de la suppression de la conversation",
+        "knowledgeBaseLabel": "Base de connaissances",
+        "selectKnowledgeBase": "Sélectionner une base de connaissances",
+        "noKnowledgeBase": "Ne pas utiliser de base de connaissances"
+    }
+}

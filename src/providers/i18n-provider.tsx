@@ -7,6 +7,9 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import enTranslation from '@/i18n/locales/en.json';
 import zhTranslation from '@/i18n/locales/zh.json';
 import jaTranslation from '@/i18n/locales/ja.json';
+import arTranslation from '@/i18n/locales/ar.json';
+import koTranslation from '@/i18n/locales/ko.json';
+import frTranslation from '@/i18n/locales/fr.json';
 
 // 导入 LanguageContext
 import { LanguageContext } from '@/contexts/language-context';
@@ -23,6 +26,9 @@ i18next
             en: { translation: enTranslation },
             zh: { translation: zhTranslation },
             ja: { translation: jaTranslation },
+            ar: { translation: arTranslation },
+            ko: { translation: koTranslation },
+            fr: { translation: frTranslation }
         },
         fallbackLng: 'zh', // 未检测到语言时的回退语言
         interpolation: {
@@ -44,7 +50,7 @@ export function I18nProvider({ children }: PropsWithChildren) {
     const [mounted, setMounted] = useState(false);
     // 从 i18next 实例初始化语言状态
     const [currentLanguage, setCurrentLanguage] = useState(i18nInstance.language);
-    const languages = useMemo(() => ['en', 'zh', 'ja'], []);
+    const languages = useMemo(() => ['en', 'zh', 'ja', 'ar', 'ko', 'fr'], []);
 
     useEffect(() => {
         setMounted(true);

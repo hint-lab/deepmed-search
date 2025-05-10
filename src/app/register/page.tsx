@@ -1,30 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTranslate } from '@/contexts/language-context';
-import { getUserInfo } from '@/actions/user';
-import { useSession } from "next-auth/react"
+import { useSession } from "next-auth/react";
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { registerUser } from '@/actions/register';
 
 const formSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
+    name: z.string().min(2, { message: "Username must be at least 2 characters" }),
+    email: z.string().email({ message: "Please enter a valid email address" }),
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+    confirmPassword: z.string().min(6, { message: "Confirm password must be at least 6 characters" }),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
 });
 
-
-
-
 const LeftPanel = () => {
-    const { t } = useTranslate('login');
+    const { t } = useTranslate('login'); // 复用登录的翻译
     return (
         <div className="relative w-3/5 bg-gradient-to-b from-background via-background to-background">
             {/* Modern gradient backdrop */}
@@ -95,72 +97,70 @@ const LeftPanel = () => {
     );
 };
 
-const Login = () => {
-    const searchParams = useSearchParams();
-    const { t } = useTranslate('login');
+const Register = () => {
+    const { t } = useTranslate('register');
     const [loading, setLoading] = useState(false);
-    // const { userInfo, isLoading, isAuthenticated, updateUserInfo, refreshUserInfo } = useUserInfoContext();
-    const callbackUrl = searchParams.get('callbackUrl') || '/knowledgebase';
+    const router = useRouter();
     const { data: session } = useSession();
-    useEffect(() => {
-        const error = searchParams.get("error");
-        if (error) {
-            console.error('Auth error:', error);
-        }
-    }, [searchParams]);
 
-    // 如果已经登录，自动跳转
+    // 使用 useEffect 处理重定向逻辑
     useEffect(() => {
         if (session?.user) {
-            window.location.href = callbackUrl;
+            router.push('/knowledgebase');
         }
-    }, [callbackUrl]);
+    }, [session, router]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            name: '',
             email: '',
             password: '',
+            confirmPassword: '',
         },
     });
 
-    const onLoginSubmit = async (values: z.infer<typeof formSchema>) => {
+    const onRegisterSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             setLoading(true);
-            const result = await signIn('credentials', {
-                email: values.email.trim(),
+
+            // 使用Server Action而不是直接调用API
+            const result = await registerUser({
+                name: values.name,
+                email: values.email,
                 password: values.password,
-                redirect: false,
-                callbackUrl
             });
 
-            if (result?.error) {
-                toast.error("登录失败", {
-                    description: "邮箱或密码错误",
+            if (!result.success) {
+                toast.error(t('errors.registerFailed'), {
+                    description: result.error || t('errors.registerFailed'),
                 });
                 return;
             }
 
-            // 登录成功后获取用户信息
-            const response = await getUserInfo();
-            const user = response.data;
+            toast.success(t('success.registerSuccess'), {
+                description: t('registerDescription'),
+            });
 
-            if (user) {
-                // 将用户信息存储到 localStorage（可选）
-                localStorage.setItem('userInfo', JSON.stringify({
-                    userId: user.id,
-                    name: user.name,
-                    email: user.email,
-                    image: user.image
-                }));
+            // 注册成功后自动登录
+            const loginResult = await signIn('credentials', {
+                email: values.email.trim(),
+                password: values.password,
+                redirect: false,
+            });
+
+            if (loginResult?.error) {
+                // 登录失败，跳转到登录页面
+                router.push('/login');
+                return;
             }
 
-            // 重定向到目标页面
-            window.location.href = callbackUrl;
+            // 登录成功，跳转到知识库页面
+            router.push('/knowledgebase');
         } catch (error) {
-            console.error('登录失败:', error);
-            toast.error("登录失败", {
-                description: "服务器错误，请稍后重试",
+            console.error('Registration failed:', error);
+            toast.error(t('errors.registerFailed'), {
+                description: t('errors.registerFailed'),
             });
         } finally {
             setLoading(false);
@@ -168,25 +168,12 @@ const Login = () => {
     };
 
     const handleGoogleSignIn = () => {
-        signIn('google', { callbackUrl });
+        signIn('google', { callbackUrl: '/knowledgebase' });
     };
 
     const handleGithubSignIn = () => {
-        signIn('github', { callbackUrl });
+        signIn('github', { callbackUrl: '/knowledgebase' });
     };
-
-    // 检查用户是否已登录
-    if (session?.user) {
-        // 用户已登录
-    }
-
-    // 更新用户信息
-    // updateUserInfo({ name: '新名字' });
-
-    // 刷新用户信息
-    // const refreshUserInfoHandler = async () => {
-    //     await refreshUserInfo();
-    // };
 
     return (
         <div className="flex min-h-screen">
@@ -198,9 +185,9 @@ const Login = () => {
 
                 <Card className="w-full max-w-md border relative z-10 backdrop-blur-sm bg-card/70 shadow-xl hover:shadow-lg transition-all duration-300">
                     <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">{t('login')}</CardTitle>
+                        <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">{t('title')}</CardTitle>
                         <CardDescription className="text-base">
-                            {t('loginDescription')}
+                            {t('description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -217,7 +204,7 @@ const Login = () => {
                                         fill="currentColor"
                                     />
                                 </svg>
-                                {t('loginWithGoogle')}
+                                {t('registerWithGoogle')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -231,7 +218,7 @@ const Login = () => {
                                         fill="currentColor"
                                     />
                                 </svg>
-                                {t('loginWithGithub')}
+                                {t('registerWithGithub')}
                             </Button>
                         </div>
 
@@ -247,7 +234,24 @@ const Login = () => {
                         </div>
 
                         <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onLoginSubmit)} className="space-y-4">
+                            <form onSubmit={form.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('nameLabel')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder={t('namePlaceholder')}
+                                                    className="h-11 px-4 focus:border-purple-500 focus:ring-purple-500/20"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <FormField
                                     control={form.control}
                                     name="email"
@@ -270,19 +274,29 @@ const Login = () => {
                                     name="password"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <div className="flex items-center justify-between">
-                                                <FormLabel>{t('passwordLabel')}</FormLabel>
-                                                <a
-                                                    href="#"
-                                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline-offset-4 hover:underline"
-                                                >
-                                                    {t('forgotPassword')}
-                                                </a>
-                                            </div>
+                                            <FormLabel>{t('passwordLabel')}</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     type="password"
                                                     placeholder={t('passwordPlaceholder')}
+                                                    className="h-11 px-4 focus:border-purple-500 focus:ring-purple-500/20"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="confirmPassword"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('confirmPasswordLabel')}</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="password"
+                                                    placeholder={t('confirmPasswordPlaceholder')}
                                                     className="h-11 px-4 focus:border-purple-500 focus:ring-purple-500/20"
                                                     {...field}
                                                 />
@@ -296,15 +310,15 @@ const Login = () => {
                                     className="w-full h-11 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all"
                                     disabled={loading}
                                 >
-                                    {t('login')}
+                                    {t('register')}
                                 </Button>
                             </form>
                         </Form>
 
                         <div className="text-center text-sm">
-                            <span className="text-muted-foreground">{t('noAccount')}</span>{" "}
-                            <a href="/register" className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline underline-offset-4">
-                                {t('signUp')}
+                            <span className="text-muted-foreground">{t('hasAccount')}</span>{" "}
+                            <a href="/login" className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline underline-offset-4">
+                                {t('login')}
                             </a>
                         </div>
                     </CardContent>
@@ -314,4 +328,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default Register;

@@ -1,0 +1,413 @@
+{
+    "common": {
+        "delete": "حذف",
+        "deleteModalTitle": "هل أنت متأكد أنك تريد الحذف؟",
+        "ok": "موافق",
+        "cancel": "إلغاء",
+        "total": "المجموع",
+        "rename": "إعادة تسمية",
+        "name": "الاسم",
+        "save": "حفظ",
+        "namePlaceholder": "الرجاء إدخال اسم",
+        "next": "التالي",
+        "create": "إنشاء",
+        "edit": "تعديل",
+        "upload": "رفع",
+        "english": "الإنجليزية",
+        "chinese": "الصينية المبسطة",
+        "language": "اللغة",
+        "languageMessage": "الرجاء اختيار لغة!",
+        "languagePlaceholder": "اختر لغة",
+        "copy": "نسخ",
+        "copied": "تم النسخ",
+        "comingSoon": "قريبًا",
+        "download": "تنزيل",
+        "close": "إغلاق",
+        "preview": "معاينة",
+        "move": "نقل",
+        "warn": "تحذير",
+        "action": "إجراء",
+        "pleaseSelect": "الرجاء الاختيار",
+        "pleaseInput": "الرجاء الإدخال",
+        "submit": "إرسال"
+    },
+    "nav": {
+        "knowledgeBase": "قاعدة المعرفة",
+        "chat": "المحادثة",
+        "search": "البحث",
+        "research": "البحث العلمي",
+        "fileManagement": "إدارة الملفات",
+        "development-tools": "أدوات التطوير"
+    },
+    "home": {
+        "title": "DeepMed Search",
+        "subtitle": "مساعدك الذكي لمعالجة الوثائق الطبية، يجعل معالجة المستندات أبسط وأكثر كفاءة",
+        "getStarted": "البدء",
+        "viewDocs": "عرض المستندات",
+        "features": {
+            "title": "الميزات الأساسية",
+            "documentProcessing": {
+                "title": "معالجة ذكية للوثائق الطبية",
+                "description": "يدعم تنسيقات مستندات متعددة، ويحدد ويستخرج المعلومات الرئيسية تلقائيًا"
+            },
+            "documentQA": {
+                "title": "أسئلة وأجوبة ذكية للوثائق الطبية",
+                "description": "يحلل محتوى المستند ويوفر أسئلة وأجوبة ذكية لأي تنسيق مستند"
+            },
+            "quickConversion": {
+                "title": "تحويل سريع",
+                "description": "تحويل تنسيق المستند بنقرة واحدة، مع الحفاظ على التنسيق والنمط الأصليين"
+            },
+            "dataAnalysis": {
+                "title": "تحليل البيانات",
+                "description": "يحلل محتوى المستند بذكاء وينشئ تقارير تصور البيانات"
+            }
+        },
+        "cta": {
+            "title": "هل أنت مستعد للبدء؟",
+            "subtitle": "انضم إلينا لتجربة مستقبل معالجة المستندات الطبية الذكية",
+            "register": "سجل الآن"
+        }
+    },
+    "knowledgeBase": {
+        "title": "قاعدة المعرفة",
+        "create": "إنشاء قاعدة معرفة",
+        "import": "استيراد قاعدة معرفة",
+        "export": "تصدير قاعدة معرفة",
+        "delete": "حذف قاعدة المعرفة",
+        "edit": "تعديل قاعدة المعرفة",
+        "name": "اسم قاعدة المعرفة",
+        "description": "ما هي قاعدة المعرفة التي ترغب في استخدامها اليوم؟",
+        "documents": "المستندات",
+        "createTime": "تم الإنشاء في",
+        "updateTime": "تم التحديث في",
+        "creator": "المنشئ",
+        "status": "الحالة",
+        "action": "الإجراء",
+        "createSuccess": "تم الإنشاء بنجاح",
+        "createError": "فشل الإنشاء",
+        "deleteSuccess": "تم الحذف بنجاح",
+        "deleteError": "فشل الحذف",
+        "editSuccess": "تم التعديل بنجاح",
+        "editError": "فشل التعديل",
+        "namePlaceholder": "الرجاء إدخال اسم قاعدة المعرفة",
+        "descriptionPlaceholder": "الرجاء إدخال وصف قاعدة المعرفة",
+        "createKnowledgeBase": "إنشاء قاعدة معرفة جديدة",
+        "createKnowledgeBaseDescription": "إنشاء قاعدة معرفة جديدة لإدارة مستنداتك",
+        "createdAt": "تم الإنشاء في",
+        "updatedAt": "تم التحديث في",
+        "confirmDelete": "تأكيد الحذف",
+        "confirm": "تأكيد",
+        "welcome": "مرحبًا بعودتك",
+        "guest": "ضيف",
+        "searchKnowledgePlaceholder": "بحث في قاعدة المعرفة",
+        "noData": "لا توجد بيانات متاحة",
+        "noMoreData": "لا توجد المزيد من البيانات",
+        "documentTable": "قائمة المستندات",
+        "table": {
+            "documentName": "اسم المستند",
+            "documentUploadDate": "تاريخ الرفع",
+            "documentType": "نوع المستند",
+            "delete": "حذف",
+            "documentSize": "حجم المستند",
+            "documentUploader": "رافع المستند",
+            "documentAction": "إجراء الملف",
+            "noResults": "لا توجد بيانات متاحة",
+            "documentProcessStage": "مرحلة معالجة الملف",
+            "documentChunkMethod": "طريقة التقسيم",
+            "documentChunkNum": "عدد الأجزاء",
+            "documentWordCount": "عدد الكلمات",
+            "selected": "محدد",
+            "total": "المجموع",
+            "page": "صفحة",
+            "enabled": "مفعّل",
+            "totalPages": "إجمالي الصفحات",
+            "currentPage": "الصفحة الحالية",
+            "convertToMarkdown": "تحويل",
+            "documentProcessingStatus": {
+                "title": "حالة المعالجة",
+                "converting": "جاري التحويل",
+                "successed": "تمت المعالجة بنجاح",
+                "failed": "فشلت المعالجة",
+                "error": "خطأ",
+                "indexing": "جاري الفهرسة"
+            },
+            "documentEnable": "تفعيل",
+            "viewDetails": "عرض التفاصيل"
+        },
+        "settings": {
+            "title": "الإعدادات",
+            "basicTitle": "الإعدادات الأساسية",
+            "advancedTitle": "الإعدادات المتقدمة"
+        },
+        "languages": {
+            "zh": "الصينية المبسطة",
+            "en": "الإنجليزية",
+            "ja": "اليابانية",
+            "ar": "العربية",
+            "ko": "الكورية",
+            "fr": "الفرنسية"
+        },
+        "validation": {
+            "nameRequired": "الرجاء إدخال اسم قاعدة المعرفة",
+            "languageRequired": "الرجاء اختيار لغة",
+            "parserRequired": "الرجاء اختيار طريقة التقسيم"
+        },
+        "form": {
+            "name": "اسم قاعدة المعرفة",
+            "namePlaceholder": "الرجاء إدخال اسم قاعدة المعرفة",
+            "nameDescription": "سيكون هذا المعرف الفريد لقاعدة المعرفة الخاصة بك",
+            "description": "الوصف",
+            "descriptionPlaceholder": "الرجاء إدخال وصف قاعدة المعرفة",
+            "descriptionDescription": "وصف موجز لغرض قاعدة المعرفة هذه",
+            "language": "اللغة",
+            "languagePlaceholder": "اختر لغة قاعدة المعرفة",
+            "languageDescription": "اختر اللغة الأساسية لقاعدة المعرفة",
+            "saveSettings": "حفظ الإعدادات",
+            "chunkSize": "حجم الجزء",
+            "chunkSizeDescription": "تعيين الحد الأقصى لعدد الأحرف لكل جزء نصي",
+            "chunkOverlap": "تداخل الأجزاء",
+            "chunkOverlapDescription": "تعيين عدد الأحرف المتداخلة بين أجزاء النص المتجاورة",
+            "separator": "الفاصل",
+            "separatorPlaceholder": "أدخل فاصلًا مخصصًا",
+            "separatorDescription": "فاصل مخصص لتقسيم النص (اختياري)",
+            "customRules": "قواعد مخصصة",
+            "customRulesPlaceholder": "أدخل قواعد تقسيم مخصصة",
+            "customRulesDescription": "أدخل قواعد تقسيم نص مخصصة (اختياري)",
+            "applyBasicSettings": "تطبيق الإعدادات الأساسية",
+            "applyAdvancedSettings": "تطبيق الإعدادات المتقدمة",
+            "applySettings": "تطبيق الإعدادات"
+        },
+        "searchFiles": "بحث عن الملفات",
+        "noDatasetId": "معرف مجموعة البيانات غير موجود",
+        "uploadDate": "تاريخ الرفع",
+        "chunkMethod": "طريقة التقسيم",
+        "selectChunkMethod": "اختر طريقة التقسيم",
+        "parsingStatus": "حالة التحليل",
+        "noResults": "لا توجد بيانات متاحة",
+        "processChunks": "معالجة الأجزاء",
+        "processing": "قيد المعالجة",
+        "error": "خطأ",
+        "completed": "مكتمل",
+        "processingError": "خطأ في المعالجة",
+        "changeChunkMethod": "تغيير طريقة التقسيم",
+        "rename": "إعادة تسمية",
+        "fileStatus": {
+            "title": "حالة الملف",
+            "processing": "قيد المعالجة",
+            "error": "خطأ",
+            "success": "نجاح",
+            "pending": "قيد الانتظار"
+        },
+        "options": {
+            "title": "الإجراءات",
+            "delete": "حذف",
+            "changeChunkMethod": "تغيير طريقة التقسيم",
+            "rename": "إعادة تسمية",
+            "copyId": "نسخ المعرف"
+        },
+        "docParser": {
+            "methodTitle": "التكوين",
+            "presentation": "عرض تقديمي",
+            "methodExamples": "أمثلة",
+            "methodExamplesDescription": "أمثلة",
+            "dialogueExamplesTitle": "أمثلة",
+            "methodEmpty": "افتراضي",
+            "book": "كتاب",
+            "laws": "قوانين",
+            "manual": "دليل",
+            "picture": "صورة",
+            "paper": "ورقة بحثية",
+            "resume": "سيرة ذاتية",
+            "table": "جدول",
+            "one": "مستند واحد",
+            "knowledgeGraph": "رسم بياني للمعرفة"
+        }
+    },
+    "chunks": {
+        "totalChunks": "إجمالي الأجزاء",
+        "totalTokens": "إجمالي التوكنز",
+        "chunks": "محتوى الجزء",
+        "original": "المحتوى الأصلي",
+        "preview": "معاينة المستند",
+        "chunk": "جزء",
+        "tokens": "عدد التوكنز",
+        "noContent": "لا يوجد محتوى متاح",
+        "noPreview": "لا تتوفر معاينة",
+        "previewNotSupported": "المعاينة غير مدعومة لهذا النوع من الملفات",
+        "noChunks": "لا يوجد محتوى جزء متاح",
+        "updateSuccess": "تم تحديث الحالة بنجاح",
+        "updateError": "فشل تحديث الحالة",
+        "fetchError": "فشل في جلب بيانات الجزء"
+    },
+    "login": {
+        "title": "DeepMed Search",
+        "description": "مساعد وثائق طبية ذكي متكامل مع RAG+Search، يجعل معالجة المستندات أبسط وأكثر كفاءة",
+        "features": {
+            "ai": {
+                "title": "مدعوم بالذكاء الاصطناعي",
+                "description": "تقنية تعلم آلي متقدمة للغاية لمعالجة دقيقة"
+            },
+            "security": {
+                "title": "آمن",
+                "description": "أمان وتشفير على مستوى المؤسسات"
+            },
+            "speed": {
+                "title": "سريع",
+                "description": "معالجة فائقة السرعة وأوقات استجابة سريعة"
+            },
+            "reliability": {
+                "title": "موثوق",
+                "description": "وقت تشغيل بنسبة 99.9% واتساق"
+            }
+        },
+        "form": {
+            "title": "تسجيل الدخول",
+            "description": "مرحبًا بعودتك، يرجى تسجيل الدخول إلى حسابك",
+            "googleSignIn": "المتابعة باستخدام Google",
+            "githubSignIn": "المتابعة باستخدام GitHub",
+            "orContinueWith": "أو المتابعة باستخدام",
+            "emailLabel": "البريد الإلكتروني",
+            "emailPlaceholder": "الرجاء إدخال بريدك الإلكتروني",
+            "passwordLabel": "كلمة المرور",
+            "passwordPlaceholder": "الرجاء إدخال كلمة المرور",
+            "forgotPassword": "نسيت كلمة المرور؟",
+            "submit": "تسجيل الدخول",
+            "noAccount": "ليس لديك حساب؟",
+            "signUp": "التسجيل"
+        },
+        "errors": {
+            "loginFailed": "فشل تسجيل الدخول"
+        },
+        "login": "تسجيل الدخول",
+        "loginDescription": "مرحبًا بعودتك! يرجى تسجيل الدخول إلى حسابك.",
+        "loginWithGoogle": "تسجيل الدخول باستخدام Google",
+        "loginWithGithub": "تسجيل الدخول باستخدام GitHub",
+        "orContinueWith": "أو المتابعة باستخدام",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "الرجاء إدخال بريدك الإلكتروني",
+        "passwordLabel": "كلمة المرور",
+        "passwordPlaceholder": "الرجاء إدخال كلمة المرور",
+        "forgotPassword": "نسيت كلمة المرور؟",
+        "noAccount": "ليس لديك حساب؟",
+        "signUp": "التسجيل"
+    },
+    "register": {
+        "title": "إنشاء حساب",
+        "description": "أنشئ حسابك للبدء في استخدام DeepMed Search",
+        "registerWithGoogle": "التسجيل باستخدام Google",
+        "registerWithGithub": "التسجيل باستخدام Github",
+        "nameLabel": "اسم المستخدم",
+        "namePlaceholder": "الرجاء إدخال اسم المستخدم الخاص بك",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "الرجاء إدخال بريدك الإلكتروني",
+        "passwordLabel": "كلمة المرور",
+        "passwordPlaceholder": "الرجاء إدخال كلمة المرور",
+        "registerDescription": "ابدأ استخدام DeepMed Search!",
+        "confirmPasswordLabel": "تأكيد كلمة المرور",
+        "confirmPasswordPlaceholder": "الرجاء إدخال كلمة المرور مرة أخرى",
+        "register": "تسجيل",
+        "orContinueWith": "أو المتابعة باستخدام",
+        "hasAccount": "هل لديك حساب بالفعل؟",
+        "login": "تسجيل الدخول",
+        "errors": {
+            "registerFailed": "فشل التسجيل",
+            "passwordsNotMatch": "كلمات المرور غير متطابقة",
+            "userExists": "المستخدم موجود بالفعل"
+        },
+        "success": {
+            "registerSuccess": "تم التسجيل بنجاح"
+        }
+    },
+    "search": {
+        "title": "بحث المعرفة",
+        "searchPlaceholder": "بحث...",
+        "searchDescription": "البحث في المستندات وقواعد المعرفة وما إلى ذلك",
+        "searchResults": "نتائج البحث",
+        "noResults": "لا توجد نتائج بحث"
+    },
+    "upload": {
+        "uploadFile": "رفع ملف",
+        "uploading": "جاري الرفع",
+        "uploadDescription": "يدعم رفع PDF، Word، Excel، PPT، الصور، والمزيد",
+        "dragAndDrop": "اسحب وأفلت الملفات هنا",
+        "supportedFormats": "أو انقر للاختيار",
+        "or": "أو",
+        "selectFile": "اختر ملف",
+        "cancel": "إلغاء",
+        "upload": "رفع",
+        "error": "خطأ",
+        "pleaseSelectFile": "الرجاء اختيار ملف",
+        "uploadSuccess": "تم الرفع بنجاح",
+        "uploadFailed": "فشل الرفع"
+    },
+    "chat": {
+        "title": "المحادثة",
+        "searchPlaceholder": "البحث في المحادثات...",
+        "messagePlaceholder": "اكتب رسالة...",
+        "send": "إرسال",
+        "currentChat": "المحادثة الحالية",
+        "newChat": "محادثة جديدة",
+        "startNewChat": "بدء محادثة جديدة...",
+        "createSuccess": "تم الإنشاء بنجاح",
+        "justNow": "الآن فقط",
+        "delete": "حذف",
+        "more": "المزيد",
+        "cancel": "إلغاء",
+        "noDescription": "لا يوجد وصف",
+        "noConversations": "لا توجد محادثات حتى الآن.",
+        "createChatTitle": "إنشاء محادثة جديدة",
+        "createChatDescription": "أعط اسمًا لجلسة المحادثة الجديدة.",
+        "chatNameLabel": "الاسم",
+        "chatNamePlaceholder": "مثال: مناقشة المشروع",
+        "cancelButton": "إلغاء",
+        "createButton": "إنشاء",
+        "cancelStream": "إلغاء الإرسال",
+        "think": "تفكير",
+        "thinkingMode": "تفكير عميق",
+        "thinkingPlaceholder": "سأفكر في الأمر قبل الإجابة على سؤالك",
+        "deleteAllDialogTitle": "حذف كل المحادثات",
+        "deleteAllDialogDescription": "سيؤدي هذا إلى حذف كل سجل المحادثة، بما في ذلك الرسائل غير المرسلة.",
+        "validation": {
+            "chatNameRequired": "الرجاء إدخال اسم المحادثة"
+        },
+        "deleteCancelText": "إلغاء الحذف",
+        "deleteConfirmText": "تأكيد الحذف",
+        "errors": {
+            "sendMessageFailed": "فشل إرسال الرسالة",
+            "dialogNotFound": "المحادثة غير موجودة أو تم حذفها",
+            "deleteFailed": "فشل الحذف، يرجى المحاولة مرة أخرى لاحقًا"
+        },
+        "welcomeTitle": "كيف يمكنني مساعدتك اليوم؟",
+        "startTypingPrompt": "أرسل رسالة لبدء محادثة جديدة.",
+        "examples": {
+            "heading": "أمثلة",
+            "title1": "شرح المفاهيم الطبية",
+            "prompt1": "اشرح باختصار ما هو تحرير الجينات",
+            "title2": "نصائح صحية",
+            "prompt2": "قدم قائمة بنصائح عملية لتحسين جودة النوم"
+        },
+        "capabilities": {
+            "heading": "القدرات",
+            "title1": "تذكر المحادثات السابقة",
+            "desc1": "يمكنني تذكر المواضيع الطبية التي ناقشناها سابقًا في هذه الجلسة",
+            "title2": "تقديم تصحيحات المتابعة",
+            "desc2": "يسمح للمستخدمين بتصحيح أو طرح المزيد من الأسئلة بناءً على إجاباتي الطبية"
+        },
+        "limitations": {
+            "heading": "القيود",
+            "title1": "قد ينتج معلومات غير دقيقة",
+            "desc1": "قد أقدم أحيانًا معلومات طبية غير صحيحة أو مضللة",
+            "title2": "قيود المعرفة الطبية",
+            "desc2": "معرفتي بالتطورات والأبحاث الطبية بعد عام 2023 محدودة"
+        },
+        "deleteDialogTitle": "حذف المحادثة",
+        "deleteDialogDescription": "هل أنت متأكد أنك تريد حذف هذه المحادثة؟ لا يمكن التراجع عن هذا الإجراء.",
+        "deleteSuccess": "تم حذف المحادثة",
+        "deleteError": "فشل حذف المحادثة",
+        "knowledgeBaseLabel": "قاعدة المعرفة",
+        "selectKnowledgeBase": "اختر قاعدة المعرفة",
+        "noKnowledgeBase": "عدم استخدام قاعدة المعرفة"
+    }
+}
+</rewritten_file>

@@ -125,9 +125,7 @@ PostgreSQL服务会自动初始化并支持向量搜索和中文分词。初始�
 -   **PostgreSQL**: `localhost:5432` (User: `postgres`, Pass: `postgres`, DB: `deepmed`)
 -   **MinIO**: API: `localhost:9000`, Console: `localhost:9001` (User: `minioadmin`, Pass: `minioadmin`)
 -   **Redis**: `localhost:6379` (if used)
-
-*(Remove Milvus/Attu if not used)*
-
+  
 ### Development Environment Setup
 
 1.  Install dependencies:
@@ -374,8 +372,7 @@ PostgreSQL服务会自动初始化并支持向量搜索和中文分词。初始�
 -   **PostgreSQL**: `localhost:5432` (用户: `postgres`, 密码: `postgres`, 数据库: `deepmed`)
 -   **MinIO**: API: `localhost:9000`, 控制台: `localhost:9001` (用户: `minioadmin`, 密码: `minioadmin`)（如果使用MinIO存储文件）
 -   **Redis**: `localhost:6379` (如果使用)
-
-*(如果未使用 Milvus/Attu，请移除相关信息)*
+ 
 
 ### 开发环境设置
 

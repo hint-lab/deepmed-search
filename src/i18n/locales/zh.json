@@ -143,7 +143,10 @@
         "languages": {
             "zh": "简体中文",
             "en": "英语",
-            "ja": "日语"
+            "ja": "日语",
+            "ar": "阿拉伯语",
+            "ko": "韩语",
+            "fr": "法语"
         },
         "validation": {
             "nameRequired": "请输入知识库名称",
@@ -288,6 +291,33 @@
         "forgotPassword": "忘记密码？",
         "noAccount": "没有账号？",
         "signUp": "注册"
+    },
+    "register": {
+        "title": "创建账号",
+        "description": "创建您的账号开始使用DeepMed Search",
+        "registerWithGoogle": "使用Google注册",
+        "registerWithGithub": "使用Github注册",
+        "nameLabel": "用户名",
+        "namePlaceholder": "请输入您的用户名",
+        "emailLabel": "邮箱",
+        "emailPlaceholder": "请输入邮箱",
+        "passwordLabel": "密码",
+        "registerDescription": "欢迎使用DeepMed Search！",
+        "passwordPlaceholder": "请输入密码",
+        "confirmPasswordLabel": "确认密码",
+        "confirmPasswordPlaceholder": "请再次输入密码",
+        "register": "注册",
+        "orContinueWith": "或继续使用",
+        "hasAccount": "已有账号？",
+        "login": "登录",
+        "errors": {
+            "registerFailed": "注册失败",
+            "passwordsNotMatch": "两次输入的密码不一致",
+            "userExists": "该用户已存在"
+        },
+        "success": {
+            "registerSuccess": "注册成功"
+        }
     },
     "search": {
         "title": "知识搜索",
