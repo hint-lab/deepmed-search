@@ -108,7 +108,7 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
             );
 
             if (result.success) {
-                toast.success(t('processingTaskStarted', '处理任务已启动'));
+                toast.success(t('processingTaskStarted', '处理任务已完成'));
                 startPolling();
             } else {
                 setStatus(IDocumentProcessingStatus.FAILED);

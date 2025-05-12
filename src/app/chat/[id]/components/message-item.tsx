@@ -10,6 +10,8 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Brain, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import ReactDOM from 'react-dom';
+import { ReactElement, ReactNode } from 'react';
 
 interface ChatMessageItemProps {
     message: IMessage,
@@ -39,6 +41,7 @@ function ChatMessageItem({
     const [showReasoning, setShowReasoning] = useState(true);
     const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
     const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
+    const [forceUpdate, setForceUpdate] = useState(0); // 强制更新计数器
 
     const normalizedRole =
         message.role === MessageType.User || message.role === 'reason'
@@ -64,10 +67,6 @@ function ChatMessageItem({
     const messageId = message.id;
     const timestamp = createdAt ? dayjs(createdAt).format('HH:mm') : '--:--';
 
-    useEffect(() => {
-        console.log("message.metadata", message.metadata)
-    }, [])
-
     const toggleExpand = (idx: number) => {
         setExpandedIndexes(prev =>
             prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
@@ -77,86 +76,199 @@ function ChatMessageItem({
     const renderMessage = (msg: IMessage): React.ReactNode => {
         if (!msg.metadata?.references) return msg.content;
 
-        // 用正则表达式找出所有引用标记 [1], [2] 等
-        const content = msg.content;
-        const parts = [];
-        let lastIndex = 0;
+        // 创建一个正则表达式，匹配所有引用
+        const refRegex = /\[(\d+)\]/g;
+
+        // 预处理内容，记录所有引用
+        const references: { id: number, index: number }[] = [];
         let match;
+        const content = msg.content;
+        while ((match = refRegex.exec(content)) !== null) {
+            references.push({
+                id: parseInt(match[1]),
+                index: match.index
+            });
+        }
 
-        // 正则表达式匹配 [数字] 形式的引用
-        const regex = /\[(\d+)\]/g;
+        // 自定义组件渲染
+        const ReferenceComponent = ({ children, ...props }: any) => {
+            // 检查文本是否是引用格式
+            const text = children.toString();
+            const match = text.match(/^\[(\d+)\]$/);
 
-        while ((match = regex.exec(content)) !== null) {
-            // 添加引用标记前的文本
-            if (match.index > lastIndex) {
-                parts.push(content.substring(lastIndex, match.index));
+            if (match) {
+                const refNum = parseInt(match[1]);
+
+                // 尝试查找对应的引用
+                let reference = msg.metadata?.references?.find(
+                    (r: Reference) => r.reference_id === refNum
+                );
+
+                // 如果找不到，尝试使用索引
+                if (!reference && refNum > 0 && msg.metadata?.references && refNum <= msg.metadata.references.length) {
+                    reference = msg.metadata.references[refNum - 1];
+                }
+
+                // 如果找到引用，返回可点击的链接
+                return (
+                    <span className="inline-flex items-center whitespace-nowrap">
+                        <a
+                            href="#"
+                            className="inline-flex items-center text-blue-500 hover:text-blue-700 cursor-pointer px-1 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 mx-0.5"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                if (reference) {
+                                    setSelectedReference(reference);
+                                    setForceUpdate(prev => prev + 1);
+                                } else if (msg.metadata?.references && msg.metadata.references.length > 0) {
+                                    setSelectedReference(msg.metadata.references[0]);
+                                    setForceUpdate(prev => prev + 1);
+                                }
+                            }}
+                        >
+                            <span className="h-2 w-2 rounded-full bg-blue-500 mr-1"></span>
+                            <span className="text-xs font-medium">{match[1]}</span>
+                        </a>
+                    </span>
+                );
             }
 
-            // 找到对应的引用
-            const refId = parseInt(match[1]);
-            const reference = msg.metadata.references.find(
-                (r: Reference) => r.reference_id === refId
-            );
+            // 如果不是引用，直接返回原始内容
+            return <span>{children}</span>;
+        };
 
-            // 添加可点击的引用标记
-            parts.push(
-                <a
-                    key={`ref-${refId}-${match.index}`}
-                    href="#"
-                    className="text-blue-500 underline cursor-pointer"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        if (reference) {
-                            setSelectedReference(reference);
+        return (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                    components={{
+                        p: ({ children, ...props }) => (
+                            <p {...props}>{children}</p>
+                        ),
+                        a: (props) => (
+                            <a {...props} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer" />
+                        ),
+                        // 处理文本并找出引用
+                        text: ({ children }) => {
+                            if (typeof children !== 'string') return <>{children}</>;
+
+                            const text = children as string;
+                            const parts = [];
+                            let lastIndex = 0;
+                            let currentMatch;
+
+                            // 在文本中查找所有引用
+                            const regex = /\[(\d+)\]/g;
+                            while ((currentMatch = regex.exec(text)) !== null) {
+                                // 添加引用前的文本
+                                if (currentMatch.index > lastIndex) {
+                                    parts.push(text.substring(lastIndex, currentMatch.index));
+                                }
+
+                                // 获取引用编号
+                                const refId = parseInt(currentMatch[1]);
+
+                                // 尝试查找引用
+                                let reference = msg.metadata?.references?.find(
+                                    (r: Reference) => r.reference_id === refId
+                                );
+
+                                // 如果找不到，尝试使用索引
+                                if (!reference && refId > 0 && msg.metadata?.references && refId <= msg.metadata.references.length) {
+                                    reference = msg.metadata.references[refId - 1];
+                                }
+
+                                // 添加引用链接
+                                parts.push(
+                                    <span key={`ref-${refId}-${currentMatch.index}`} className="inline-flex items-center whitespace-nowrap">
+                                        <a
+                                            href="#"
+                                            className="inline-flex items-center text-blue-500 hover:text-blue-700 cursor-pointer px-1 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 mx-0.5"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+
+                                                if (reference) {
+                                                    setSelectedReference(reference);
+                                                    setForceUpdate(prev => prev + 1);
+                                                } else if (msg.metadata?.references && msg.metadata.references.length > 0) {
+                                                    setSelectedReference(msg.metadata.references[0]);
+                                                    setForceUpdate(prev => prev + 1);
+                                                }
+                                            }}
+                                        >
+                                            <span className="h-2 w-2 rounded-full bg-blue-500 mr-1"></span>
+                                            <span className="text-xs font-medium">{currentMatch[1]}</span>
+                                        </a>
+                                    </span>
+                                );
+
+                                lastIndex = currentMatch.index + currentMatch[0].length;
+                            }
+
+                            // 添加最后剩余的文本
+                            if (lastIndex < text.length) {
+                                parts.push(text.substring(lastIndex));
+                            }
+
+                            return <>{parts}</>;
                         }
                     }}
                 >
-                    [{match[1]}]
-                </a>
-            );
-
-            lastIndex = match.index + match[0].length;
-        }
-
-        // 添加剩余的文本
-        if (lastIndex < content.length) {
-            parts.push(content.substring(lastIndex));
-        }
-
-        // 返回包含文本和可点击引用的混合内容
-        return (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-                {parts.map((part, index) =>
-                    typeof part === 'string' ?
-                        <ReactMarkdown key={`text-${index}`}>{part}</ReactMarkdown> :
-                        part
-                )}
+                    {content}
+                </ReactMarkdown>
             </div>
         );
     };
 
-    // 处理引用点击
-    const handleReferenceClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        const target = e.target as HTMLElement;
-        if (target.classList.contains('reference')) {
-            const refId = target.dataset.refId;
-            if (!refId || !message.metadata?.references) return;
-
-            const reference = message.metadata.references.find((r: Reference) =>
-                r.reference_id === parseInt(refId)
-            );
-
-            if (reference) {
-                // 显示引用详情
-                setSelectedReference(reference);
-            }
+    // 计算相似度分数的函数
+    const getSimilarityScore = (chunk: any): string => {
+        // 首先检查是否有自定义属性similarity
+        if (chunk.similarity !== undefined && chunk.similarity !== null) {
+            const simNum = typeof chunk.similarity === 'string' ? parseFloat(chunk.similarity) : Number(chunk.similarity);
+            if (!isNaN(simNum)) return simNum.toFixed(3);
         }
+
+        // 然后检查标准属性distance
+        if (chunk.distance !== undefined && chunk.distance !== null) {
+            const distNum = typeof chunk.distance === 'string' ? parseFloat(chunk.distance) : Number(chunk.distance);
+            if (!isNaN(distNum)) return (1 - distNum).toFixed(3);
+        }
+
+        return '无数据';
     };
 
-    // 显示引用详情的函数
-    const showReferenceDetail = (reference: Reference) => {
-        setSelectedReference(reference);
-        // 如果需要额外的显示逻辑，可以在这里添加
+    // 获取排序键
+    const getSortKey = (chunk: any): number => {
+        if (chunk.similarity !== undefined && chunk.similarity !== null) {
+            const simNum = typeof chunk.similarity === 'string' ? parseFloat(chunk.similarity) : Number(chunk.similarity);
+            if (!isNaN(simNum)) return -simNum; // 相似度越高排序越靠前，所以用负值
+        }
+
+        if (chunk.distance !== undefined && chunk.distance !== null) {
+            const distNum = typeof chunk.distance === 'string' ? parseFloat(chunk.distance) : Number(chunk.distance);
+            if (!isNaN(distNum)) return distNum; // 距离越小排序越靠前
+        }
+
+        return 1; // 默认值
+    };
+
+    // 计算进度条宽度
+    const getSimilarityWidth = (chunk: any): string => {
+        // 首先检查是否有自定义属性similarity
+        if (chunk.similarity !== undefined && chunk.similarity !== null) {
+            const simNum = typeof chunk.similarity === 'string' ? parseFloat(chunk.similarity) : Number(chunk.similarity);
+            if (!isNaN(simNum)) return `${Math.max(5, simNum * 100)}%`;
+        }
+
+        // 然后检查标准属性distance
+        if (chunk.distance !== undefined && chunk.distance !== null) {
+            const distNum = typeof chunk.distance === 'string' ? parseFloat(chunk.distance) : Number(chunk.distance);
+            if (!isNaN(distNum)) return `${Math.max(5, (1 - distNum) * 100)}%`;
+        }
+
+        return '5%'; // 默认值
     };
 
     return (
@@ -255,18 +367,23 @@ function ChatMessageItem({
                         )}
 
                         {message.role !== 'reason' && (
-                            <div className={cn(
-                                "prose prose-sm dark:prose-invert max-w-none",
-                                isStreaming && !isUser && "animate-blinking-cursor"
-                            )}>
-                                {message.metadata?.references ?
-                                    renderMessage(message)
-                                    : (
-                                        <ReactMarkdown>
-                                            {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
-                                        </ReactMarkdown>
+                            <>
+
+                                <div
+                                    className={cn(
+                                        "prose prose-sm dark:prose-invert max-w-none",
+                                        isStreaming && !isUser && "animate-blinking-cursor"
                                     )}
-                            </div>
+                                >
+                                    {message.metadata?.references ?
+                                        renderMessage(message)
+                                        : (
+                                            <ReactMarkdown>
+                                                {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
+                                            </ReactMarkdown>
+                                        )}
+                                </div>
+                            </>
                         )}
                         {message.metadata?.kbChunks && (
                             <div className="mt-2 text-xs text-gray-500">
@@ -274,39 +391,69 @@ function ChatMessageItem({
                                     <summary className="cursor-pointer font-medium transition-colors hover:text-blue-500">
                                         来源：{message.metadata.kbName}（{message.metadata.kbChunks.length} 个片段）
                                     </summary>
+                                    <div className="flex justify-between items-center text-xs text-gray-400 mt-1 mb-2 px-1">
+                                        <span>以下片段按相似度从高到低排序</span>
+                                        <span>相似度范围：0～1（越高越相关）</span>
+                                    </div>
                                     <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
-                                        {message.metadata.kbChunks.map((chunk, i) => {
-                                            const expanded = expandedIndexes.includes(i);
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    id={`kb-ref-${i + 1}`}
-                                                    className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md hover:border-l-6 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
-                                                    onClick={() => toggleExpand(i)}
-                                                >
-                                                    <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
-                                                        {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
-                                                        <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? '收起' : '展开'}</span>
-                                                    </div>
-                                                    <div className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}>
-                                                        <ReactMarkdown
-                                                            components={{
-                                                                a: ({ node, ...props }) => (
-                                                                    <a
-                                                                        {...props}
-                                                                        className="text-blue-600 underline break-all"
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                    />
-                                                                ),
+                                        {message.metadata.kbChunks
+                                            .slice()
+                                            .sort((a, b) => getSortKey(a) - getSortKey(b))
+                                            .map((chunk, i) => {
+                                                const expanded = expandedIndexes.includes(i);
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        id={`kb-ref-${i + 1}`}
+                                                        className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md hover:border-l-6 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
+                                                    >
+                                                        <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
+                                                            <span onClick={() => toggleExpand(i)} className="flex-grow cursor-pointer">
+                                                                {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
+                                                                <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? '收起' : '展开'}</span>
+                                                            </span>
+                                                            <span className="ml-auto px-2 py-0.5 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
+                                                                相似度: {getSimilarityScore(chunk)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
+                                                            <div
+                                                                className="h-1 bg-blue-500 rounded-full"
+                                                                style={{
+                                                                    width: getSimilarityWidth(chunk)
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                        <div
+                                                            className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}
+                                                            onClick={(e) => {
+                                                                // 仅当点击的不是链接时才展开/折叠
+                                                                if ((e.target as HTMLElement).tagName !== 'A') {
+                                                                    toggleExpand(i);
+                                                                }
                                                             }}
                                                         >
-                                                            {typeof chunk.content === 'string' ? chunk.content : ''}
-                                                        </ReactMarkdown>
+                                                            <ReactMarkdown
+                                                                components={{
+                                                                    a: ({ node, ...props }) => (
+                                                                        <a
+                                                                            {...props}
+                                                                            className="text-blue-600 underline break-all"
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation(); // 阻止冒泡，防止触发外层div的点击事件
+                                                                            }}
+                                                                        />
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {typeof chunk.content === 'string' ? chunk.content : ''}
+                                                            </ReactMarkdown>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
                                     </div>
                                 </details>
                             </div>
@@ -322,23 +469,44 @@ function ChatMessageItem({
                 </Avatar>
             )}
 
-            {/* 引用详情弹窗 */}
-            {selectedReference && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedReference(null)}>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold">引用详情</h3>
-                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setSelectedReference(null)}>
-                                关闭
+            {/* 引用详情弹窗 - 使用创建DOM元素的方式 */}
+            {selectedReference && ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    onClick={() => setSelectedReference(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
+                                引用详情 {selectedReference.reference_id && `[${selectedReference.reference_id}]`}
+                            </h3>
+                            <button
+                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() => setSelectedReference(null)}
+                                aria-label="关闭"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
                             </button>
                         </div>
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                        {selectedReference.doc_name && (
+                            <div className="mb-2 text-sm text-gray-600 dark:text-gray-300">
+                                <strong>来源:</strong> {selectedReference.doc_name}
+                            </div>
+                        )}
+                        <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
                             <ReactMarkdown>
                                 {selectedReference.content || '无内容'}
                             </ReactMarkdown>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

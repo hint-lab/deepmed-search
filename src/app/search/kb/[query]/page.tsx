@@ -142,8 +142,8 @@ export default function KbSearchResultsPage() {
     const kbSearchMode = searchParams.get('mode') as 'vector' | 'bm25' | 'hybrid' || 'vector';
 
     // 根据搜索模式设置权重
-    let bm25Weight = 0.5;
-    let vectorWeight = 0.5;
+    let bm25Weight = 0.8;
+    let vectorWeight = 0.2;
 
     // 根据搜索模式自动设置权重
     if (kbSearchMode === 'bm25') {

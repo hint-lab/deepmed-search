@@ -406,7 +406,7 @@ ${contextChunks}
                         dialogId,
                         content,
                         (chunk: ChunkResponse) => {
-                            console.log("收到流响应:", typeof chunk === 'string' ? chunk : JSON.stringify(chunk));
+                            // console.log("收到流响应:", typeof chunk === 'string' ? chunk : JSON.stringify(chunk));
 
                             if (typeof chunk === 'string') {
                                 accumulatedContent += chunk;

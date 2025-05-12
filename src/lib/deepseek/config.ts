@@ -3,7 +3,7 @@ import { DeepSeekConfig } from './types'
 // 默认配置
 export const DEFAULT_CONFIG: Partial<DeepSeekConfig> = {
     model: process.env.DEEPSEEK_API_MODEL || 'deepseek-chat',
-    temperature: 0.7,
+    temperature: 0.3,
     maxTokens: 2000,
     stop: [],
     systemPrompt: '你是一个有帮助的AI助手。',

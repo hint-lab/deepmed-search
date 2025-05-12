@@ -1,6 +1,7 @@
 -- 创建必要的扩展
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_jieba;
+CREATE EXTENSION IF NOT EXISTS age;
 
 -- 创建基于pg_jieba的中文全文搜索配置
 DO $BLOCK$
@@ -19,3 +20,10 @@ BEGIN
   END IF;
 END;
 $BLOCK$;
+
+-- 加载AGE扩展并设置搜索路径
+LOAD 'age';
+SET search_path = ag_catalog, "$user", public;
+
+-- 创建一个示例图
+SELECT create_graph('sample_graph');
