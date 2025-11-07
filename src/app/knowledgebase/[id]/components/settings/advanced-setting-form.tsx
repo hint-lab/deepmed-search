@@ -25,22 +25,27 @@ import { Badge } from '@/components/ui/badge';
 
 
 
-const formSchema = z.object({
-  parser_id: z.string().min(1, {
-    message: 'parser is required',
-  }),
-  chunk_size: z.number().min(100).max(2000),
-  overlap_size: z.number().min(0).max(1000),
-  separators: z.array(z.string()).min(1, {
-    message: '至少需要一个分隔符',
-  })
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+  parser_id: string;
+  chunk_size: number;
+  overlap_size: number;
+  separators: string[];
+};
 
 export default function AdvancedSettingForm() {
   const { t } = useTranslate('knowledgeBase');
   const { currentKnowledgeBase, updateKnowledgeBase } = useKnowledgeBaseContext();
+  
+  const formSchema = z.object({
+    parser_id: z.string().min(1, {
+      message: 'parser is required',
+    }),
+    chunk_size: z.number().min(100).max(2000),
+    overlap_size: z.number().min(0).max(1000),
+    separators: z.array(z.string()).min(1, {
+      message: t('validation.separatorRequired'),
+    })
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -55,7 +60,7 @@ export default function AdvancedSettingForm() {
   function onSubmit(values: FormValues) {
     console.log("Submitting separators:", values.separators);
     if (!currentKnowledgeBase?.id) {
-      toast.error("知识库ID不存在");
+      toast.error(t('settings.kbIdNotExist'));
       return;
     }
     // 仅更新高级设置相关参数
@@ -79,7 +84,7 @@ export default function AdvancedSettingForm() {
           name="chunk_size"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('form.chunkSize')} - 当前值: {field.value}</FormLabel>
+              <FormLabel>{t('form.chunkSize')} - {t('form.currentValue')}: {field.value}</FormLabel>
               <FormControl>
                 <Slider
                   min={100}
@@ -102,7 +107,7 @@ export default function AdvancedSettingForm() {
           name="overlap_size"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('form.chunkOverlap')} - 当前值: {field.value}</FormLabel>
+              <FormLabel>{t('form.chunkOverlap')} - {t('form.currentValue')}: {field.value}</FormLabel>
               <FormControl>
                 <Slider
                   min={0}
@@ -139,13 +144,13 @@ export default function AdvancedSettingForm() {
                 field.onChange([...field.value, trimmedSeparator]);
                 setNewSeparator('');
               } else if (field.value.includes(trimmedSeparator)) {
-                toast.info("分隔符已存在");
+                toast.info(t('settings.separatorAlreadyExists'));
               }
             };
 
             const handleRemoveSeparator = (separatorToRemove: string) => {
               if (field.value.length <= 1) {
-                toast.warning(t('validation.separatorRequired', '至少需要一个分隔符'));
+                toast.warning(t('validation.separatorRequired'));
                 return;
               }
               field.onChange(field.value.filter(sep => sep !== separatorToRemove));
@@ -185,13 +190,13 @@ export default function AdvancedSettingForm() {
                 <FormControl>
                   <div className="flex gap-2">
                     <Input
-                      placeholder={t('form.addSeparatorPlaceholder', '输入新分隔符后按 Enter 或点击添加')}
+                      placeholder={t('form.addSeparatorPlaceholder')}
                       value={newSeparator}
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                     />
                     <Button type="button" onClick={handleAddSeparator} disabled={!newSeparator.trim()}>
-                      {t('form.add', '添加')}
+                      {t('form.add')}
                     </Button>
                   </div>
                 </FormControl>

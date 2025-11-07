@@ -5,6 +5,7 @@ import { normalizeUrl, processURLs } from "../utils/url-tools";
 import { MAX_URLS_PER_STEP, Schemas } from '../utils/schemas';
 import { ResearchAgent } from '../agent';
 import { updateContextHelper } from '../agent-helpers';
+import { publishVisitUrl } from '../tracker-store';
 
 export async function handleVisitAction(thisAgent: ResearchAgent, action: VisitAction): Promise<void> {
     console.log("Handling Visit Action");
@@ -40,6 +41,11 @@ export async function handleVisitAction(thisAgent: ResearchAgent, action: VisitA
     const uniqueURLs = combinedTargets.filter(url => !visitedURLs.includes(url)).slice(0, MAX_URLS_PER_STEP);
 
     console.log("Visiting URLs:", uniqueURLs);
+
+    // Publish URLs being visited to frontend
+    if (uniqueURLs.length > 0) {
+        await publishVisitUrl(context.taskId, uniqueURLs);
+    }
 
     // 2. Process URLs (if any)
     if (uniqueURLs.length > 0) {

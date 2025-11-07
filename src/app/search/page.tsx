@@ -174,11 +174,11 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-96">
                             {isKbListLoading ? (
-                                <DropdownMenuItem disabled>加载知识库中...</DropdownMenuItem>
+                                <DropdownMenuItem disabled>{t('loadingKnowledgeBases')}</DropdownMenuItem>
                             ) : (
                                 <div className="flex">
                                     <div className="w-1/2 pr-2 border-r">
-                                        <DropdownMenuLabel>{t('selectKnowledgeBase', '选择知识库')}</DropdownMenuLabel>
+                                        <DropdownMenuLabel>{t('selectKnowledgeBase')}</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         {availableKbs.length > 0 ? (
                                             availableKbs.map((kb) => (
@@ -187,30 +187,30 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                                                 </DropdownMenuItem>
                                             ))
                                         ) : (
-                                            <DropdownMenuItem disabled>无可用知识库</DropdownMenuItem>
+                                            <DropdownMenuItem disabled>{t('noKnowledgeBases')}</DropdownMenuItem>
                                         )}
                                     </div>
                                     <div className="w-1/2 pl-2">
-                                        <DropdownMenuLabel>{t('selectSearchMode', '选择检索模式')}</DropdownMenuLabel>
+                                        <DropdownMenuLabel>{t('selectSearchMode')}</DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('vector')}>
                                             {kbSearchMode === 'vector' && <Check className="mr-2 h-4 w-4" />}
-                                            向量检索
+                                            {t('vectorSearch')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('bm25')}>
                                             {kbSearchMode === 'bm25' && <Check className="mr-2 h-4 w-4" />}
-                                            BM25检索
+                                            {t('bm25Search')}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('hybrid')}>
                                             {kbSearchMode === 'hybrid' && <Check className="mr-2 h-4 w-4" />}
-                                            混合检索
+                                            {t('hybridSearch')}
                                         </DropdownMenuItem>
                                         {kbSearchMode === 'hybrid' && (
                                             <div className="flex flex-col gap-2 mt-2 w-full items-end">
                                                 <div className="w-full flex flex-col items-end">
                                                     <div className="flex items-center justify-between w-full mb-1">
-                                                        <span className="text-xs text-muted-foreground">BM25权重</span>
-                                                        <span className="text-xs text-muted-foreground">向量权重</span>
+                                                        <span className="text-xs text-muted-foreground">{t('bm25Weight')}</span>
+                                                        <span className="text-xs text-muted-foreground">{t('vectorWeight')}</span>
                                                     </div>
                                                     <Slider
                                                         min={0}

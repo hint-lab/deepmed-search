@@ -11,6 +11,7 @@ import remarkGfm from 'remark-gfm'; // 支持 GFM (表格, 删除线等)
 import rehypeRaw from 'rehype-raw'; // 支持直接渲染 HTML
 import { ServerActionResponse } from '@/types/actions'; // 导入 ServerActionResponse 类型
 import ThinkStatusDisplay from './components/think';
+import { useTranslate } from '@/contexts/language-context';
 
 
 // 定义步骤详情的类型 (应与后端返回一致)
@@ -31,6 +32,7 @@ interface ResearchResponseData {
 }
 
 export default function ResearchPage() {
+    const { t } = useTranslate('research');
     const [question, setQuestion] = useState<string>('');
     const [result, setResult] = useState<StepAction | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function ResearchPage() {
         setTaskId(null); // Reset taskId on new submission
 
         if (!question.trim()) {
-            setError("请输入研究问题。");
+            setError(t('errorInput'));
             return;
         }
 
@@ -61,7 +63,7 @@ export default function ResearchPage() {
             if (response.success && response.data) {
                 setTaskId(response.data.taskId || null); // Store the received taskId
             } else {
-                setError(response.error || "研究失败，请稍后再试。");
+                setError(response.error || t('errorGeneral'));
                 setTaskId(null); // Clear taskId on error
             }
         });
@@ -77,7 +79,7 @@ export default function ResearchPage() {
             <div className="w-full max-w-3xl space-y-8 ">
                 <div className="text-center space-y-3 my-6 sm:my-8">
                     <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
-                        深度医学研究
+                        {t('title')}
                     </h1>
                     <form onSubmit={handleSubmit} className="mt-6">
                         <div className="flex items-center focus-within:ring-2 focus-within:ring-primary/30 focus-within:ring-offset-2 focus-within:ring-offset-background rounded-lg transition-all duration-150">
@@ -87,7 +89,7 @@ export default function ResearchPage() {
                                     type="text"
                                     value={question}
                                     onChange={handleInputChange}
-                                    placeholder="输入您的问题，开始探索..."
+                                    placeholder={t('inputPlaceholder')}
                                     disabled={isPending}
                                     className="h-12 text-base rounded-l-lg rounded-r-none border-r-0 border border-border/80 px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
                                 />
@@ -100,10 +102,10 @@ export default function ResearchPage() {
                                 {isPending ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        研究中...
+                                        {t('researchingButton')}
                                     </>
                                 ) : (
-                                    '开始研究'
+                                    t('startResearchButton')
                                 )}
                             </Button>
                         </div>
@@ -119,10 +121,32 @@ export default function ResearchPage() {
 
 
                 <div className="flex flex-col justify-start items-center py-5 rounded-lg">
-                    {isPending && (<div className="flex justify-center items-center space-x-3 mb-4">
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">正在处理研究请求，请稍候...</p>
-                    </div>)}
+                    {isPending && (
+                        <div className="w-full mb-6 p-8 rounded-2xl bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 border border-blue-200 dark:border-blue-800/50 shadow-lg backdrop-blur-sm">
+                            <div className="flex flex-col items-center space-y-6">
+                                {/* 简洁的三点跳动动画 */}
+                                <div className="flex space-x-3">
+                                    <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce"></div>
+                                    <div className="w-4 h-4 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                    <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                                </div>
+                                
+                                {/* 文本信息 */}
+                                <div className="text-center space-y-2">
+                                    <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                                        {t('processingMessage')}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground max-w-md">
+                                        {t('processingSubtitle')}
+                                    </p>
+                                </div>
+                                
+                                <div className="w-full max-w-xs h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-progress-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {taskId && <ThinkStatusDisplay taskId={taskId} />}
                 </div>
 
@@ -131,7 +155,7 @@ export default function ResearchPage() {
                     <div className="border-t border-border/60 pt-8 mt-10 space-y-4">
                         <details className="group" open> {/* 默认展开 */}
                             <summary className="cursor-pointer list-none flex items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                                <span>处理步骤详情</span>
+                                <span>{t('stepDetailsTitle')}</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transform transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -139,9 +163,9 @@ export default function ResearchPage() {
                             <div className="text-xs bg-muted/40 p-4 rounded-lg mt-2 border border-border/60 space-y-3">
                                 {stepDetails.map((step) => (
                                     <div key={step.step} className="border-b border-border/40 pb-2 last:border-b-0 last:pb-0">
-                                        <p><strong className="font-medium">步骤 {step.step}:</strong> <span className="text-primary font-semibold">{step.action}</span></p>
-                                        <p className="text-muted-foreground pl-2">处理问题: "{step.question}"</p>
-                                        {step.think && <p className="text-muted-foreground pl-2 mt-1">思考: {step.think}</p>}
+                                        <p><strong className="font-medium">{t('stepLabel')} {step.step}:</strong> <span className="text-primary font-semibold">{step.action}</span></p>
+                                        <p className="text-muted-foreground pl-2">{t('questionLabel')}: "{step.question}"</p>
+                                        {step.think && <p className="text-muted-foreground pl-2 mt-1">{t('thinkLabel')}: {step.think}</p>}
                                         {/* 可选：显示更详细的步骤信息 */}
                                         {/* {step.details && <pre className="mt-1 pl-2 text-muted-foreground/80 text-[0.7rem] whitespace-pre-wrap break-all">{JSON.stringify(step.details, null, 2)}</pre>} */}
                                     </div>

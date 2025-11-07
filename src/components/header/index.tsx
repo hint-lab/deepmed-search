@@ -19,12 +19,23 @@ import {
 import { usePathname } from "next/navigation";
 import { SettingsMenu } from "./settings-menu";
 
+type NavItem = {
+    name: string;
+    href: string;
+    icon: React.ReactElement;
+    dropdown?: {
+        name: string;
+        href: string;
+        icon: React.ReactElement;
+    }[];
+};
+
 export default function Header() {
     const { t } = useTranslate('nav');
     const session = useSession();
     const pathname = usePathname();
 
-    const navItems = [
+    const navItems: NavItem[] = [
         {
             name: t('knowledgeBase'),
             href: "/knowledgebase",
@@ -45,42 +56,42 @@ export default function Header() {
             href: "/research",
             icon: <Cpu className="h-5 w-5" />
         },
-        {
-            name: "开发工具",
-            icon: <Beaker className="h-5 w-5" />,
-            dropdown: [
-                {
-                    name: "数据库测试",
-                    href: "/dev-tools/database-test",
-                    icon: <File className="h-4 w-4" />
-                },
-                {
-                    name: "队列测试",
-                    href: "/dev-tools/queue-test",
-                    icon: <ListTodo className="h-4 w-4" />
-                },
-                {
-                    name: "上传测试",
-                    href: "/dev-tools/upload-test",
-                    icon: <Upload className="h-4 w-4" />
-                },
-                {
-                    name: "大模型测试",
-                    href: "/dev-tools/model-test",
-                    icon: <Cpu className="h-4 w-4" />
-                },
-                {
-                    name: "MCP测试",
-                    href: "/dev-tools/mcp-test",
-                    icon: <ServerCrash className="h-4 w-4" />
-                },
-                {
-                    name: "文档测试",
-                    href: "/dev-tools/document-test",
-                    icon: <File className="h-4 w-4" />
-                }
-            ]
-        },
+        // {
+        //     name: "开发工具",
+        //     icon: <Beaker className="h-5 w-5" />,
+        //     dropdown: [
+        //         {
+        //             name: "数据库测试",
+        //             href: "/dev-tools/database-test",
+        //             icon: <File className="h-4 w-4" />
+        //         },
+        //         {
+        //             name: "队列测试",
+        //             href: "/dev-tools/queue-test",
+        //             icon: <ListTodo className="h-4 w-4" />
+        //         },
+        //         {
+        //             name: "上传测试",
+        //             href: "/dev-tools/upload-test",
+        //             icon: <Upload className="h-4 w-4" />
+        //         },
+        //         {
+        //             name: "大模型测试",
+        //             href: "/dev-tools/model-test",
+        //             icon: <Cpu className="h-4 w-4" />
+        //         },
+        //         {
+        //             name: "MCP测试",
+        //             href: "/dev-tools/mcp-test",
+        //             icon: <ServerCrash className="h-4 w-4" />
+        //         },
+        //         {
+        //             name: "文档测试",
+        //             href: "/dev-tools/document-test",
+        //             icon: <File className="h-4 w-4" />
+        //         }
+        //     ]
+        // },
     ];
 
     return (
@@ -122,7 +133,7 @@ export default function Header() {
                                                 </div>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                {item.dropdown.map((subItem, i) => (
+                                                {item.dropdown.map((subItem: { name: string; href: string; icon: React.ReactElement }, i: number) => (
                                                     <DropdownMenuItem key={`mobile-dropdown-item-${index}-${i}`} asChild>
                                                         <Link
                                                             href={subItem.href}
@@ -180,7 +191,7 @@ export default function Header() {
                                     </div>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    {item.dropdown.map((subItem, i) => (
+                                    {item.dropdown.map((subItem: { name: string; href: string; icon: React.ReactElement }, i: number) => (
                                         <DropdownMenuItem key={`dropdown-item-${index}-${i}`} asChild>
                                             <Link
                                                 href={subItem.href}
@@ -220,7 +231,7 @@ export default function Header() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                                     <Avatar className="h-8 w-8">
-                                        <AvatarImage src={session?.data?.user?.image || "https://github.com/shadcn.png"} />
+                                        <AvatarImage src={session?.data?.user?.image || "/assets/avatar/2.svg"} />
                                         <AvatarFallback>{session?.data?.user?.name?.[0] || "U"}</AvatarFallback>
                                     </Avatar>
                                 </Button>
@@ -239,7 +250,7 @@ export default function Header() {
                                     className="cursor-pointer"
                                     onClick={() => signOut({ callbackUrl: "/login" })}
                                 >
-                                    {t("signOut", "退出登录")}
+                                    {t("signOut", "Logout")}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

@@ -151,7 +151,7 @@ export function CreateChatDialogButton() {
                                                 className="w-[--radix-select-trigger-width] max-h-[--radix-select-content-available-height]"
                                             >
                                                 <SelectItem value="none">
-                                                    {t('noKnowledgeBase', '不选择知识库')}
+                                                    {t('noKnowledgeBase')}
                                                 </SelectItem>
                                                 <SelectSeparator className='mx-2' />
                                                 {knowledgeBases.map((kb) => (

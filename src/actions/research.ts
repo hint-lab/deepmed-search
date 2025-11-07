@@ -49,7 +49,7 @@ export async function startResearchAction(
         const jobPayload: ResearchJobPayload = {
             taskId,
             question,
-            tokenBudget: 20000, // 示例参数，应根据需要调整
+            tokenBudget: 2000000, // 示例参数，应根据需要调整
             // ... 传递其他需要的参数
         };
 

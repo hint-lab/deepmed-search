@@ -3,6 +3,7 @@ import {AnswerAction, EvaluationResponse, EvaluationType, KnowledgeItem, PromptP
 import {ObjectGeneratorSafe} from "../utils/safe-generator";
 import {Schemas} from "../utils/schemas";
 import {getKnowledgeStr} from "../utils/text-tools";
+import {publishQuestionEvaluation} from "../tracker-store";
 
 const TOOL_NAME = 'evaluator';
 
@@ -583,6 +584,15 @@ export async function evaluateQuestion(
 
     console.log('Question Metrics:', question, types);
     trackers?.actionTracker.trackThink(result.object.think);
+
+    // Publish question evaluation to frontend
+    await publishQuestionEvaluation(trackers.taskId, {
+      think: result.object.think,
+      needsDefinitive: result.object.needsDefinitive,
+      needsFreshness: result.object.needsFreshness,
+      needsPlurality: result.object.needsPlurality,
+      needsCompleteness: result.object.needsCompleteness,
+    });
 
     // Always evaluate definitive first, then freshness (if needed), then plurality (if needed)
     return types;

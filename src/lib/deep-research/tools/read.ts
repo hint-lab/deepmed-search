@@ -1,13 +1,15 @@
 import axios from 'axios';
 import { TokenTracker } from "../utils/token-tracker";
-import { ReadResponse } from '../types';
+import { ReadResponse, TrackerContext } from '../types';
 import { JINA_API_KEY } from "../config";
 
 export async function readUrl(
   url: string,
   withAllLinks?: boolean,
-  tracker?: TokenTracker
+  trackers?: TrackerContext
 ): Promise<{ response: ReadResponse }> {
+  const tracker = trackers?.tokenTracker;
+  const taskId = trackers?.taskId || 'unknown';
   if (!url.trim()) {
     throw new Error('URL cannot be empty');
   }
@@ -44,14 +46,21 @@ export async function readUrl(
       throw new Error('Invalid response data');
     }
 
-    console.log('Read:', {
+    const readInfo = {
       title: data.data.title,
       url: data.data.url,
       tokens: data.data.usage?.tokens || 0
-    });
+    };
+    console.log('Read:', readInfo);
+    
+    // Publish read content to frontend
+    if (trackers) {
+      const { publishReadContent } = await import('../tracker-store');
+      await publishReadContent(taskId, readInfo);
+    }
 
     const tokens = data.data.usage?.tokens || 0;
-    const tokenTracker = tracker || new TokenTracker();
+    const tokenTracker = tracker || new TokenTracker(taskId);
     tokenTracker.trackUsage('read', {
       totalTokens: tokens,
       promptTokens: url.length,

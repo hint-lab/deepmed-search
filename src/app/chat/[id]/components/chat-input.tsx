@@ -7,12 +7,14 @@ import { cn } from '@/lib/utils';
 import { useChatContext } from '@/contexts/chat-context';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
+import { useTranslate } from '@/contexts/language-context';
 // Define props interface
 interface ChatInputProps {
     dialogId: string | undefined;
 }
 
 export function ChatInputArea({ dialogId }: ChatInputProps) {
+    const { t } = useTranslate('chat');
     const inputRef = useRef<HTMLInputElement>(null);
     const [inputValue, setInputValue] = useState('');
     const [isThinkingMode, setIsThinkingMode] = useState(false);
@@ -94,7 +96,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             )}
                         >
                             <BrainIcon className={cn("w-5 h-5", isThinkingMode ? "text-blue-500" : "text-gray-500")} />
-                            <span className="ml-2">深度思考</span>
+                            <span className="ml-2">{t('deepThinking')}</span>
                         </Button>
                         <Button
                             type="button"
@@ -109,7 +111,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             )}
                         >
                             <BookOpen className={cn("w-5 h-5", isUsingKnowledgeBase ? "text-blue-500" : "text-gray-500")} />
-                            <span className="ml-2">使用知识库</span>
+                            <span className="ml-2">{t('useKnowledgeBase')}</span>
                         </Button>
                     </div>
                     <div className="flex-1 relative">
@@ -122,8 +124,8 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             ref={inputRef}
                             placeholder={
                                 dialogId
-                                    ? (isThinkingMode ? '输入思考内容...' : '你想知道什么？')
-                                    : '请输入内容，系统将自动新建对话'
+                                    ? (isThinkingMode ? t('enterThinkingContent') : t('whatDoYouWantToKnow'))
+                                    : t('autoCreateDialog')
                             }
                             value={inputValue}
                             onChange={handleInputChange}
@@ -141,7 +143,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                     <Button
                         onClick={handleSendMessage}
                         disabled={isStreaming || !inputValue.trim()}
-                        aria-label={isThinkingMode ? '思考' : (dialogId ? '发送' : '新建对话并发送')}
+                        aria-label={isThinkingMode ? t('think') : (dialogId ? t('send') : t('createAndSend'))}
                         variant={isThinkingMode ? "outline" : "default"}
                         size="sm"
                         className={cn(
@@ -154,19 +156,19 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                         {isStreaming ? (
                             <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent rounded-md" role="status" aria-label="loading"></span>
                         ) : (
-                            <span>{dialogId ? '发送' : '新建对话并发送'}</span>
+                            <span>{dialogId ? t('send') : t('createAndSend')}</span>
                         )}
                     </Button>
                     {isStreaming && (
                         <Button
                             onClick={stopStream}
-                            aria-label="取消"
+                            aria-label={t('cancel')}
                             variant="outline"
                             size="sm"
                             className="rounded-md h-12 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
                         >
                             <StopCircleIcon className="w-4 h-4 mr-1" />
-                            <span>取消</span>
+                            <span>{t('cancel')}</span>
                         </Button>
                     )}
                 </div>

@@ -39,7 +39,7 @@ export function ChatSidebarItem({ dialog, isActive = false }: ChatSidebarItemPro
                 }
             } else {
                 const errorMessage = result.error === 'Dialog not found'
-                    ? t('errors.dialogNotFound', '对话不存在或已被删除')
+                    ? t('dialogNotFound')
                     : t('deleteError');
                 toast.error(errorMessage);
             }

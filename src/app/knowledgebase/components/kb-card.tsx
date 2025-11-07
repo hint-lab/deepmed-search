@@ -108,7 +108,7 @@ export function KnowledgeBaseCard({ item }: IKnowledgeBaseCardProps) {
                     <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
                         <span className="text-xs font-semibold">
-                            {item.doc_num || 0} 文档
+                            {item.doc_num || 0} {t('card.documents')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">

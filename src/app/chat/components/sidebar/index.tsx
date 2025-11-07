@@ -37,16 +37,16 @@ export default function ChatSidebar() {
 
       if (failedDeletions.length > 0) {
         console.error("Failed to delete some dialogs:", failedDeletions);
-        toast.error(t('deleteAllSomeError', '部分对话删除失败'));
+        toast.error(t('deleteAllSomeError'));
       } else {
-        toast.success(t('deleteAllSuccess', '所有对话已删除'));
+        toast.success(t('deleteAllSuccess'));
       }
 
       router.refresh();
       router.push('/chat');
     } catch (error) {
       console.error("Failed to delete all dialogs:", error);
-      toast.error(t('deleteAllError', '删除所有对话失败'));
+      toast.error(t('deleteAllError'));
     } finally {
       setShowDeleteAllConfirm(false);
     }

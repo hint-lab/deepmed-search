@@ -68,7 +68,7 @@ export default function Home() {
                         {t('features.title')}
                     </h2>
                     <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-12">
-                        全方位提升您的文档处理体验，让信息管理更加高效
+                        {t('features.subtitle')}
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {[

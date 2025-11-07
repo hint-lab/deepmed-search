@@ -20,17 +20,21 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const formSchema = z.object({
-  name: z.string().min(1, { message: '知识库名称不能为空' }),
-  description: z.string(),
-  language: z.string(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+  name: string;
+  description: string;
+  language: string;
+};
 
 export default function BasicSettingForm() {
   const { t } = useTranslate('knowledgeBase');
   const { currentKnowledgeBase, updateKnowledgeBase } = useKnowledgeBaseContext();
+  
+  const formSchema = z.object({
+    name: z.string().min(1, { message: t('settings.kbNameRequired') }),
+    description: z.string(),
+    language: z.string(),
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -43,7 +47,7 @@ export default function BasicSettingForm() {
 
   function onSubmit(values: FormValues) {
     if (!currentKnowledgeBase?.id) {
-      toast.error("知识库ID不存在");
+      toast.error(t('settings.kbIdNotExist'));
       return;
     }
     // 仅更新基础设置相关参数

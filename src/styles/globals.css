@@ -347,3 +347,58 @@
 .animation-delay-4000 {
     animation-delay: 4s;
 }
+
+/* 研究思考过程动画 */
+@keyframes pulse-soft {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.95;
+        transform: scale(1.005);
+    }
+}
+
+@keyframes bounce-gentle {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+@keyframes progress-bar {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes spin-reverse {
+    from {
+        transform: rotate(360deg);
+    }
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+.animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce-gentle {
+    animation: bounce-gentle 1s ease-in-out infinite;
+}
+
+.animate-progress-bar {
+    animation: progress-bar 1.5s ease-in-out infinite;
+}
+
+.animate-spin-reverse {
+    animation: spin-reverse 1s linear infinite;
+}

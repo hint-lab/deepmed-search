@@ -108,8 +108,26 @@ export async function analyzeSteps(
     });
 
     console.log(TOOL_NAME, result.object);
-    trackers?.actionTracker.trackThink(result.object.blame);
-    trackers?.actionTracker.trackThink(result.object.improvement);
+    
+    // 发布详细的分析结果到前端
+    const { publishThink } = await import('../tracker-store');
+    
+    // 发送 recap
+    if (result.object.recap) {
+      await publishThink(trackers.taskId, `📝 **回顾分析**\n${result.object.recap}`);
+    }
+    
+    // 发送 blame
+    if (result.object.blame) {
+      await publishThink(trackers.taskId, `⚠️ **问题根源**\n${result.object.blame}`);
+      trackers?.actionTracker.trackThink(result.object.blame);
+    }
+    
+    // 发送 improvement
+    if (result.object.improvement) {
+      await publishThink(trackers.taskId, `💡 **改进建议**\n${result.object.improvement}`);
+      trackers?.actionTracker.trackThink(result.object.improvement);
+    }
 
     return result.object as ErrorAnalysisResponse;
 

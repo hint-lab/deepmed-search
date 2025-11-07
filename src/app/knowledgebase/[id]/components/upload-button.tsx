@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Loader2 } from 'lucide-react';
 import { uploadDocumentAction } from '@/actions/document';
 import { toast } from 'sonner';
+import { useTranslate } from '@/contexts/language-context';
 
 interface DocumentUploadButtonProps {
   kbId?: string;
@@ -19,12 +20,14 @@ export function DocumentUploadButton({
   kbId,
   onSuccess,
   onError,
-  buttonText = '上传文件',
+  buttonText,
   className = '',
   disabled = false
 }: DocumentUploadButtonProps) {
+  const { t } = useTranslate('knowledgeBase.upload');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const defaultButtonText = buttonText || t('uploadFile');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -38,8 +41,8 @@ export function DocumentUploadButton({
 
     // 检查知识库ID
     if (!kbId) {
-      toast.error('上传失败', {
-        description: '知识库ID不能为空'
+      toast.error(t('uploadFailed'), {
+        description: t('kbIdEmpty')
       });
       return;
     }
@@ -54,7 +57,7 @@ export function DocumentUploadButton({
       console.log('上传结果:', uploadResult);
 
       if (!uploadResult.success) {
-        throw new Error(uploadResult.error ? String(uploadResult.error) : '上传失败');
+        throw new Error(uploadResult.error ? String(uploadResult.error) : t('uploadFailed'));
       }
 
       // 调用成功回调
@@ -63,16 +66,16 @@ export function DocumentUploadButton({
       }
 
       // 显示成功toast
-      toast.success('文件上传成功', {
-        description: `文件 ${file.name} 已成功上传到知识库`
+      toast.success(t('uploadSuccess'), {
+        description: t('uploadSuccessDesc').replace('{fileName}', file.name)
       });
 
     } catch (error) {
       console.error('上传失败:', error);
 
       // 显示错误toast
-      toast.error('上传失败', {
-        description: (error as Error).message || '未知错误'
+      toast.error(t('uploadFailed'), {
+        description: (error as Error).message || t('unknownError')
       });
 
       // 调用错误回调
@@ -106,12 +109,12 @@ export function DocumentUploadButton({
         {uploading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            上传中...
+            {t('uploading')}
           </>
         ) : (
           <>
             <Upload className="mr-2 h-4 w-4" />
-            {buttonText}
+            {defaultButtonText}
           </>
         )}
       </Button>

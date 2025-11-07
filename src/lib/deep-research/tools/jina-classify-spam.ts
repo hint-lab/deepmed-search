@@ -64,12 +64,14 @@ export async function classifyText(
     // Race the API request against the timeout
     const response = await Promise.race([apiRequestPromise, timeoutPromise]) as any;
 
-    // Track token usage from the API
-    (tracker || new TokenTracker()).trackUsage('classify', {
-      promptTokens: response.data.usage.total_tokens,
-      completionTokens: 0,
-      totalTokens: response.data.usage.total_tokens
-    });
+    // Track token usage from the API (only if tracker is provided)
+    if (tracker) {
+      tracker.trackUsage('classify', {
+        promptTokens: response.data.usage.total_tokens,
+        completionTokens: 0,
+        totalTokens: response.data.usage.total_tokens
+      });
+    }
 
     // Extract the prediction field and convert to boolean
     if (response.data.data && response.data.data.length > 0) {

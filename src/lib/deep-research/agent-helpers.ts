@@ -122,14 +122,40 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
             messages: (thisAgent as any).msgWithKnowledge, // Use the assigned value
             numRetries: 2,
         });
-        // Construct the StepAction object correctly
+        
+        // 验证返回的结果
+        if (!result || !result.object) {
+            console.error("LLM returned empty result");
+            return null;
+        }
+        
         const actionType = result.object.action;
+        
+        // 严格验证 action 字段
+        if (!actionType || typeof actionType !== 'string') {
+            console.error("Invalid action type returned by LLM:", {
+                action: actionType,
+                fullObject: result.object
+            });
+            return null;
+        }
+        
+        // 验证 action 类型是否有效
+        const validActions = ['search', 'visit', 'answer', 'reflect', 'coding'];
+        if (!validActions.includes(actionType)) {
+            console.error(`Unknown action type: ${actionType}. Valid actions: ${validActions.join(', ')}`);
+            return null;
+        }
+        
         const actionPayload = result.object[actionType] || {};
-        return {
+        const stepAction = {
             action: actionType,
-            think: result.object.think,
+            think: result.object.think || '',
             ...actionPayload
         } as StepAction;
+        
+        console.log("Generated action:", stepAction);
+        return stepAction;
     } catch (error) {
         console.error("Error generating next action:", error);
         return null; // Return null on generation failure
@@ -222,7 +248,7 @@ export async function processFinalAnswerHelper(thisAgent: ResearchAgent, answerA
 }
 
 // Updated signature to accept ResearchAgent instance (or necessary properties)
-export function rankURLsHelper(thisAgent: ResearchAgent): BoostedSearchSnippet[] {
+export async function rankURLsHelper(thisAgent: ResearchAgent): Promise<BoostedSearchSnippet[]> {
     const allURLs = (thisAgent as any).allURLs as Record<string, SearchSnippet>;
     const visitedURLs = (thisAgent as any).visitedURLs as string[];
     const options = (thisAgent as any).options as any; // Assuming ResearchAgentOptions type
@@ -231,7 +257,7 @@ export function rankURLsHelper(thisAgent: ResearchAgent): BoostedSearchSnippet[]
     const question = (thisAgent as any).question as string;
     const context = (thisAgent as any).context as TrackerContext;
 
-    return rankURLs(
+    return await rankURLs(
         filterURLs(allURLs, visitedURLs, options.badHostnames, options.onlyHostnames),
         {
             question: gaps[totalStep % gaps.length] || question,

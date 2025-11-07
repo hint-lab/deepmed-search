@@ -231,7 +231,7 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
         </div>
         <div className="flex items-center justify-between space-x-2 py-4">
           <div className="text-sm text-slate-500">
-            {table.getFilteredSelectedRowModel().rows.length} / {pagination.total} 行已选择
+            {t('rowsSelected').replace('{count}', String(table.getFilteredSelectedRowModel().rows.length)).replace('{total}', String(pagination.total))}
           </div>
           <div className="flex items-center space-x-2">
             <Button
@@ -241,12 +241,12 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
               disabled={!table.getCanPreviousPage()}
               className="h-8 px-4 text-slate-600"
             >
-              上一页
+              {t('previousPage')}
             </Button>
             <div className="flex items-center gap-1 text-sm text-slate-500">
-              <span>第 {pagination.current} 页</span>
+              <span>{t('pageNumber').replace('{current}', String(pagination.current))}</span>
               <span>/</span>
-              <span>共 {Math.ceil(pagination.total / pagination.pageSize)} 页</span>
+              <span>{t('totalPages').replace('{total}', String(Math.ceil(pagination.total / pagination.pageSize)))}</span>
             </div>
             <Button
               variant="outline"
@@ -255,7 +255,7 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
               disabled={!table.getCanNextPage()}
               className="h-8 px-4 text-slate-600"
             >
-              下一页
+              {t('nextPage')}
             </Button>
           </div>
         </div>

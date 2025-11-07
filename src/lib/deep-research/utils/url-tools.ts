@@ -215,7 +215,7 @@ const normalizeCount = (count: any, total: any) => {
 };
 
 // Calculate boosted weights
-export const rankURLs = (urlItems: SearchSnippet[], options: any = {}, trackers: TrackerContext): any[] => {
+export const rankURLs = async (urlItems: SearchSnippet[], options: any = {}, trackers: TrackerContext): Promise<any[]> => {
   // Default parameters for boosting - can be overridden
   const {
     freqFactor = 0.5,           // How much to boost based on term frequency
@@ -251,19 +251,30 @@ export const rankURLs = (urlItems: SearchSnippet[], options: any = {}, trackers:
     const uniqueContents = Object.keys(uniqueContentMap);
     const uniqueIndicesMap = Object.values(uniqueContentMap);
     console.log(`rerank URLs: ${urlItems.length}->${uniqueContents.length}`)
-    rerankDocuments(question, uniqueContents, trackers.tokenTracker)
-      .then(({results}) => {
+    
+    try {
+      const {results} = await rerankDocuments(question, uniqueContents, trackers.tokenTracker);
+      if (results && results.length > 0) {
         // Step 3: Map the scores back to all original items
         results.forEach(({index, relevance_score}) => {
           const originalIndices = uniqueIndicesMap[index];
-          const boost = relevance_score * jinaRerankFactor;
+          if (originalIndices && originalIndices.length > 0) {
+            const boost = relevance_score * jinaRerankFactor;
 
-          // Apply the same boost to all items with identical content
-          originalIndices.forEach((originalIndex: number) => {
-            (urlItems[originalIndex] as BoostedSearchSnippet).jinaRerankBoost = boost;
-          });
+            // Apply the same boost to all items with identical content
+            originalIndices.forEach((originalIndex: number) => {
+              (urlItems[originalIndex] as BoostedSearchSnippet).jinaRerankBoost = boost;
+            });
+          }
         });
-      });
+        console.log(`✅ Successfully applied rerank boost to ${results.length} unique documents`);
+      } else {
+        console.warn('Rerank returned no results, continuing without rerank boost');
+      }
+    } catch (error) {
+      console.error('Rerank failed, continuing without rerank boost:', error);
+      // Continue without rerank boost - urlItems will have jinaRerankBoost = 0
+    }
   }
 
 
@@ -484,7 +495,7 @@ export async function processURLs(
         // Store normalized URL for consistent reference
         url = normalizedUrl;
 
-        const {response} = await readUrl(url, true, context.tokenTracker);
+        const {response} = await readUrl(url, true, context);
         const {data} = response;
         const guessedTime = await getLastModified(url);
         if (guessedTime) {
@@ -499,7 +510,12 @@ export async function processURLs(
         // check if content is likely a blocked msg from paywall, bot detection, etc.
         // only check for <5000 char length content as most blocking msg is short
         const spamDetectLength = 300;
-        const isGoodContent = data.content.length > spamDetectLength || !await classifyText(data.content);
+        const isGoodContent = data.content.length > spamDetectLength || !await classifyText(
+          data.content,
+          "4a27dea0-381e-407c-bc67-250de45763dd", // classifier ID
+          5000, // timeout
+          context.tokenTracker // pass the tracker from context
+        );
         if (!isGoodContent) {
           console.error(`Blocked content ${data.content.length}:`, url, data.content.slice(0, spamDetectLength));
           throw new Error(`Blocked content ${url}`);

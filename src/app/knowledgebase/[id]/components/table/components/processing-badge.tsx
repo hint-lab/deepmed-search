@@ -84,21 +84,21 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
     const handleClick = async () => {
         if (status === IDocumentProcessingStatus.CONVERTING ||
             status === IDocumentProcessingStatus.INDEXING) {
-            toast.info(t('processingWait', "正在处理中，请耐心等待..."));
+            toast.info(t('processingWait'));
             return;
         }
         else if (status === IDocumentProcessingStatus.SUCCESSED) {
-            toast.info(t('processingCompleted', "文档已处理完成"));
+            toast.info(t('processingCompleted'));
             return;
         }
 
         try {
             setStatus(IDocumentProcessingStatus.CONVERTING);
-            setCurrentProgressMsg(t('processingStart', '开始处理'));
+            setCurrentProgressMsg(t('processingStart'));
             await updateDocumentProcessingStatusAction(
                 document.id,
                 IDocumentProcessingStatus.CONVERTING,
-                { progress: 0, progressMsg: t('processingStart', '开始处理') }
+                { progress: 0, progressMsg: t('processingStart') }
             );
 
             const result = await processDocumentDirectlyAction(
@@ -108,28 +108,28 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
             );
 
             if (result.success) {
-                toast.success(t('processingTaskStarted', '处理任务已完成'));
+                toast.success(t('processingTaskStarted'));
                 startPolling();
             } else {
                 setStatus(IDocumentProcessingStatus.FAILED);
-                setCurrentProgressMsg(result.error || t('processingStartFailed', '启动处理失败'));
+                setCurrentProgressMsg(result.error || t('processingStartFailed'));
                 await updateDocumentProcessingStatusAction(
                     document.id,
                     IDocumentProcessingStatus.FAILED,
-                    { progress: 0, progressMsg: result.error || t('processingStartFailed', '启动处理失败'), error: result.error }
+                    { progress: 0, progressMsg: result.error || t('processingStartFailed'), error: result.error }
                 );
-                toast.error(t('processingStartFailed', '启动处理失败') + ': ' + (result.error || '未知错误'));
+                toast.error(t('processingStartFailed') + ': ' + (result.error || t('unknownError2')));
                 onRefresh?.();
             }
         } catch (error) {
             console.error('处理文档失败:', error);
             setStatus(IDocumentProcessingStatus.FAILED);
-            setCurrentProgressMsg(t('processingError', '处理文档时出错'));
-            toast.error(t('processingError', '处理文档时出错'));
+            setCurrentProgressMsg(t('processingError'));
+            toast.error(t('processingError'));
             await updateDocumentProcessingStatusAction(
                 document.id,
                 IDocumentProcessingStatus.FAILED,
-                { progress: 0, progressMsg: t('processingError', '处理文档时出错'), error: error instanceof Error ? error.message : String(error) }
+                { progress: 0, progressMsg: t('processingError'), error: error instanceof Error ? error.message : String(error) }
             ).catch(err => console.error("更新失败状态时出错:", err));
             onRefresh?.();
         }
@@ -189,7 +189,7 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
             className: 'text-xs hover:cursor-pointer flex items-center gap-1 bg-gray-500/10 text-gray-600 hover:bg-gray-500/20',
             content: t('convertToMarkdown'),
             icon: <Play className="h-3 w-3" />,
-            tooltip: t('clickToProcess', '点击开始处理')
+            tooltip: t('clickToProcess')
         }
     };
 

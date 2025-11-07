@@ -88,6 +88,22 @@ export async function GET(req: NextRequest) {
                                     originalEventData = `event: result\ndata: ${event.payload}\n\n`;
                                     console.log(`[SSE ${taskId}] Sending result event:`, event.payload);
                                     break;
+                                case 'questionEvaluation':
+                                    originalEventData = `event: questionEvaluation\ndata: ${event.payload}\n\n`;
+                                    console.log(`[SSE ${taskId}] Sending question evaluation event:`, event.payload);
+                                    break;
+                                case 'searchQuery':
+                                    originalEventData = `event: searchQuery\ndata: ${event.payload}\n\n`;
+                                    console.log(`[SSE ${taskId}] Sending search query event:`, event.payload);
+                                    break;
+                                case 'visitUrl':
+                                    originalEventData = `event: visitUrl\ndata: ${event.payload}\n\n`;
+                                    console.log(`[SSE ${taskId}] Sending visit URL event:`, event.payload);
+                                    break;
+                                case 'readContent':
+                                    originalEventData = `event: readContent\ndata: ${event.payload}\n\n`;
+                                    console.log(`[SSE ${taskId}] Sending read content event:`, event.payload);
+                                    break;
                                 default:
                                     console.warn(`[SSE ${taskId}] Received unknown event type:`, event.type);
                             }

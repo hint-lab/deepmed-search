@@ -61,7 +61,7 @@ export async function removeTaskPlaceholder(taskId: string): Promise<void> {
 // --- Pub/Sub Functions --- (Used by the Worker)
 
 export interface TrackerEvent {
-    type: 'think' | 'error' | 'complete' | 'result';
+    type: 'think' | 'error' | 'complete' | 'result' | 'questionEvaluation' | 'searchQuery' | 'visitUrl' | 'readContent';
     payload: string; // The message content
 }
 
@@ -119,6 +119,50 @@ export async function publishComplete(taskId: string, completionMessage: string 
  */
 export async function publishResult(taskId: string, result: any): Promise<void> {
     await publishEvent(taskId, { type: 'result', payload: JSON.stringify(result) });
+}
+
+/**
+ * Publishes a question evaluation result to the task's Redis channel.
+ * (To be called when question is evaluated)
+ * @param taskId The unique ID of the task.
+ * @param evaluation The question evaluation result.
+ */
+export async function publishQuestionEvaluation(taskId: string, evaluation: {
+    think: string;
+    needsDefinitive: boolean;
+    needsFreshness: boolean;
+    needsPlurality: boolean;
+    needsCompleteness: boolean;
+}): Promise<void> {
+    await publishEvent(taskId, { type: 'questionEvaluation', payload: JSON.stringify(evaluation) });
+}
+
+/**
+ * Publishes a search query to the task's Redis channel.
+ * @param taskId The unique ID of the task.
+ * @param query The search query being executed.
+ */
+export async function publishSearchQuery(taskId: string, query: string | { q: string; tbs?: string; gl?: string; hl?: string }): Promise<void> {
+    const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
+    await publishEvent(taskId, { type: 'searchQuery', payload: queryStr });
+}
+
+/**
+ * Publishes a URL being visited to the task's Redis channel.
+ * @param taskId The unique ID of the task.
+ * @param urls The URLs being visited.
+ */
+export async function publishVisitUrl(taskId: string, urls: string[]): Promise<void> {
+    await publishEvent(taskId, { type: 'visitUrl', payload: JSON.stringify(urls) });
+}
+
+/**
+ * Publishes read content information to the task's Redis channel.
+ * @param taskId The unique ID of the task.
+ * @param content The content that was read.
+ */
+export async function publishReadContent(taskId: string, content: { title: string; url: string; tokens: number }): Promise<void> {
+    await publishEvent(taskId, { type: 'readContent', payload: JSON.stringify(content) });
 }
 
 // --- State Persistence Functions --- (Used by Trackers / Agent)

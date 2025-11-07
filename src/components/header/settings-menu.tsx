@@ -81,24 +81,7 @@ export function SettingsMenu() {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 lg:h-9"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                aria-label="切换主题"
-            >
-                {mounted ? (
-                    theme === 'light' ? (
-                        <Sun className="h-4 w-4" />
-                    ) : (
-                        <Moon className="h-4 w-4" />
-                    )
-                ) : (
-                    // 默认图标，防止hydration错误
-                    <div className="h-4 w-4" />
-                )}
-            </Button>
+            
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -150,6 +133,24 @@ export function SettingsMenu() {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 lg:h-9"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                aria-label="切换主题"
+            >
+                {mounted ? (
+                    theme === 'light' ? (
+                        <Sun className="h-4 w-4" />
+                    ) : (
+                        <Moon className="h-4 w-4" />
+                    )
+                ) : (
+                    // 默认图标，防止hydration错误
+                    <div className="h-4 w-4" />
+                )}
+            </Button>
         </div>
     );
 } 

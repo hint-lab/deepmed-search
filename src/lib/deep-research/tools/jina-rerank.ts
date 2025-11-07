@@ -34,7 +34,12 @@ export async function rerankDocuments(
 ): Promise<{ results: Array<{ index: number, relevance_score: number, document: { text: string } }> }> {
   try {
     if (!JINA_API_KEY) {
-      throw new Error('JINA_API_KEY is not set');
+      console.warn('JINA_API_KEY is not set, skipping rerank');
+      return { results: [] };
+    }
+
+    if (documents.length === 0) {
+      return { results: [] };
     }
 
     // No need to slice - we'll process all documents in batches
@@ -45,46 +50,70 @@ export async function rerankDocuments(
 
     console.log(`Rerank ${documents.length} documents in ${batches.length} batches of up to ${batchSize} each`);
 
-    // Process all batches in parallel
+    // Process all batches with individual error handling
     const batchResults = await Promise.all(
       batches.map(async (batchDocuments, batchIndex) => {
         const startIdx = batchIndex * batchSize;
 
-        const request: JinaRerankRequest = {
-          model: 'jina-reranker-v2-base-multilingual',
-          query,
-          top_n: batchDocuments.length,
-          documents: batchDocuments
-        };
+        try {
+          const request: JinaRerankRequest = {
+            model: 'jina-reranker-v2-base-multilingual',
+            query,
+            top_n: batchDocuments.length,
+            documents: batchDocuments
+          };
 
-        const response = await axios.post<JinaRerankResponse>(
-          JINA_API_URL,
-          request,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${JINA_API_KEY}`
+          const response = await axios.post<JinaRerankResponse>(
+            JINA_API_URL,
+            request,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${JINA_API_KEY}`
+              },
+              timeout: 30000 // 30 second timeout
             }
+          );
+
+          // Track token usage from this batch
+          (tracker || new TokenTracker()).trackUsage('rerank', {
+            promptTokens: response.data.usage.total_tokens,
+            completionTokens: 0,
+            totalTokens: response.data.usage.total_tokens
+          });
+
+          // Add the original document index to each result
+          return response.data.results.map(result => ({
+            ...result,
+            originalIndex: startIdx + result.index // Map back to the original index
+          }));
+        } catch (batchError) {
+          // Log batch error but continue with other batches
+          if (axios.isAxiosError(batchError)) {
+            console.error(`Error reranking batch ${batchIndex + 1}/${batches.length}:`, {
+              status: batchError.response?.status,
+              statusText: batchError.response?.statusText,
+              data: batchError.response?.data,
+              message: batchError.message
+            });
+          } else {
+            console.error(`Error reranking batch ${batchIndex + 1}/${batches.length}:`, batchError);
           }
-        );
-
-        // Track token usage from this batch
-        (tracker || new TokenTracker()).trackUsage('rerank', {
-          promptTokens: response.data.usage.total_tokens,
-          completionTokens: 0,
-          totalTokens: response.data.usage.total_tokens
-        });
-
-        // Add the original document index to each result
-        return response.data.results.map(result => ({
-          ...result,
-          originalIndex: startIdx + result.index // Map back to the original index
-        }));
+          // Return empty array for this batch so other batches can succeed
+          return [];
+        }
       })
     );
 
     // Flatten and sort all results by relevance score
-    const allResults = batchResults.flat().sort((a, b) => b.relevance_score - a.relevance_score);
+    const allResults = batchResults.flat().filter(r => r !== null && r !== undefined);
+    
+    if (allResults.length === 0) {
+      console.warn('No documents were successfully reranked');
+      return { results: [] };
+    }
+
+    allResults.sort((a, b) => b.relevance_score - a.relevance_score);
 
     // Keep the original document indices in the results
     const finalResults = allResults.map(result => ({
@@ -93,9 +122,19 @@ export async function rerankDocuments(
       document: result.document
     }));
 
+    console.log(`Successfully reranked ${finalResults.length}/${documents.length} documents`);
     return {results: finalResults};
   } catch (error) {
-    console.error('Error in reranking documents:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error in reranking documents:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+    } else {
+      console.error('Error in reranking documents:', error);
+    }
 
     // Return empty results if there is an error
     return {

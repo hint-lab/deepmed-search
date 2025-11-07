@@ -46,11 +46,11 @@ export function DocumentOptionDropdownButton({
         if (!document) return;
         try {
             await deleteDocument(document.id);
-            toast.success(t('deleteSuccess', '文档已成功删除'));
+            toast.success(t('deleteDocSuccess'));
             removeDocumentLocally(document.id);
         } catch (error: any) {
             console.error("Failed to delete document:", error);
-            toast.error(t('deleteError', '删除文档失败'), {
+            toast.error(t('deleteDocError'), {
                 description: error.message
             });
         }

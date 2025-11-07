@@ -8,6 +8,7 @@ import { Schemas } from './utils/schemas';
 import { normalizeUrl, addToAllURLs } from './utils/url-tools';
 import { removeHTMLtags } from './utils/text-tools';
 import { formatDateRange } from './utils/date-tools';
+import { publishSearchQuery } from './tracker-store';
 
 // 执行搜索查询
 export async function executeSearchQueries(
@@ -36,6 +37,9 @@ export async function executeSearchQueries(
 
         try {
             console.log('Search query:', query);
+            // Publish search query to frontend
+            await publishSearchQuery(context.taskId, query);
+            
             switch (SEARCH_PROVIDER) {
                 case 'jina':
                     results = (await search(query.q, context.tokenTracker)).response?.data || [];

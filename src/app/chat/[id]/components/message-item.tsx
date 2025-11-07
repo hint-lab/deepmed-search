@@ -38,6 +38,7 @@ function ChatMessageItem({
     isThinking,
     streamingState = { reasoningContent: '', content: '' }
 }: ChatMessageItemProps) {
+    const { t } = useTranslate('chat');
     const [showReasoning, setShowReasoning] = useState(true);
     const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
     const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
@@ -236,7 +237,7 @@ function ChatMessageItem({
             if (!isNaN(distNum)) return (1 - distNum).toFixed(3);
         }
 
-        return '无数据';
+        return t('noData');
     };
 
     // 获取排序键
@@ -268,7 +269,7 @@ function ChatMessageItem({
             if (!isNaN(distNum)) return `${Math.max(5, (1 - distNum) * 100)}%`;
         }
 
-        return '5%'; // 默认值
+        return '5%'; // default value
     };
 
     return (
@@ -293,7 +294,7 @@ function ChatMessageItem({
                         {!displayReasoningContent && !displayFinalContent && isStreaming && (
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                <span>正在思考中...</span>
+                                <span>{t('thinking')}</span>
                             </div>
                         )}
 
@@ -302,7 +303,7 @@ function ChatMessageItem({
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Brain className="h-4 w-4 text-muted-foreground" />
-                                        <h3 className="text-sm font-medium text-muted-foreground">思考过程</h3>
+                                        <h3 className="text-sm font-medium text-muted-foreground">{t('thinkingProcess')}</h3>
                                     </div>
                                     <Button
                                         variant="ghost"
@@ -331,7 +332,7 @@ function ChatMessageItem({
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="h-4 w-4 text-muted-foreground" />
-                                    <h3 className="text-sm font-medium text-muted-foreground">最终答案</h3>
+                                    <h3 className="text-sm font-medium text-muted-foreground">{t('finalAnswer')}</h3>
                                 </div>
                                 <div className={cn(
                                     "prose prose-sm dark:prose-invert max-w-none",
@@ -344,7 +345,7 @@ function ChatMessageItem({
                                 {isStreaming && (
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                         <Loader2 className="h-3 w-3 animate-spin" />
-                                        <span>思考中...</span>
+                                        <span>{t('thinkingNow')}</span>
                                     </div>
                                 )}
                             </div>
@@ -389,11 +390,11 @@ function ChatMessageItem({
                             <div className="mt-2 text-xs text-gray-500">
                                 <details className="group">
                                     <summary className="cursor-pointer font-medium transition-colors hover:text-blue-500">
-                                        来源：{message.metadata.kbName}（{message.metadata.kbChunks.length} 个片段）
+                                        {t('source')}：{message.metadata.kbName}（{message.metadata.kbChunks.length} {t('chunks')}）
                                     </summary>
                                     <div className="flex justify-between items-center text-xs text-gray-400 mt-1 mb-2 px-1">
-                                        <span>以下片段按相似度从高到低排序</span>
-                                        <span>相似度范围：0～1（越高越相关）</span>
+                                        <span>{t('sortedBySimilarity')}</span>
+                                        <span>{t('similarityRange')}</span>
                                     </div>
                                     <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
                                         {message.metadata.kbChunks
@@ -410,10 +411,10 @@ function ChatMessageItem({
                                                         <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
                                                             <span onClick={() => toggleExpand(i)} className="flex-grow cursor-pointer">
                                                                 {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
-                                                                <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? '收起' : '展开'}</span>
+                                                                <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? t('collapse') : t('expand')}</span>
                                                             </span>
                                                             <span className="ml-auto px-2 py-0.5 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
-                                                                相似度: {getSimilarityScore(chunk)}
+                                                                {t('similarity')}: {getSimilarityScore(chunk)}
                                                             </span>
                                                         </div>
                                                         <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
@@ -481,12 +482,12 @@ function ChatMessageItem({
                     >
                         <div className="flex justify-between items-center mb-4 border-b pb-2">
                             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                                引用详情 {selectedReference.reference_id && `[${selectedReference.reference_id}]`}
+                                {t('referenceDetails')} {selectedReference.reference_id && `[${selectedReference.reference_id}]`}
                             </h3>
                             <button
                                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                 onClick={() => setSelectedReference(null)}
-                                aria-label="关闭"
+                                aria-label={t('close')}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -496,12 +497,12 @@ function ChatMessageItem({
                         </div>
                         {selectedReference.doc_name && (
                             <div className="mb-2 text-sm text-gray-600 dark:text-gray-300">
-                                <strong>来源:</strong> {selectedReference.doc_name}
+                                <strong>{t('sourceLabel')}:</strong> {selectedReference.doc_name}
                             </div>
                         )}
                         <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
                             <ReactMarkdown>
-                                {selectedReference.content || '无内容'}
+                                {selectedReference.content || t('noContent')}
                             </ReactMarkdown>
                         </div>
                     </div>

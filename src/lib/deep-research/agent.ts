@@ -186,7 +186,7 @@ export class ResearchAgent {
             }
 
             // 对 URL 进行排序和过滤
-            this.weightedURLs = rankURLsHelper(this);
+            this.weightedURLs = await rankURLsHelper(this);
             console.log('Weighted URLs:', this.weightedURLs.length);
 
             // 根据加权 URL 数量决定是否允许 visit/search
@@ -197,6 +197,7 @@ export class ResearchAgent {
             const nextAction = await determineNextActionHelper(this, currentQuestion);
             if (!nextAction) {
                 console.error("Failed to determine next action. Breaking loop.");
+                await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作，研究过程提前结束。`);
                 // 确保 thisStep 有值，即使 LLM 失败
                 this.thisStep = this.thisStep || { action: 'answer', answer: 'Error: Failed to determine next step.', references: [], think: 'LLM failed to generate a valid next action.', isFinal: true };
                 break; // 如果 LLM 失败则退出循环
@@ -277,7 +278,7 @@ export class ResearchAgent {
         console.log("Agent Run Finished");
         await publishThink(this.context.taskId, `✅ 深度思考结束！`);
         // 对最终的 URL 进行排序，并返回指定数量的 URL
-        const finalWeightedURLs = rankURLsHelper(this);
+        const finalWeightedURLs = await rankURLsHelper(this);
         const returnedURLs = finalWeightedURLs.slice(0, this.options.numReturnedURLs).map(r => r.url!);
 
         return {

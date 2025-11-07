@@ -24,12 +24,16 @@ import { useTranslate } from "@/contexts/language-context";
 import { useKnowledgeBaseContext } from "@/contexts/knowledgebase-context";
 import { useSession } from "next-auth/react"
 
-const formSchema = z.object({
-    name: z.string().min(1, "请输入知识库名称").max(50, "名称不能超过50个字符"),
-    description: z.string().max(200, "描述不能超过200个字符").optional(),
+// 在组件外部定义，或者使用函数生成
+const getFormSchema = (t: (key: string) => string) => z.object({
+    name: z.string().min(1, t("validation.nameRequired")).max(50, t("validation.nameMaxLength")),
+    description: z.string().max(200, t("validation.descriptionMaxLength")).optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+    name: string;
+    description?: string;
+};
 
 interface CreateKnowledgeBaseButtonProps {
     visible: boolean;
@@ -44,7 +48,7 @@ const CreateKnowledgeBaseButton = ({
     const { createKnowledgeBase, isCreating } = useKnowledgeBaseContext();
     const { data: session } = useSession();
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(getFormSchema(t)),
         defaultValues: {
             name: "",
             description: "",
