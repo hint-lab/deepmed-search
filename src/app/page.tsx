@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { FileText, Zap, BarChart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTranslate } from '@/contexts/language-context';
+import Footer from '@/components/footer';
 
 export default function Home() {
     const router = useRouter();
@@ -145,6 +146,9 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+
+            {/* Footer */}
+            <Footer />
         </main>
     );
 }

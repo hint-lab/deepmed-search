@@ -131,21 +131,62 @@ graph TD
 - Docker 和 Docker Compose
 - PostgreSQL 14+（或使用 Docker）
 
-### 1. 启动依赖服务
-
-本项目使用 Docker Compose 管理开发环境的依赖服务。
+### 1. 克隆项目
 
 ```bash
-# 启动 PostgreSQL（已预装 pgvector 和 pg_jieba 扩展）
-docker-compose up -d postgres
-
-# 查看服务状态
-docker-compose ps
+git clone <repository-url>
+cd deepmed-search
 ```
 
-PostgreSQL 服务会自动初始化，支持向量搜索和中文分词。初始化脚本位于 `pgvector-zh/init.sql`。
+### 2. 启动依赖服务
 
-### 2. 安装依赖
+本项目使用 Docker Compose 管理开发环境的依赖服务，包括 PostgreSQL、Redis 和 MinIO。
+
+#### 启动所有服务
+
+```bash
+# 启动所有服务（PostgreSQL、Redis、MinIO）
+docker-compose up -d
+
+# 或者只启动需要的服务
+docker-compose up -d postgres redis
+```
+
+#### 查看服务状态
+
+```bash
+# 查看所有服务状态
+docker-compose ps
+
+# 查看服务日志
+docker-compose logs -f postgres
+docker-compose logs -f redis
+docker-compose logs -f minio
+```
+
+#### 停止和重启服务
+
+```bash
+# 停止所有服务
+docker-compose stop
+
+# 重启服务
+docker-compose restart
+
+# 停止并删除容器（保留数据）
+docker-compose down
+
+# 完全清理（包括数据卷，谨慎使用！）
+docker-compose down -v
+```
+
+#### 服务说明
+
+- **PostgreSQL**：已预装 pgvector 和 pg_jieba 扩展，支持向量搜索和中文分词
+- **Redis**：用于缓存和队列系统（可选）
+- **MinIO**：S3 兼容的对象存储，用于存储文档文件（可选）
+
+### 3. 安装依赖
 
 ```bash
 npm install
@@ -153,7 +194,7 @@ npm install
 yarn install
 ```
 
-### 3. 配置环境变量
+### 4. 配置环境变量
 
 ```bash
 # 复制环境变量模板
@@ -188,7 +229,7 @@ JINA_API_KEY="your-jina-api-key"
 # MINIO_SECRET_KEY="minioadmin"
 ```
 
-### 4. 初始化数据库
+### 5. 初始化数据库
 
 ```bash
 # 运行数据库迁移
@@ -203,7 +244,27 @@ yarn db:init
 yarn db:test
 ```
 
-### 5. 启动开发服务器
+### 6. 创建测试用户
+
+```bash
+# 创建默认测试用户
+npm run create:user
+# 或
+yarn create:user
+```
+
+这将创建以下测试账户：
+
+| 项目 | 值 |
+|------|------|
+| 邮箱 | `test@example.com` |
+| 密码 | `password123` |
+| 用户名 | Test User |
+| 语言 | 中文 (zh) |
+
+> **提示**：首次运行会自动创建测试租户和测试用户。如果用户已存在，会跳过创建步骤。
+
+### 6. 启动开发服务器
 
 ```bash
 npm run dev
@@ -213,16 +274,24 @@ yarn dev
 
 访问 http://localhost:3000 开始使用！
 
+### 7. 登录系统
+
+1. 打开浏览器访问 http://localhost:3000
+2. 点击登录按钮
+3. 使用测试账户登录：
+   - **邮箱**：`test@example.com`
+   - **密码**：`password123`
+
 ### 服务访问地址
 
-- **应用**：http://localhost:3000
-- **PostgreSQL**：`localhost:5432`
-  - 用户：`postgres`
-  - 密码：`postgres`
-  - 数据库：`deepmed`
-- **MinIO 控制台**：http://localhost:9001（如果启用）
-  - 用户：`minioadmin`
-  - 密码：`minioadmin`
+| 服务 | 地址 | 凭证 |
+|------|------|------|
+| **应用** | http://localhost:3000 | 见测试账户 |
+| **PostgreSQL** | `localhost:5432` | 用户: `postgres`<br/>密码: `postgres`<br/>数据库: `deepmed` |
+| **Redis** | `localhost:6379` | 无密码 |
+| **MinIO API** | http://localhost:9000 | 用户: `minioadmin`<br/>密码: `minioadmin` |
+| **MinIO 控制台** | http://localhost:9001 | 用户: `minioadmin`<br/>密码: `minioadmin` |
+| **Prisma Studio** | http://localhost:5555 | 运行 `yarn db:studio` 后访问 |
 
 ## 📖 开发指南
 
@@ -520,5 +589,11 @@ http://localhost:3000
 
 ---
 
-用 ❤️ 构建
+<div align="center">
+
+**用 ❤️ 构建，由 [H!NT Lab](https://hint-lab.github.io/) 开发**
+
+© 2025 DeepMed Search. 保留所有权利。
+
+</div>
 

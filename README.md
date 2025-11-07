@@ -131,19 +131,60 @@ graph TD
 - Docker and Docker Compose
 - PostgreSQL 14+ (or use Docker)
 
-### 1. Start Dependencies
-
-This project uses Docker Compose to manage development environment dependencies.
+### 1. Clone the Project
 
 ```bash
-# Start PostgreSQL (pre-installed with pgvector and pg_jieba extensions)
-docker-compose up -d postgres
-
-# Check service status
-docker-compose ps
+git clone <repository-url>
+cd deepmed-search
 ```
 
-PostgreSQL will automatically initialize with vector search and Chinese segmentation support. Initialization script is located at `pgvector-zh/init.sql`.
+### 2. Start Dependencies
+
+This project uses Docker Compose to manage development environment dependencies, including PostgreSQL, Redis, and MinIO.
+
+#### Start All Services
+
+```bash
+# Start all services (PostgreSQL, Redis, MinIO)
+docker-compose up -d
+
+# Or start only specific services
+docker-compose up -d postgres redis
+```
+
+#### Check Service Status
+
+```bash
+# View all service status
+docker-compose ps
+
+# View service logs
+docker-compose logs -f postgres
+docker-compose logs -f redis
+docker-compose logs -f minio
+```
+
+#### Stop and Restart Services
+
+```bash
+# Stop all services
+docker-compose stop
+
+# Restart services
+docker-compose restart
+
+# Stop and remove containers (keep data)
+docker-compose down
+
+# Complete cleanup (including data volumes, use with caution!)
+docker-compose down -v
+```
+
+#### Service Description
+
+- **PostgreSQL**: Pre-installed with pgvector and pg_jieba extensions for vector search and Chinese word segmentation
+- **Redis**: Used for caching and queue system (optional)
+- **MinIO**: S3-compatible object storage for document files (optional)
 
 ### 2. Install Dependencies
 
@@ -203,7 +244,27 @@ yarn db:init
 yarn db:test
 ```
 
-### 5. Start Development Server
+### 5. Create Test User
+
+```bash
+# Create default test user
+npm run create:user
+# or
+yarn create:user
+```
+
+This will create the following test account:
+
+| Field | Value |
+|-------|-------|
+| Email | `test@example.com` |
+| Password | `password123` |
+| Name | Test User |
+| Language | Chinese (zh) |
+
+> **Note**: First run will automatically create a test tenant and test user. If the user already exists, the creation will be skipped.
+
+### 6. Start Development Server
 
 ```bash
 npm run dev
@@ -213,16 +274,24 @@ yarn dev
 
 Visit http://localhost:3000 to start using the application!
 
+### 7. Login to the System
+
+1. Open your browser and visit http://localhost:3000
+2. Click the login button
+3. Use the test account to login:
+   - **Email**: `test@example.com`
+   - **Password**: `password123`
+
 ### Service Access Points
 
-- **Application**: http://localhost:3000
-- **PostgreSQL**: `localhost:5432`
-  - User: `postgres`
-  - Password: `postgres`
-  - Database: `deepmed`
-- **MinIO Console**: http://localhost:9001 (if enabled)
-  - User: `minioadmin`
-  - Password: `minioadmin`
+| Service | Address | Credentials |
+|---------|---------|-------------|
+| **Application** | http://localhost:3000 | See test account above |
+| **PostgreSQL** | `localhost:5432` | User: `postgres`<br/>Password: `postgres`<br/>Database: `deepmed` |
+| **Redis** | `localhost:6379` | No password |
+| **MinIO API** | http://localhost:9000 | User: `minioadmin`<br/>Password: `minioadmin` |
+| **MinIO Console** | http://localhost:9001 | User: `minioadmin`<br/>Password: `minioadmin` |
+| **Prisma Studio** | http://localhost:5555 | Access after running `yarn db:studio` |
 
 ## 📖 Development Guide
 
@@ -520,4 +589,10 @@ For questions or suggestions, feel free to open an Issue or Pull Request.
 
 ---
 
-Built with ❤️
+<div align="center">
+
+**Built with ❤️ by [H!NT Lab](https://hint-lab.github.io/)**
+
+© 2025 DeepMed Search. All rights reserved.
+
+</div>
