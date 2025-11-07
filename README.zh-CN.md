@@ -32,7 +32,7 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 ### 知识库检索
 - **智能检索**：基于语义相似度的精准搜索
 - **混合搜索**：结合向量搜索和 BM25 全文搜索，兼顾语义理解和关键词匹配
-- **中文优化**：使用 pg_jieba 分词，原生支持中文检索
+- **向量优化**：使用 Milvus 专业向量数据库，高性能检索
 - **详细结果**：显示来源文档、相关性评分、页码等信息
 - **交互体验**：点击结果查看完整文本块和详细信息
 
@@ -57,11 +57,10 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 
 ### 后端
 - **运行时**：Next.js Server Actions
-- **数据库**：PostgreSQL
+- **数据库**：PostgreSQL（结构化数据）
 - **ORM**：Prisma
 - **认证**：NextAuth.js
-- **向量存储**：pgvector 扩展
-- **中文分词**：pg_jieba 扩展
+- **向量数据库**：Milvus（向量存储与检索）
 - **AI SDK**：Vercel AI SDK (@ai-sdk/openai)
 
 ### 外部服务
@@ -91,8 +90,9 @@ graph TD
     end
 
     subgraph Storage["数据存储层"]
-        PG["PostgreSQL<br/>(pgvector + pg_jieba)"]
-        Files["文件存储<br/>(MinIO)"]
+        PG["PostgreSQL<br/>(结构化数据)"]
+        Milvus["Milvus<br/>(向量数据库)"]
+        Files["MinIO<br/>(文件 + 向量存储)"]
     end
 
     subgraph External["外部服务"]
@@ -183,9 +183,10 @@ docker-compose down -v
 
 #### 服务说明
 
-- **PostgreSQL**：已预装 pgvector 和 pg_jieba 扩展，支持向量搜索和中文分词
-- **Redis**：用于缓存和队列系统（可选）
-- **MinIO**：S3 兼容的对象存储，用于存储文档文件（可选）
+- **PostgreSQL**：存储结构化数据（用户、文档、知识库等）
+- **Milvus**：专业向量数据库，用于高性能向量检索
+- **Redis**：用于缓存和队列系统
+- **MinIO**：S3 兼容的对象存储，用于文件存储和 Milvus 向量持久化
 
 ### 3. 安装依赖
 
@@ -291,6 +292,8 @@ yarn dev
 |------|------|------|
 | **应用** | http://localhost:3000 | 见测试账户 |
 | **PostgreSQL** | `localhost:5432` | 用户: `postgres`<br/>密码: `postgres`<br/>数据库: `deepmed` |
+| **Milvus** | `localhost:19530` | 向量数据库端口 |
+| **Milvus 健康检查** | http://localhost:9091 | - |
 | **Redis** | `localhost:6379` | 无密码 |
 | **MinIO API** | http://localhost:9000 | 用户: `minioadmin`<br/>密码: `minioadmin` |
 | **MinIO 控制台** | http://localhost:9001 | 用户: `minioadmin`<br/>密码: `minioadmin` |
@@ -324,7 +327,7 @@ yarn db:studio
 2. **文本提取**：系统提取文档中的文本内容
 3. **分块处理**：将长文本切分成合适大小的块
 4. **生成嵌入**：通过 Vercel AI SDK（使用 OpenAI provider）生成每个文本块的向量表示
-5. **存储向量**：将向量存储在 PostgreSQL（使用 pgvector 扩展）
+5. **存储向量**：将向量存储在 Milvus 向量数据库中
 6. **检索匹配**：搜索时，查询文本也转换为向量，通过余弦相似度找到最相关的文本块
 
 #### 搜索模式
@@ -348,7 +351,7 @@ yarn db:studio
 
 #### 调整搜索参数
 
-在 `src/lib/pgvector/operations.ts` 中可以调整搜索参数：
+在 `src/lib/milvus/operations.ts` 中可以调整搜索参数：
 
 ```typescript
 // 权重配置
@@ -364,12 +367,13 @@ minSimilarity: 0.3,   // 最终结果最低相似度
 limit: 10             // 返回结果数量
 ```
 
-#### PostgreSQL 扩展
+#### Milvus 向量数据库
 
-项目使用两个关键的 PostgreSQL 扩展：
+Milvus 是专为向量相似度搜索和 AI 应用打造的开源向量数据库：
 
-- **pgvector**：向量存储和相似度搜索
-- **pg_jieba**：中文分词，提供更好的中文全文搜索支持
+- **高性能**：专门为向量检索优化，支持 GPU 加速
+- **可扩展**：支持分布式部署，轻松处理十亿级向量
+- **易用**：丰富的 SDK 和 API，无缝集成
 
 ### 添加 UI 组件
 
@@ -438,7 +442,7 @@ yarn db:init
 
 #### 2. 调整搜索参数
 
-在 `src/lib/pgvector/operations.ts` 中：
+在 `src/lib/milvus/operations.ts` 中：
 
 - **降低 `minSimilarity` 阈值**：获得更多结果（但可能相关性较低）
 - **调整权重比例**：
@@ -446,11 +450,17 @@ yarn db:init
   - 增加 `bm25Weight`：更重视关键词匹配
 - **中文搜索建议**：使用混合模式，设置较低的阈值
 
-#### 3. 重建索引
+#### 3. 检查 Milvus 服务
 
 ```bash
-# 重新创建数据库索引
-psql $DATABASE_URL -f scripts/chunk.sql
+# 检查 Milvus 是否运行
+docker ps | grep milvus
+
+# 查看 Milvus 日志
+docker logs deepmed-milvus
+
+# 重启 Milvus
+docker-compose restart milvus
 ```
 
 #### 4. 检查嵌入模型配置

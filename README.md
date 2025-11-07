@@ -32,7 +32,7 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 ### Knowledge Base Search
 - **Intelligent Retrieval**: Precise search based on semantic similarity
 - **Hybrid Search**: Combines vector search and BM25 full-text search, balancing semantic understanding and keyword matching
-- **Chinese Optimization**: Native Chinese search support using pg_jieba segmentation
+- **Vector Optimization**: Uses Milvus professional vector database for high-performance retrieval
 - **Detailed Results**: Displays source document, relevance score, page number, and more
 - **Interactive Experience**: Click results to view full text chunks and details
 
@@ -57,11 +57,10 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 
 ### Backend
 - **Runtime**: Next.js Server Actions
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (structured data)
 - **ORM**: Prisma
 - **Authentication**: NextAuth.js
-- **Vector Storage**: pgvector extension
-- **Chinese Segmentation**: pg_jieba extension
+- **Vector Database**: Milvus (vector storage and retrieval)
 - **AI SDK**: Vercel AI SDK (@ai-sdk/openai)
 
 ### External Services
@@ -91,8 +90,9 @@ graph TD
     end
 
     subgraph Storage["Data Storage"]
-        PG["PostgreSQL<br/>(pgvector + pg_jieba)"]
-        Files["File Storage<br/>(MinIO)"]
+        PG["PostgreSQL<br/>(Structured Data)"]
+        Milvus["Milvus<br/>(Vector Database)"]
+        Files["MinIO<br/>(Files + Vector Storage)"]
     end
 
     subgraph External["External Services"]
@@ -106,6 +106,7 @@ graph TD
     Hooks --> Actions
     Actions --> Lib
     Lib --> PG
+    Lib --> Milvus
     Lib --> Files
     Lib --> AISDK
     Lib --> SearchAPI
@@ -183,9 +184,10 @@ docker-compose down -v
 
 #### Service Description
 
-- **PostgreSQL**: Pre-installed with pgvector and pg_jieba extensions for vector search and Chinese word segmentation
-- **Redis**: Used for caching and queue system (optional)
-- **MinIO**: S3-compatible object storage for document files (optional)
+- **PostgreSQL**: Stores structured data (users, documents, knowledge bases, etc.)
+- **Milvus**: Professional vector database for high-performance vector retrieval
+- **Redis**: Used for caching and queue system
+- **MinIO**: S3-compatible object storage for file storage and Milvus vector persistence
 
 ### 2. Install Dependencies
 
@@ -291,6 +293,8 @@ Visit http://localhost:3000 to start using the application!
 |---------|---------|-------------|
 | **Application** | http://localhost:3000 | See test account above |
 | **PostgreSQL** | `localhost:5432` | User: `postgres`<br/>Password: `postgres`<br/>Database: `deepmed` |
+| **Milvus** | `localhost:19530` | gRPC endpoint for vector operations |
+| **Attu (Milvus UI)** | http://localhost:8000 | Milvus administration interface |
 | **Redis** | `localhost:6379` | No password |
 | **MinIO API** | http://localhost:9000 | User: `minioadmin`<br/>Password: `minioadmin` |
 | **MinIO Console** | http://localhost:9001 | User: `minioadmin`<br/>Password: `minioadmin` |
@@ -324,8 +328,8 @@ Knowledge base search is based on vector embedding technology:
 2. **Text Extraction**: System extracts text content from documents
 3. **Chunking**: Long texts are split into appropriately sized chunks
 4. **Generate Embeddings**: Vercel AI SDK (with OpenAI provider) generates vector representations for each text chunk
-5. **Store Vectors**: Vectors are stored in PostgreSQL (using pgvector extension)
-6. **Retrieve Matches**: During search, query text is also converted to vectors, and most relevant text chunks are found through cosine similarity
+5. **Store Vectors**: Vectors are stored in Milvus vector database
+6. **Retrieve Matches**: During search, query text is also converted to vectors, and most relevant text chunks are found through similarity search
 
 #### Search Modes
 
@@ -348,7 +352,7 @@ The application supports three search modes:
 
 #### Adjust Search Parameters
 
-You can adjust search parameters in `src/lib/pgvector/operations.ts`:
+You can adjust search parameters in `src/lib/milvus/operations.ts`:
 
 ```typescript
 // Weight configuration
@@ -364,12 +368,14 @@ minSimilarity: 0.3,   // Final result minimum similarity
 limit: 10             // Number of results to return
 ```
 
-#### PostgreSQL Extensions
+#### Milvus Vector Database
 
-The project uses two key PostgreSQL extensions:
+The project uses Milvus as the professional vector database:
 
-- **pgvector**: Vector storage and similarity search
-- **pg_jieba**: Chinese word segmentation for better Chinese full-text search support
+- **High Performance**: Optimized for large-scale vector similarity search
+- **Scalability**: Supports billions of vectors with distributed architecture
+- **Multiple Index Types**: HNSW, IVF_FLAT, IVF_SQ8, etc.
+- **Flexible Deployment**: Standalone or cluster mode
 
 ### Adding UI Components
 
@@ -438,22 +444,32 @@ yarn db:init
 
 #### 2. Adjust Search Parameters
 
-In `src/lib/pgvector/operations.ts`:
+In `src/lib/milvus/operations.ts`:
 
-- **Lower `minSimilarity` threshold**: Get more results (but may be less relevant)
-- **Adjust weight ratios**:
-  - Increase `vectorWeight`: Emphasize semantic understanding
-  - Increase `bm25Weight`: Emphasize keyword matching
-- **Chinese search suggestion**: Use hybrid mode with lower thresholds
+- **Lower similarity threshold**: Get more results (but may be less relevant)
+- **Adjust search parameters**:
+  - `nprobe`: Number of units to query (higher = more accurate but slower)
+  - `ef`: Size of the dynamic candidate list (for HNSW index)
+  - `topK`: Number of results to return
 
-#### 3. Rebuild Indexes
+#### 3. Check Milvus Connection
 
 ```bash
-# Recreate database indexes
-psql $DATABASE_URL -f scripts/chunk.sql
+# Check Milvus service status
+docker-compose ps milvus-standalone
+
+# View Milvus logs
+docker-compose logs -f milvus-standalone
 ```
 
-#### 4. Check Embedding Model Configuration
+#### 4. Rebuild Milvus Collection
+
+```bash
+# If vector data is corrupted, you may need to recreate the collection
+# This will delete all vectors, so use with caution
+```
+
+#### 5. Check Embedding Model Configuration
 
 Ensure correct configuration in `.env.local`:
 
@@ -469,12 +485,12 @@ curl $OPENAI_BASE_URL/models \
   -H "Authorization: Bearer $OPENAI_API_KEY"
 ```
 
-#### 5. Chinese Search Optimization Tips
+#### 6. Search Optimization Tips
 
 - Use **short and clear** keywords
 - Try **different phrasings**
-- Use **hybrid search** mode
 - Appropriately lower similarity thresholds
+- Ensure vectors are properly indexed in Milvus
 
 ### Docker Service Issues
 

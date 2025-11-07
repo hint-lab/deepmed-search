@@ -42,7 +42,8 @@ services:
   # Milvus 向量数据库 - standalone 模式（使用内嵌 etcd）
   milvus:
     container_name: deepmed-milvus
-    image: docker.m.daocloud.io/milvusdb/milvus:v2.4.0
+    image: docker.m.daocloud.io/milvusdb/milvus:v2.3.10
+    
     command: ["milvus", "run", "standalone"]
     security_opt:
       - seccomp:unconfined
