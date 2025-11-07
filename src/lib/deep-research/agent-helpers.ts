@@ -126,6 +126,11 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
         // 验证返回的结果
         if (!result || !result.object) {
             console.error("LLM returned empty result");
+            console.error("Messages context:", {
+                messageCount: (thisAgent as any).msgWithKnowledge?.length,
+                knowledgeCount: allKnowledge.length,
+                hasWeightedURLs: weightedURLs.length > 0
+            });
             return null;
         }
         
@@ -158,6 +163,22 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
         return stepAction;
     } catch (error) {
         console.error("Error generating next action:", error);
+        console.error("Error details:", {
+            errorName: (error as any)?.name,
+            errorMessage: (error as any)?.message,
+            allowedActions: {
+                search: allowSearch,
+                visit: allowRead,
+                answer: allowAnswer,
+                reflect: allowReflect,
+                coding: allowCoding
+            },
+            contextState: {
+                knowledgeItems: allKnowledge.length,
+                weightedURLs: weightedURLs.length,
+                questions: allQuestions.length
+            }
+        });
         return null; // Return null on generation failure
     }
 }

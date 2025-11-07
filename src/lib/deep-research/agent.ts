@@ -196,13 +196,45 @@ export class ResearchAgent {
             // 使用 LLM 决定下一步动作
             const nextAction = await determineNextActionHelper(this, currentQuestion);
             if (!nextAction) {
-                console.error("Failed to determine next action. Breaking loop.");
-                await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作，研究过程提前结束。`);
-                // 确保 thisStep 有值，即使 LLM 失败
-                this.thisStep = this.thisStep || { action: 'answer', answer: 'Error: Failed to determine next step.', references: [], think: 'LLM failed to generate a valid next action.', isFinal: true };
-                break; // 如果 LLM 失败则退出循环
+                console.error("Failed to determine next action.");
+                console.error("Context state:", {
+                    totalStep: this.totalStep,
+                    knowledgeCount: this.allKnowledge.length,
+                    weightedURLsCount: this.weightedURLs.length,
+                    gapsCount: this.gaps.length
+                });
+                
+                // 尝试后备策略：如果有足够的知识，尝试回答；否则尝试重新搜索
+                if (this.allKnowledge.length >= 3) {
+                    const knowledgeInfo = this.allKnowledge.length > 15 
+                        ? `知识较多（${this.allKnowledge.length} 条），将选择最相关的 15 条`
+                        : `${this.allKnowledge.length} 条知识`;
+                    
+                    await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作。基于现有${knowledgeInfo}尝试生成答案。`);
+                    
+                    // 使用后备动作：尝试回答
+                    this.thisStep = {
+                        action: 'answer',
+                        answer: '',
+                        references: [],
+                        think: `由于无法确定下一步，尝试基于现有知识生成答案（共 ${this.allKnowledge.length} 条知识可用）`,
+                        isFinal: false
+                    };
+                } else {
+                    await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作，且知识不足（仅 ${this.allKnowledge.length} 条）。研究过程提前结束。`);
+                    // 确保 thisStep 有值，即使 LLM 失败
+                    this.thisStep = {
+                        action: 'answer',
+                        answer: '抱歉，由于技术原因无法完成研究。建议：1) 简化问题 2) 提供更具体的关键词 3) 稍后重试',
+                        references: [],
+                        think: 'LLM 失败且缺少足够知识',
+                        isFinal: true
+                    };
+                    break;
+                }
+            } else {
+                this.thisStep = nextAction;
             }
-            this.thisStep = nextAction;
 
             const actionsStr = [this.allowSearch && 'search', this.allowRead && 'visit', this.allowAnswer && 'answer', this.allowReflect && 'reflect', this.allowCoding && 'coding'].filter(Boolean).join(', ');
             console.log(`${currentQuestion}: ${this.thisStep.action} <- [${actionsStr}]`);

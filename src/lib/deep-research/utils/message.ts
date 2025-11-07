@@ -29,7 +29,30 @@ ${k.answer}
 
 // 组合消息，包括知识库内容和用户问题
 export function composeMsgs(messages: CoreMessage[], knowledge: KnowledgeItem[], question: string, finalAnswerPIP?: string[]) {
-    const msgs = [...BuildMsgsFromKnowledge(knowledge), ...messages];
+    // 限制知识数量以避免上下文过大
+    // 优先选择：qa 类型的知识（更相关）和最新的知识
+    const MAX_KNOWLEDGE_ITEMS = 15; // 限制最多15条知识，约30条消息
+    
+    let selectedKnowledge = knowledge;
+    if (knowledge.length > MAX_KNOWLEDGE_ITEMS) {
+        console.log(`Knowledge count (${knowledge.length}) exceeds limit. Selecting top ${MAX_KNOWLEDGE_ITEMS} items.`);
+        
+        // 优先级排序：qa > url > side-info
+        const priorityMap: Record<string, number> = { 'qa': 3, 'url': 2, 'side-info': 1 };
+        selectedKnowledge = knowledge
+            .map((k, idx) => ({ k, priority: priorityMap[k.type] || 0, idx }))
+            .sort((a, b) => {
+                // 先按优先级排序，再按索引（保持原有顺序）
+                if (b.priority !== a.priority) return b.priority - a.priority;
+                return a.idx - b.idx;
+            })
+            .slice(0, MAX_KNOWLEDGE_ITEMS)
+            .map(item => item.k);
+        
+        console.log(`Selected knowledge types:`, selectedKnowledge.map(k => k.type));
+    }
+    
+    const msgs = [...BuildMsgsFromKnowledge(selectedKnowledge), ...messages];
 
     const userContent = `
 ${question}

@@ -80,6 +80,16 @@ export async function readUrl(
         if (status === 402) {
           throw new Error(errorData?.readableMessage || 'Insufficient balance');
         }
+        
+        // 对于常见的临时错误，提供更友好的错误信息
+        if (status === 503) {
+          throw new Error(`网站暂时不可用 (HTTP 503)，请稍后重试`);
+        } else if (status === 429) {
+          throw new Error(`请求过于频繁 (HTTP 429)，请降低访问速度`);
+        } else if (status === 403) {
+          throw new Error(`访问被拒绝 (HTTP 403)，网站可能有反爬虫保护`);
+        }
+        
         throw new Error(errorData?.readableMessage || `HTTP Error ${status}`);
       } else if (error.request) {
         // The request was made but no response was received
