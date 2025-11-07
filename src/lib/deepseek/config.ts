@@ -6,7 +6,7 @@ export const DEFAULT_CONFIG: Partial<DeepSeekConfig> = {
     temperature: 0.3,
     maxTokens: 2000,
     stop: [],
-    systemPrompt: '你是一个有帮助的AI助手。',
+    systemPrompt: '你是DeepMed团队开发的一个专业的医学AI助手',
     baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
 }
 

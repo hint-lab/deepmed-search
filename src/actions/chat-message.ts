@@ -377,14 +377,14 @@ export async function getChatMessageStream(
                     chatClient.setSystemPrompt(
                         dialogId,
                         hasRelevantChunks
-                            ? `你是一个专业的AI助手。请基于以下知识库内容回答问题。
+                            ? `你是DeepMed团队开发的一个专业的医学AI助手。请基于以下知识库内容回答问题。
                             
 ${contextChunks}
 
 当你引用知识库内容时，请在句子后标注来源，例如[1]、[2]等。引用时使用kb_reference工具标记引用的内容。
 
 如果问题超出了以上知识范围，请诚实地表明你不知道，不要编造答案。只回答基于以上知识库内容的问题。`
-                            : `你是一个专业的AI助手。
+                            : `你是DeepMed团队开发的一个专业的医学AI助手。
 
 注意：针对用户的问题，我没有在知识库中找到相关内容。请诚实地告诉用户你没有相关信息，不要编造答案。可以礼貌地建议用户尝试其他相关问题或提供更多细节。`
                     );

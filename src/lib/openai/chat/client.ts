@@ -59,7 +59,7 @@ export class ChatClient {
             model: process.env.OPENAI_API_MODEL || 'gpt-4o-mini',
             temperature: 0.7,
             maxTokens: 2000,
-            systemPrompt: '你是一个专业的AI助手。'
+            systemPrompt: '你是DeepMed团队开发的一个专业的医学AI助手'
         });
 
         // 设置思考模式专用模型
