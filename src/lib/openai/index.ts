@@ -1,7 +1,7 @@
-import OpenAI from 'openai';
+import { createOpenAI } from '@ai-sdk/openai';
 
-// 创建 OpenAI 客户端实例
-export const openai = new OpenAI({
+// 创建 OpenAI provider 实例
+export const openai = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY || '',
     baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     organization: process.env.OPENAI_ORGANIZATION,
@@ -18,5 +18,4 @@ export const DEFAULT_CONFIG = {
     model: process.env.OPENAI_API_MODEL || 'gpt-4o-mini',
     temperature: 0.7,
     maxTokens: 2000,
-    stop: [],
 } as const; 

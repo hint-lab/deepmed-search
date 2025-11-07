@@ -8,7 +8,7 @@ import { chatClient } from '@/lib/deepseek/chat/client';
 import { kbReferenceTool } from '@/lib/deepseek/chat/tools';
 import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
-import { searchSimilarChunks, ChunkSearchResult } from '@/lib/pgvector/operations';
+import { searchSimilarChunks, ChunkSearchResult } from '@/lib/milvus/operations';
 import { getEmbeddings } from '@/lib/openai/embedding';
 import { auth } from '@/lib/auth';
 import { ChunkResponse } from '@/lib/deepseek';

@@ -22,6 +22,13 @@ export async function handleSearchAction(thisAgent: ResearchAgent, action: Searc
     const diaryContext = thisAgent.diaryContext as string[];
     const step = thisAgent.step as number;
     await publishThink(thisAgent.context.taskId, `步骤 ${step}: 开始搜索`);
+    
+    // 添加防御性检查
+    if (!action.searchRequests || !Array.isArray(action.searchRequests)) {
+        console.error(`[handleSearchAction] Invalid searchRequests for step ${step}`, action);
+        action.searchRequests = []; // 确保是有效数组
+    }
+    
     // 1. Deduplicate queries
     action.searchRequests = chooseK((await dedupQueries(action.searchRequests, allKeywords, context.tokenTracker!)).unique_queries, MAX_QUERIES_PER_STEP);
 

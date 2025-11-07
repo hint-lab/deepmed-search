@@ -1,44 +1,4 @@
-// OpenAI API 响应类型
-export interface OpenAIResponse {
-    id: string;
-    object: string;
-    created: number;
-    model: string;
-    choices: {
-        message: {
-            role: string;
-            content: string;
-            function_call?: {
-                name: string;
-                arguments: string;
-            };
-        };
-        finish_reason: string;
-        index: number;
-    }[];
-    usage: {
-        prompt_tokens: number;
-        completion_tokens: number;
-        total_tokens: number;
-    };
-}
-
-// OpenAI 流式响应类型
-export interface OpenAIStreamResponse {
-    id: string;
-    object: string;
-    created: number;
-    model: string;
-    choices: {
-        delta: {
-            content?: string;
-            role?: string;
-            reasoning_content?: string; // DeepSeek推理模型思维链内容
-        };
-        finish_reason: string | null;
-        index: number;
-    }[];
-}
+import { CoreMessage } from 'ai'
 
 // OpenAI 配置类型
 export interface OpenAIConfig {
@@ -49,25 +9,11 @@ export interface OpenAIConfig {
     reasonModel?: string; // 思考模式专用模型
     temperature?: number;
     maxTokens?: number;
-    stop?: string[];
     systemPrompt?: string;
 }
 
-// 消息类型
-export type Message = {
-    role: 'system' | 'user' | 'assistant' | 'function'
-    content: string
-    name?: string
-    function_call?: {
-        name: string
-        arguments: string
-    }
-} & {
-    role: 'system' | 'user' | 'assistant'
-} | {
-    role: 'function'
-    name: string
-}
+// 消息类型 - 使用 AI SDK 的 CoreMessage
+export type Message = CoreMessage
 
 // 响应元数据类型
 export interface ResponseMetadata {
@@ -95,9 +41,10 @@ export interface FunctionParameters {
 // 工具定义类型
 export interface Tool {
     name: string;
-    description: string;
-    parameters: any;
+    description?: string;
+    parameters?: any;
     handler: (params: any) => Promise<any>;
+    execute?: (args: any, options?: any) => Promise<any>;
 }
 
 // 流式响应处理器类型

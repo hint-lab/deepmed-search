@@ -1,6 +1,6 @@
 import { DocumentChunk } from '../document-splitter';
 import { getEmbeddings } from '../openai/embedding';
-import { insertVectors } from '../pgvector/operations';
+import { insertVectors } from '../milvus/operations';
 import logger from '@/utils/logger';
 
 /**

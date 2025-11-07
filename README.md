@@ -62,11 +62,12 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 - **Authentication**: NextAuth.js
 - **Vector Storage**: pgvector extension
 - **Chinese Segmentation**: pg_jieba extension
+- **AI SDK**: Vercel AI SDK (@ai-sdk/openai)
 
 ### External Services
-- **Embedding Model**: OpenAI API (or compatible)
+- **AI Services**: Vercel AI SDK with OpenAI provider (embeddings and chat)
 - **Search Services**: Tavily, Jina, DuckDuckGo
-- **LLM Services**: GPT, DeepSeek, Gemini
+- **LLM Providers**: OpenAI, DeepSeek, Google Vertex AI
 - **File Storage**: MinIO (optional)
 - **Cache**: Redis (optional)
 
@@ -95,9 +96,9 @@ graph TD
     end
 
     subgraph External["External Services"]
-        OpenAI["OpenAI API<br/>(Embeddings)"]
+        AISDK["Vercel AI SDK<br/>(Embeddings & Chat)"]
         SearchAPI["Search APIs<br/>(Tavily/Jina/DuckDuckGo)"]
-        LLMAPI["LLM APIs<br/>(GPT/DeepSeek/Gemini)"]
+        LLMProviders["LLM Providers<br/>(OpenAI/DeepSeek/Vertex AI)"]
     end
 
     %% Connections
@@ -106,9 +107,9 @@ graph TD
     Actions --> Lib
     Lib --> PG
     Lib --> Files
-    Lib --> OpenAI
+    Lib --> AISDK
     Lib --> SearchAPI
-    Lib --> LLMAPI
+    Lib --> LLMProviders
     Auth <--> PG
 
     %% Styles
@@ -211,9 +212,11 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/deepmed"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here"
 
-# OpenAI API (for generating embeddings, required for KB search)
+# OpenAI API (used by Vercel AI SDK for embeddings and chat, required for KB search)
 OPENAI_API_KEY="your-openai-api-key"
 OPENAI_BASE_URL="https://api.openai.com/v1"
+OPENAI_API_MODEL="gpt-4o-mini"  # Chat model
+OPENAI_API_REASON_MODEL="o4-mini"  # Reasoning model (optional)
 
 # Web search APIs
 TAVILY_API_KEY="your-tavily-api-key"
@@ -320,7 +323,7 @@ Knowledge base search is based on vector embedding technology:
 1. **Document Upload**: Users upload documents (PDF, DOCX, TXT, etc.)
 2. **Text Extraction**: System extracts text content from documents
 3. **Chunking**: Long texts are split into appropriately sized chunks
-4. **Generate Embeddings**: OpenAI API generates vector representations for each text chunk
+4. **Generate Embeddings**: Vercel AI SDK (with OpenAI provider) generates vector representations for each text chunk
 5. **Store Vectors**: Vectors are stored in PostgreSQL (using pgvector extension)
 6. **Retrieve Matches**: During search, query text is also converted to vectors, and most relevant text chunks are found through cosine similarity
 

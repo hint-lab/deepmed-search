@@ -1,16 +1,16 @@
-import OpenAI from 'openai'
+import { generateText, streamText, CoreMessage } from 'ai'
 import {
     OpenAIConfig,
     Message,
     ChatResponse,
     Tool,
     ChunkHandler,
-    FunctionParameters
 } from '../types'
 import { validateConfig } from '../config'
 import { MessageHistory } from './history'
 import logger from '@/utils/logger'
 import { MessageType } from '@/constants/chat'
+import { openai } from '../index'
 
 // 将自定义消息类型转换为 OpenAI API 支持的标准角色
 function convertToStandardRole(role: string): 'system' | 'user' | 'assistant' | 'function' {
@@ -46,11 +46,11 @@ function convertMessagesToApiFormat(messages: any[]): any[] {
 
 export class ChatClient {
     private static instance: ChatClient;
-    private client: OpenAI;
     private config: OpenAIConfig;
     private historyMap: Map<string, MessageHistory>;
     private tools: Tool[] = [];
     private reasonModel: string;
+    
     private constructor() {
         this.config = validateConfig({
             apiKey: process.env.OPENAI_API_KEY || '',
@@ -65,12 +65,6 @@ export class ChatClient {
         // 设置思考模式专用模型
         this.reasonModel = process.env.OPENAI_API_REASON_MODEL || 'o4-mini';
         logger.info('思考模式使用模型:', this.reasonModel);
-
-        this.client = new OpenAI({
-            baseURL: this.config.baseUrl,
-            apiKey: this.config.apiKey,
-            organization: this.config.organization,
-        });
 
         this.historyMap = new Map();
     }
@@ -144,16 +138,17 @@ export class ChatClient {
                 const apiMessages = convertMessagesToApiFormat(reasonMessages);
 
                 // 使用思考专用模型生成响应
-                const completion = await this.client.chat.completions.create({
-                    model: this.reasonModel,
-                    messages: apiMessages,
+                const { text } = await generateText({
+                    model: openai(this.reasonModel, {
+                        structuredOutputs: true,
+                    }),
+                    messages: apiMessages as CoreMessage[],
                     temperature: this.config.temperature,
-                    reasoning_effort: "medium",
-                    max_completion_tokens: this.config.maxTokens,
+                    maxTokens: this.config.maxTokens,
                 });
 
                 const response = {
-                    content: completion.choices[0]?.message?.content || '',
+                    content: text,
                     metadata: {
                         model: this.reasonModel,
                         timestamp: new Date().toISOString(),
@@ -232,16 +227,16 @@ export class ChatClient {
             // 转换为 API 支持的格式
             const apiMessages = convertMessagesToApiFormat(messagesForModel);
 
-            const completion = await this.client.chat.completions.create({
-                model: this.config.model!,
-                messages: apiMessages,
+            const { text } = await generateText({
+                model: openai(this.config.model!),
+                messages: apiMessages as CoreMessage[],
                 temperature: this.config.temperature,
-                max_completion_tokens: this.config.maxTokens,
-                stop: this.config.stop,
+                maxTokens: this.config.maxTokens,
             });
-            logger.info("generateResponse completion", completion)
+            
+            logger.info("generateResponse text", text)
             return {
-                content: completion.choices[0]?.message?.content || '',
+                content: text,
                 metadata: {
                     model: this.config.model!,
                     timestamp: new Date().toISOString(),
@@ -272,26 +267,31 @@ export class ChatClient {
                 // 转换为 API 支持的格式
                 const apiMessages = convertMessagesToApiFormat(reasonMessages);
 
-                // 使用思考专用模型生成响应
-                const completion = await this.client.chat.completions.create({
-                    model: this.reasonModel,
-                    messages: apiMessages,
-                    functions: this.tools.map((tool) => ({
-                        name: tool.name,
-                        description: tool.description,
-                        parameters: tool.parameters._def as unknown as FunctionParameters,
-                    })),
-                    function_call: 'auto',
-                    temperature: this.config.temperature,
-                    max_completion_tokens: this.config.maxTokens,
+                // 准备工具定义
+                const toolsMap: Record<string, any> = {};
+                this.tools.forEach(tool => {
+                    if (tool.handler) {
+                        toolsMap[tool.name] = {
+                            ...tool,
+                            execute: tool.handler
+                        };
+                    }
                 });
 
-                const message = completion.choices[0]?.message;
+                // 使用思考专用模型生成响应
+                const { text, toolCalls } = await generateText({
+                    model: openai(this.reasonModel, {
+                        structuredOutputs: true,
+                    }),
+                    messages: apiMessages as CoreMessage[],
+                    tools: toolsMap,
+                    temperature: this.config.temperature,
+                    maxTokens: this.config.maxTokens,
+                });
 
-                // 处理函数调用
-                if (message?.function_call) {
-                    const { name, arguments: args } = message.function_call;
-                    const result = await this.handleToolCall(name, args);
+                // 处理工具调用
+                if (toolCalls && toolCalls.length > 0) {
+                    const result = await this.handleToolCall(toolCalls[0].toolName, toolCalls[0].args);
 
                     // 添加函数调用结果
                     history.addMessage({
@@ -311,11 +311,11 @@ export class ChatClient {
                     // 添加思考结果到历史
                     history.addMessage({
                         role: MessageType.ReasonReply,
-                        content: message?.content || '',
+                        content: text,
                     } as any);
 
                     return {
-                        content: message?.content || '',
+                        content: text,
                         metadata: {
                             model: this.reasonModel,
                             timestamp: new Date().toISOString(),
@@ -348,28 +348,30 @@ export class ChatClient {
             // 转换为 API 支持的格式
             const apiMessages = convertMessagesToApiFormat(messagesForModel);
 
-            const completion = await this.client.chat.completions.create({
-                model: this.config.model!,
-                messages: apiMessages,
-                functions: this.tools.map((tool) => ({
-                    name: tool.name,
-                    description: tool.description,
-                    parameters: tool.parameters._def as unknown as FunctionParameters,
-                })),
-                function_call: 'auto',
-                temperature: this.config.temperature,
-                max_completion_tokens: this.config.maxTokens,
+            // 准备工具定义
+            const toolsMap: Record<string, any> = {};
+            this.tools.forEach(tool => {
+                if (tool.handler) {
+                    toolsMap[tool.name] = {
+                        ...tool,
+                        execute: tool.handler
+                    };
+                }
             });
-            logger.info("completion", completion)
-            const message = completion.choices[0]?.message;
-            if (!message) {
-                throw new Error('OpenAI 没有返回响应');
-            }
 
-            // 处理函数调用
-            if (message.function_call) {
-                const { name, arguments: args } = message.function_call;
-                const result = await this.handleToolCall(name, args);
+            const { text, toolCalls } = await generateText({
+                model: openai(this.config.model!),
+                messages: apiMessages as CoreMessage[],
+                tools: toolsMap,
+                temperature: this.config.temperature,
+                maxTokens: this.config.maxTokens,
+            });
+            
+            logger.info("generateText result", { text, toolCalls })
+
+            // 处理工具调用
+            if (toolCalls && toolCalls.length > 0) {
+                const result = await this.handleToolCall(toolCalls[0].toolName, toolCalls[0].args);
 
                 // 添加函数调用结果
                 history.addMessage({
@@ -383,7 +385,7 @@ export class ChatClient {
 
             // 如果没有函数调用，直接返回响应
             const response: ChatResponse = {
-                content: message.content || '',
+                content: text,
                 metadata: {
                     model: this.config.model!,
                     timestamp: new Date().toISOString(),
@@ -422,21 +424,19 @@ export class ChatClient {
                 const apiMessages = convertMessagesToApiFormat(reasonMessages);
 
                 // 使用思考专用模型生成流式响应
-                const stream = await this.client.chat.completions.create({
-                    model: this.reasonModel,
-                    messages: apiMessages,
+                const { textStream } = streamText({
+                    model: openai(this.reasonModel, {
+                        structuredOutputs: true,
+                    }),
+                    messages: apiMessages as CoreMessage[],
                     temperature: 1,
-                    max_completion_tokens: this.config.maxTokens,
-                    stream: true,
+                    maxTokens: this.config.maxTokens,
                 });
 
                 let fullResponse = '';
-                for await (const chunk of stream) {
-                    const content = chunk.choices[0]?.delta?.content || '';
-                    if (content) {
-                        fullResponse += content;
-                        onChunk(content);
-                    }
+                for await (const chunk of textStream) {
+                    fullResponse += chunk;
+                    onChunk(chunk);
                 }
 
                 // 添加思考结果到历史
@@ -478,22 +478,17 @@ export class ChatClient {
             // 转换为 API 支持的格式
             const apiMessages = convertMessagesToApiFormat(messagesForModel);
 
-            const stream = await this.client.chat.completions.create({
-                model: this.config.model!,
-                messages: apiMessages,
+            const { textStream } = streamText({
+                model: openai(this.config.model!),
+                messages: apiMessages as CoreMessage[],
                 temperature: this.config.temperature,
-                max_completion_tokens: this.config.maxTokens,
-                stop: this.config.stop,
-                stream: true,
+                maxTokens: this.config.maxTokens,
             });
 
             let fullResponse = '';
-            for await (const chunk of stream) {
-                const content = chunk.choices[0]?.delta?.content || '';
-                if (content) {
-                    fullResponse += content;
-                    onChunk(content);
-                }
+            for await (const chunk of textStream) {
+                fullResponse += chunk;
+                onChunk(chunk);
             }
 
             const response: ChatResponse = {

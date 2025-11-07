@@ -1,9 +1,7 @@
 services:
-  # PostgreSQL 数据库服务（支持 pgvector）
+  # PostgreSQL 数据库服务（仅用于结构化数据）
   postgres:
-    build:
-      context: ./pgvector-zh # Assuming your Dockerfile is in a 'pgvector' subdirectory
-      dockerfile: Dockerfile
+    image: postgres:16-alpine
     container_name: deepmed-postgres
     restart: always
     ports:
@@ -14,12 +12,62 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./pgvector-zh/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: [ "CMD", "pg_isready -U ${POSTGRES_USER:-postgres} -q" ]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # MinIO 对象存储服务（文件存储 + Milvus 向量存储）
+  minio:
+    image: minio/minio:latest
+    container_name: deepmed-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000" # API 端口
+      - "9001:9001" # 控制台端口
+    command: minio server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Milvus 向量数据库 - standalone 模式（使用内嵌 etcd）
+  milvus:
+    container_name: deepmed-milvus
+    image: docker.m.daocloud.io/milvusdb/milvus:v2.4.0
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: "/var/lib/milvus/etcd"
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET_NAME: "milvus-bucket"
+      COMMON_STORAGETYPE: "minio"
+    volumes:
+      - milvus-data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - minio
 
   # Redis 服务 - 用于队列或者缓存系统
   redis:
@@ -37,28 +85,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # MinIO 服务
-  minio:
-    image: minio/minio:latest
-    container_name: deepmed-minio
-    restart: always
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
-    volumes:
-      - minio-data:/data
-    ports:
-      - "${MINIO_PORT}:9000" # API 端口
-      - "9001:9001" # 控制台端口
-    command: minio server /data --console-address ":9001"
-    healthcheck:
-      test: [ "CMD", "mc", "ready", "local" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 volumes:
   postgres-data:
   minio-data:
   redis-data:
+  milvus-data:

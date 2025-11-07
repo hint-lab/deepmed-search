@@ -26,7 +26,7 @@ export async function handleVisitAction(thisAgent: ResearchAgent, action: VisitA
 
     // 1. Normalize URLs from action.URLTargets and weightedURLs
     const urlListForAction = (weightedURLs || []).map(r => r.url);
-    const initialTargets = (action.URLTargets as (number | string)[])
+    const initialTargets = (action.URLTargets || [])
         .map(target => {
             if (typeof target === 'number' && target > 0 && target <= urlListForAction.length) {
                 return normalizeUrl(urlListForAction[target - 1]);
@@ -63,7 +63,7 @@ export async function handleVisitAction(thisAgent: ResearchAgent, action: VisitA
 
         // 3. Update diary context
         diaryContext.push(success
-            ? `At step ${step}, you took the **visit** action and deep dive into the following URLs:\n${urlResults.map(r => r?.url).join('\n')}\nYou found some useful information on the web and add them to your knowledge for future reference.`
+            ? `At step ${step}, you took the **visit** action and deep dive into the following URLs:\n${(urlResults || []).map(r => r?.url).join('\n')}\nYou found some useful information on the web and add them to your knowledge for future reference.`
             : `At step ${step}, you took the **visit** action and try to visit some URLs but failed to read the content. You need to think out of the box or cut from a completely different angle.`
         );
 

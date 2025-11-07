@@ -11,6 +11,7 @@ import { useTranslate } from '@/contexts/language-context';
 
 interface ThinkStep {
     think: string;
+    stepNumber?: number; // 步骤编号（从 "步骤 X:" 中提取）
     details?: string[];
 }
 
@@ -226,11 +227,16 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                     console.log(`ThinkStatusDisplay: Received think event:`, data.think);
                     setError(null);
                     
+                    // 提取步骤编号（如果有）
+                    const stepMatch = data.think.match(/^步骤\s*(\d+):/);
+                    const currentStepNumber = stepMatch ? parseInt(stepMatch[1]) : null;
+                    
                     // 判断是否为辅助信息（应该作为详情显示）
                     const isDetailMessage = 
                         data.think.startsWith('步骤') ||  // "步骤 X:"开头的消息
+                        data.think.startsWith('💭') ||    // 详细思考过程
                         (data.think.startsWith('📝') && !data.think.includes('LLM')) ||    // 回顾分析
-                        (data.think.startsWith('⚠️') && data.think.includes('问题根源')) ||    // 问题根源
+                        data.think.startsWith('⚠️') ||    // 所有警告消息（包括LLM错误）
                         data.think.startsWith('💡') ||    // 改进建议
                         data.think.includes('主问题答案评估') ||
                         data.think.includes('开始反思') ||
@@ -238,30 +244,74 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                         data.think.includes('开始回答') ||
                         data.think.includes('正在思考问题') ||
                         data.think.includes('研究完成') ||
-                        data.think.includes('深度思考结束');
+                        data.think.includes('深度思考结束') ||
+                        data.think.includes('LLM 未能生成');
                     
                     if (isDetailMessage) {
-                        // 作为最近步骤的详情添加
+                        // 作为详情添加
                         setThoughts(prev => {
                             if (prev.length === 0) {
                                 // 如果还没有步骤，创建一个临时步骤
-                                return [{ think: '初始化研究...', details: [data.think] }];
+                                return [{ think: '初始化研究...', stepNumber: currentStepNumber || undefined, details: [data.think] }];
                             }
+                            
                             const newThoughts = [...prev];
-                            const lastIndex = newThoughts.length - 1;
-                            newThoughts[lastIndex] = {
-                                ...newThoughts[lastIndex],
-                                details: [...(newThoughts[lastIndex].details || []), data.think]
-                            };
-                            // 自动展开最新步骤
-                            setExpandedSteps(prev => new Set([...prev, lastIndex]));
+                            
+                            // 如果有步骤号，尝试找到对应的步骤
+                            if (currentStepNumber) {
+                                const existingStepIndex = newThoughts.findIndex(s => s.stepNumber === currentStepNumber);
+                                
+                                if (existingStepIndex >= 0) {
+                                    // 找到了对应步骤，添加详情
+                                    newThoughts[existingStepIndex] = {
+                                        ...newThoughts[existingStepIndex],
+                                        details: [...(newThoughts[existingStepIndex].details || []), data.think]
+                                    };
+                                    // 自动展开这个步骤
+                                    setExpandedSteps(prev => new Set([...prev, existingStepIndex]));
+                                } else {
+                                    // 没找到对应步骤，创建新步骤
+                                    newThoughts.push({ 
+                                        think: `步骤 ${currentStepNumber}`, 
+                                        stepNumber: currentStepNumber, 
+                                        details: [data.think] 
+                                    });
+                                    setExpandedSteps(prev => new Set([...prev, newThoughts.length - 1]));
+                                }
+                            } else {
+                                // 没有步骤号，添加到最后一个步骤
+                                const lastIndex = newThoughts.length - 1;
+                                newThoughts[lastIndex] = {
+                                    ...newThoughts[lastIndex],
+                                    details: [...(newThoughts[lastIndex].details || []), data.think]
+                                };
+                                setExpandedSteps(prev => new Set([...prev, lastIndex]));
+                            }
+                            
                             return newThoughts;
                         });
                     } else {
-                        // 作为新步骤添加
-                        setThoughts(prev => [...prev, { think: data.think, details: [] }]);
-                        // 自动展开新步骤
-                        setExpandedSteps(prev => new Set([...prev, thoughts.length]));
+                        // 作为新步骤添加（主要的思考内容）
+                        setThoughts(prev => {
+                            // 如果有步骤号，检查是否已存在该步骤
+                            if (currentStepNumber) {
+                                const existingStepIndex = prev.findIndex(s => s.stepNumber === currentStepNumber);
+                                if (existingStepIndex >= 0) {
+                                    // 已存在该步骤，不创建新的，只更新 think（如果当前是更重要的消息）
+                                    return prev;
+                                } else {
+                                    // 不存在，创建新步骤
+                                    const newStep = { think: data.think, stepNumber: currentStepNumber, details: [] };
+                                    setExpandedSteps(prevExpanded => new Set([...prevExpanded, prev.length]));
+                                    return [...prev, newStep];
+                                }
+                            } else {
+                                // 没有步骤号，作为独立步骤添加
+                                const newStep = { think: data.think, stepNumber: undefined, details: [] };
+                                setExpandedSteps(prevExpanded => new Set([...prevExpanded, prev.length]));
+                                return [...prev, newStep];
+                            }
+                        });
                     }
                     
                     setTimeout(() => {
@@ -333,12 +383,24 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
         });
 
         eventSource.onerror = (err) => {
-            console.error(`ThinkStatusDisplay: SSE connection error for taskId ${taskId}:`, err);
-            if (sseStateRef.current.eventSource && sseStateRef.current.eventSource.readyState !== EventSource.CLOSED) {
-                setError(`${t('connectionError')} (ID: ${taskId})`);
-                setIsConnected(false);
+            const readyState = sseStateRef.current.eventSource?.readyState;
+            console.error(`ThinkStatusDisplay: SSE connection error for taskId ${taskId}:`, {
+                error: err,
+                readyState: readyState,
+                readyStateText: readyState === 0 ? 'CONNECTING' : readyState === 1 ? 'OPEN' : readyState === 2 ? 'CLOSED' : 'UNKNOWN'
+            });
+            
+            // 只在连接未正常关闭时显示错误
+            if (sseStateRef.current.eventSource && readyState !== EventSource.CLOSED) {
+                // 如果是连接状态（CONNECTING=0），可能是暂时性问题，等待重连
+                if (readyState === 0) {
+                    console.log(`ThinkStatusDisplay: Connection is still attempting for taskId: ${taskId}, waiting...`);
+                } else {
+                    setError(`${t('connectionError')} (ID: ${taskId})`);
+                    setIsConnected(false);
+                }
             } else {
-                console.log(`ThinkStatusDisplay: SSE connection closed for taskId: ${taskId}.`);
+                console.log(`ThinkStatusDisplay: SSE connection closed normally for taskId: ${taskId}.`);
                 setIsConnected(false);
             }
             clearTimeout(connectionTimeout);
@@ -376,9 +438,29 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
 
         if (!isConnected && !error) {
             return (
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                    <span className="text-lg">{t('connecting')}</span>
+                <div className="w-full mb-6 p-8 rounded-2xl bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 border border-blue-200 dark:border-blue-800/50 shadow-lg backdrop-blur-sm">
+                    <div className="flex flex-col items-center space-y-6">
+                        {/* 简洁的三点跳动动画 */}
+                        <div className="flex space-x-3">
+                            <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce"></div>
+                            <div className="w-4 h-4 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                            <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                        </div>
+                        
+                        {/* 文本信息 */}
+                        <div className="text-center space-y-2">
+                            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                                {t('connecting')}
+                            </h3>
+                            <p className="text-sm text-muted-foreground max-w-md">
+                                {t('preparingResearch')}
+                            </p>
+                        </div>
+                        
+                        <div className="w-full max-w-xs h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-progress-bar"></div>
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -794,29 +876,37 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                             <div
                                 key={index}
                                 className={cn(
-                                    "group relative pl-6 py-3 transition-all duration-500",
+                                    "group relative pl-6 py-4 transition-all duration-500",
                                     "before:absolute before:left-0 before:top-0 before:h-full before:w-1",
                                     "before:bg-gradient-to-b before:from-blue-500 before:to-purple-500",
                                     "hover:before:opacity-100 before:opacity-50",
                                     "rounded-r-lg hover:bg-muted/30",
+                                    "border border-transparent hover:border-blue-200 dark:hover:border-blue-800",
                                     isLatest && isConnected && "animate-pulse-soft bg-blue-50/30 dark:bg-blue-900/10"
                                 )}
                             >
                                 <div className="flex items-start gap-3">
                                     {/* 步骤指示器 */}
                                     <div className={cn(
-                                        "flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full",
-                                        "bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs font-bold",
-                                        "shadow-lg",
+                                        "flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full",
+                                        "bg-gradient-to-br from-blue-500 to-purple-500 text-white font-bold",
+                                        "shadow-lg ring-4 ring-blue-100 dark:ring-blue-900/30",
                                         isLatest && isConnected && "animate-bounce-gentle"
                                     )}>
-                                        {index + 1}
+                                        {step.stepNumber ? (
+                                            <div className="text-center">
+                                                <div className="text-[10px] leading-none opacity-80">步骤</div>
+                                                <div className="text-base leading-none">{step.stepNumber}</div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm">{index + 1}</div>
+                                        )}
                                     </div>
                                     
                                     {/* 思考内容 */}
                                     <div className="flex-1 min-w-0">
                                         <div className="prose dark:prose-invert max-w-none">
-                                            <p className="text-sm leading-relaxed m-0">{step.think}</p>
+                                            <p className="text-sm leading-relaxed m-0 font-medium">{step.think}</p>
                                         </div>
                                         
                                         {/* 详情展开/收起 */}

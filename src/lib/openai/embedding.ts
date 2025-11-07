@@ -1,13 +1,6 @@
-import OpenAI from 'openai';
-import { DEFAULT_CONFIG } from './config';
+import { embed, embedMany } from 'ai';
+import { openai } from './index';
 import logger from '@/utils/logger';
-
-// 创建OpenAI客户端
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || '',
-    baseURL: DEFAULT_CONFIG.baseUrl,
-    organization: process.env.OPENAI_ORGANIZATION,
-});
 
 /**
  * 获取文本的嵌入向量
@@ -26,14 +19,13 @@ export async function getEmbedding(
             return Array(1536).fill(0);
         }
 
-        // 调用OpenAI API获取嵌入向量
-        const response = await openai.embeddings.create({
-            model,
-            input: text,
-            encoding_format: 'float',
+        // 使用 AI SDK 的 embed 函数获取嵌入向量
+        const { embedding } = await embed({
+            model: openai.embedding(model),
+            value: text,
         });
 
-        return response.data[0].embedding;
+        return embedding;
     } catch (error) {
         logger.error('获取嵌入向量失败', {
             error: error instanceof Error ? error.message : '未知错误',
@@ -62,14 +54,13 @@ export async function getEmbeddings(
             return [Array(1536).fill(0)];
         }
 
-        // 调用OpenAI API获取嵌入向量
-        const response = await openai.embeddings.create({
-            model,
-            input: validTexts,
-            encoding_format: 'float',
+        // 使用 AI SDK 的 embedMany 函数批量获取嵌入向量
+        const { embeddings } = await embedMany({
+            model: openai.embedding(model),
+            values: validTexts,
         });
 
-        return response.data.map(item => item.embedding);
+        return embeddings;
     } catch (error) {
         logger.error('批量获取嵌入向量失败', {
             error: error instanceof Error ? error.message : '未知错误',

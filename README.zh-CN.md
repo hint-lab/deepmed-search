@@ -62,11 +62,12 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **认证**：NextAuth.js
 - **向量存储**：pgvector 扩展
 - **中文分词**：pg_jieba 扩展
+- **AI SDK**：Vercel AI SDK (@ai-sdk/openai)
 
 ### 外部服务
-- **嵌入模型**：OpenAI API（或兼容接口）
+- **AI 服务**：Vercel AI SDK 配合 OpenAI provider（嵌入和对话）
 - **搜索服务**：Tavily、Jina、DuckDuckGo
-- **LLM 服务**：GPT、DeepSeek、Gemini
+- **LLM 提供商**：OpenAI、DeepSeek、Google Vertex AI
 - **文件存储**：MinIO（可选）
 - **缓存**：Redis（可选）
 
@@ -95,9 +96,9 @@ graph TD
     end
 
     subgraph External["外部服务"]
-        OpenAI["OpenAI API<br/>(嵌入模型)"]
+        AISDK["Vercel AI SDK<br/>(嵌入与对话)"]
         SearchAPI["搜索 API<br/>(Tavily/Jina/DuckDuckGo)"]
-        LLMAPI["LLM API<br/>(GPT/DeepSeek/Gemini)"]
+        LLMProviders["LLM 提供商<br/>(OpenAI/DeepSeek/Vertex AI)"]
     end
 
     %% 连接关系
@@ -106,9 +107,9 @@ graph TD
     Actions --> Lib
     Lib --> PG
     Lib --> Files
-    Lib --> OpenAI
+    Lib --> AISDK
     Lib --> SearchAPI
-    Lib --> LLMAPI
+    Lib --> LLMProviders
     Auth <--> PG
 
     %% 样式
@@ -211,9 +212,11 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/deepmed"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here"
 
-# OpenAI API（用于生成嵌入向量，知识库搜索必需）
+# OpenAI API（通过 Vercel AI SDK 使用，用于生成嵌入向量和对话，知识库搜索必需）
 OPENAI_API_KEY="your-openai-api-key"
 OPENAI_BASE_URL="https://api.openai.com/v1"
+OPENAI_API_MODEL="gpt-4o-mini"  # 对话模型
+OPENAI_API_REASON_MODEL="o4-mini"  # 推理模型（可选）
 
 # 网页搜索 API
 TAVILY_API_KEY="your-tavily-api-key"
@@ -320,7 +323,7 @@ yarn db:studio
 1. **文档上传**：用户上传文档（PDF、DOCX、TXT 等）
 2. **文本提取**：系统提取文档中的文本内容
 3. **分块处理**：将长文本切分成合适大小的块
-4. **生成嵌入**：调用 OpenAI API 生成每个文本块的向量表示
+4. **生成嵌入**：通过 Vercel AI SDK（使用 OpenAI provider）生成每个文本块的向量表示
 5. **存储向量**：将向量存储在 PostgreSQL（使用 pgvector 扩展）
 6. **检索匹配**：搜索时，查询文本也转换为向量，通过余弦相似度找到最相关的文本块
 

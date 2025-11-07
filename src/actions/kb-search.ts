@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 // Import the necessary functions
-import { searchSimilarChunks, ChunkSearchResult } from '@/lib/pgvector/operations';
+import { searchSimilarChunks, ChunkSearchResult } from '@/lib/milvus/operations';
 import { getEmbedding } from '@/lib/openai/embedding';
 
 export interface ChunkResult {

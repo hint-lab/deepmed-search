@@ -208,6 +208,11 @@ export class ResearchAgent {
             console.log(`${currentQuestion}: ${this.thisStep.action} <- [${actionsStr}]`);
             console.log(this.thisStep)
 
+            // 发送详细的思考过程到前端
+            if (this.thisStep.think) {
+                await publishThink(this.context.taskId, `💭 ${this.thisStep.think}`);
+            }
+
             // 追踪执行的动作
             this.context.actionTracker.trackAction({ totalStep: this.totalStep, thisStep: this.thisStep, gaps: this.gaps });
 
