@@ -65,8 +65,12 @@ export async function GET(req: NextRequest) {
                         controller.enqueue(new TextEncoder().encode(`: ping ${Date.now()}\n\n`));
                     } catch (hbErr) {
                         console.warn(`[SSE ${taskId}] Heartbeat failed`, hbErr);
-                        clearInterval(heartbeatTimer);
-                        controller.close();
+                        if (heartbeatTimer) {
+                            clearInterval(heartbeatTimer);
+                            heartbeatTimer = null;
+                        }
+                        // 不要在这里关闭 controller，因为它可能已经关闭了
+                        // controller.close();
                     }
                 }, 15000);
 
@@ -143,6 +147,11 @@ export async function GET(req: NextRequest) {
 
                             // 如果需要关闭控制器，在发送完所有数据后关闭
                             if (shouldCloseController) {
+                                // 先清理心跳定时器，避免在 controller 关闭后继续发送
+                                if (heartbeatTimer) {
+                                    clearInterval(heartbeatTimer);
+                                    heartbeatTimer = null;
+                                }
                                 controller.close();
                                 console.log(`[SSE ${taskId}] Task completed, closing SSE stream.`);
                                 return;
@@ -156,19 +165,28 @@ export async function GET(req: NextRequest) {
                 // 错误处理
                 subscriber.on('error', (error) => {
                     console.error(`[SSE ${taskId}] Redis subscriber error:`, error);
-                    if (heartbeatTimer) clearInterval(heartbeatTimer);
+                    if (heartbeatTimer) {
+                        clearInterval(heartbeatTimer);
+                        heartbeatTimer = null;
+                    }
                     controller.close();
                 });
 
             } catch (error) {
                 console.error(`[SSE ${taskId}] Error setting up Redis subscriber:`, error);
-                if (heartbeatTimer) clearInterval(heartbeatTimer);
+                if (heartbeatTimer) {
+                    clearInterval(heartbeatTimer);
+                    heartbeatTimer = null;
+                }
                 controller.close();
             }
         },
         cancel() {
             console.log(`[SSE ${taskId}] Stream cancelled, cleaning up...`);
-            if (heartbeatTimer) clearInterval(heartbeatTimer);
+            if (heartbeatTimer) {
+                clearInterval(heartbeatTimer);
+                heartbeatTimer = null;
+            }
             subscriber.unsubscribe(channel).catch(console.error);
             subscriber.quit().catch(console.error);
             redis.quit().catch(console.error);

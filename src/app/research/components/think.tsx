@@ -400,6 +400,16 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
 
         eventSource.onerror = (err) => {
             const readyState = sseStateRef.current.eventSource?.readyState;
+            
+            // 如果是正常关闭（CLOSED=2），不记录为错误
+            if (readyState === EventSource.CLOSED) {
+                console.log(`ThinkStatusDisplay: SSE connection closed normally for taskId: ${taskId}.`);
+                setIsConnected(false);
+                clearTimeout(connectionTimeout);
+                return;
+            }
+            
+            // 只有非正常关闭时才记录错误
             console.error(`ThinkStatusDisplay: SSE connection error for taskId ${taskId}:`, {
                 error: err,
                 readyState: readyState,
@@ -415,9 +425,6 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                     setError(`${t('connectionError')} (ID: ${taskId})`);
                     setIsConnected(false);
                 }
-            } else {
-                console.log(`ThinkStatusDisplay: SSE connection closed normally for taskId: ${taskId}.`);
-                setIsConnected(false);
             }
             clearTimeout(connectionTimeout);
 
