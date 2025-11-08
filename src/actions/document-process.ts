@@ -282,8 +282,9 @@ export async function splitDocumentAction(
         });
 
         // 处理每个页面
-        const allChunks = [];
+        const allChunks: DocumentChunk[] = [];
         let totalChunks = 0;
+        let globalChunkIndex = 0; // 全局 chunk 索引，防止重复
 
         for (const page of pages) {
             // 分割页面内容
@@ -296,8 +297,19 @@ export async function splitDocumentAction(
                 prompt: options.prompt
             });
 
+            // 重新生成全局唯一的 chunk ID
+            const reindexedChunks = chunks.map((chunk, localIndex) => ({
+                ...chunk,
+                id: `${documentId}-chunk-${globalChunkIndex + localIndex}`,
+                metadata: {
+                    ...chunk.metadata,
+                    position: globalChunkIndex + localIndex, // 更新全局位置
+                }
+            }));
+
+            globalChunkIndex += chunks.length;
             totalChunks += chunks.length;
-            allChunks.push(...chunks);
+            allChunks.push(...reindexedChunks);
         }
 
         logger.info('文档分割完成', {
