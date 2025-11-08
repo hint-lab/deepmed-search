@@ -39,9 +39,20 @@ export default function ResearchPage() {
     const [stepDetails, setStepDetails] = useState<StepDetail[] | null>(null); // 新增：用于存储步骤详情的状态
     const [taskId, setTaskId] = useState<string | null>(null); // Add state for taskId
     const [isPending, startTransition] = useTransition();
+    
+    // 高级设置
+    const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+    const [tokenBudget, setTokenBudget] = useState<number>(2000000); // 默认 2M tokens
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setQuestion(event.target.value);
+    };
+    
+    const handleTokenBudgetChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseInt(event.target.value, 10);
+        if (!isNaN(value) && value > 0) {
+            setTokenBudget(value);
+        }
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -58,7 +69,7 @@ export default function ResearchPage() {
 
         startTransition(async () => {
             // 更新类型断言以包含 stepDetails 和 taskId
-            const response = await startResearchAction(question) as ServerActionResponse<ResearchResponseData>;
+            const response = await startResearchAction(question, tokenBudget) as ServerActionResponse<ResearchResponseData>;
             console.log("startResearchAction", response);
             if (response.success && response.data) {
                 setTaskId(response.data.taskId || null); // Store the received taskId
@@ -108,6 +119,47 @@ export default function ResearchPage() {
                                     t('startResearchButton')
                                 )}
                             </Button>
+                        </div>
+                        
+                        {/* 高级设置 */}
+                        <div className="mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                            >
+                                <span>{showAdvanced ? '▼' : '▶'}</span>
+                                <span>{t('advancedSettings') || '高级设置'}</span>
+                            </button>
+                            
+                            {showAdvanced && (
+                                <div className="mt-3 p-4 border border-border/50 rounded-lg bg-muted/20 space-y-3">
+                                    <div className="space-y-2">
+                                        <label htmlFor="token-budget" className="text-sm font-medium text-foreground">
+                                            {t('tokenBudget') || 'Token 预算'}
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <Input
+                                                id="token-budget"
+                                                type="number"
+                                                value={tokenBudget}
+                                                onChange={handleTokenBudgetChange}
+                                                min="100000"
+                                                max="10000000"
+                                                step="100000"
+                                                disabled={isPending}
+                                                className="h-10 text-sm"
+                                            />
+                                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                                tokens
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('tokenBudgetHint') || '控制研究的最大 token 使用量。默认 2,000,000 tokens（约 $2-4）'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </form>
                 </div>

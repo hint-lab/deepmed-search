@@ -28,7 +28,8 @@ export interface ResearchJobPayload {
  */
 export async function startResearchAction(
     question: string,
-    useQueue: boolean = false // 新增参数，默认为 false
+    tokenBudget: number = 2000000, // Token 预算，默认 2M
+    useQueue: boolean = false // 是否使用队列，默认为 false
 ): Promise<ServerActionResponse<ResearchStartResponseData>> {
     if (!question || typeof question !== 'string' || question.trim().length === 0) {
         return {
@@ -49,7 +50,7 @@ export async function startResearchAction(
         const jobPayload: ResearchJobPayload = {
             taskId,
             question,
-            tokenBudget: 200000, // 示例参数，应根据需要调整
+            tokenBudget, // 使用前端传入的 token 预算
             // ... 传递其他需要的参数
         };
 
