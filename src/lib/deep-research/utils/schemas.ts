@@ -196,7 +196,7 @@ export class Schemas {
     }
   }
 
-  getAgentSchema(allowReflect: boolean, allowRead: boolean, allowAnswer: boolean, allowSearch: boolean, allowCoding: boolean,
+  getAgentSchema(allowReflect: boolean, allowRead: boolean, allowAnswer: boolean, allowSearch: boolean,
     currentQuestion?: string): z.ZodObject<any> {
     const actionSchemas: Record<string, z.ZodOptional<any>> = {};
 
@@ -209,13 +209,6 @@ export class Schemas {
             .describe(`A Google search query. Based on the deep intention behind the original question and the expected answer format.`))
           .describe(`Required when action='search'. Always prefer a single search query, only add another search query if the original question covers multiple aspects or elements and one search request is definitely not enough, each request focus on one specific aspect of the original question. Minimize mutual information between each query. Maximum ${MAX_QUERIES_PER_STEP} search queries.`)
           .max(MAX_QUERIES_PER_STEP)
-      }).optional();
-    }
-
-    if (allowCoding) {
-      actionSchemas.coding = z.object({
-        codingIssue: z.string().max(500)
-          .describe("Required when action='coding'. Describe what issue to solve with coding, format like a github issue ticket. Specify the input value when it is short.")
       }).optional();
     }
 

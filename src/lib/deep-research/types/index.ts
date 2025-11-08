@@ -72,11 +72,6 @@ export interface VisitAction extends StepAction {
     result?: any;
 }
 
-export interface CodingAction extends StepAction {
-    codingIssue: string;
-    result?: any;
-}
-
 // 评估类型定义
 export type EvaluationType = 'freshness' | 'strict' | string;
 

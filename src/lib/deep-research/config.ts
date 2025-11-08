@@ -8,27 +8,27 @@ export const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
 
 // 直接在代码中定义回退默认值
 const FALLBACK_DEFAULTS = {
-    LLM_PROVIDER: 'openai', // 例如: 'openai' 
+    LLM_PROVIDER: 'deepseek', // 例如: 'openai' 
     SEARCH_PROVIDER: 'jina', // 例如: 'jina', 'duck' 
     STEP_SLEEP: 1000, // 毫秒
-    DEFAULT_MODEL_NAME: 'gpt-4o-mini', // 合理的默认模型
-    DEFAULT_TEMPERATURE: 0.7,
-    DEFAULT_MAX_TOKENS: 2048,
-    OPENAI_COMPATIBILITY: undefined, // 'strict' | 'compatible' | undefined (OpenAI 兼容性设置)
+    DEFAULT_MODEL_NAME: 'deepseek-chat', // DeepSeek 默认模型
+    DEFAULT_TEMPERATURE: 0.2,
+    DEFAULT_MAX_TOKENS: 8192,
+    OPENAI_COMPATIBILITY: 'compatible' as const, // DeepSeek 需要兼容模式
 };
 
 // 类型定义
-export type LLMProvider = 'openai'; // LLM 提供者类型 (目前仅 openai)
+export type LLMProvider = 'openai' | 'deepseek'; // LLM 提供者类型 (支持 openai 和 deepseek，deepseek 使用 OpenAI 兼容接口)
 export type SearchProvider = 'jina' | 'duck'; // 搜索提供者类型 (目前支持 jina 和 duck)
 
 // 确定 LLM 提供者
 export const LLM_PROVIDER: LLMProvider = (() => {
     const provider = process.env.LLM_PROVIDER || FALLBACK_DEFAULTS.LLM_PROVIDER;
-    if (provider !== 'openai') {
+    if (provider !== 'openai' && provider !== 'deepseek') {
         console.warn(`无效或不支持的 LLM_PROVIDER: ${provider}。将使用默认值 '${FALLBACK_DEFAULTS.LLM_PROVIDER}'。`);
         return FALLBACK_DEFAULTS.LLM_PROVIDER as LLMProvider;
     }
-    return provider;
+    return provider as LLMProvider;
 })();
 
 // 确定搜索提供者
@@ -56,7 +56,6 @@ export type ToolName =
     | 'errorAnalyzer'
     | 'mdFixer'
     | 'refBuilder'
-    | 'codeGenerator'
     | 'agentBeastMode'
     | 'brokenChFixer'
     | 'fallback'; // 回退模型，用于错误恢复
@@ -121,7 +120,7 @@ export function getMaxTokens(toolName: ToolName): number {
 export function getModel(toolName: ToolName) {
     const config = getToolConfig(toolName);
     // 从环境变量获取特定于提供者的设置
-    const openAICompatibility = process.env.OPENAI_COMPATIBILITY as 'strict' | 'compatible' | undefined || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY;
+    const openAICompatibility = (process.env.OPENAI_COMPATIBILITY as 'strict' | 'compatible' | undefined) || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY;
 
     logger.info(`getModel 调用，工具: ${String(toolName)}, 提供者: ${LLM_PROVIDER}, 解析配置:`, config);
 
@@ -149,7 +148,9 @@ export function getModel(toolName: ToolName) {
 // --- 初始验证和日志记录 ---
 
 // 根据选定的提供者验证必需的 API 密钥
-if (LLM_PROVIDER === 'openai' && !OPENAI_API_KEY) logger.error("错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。");
+if ((LLM_PROVIDER === 'openai' || LLM_PROVIDER === 'deepseek') && !OPENAI_API_KEY) {
+    logger.error(`错误: LLM_PROVIDER 是 '${LLM_PROVIDER}' 但 OPENAI_API_KEY 未设置。`);
+}
 
 // 警告搜索提供者密钥缺失
 if (SEARCH_PROVIDER === 'jina' && !JINA_API_KEY) logger.warn("警告: SEARCH_PROVIDER 是 'jina' 但 JINA_API_KEY 未设置。");
@@ -170,15 +171,15 @@ if (process.env.NODE_ENV !== 'production') {
         // 手动收集所有已知工具名称以供摘要
         const allToolNames: ToolName[] = [
             'agent', 'evaluator', 'searchGrounding', 'queryRewriter', 'deduplicator',
-            'errorAnalyzer', 'mdFixer', 'refBuilder', 'codeGenerator', 'agentBeastMode', 'brokenChFixer', 'fallback'
+            'errorAnalyzer', 'mdFixer', 'refBuilder', 'agentBeastMode', 'brokenChFixer', 'fallback'
         ];
 
         const configSummary = {
             provider: {
                 name: LLM_PROVIDER, // LLM 提供者名称
                 effectiveDefaultModel: getToolConfig('agent').model, // agent 使用的有效默认模型
-                ...(LLM_PROVIDER === 'openai' && { baseUrl: OPENAI_BASE_URL }), // OpenAI Base URL (如果使用)
-                ...(LLM_PROVIDER === 'openai' && { compatibility: process.env.OPENAI_COMPATIBILITY || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY }), // OpenAI 兼容性 (如果使用)
+                ...((LLM_PROVIDER === 'openai' || LLM_PROVIDER === 'deepseek') && { baseUrl: OPENAI_BASE_URL }), // Base URL
+                ...((LLM_PROVIDER === 'openai' || LLM_PROVIDER === 'deepseek') && { compatibility: process.env.OPENAI_COMPATIBILITY || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY }), // 兼容性设置
             },
             search: {
                 provider: SEARCH_PROVIDER // 搜索提供者名称

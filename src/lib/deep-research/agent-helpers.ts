@@ -1,7 +1,7 @@
 import { CoreMessage } from 'ai';
 import { ZodObject } from 'zod';
 import {
-    StepAction, AnswerAction, ReflectAction, SearchAction, VisitAction, CodingAction,
+    StepAction, AnswerAction, ReflectAction, SearchAction, VisitAction,
     KnowledgeItem, TrackerContext, SearchSnippet, BoostedSearchSnippet, WebContent,
     Reference, EvaluationResponse
 } from './types';
@@ -15,6 +15,7 @@ import {
 import { repairUnknownChars } from "./tools/broken-ch-fixer";
 import { buildReferences } from "./tools/build-ref";
 import { evaluateQuestion } from './tools/evaluator';
+import { validateAnswer } from './tools/validator';
 import { getPrompt } from './utils/prompt';
 import { composeMsgs } from './utils/message';
 import { ObjectGeneratorSafe } from "./utils/safe-generator";
@@ -120,7 +121,6 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
     const allowAnswer = (thisAgent as any).allowAnswer as boolean;
     const allowRead = (thisAgent as any).allowRead as boolean;
     const allowSearch = (thisAgent as any).allowSearch as boolean;
-    const allowCoding = (thisAgent as any).allowCoding as boolean;
     const allKnowledge = (thisAgent as any).allKnowledge as KnowledgeItem[];
     const weightedURLs = (thisAgent as any).weightedURLs as BoostedSearchSnippet[];
     const question = (thisAgent as any).question as string;
@@ -138,12 +138,11 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
         allowAnswer,
         allowRead,
         allowSearch,
-        allowCoding,
         allKnowledge,
         weightedURLs,
         false, // Not final step
     );
-    const schema = SchemaGen.getAgentSchema(allowReflect, allowRead, allowAnswer, allowSearch, allowCoding, currentQuestion);
+    const schema = SchemaGen.getAgentSchema(allowReflect, allowRead, allowAnswer, allowSearch, currentQuestion);
     // Assign msgWithKnowledge before use
     (thisAgent as any).msgWithKnowledge = composeMsgs(messages, allKnowledge, currentQuestion, currentQuestion === question ? finalAnswerPIP : undefined);
 
@@ -179,7 +178,7 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
         }
         
         // 验证 action 类型是否有效
-        const validActions = ['search', 'visit', 'answer', 'reflect', 'coding'];
+        const validActions = ['search', 'visit', 'answer', 'reflect'];
         if (!validActions.includes(actionType)) {
             console.error(`Unknown action type: ${actionType}. Valid actions: ${validActions.join(', ')}`);
             return null;
@@ -203,8 +202,7 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
                 search: allowSearch,
                 visit: allowRead,
                 answer: allowAnswer,
-                reflect: allowReflect,
-                coding: allowCoding
+                reflect: allowReflect
             },
             contextState: {
                 knowledgeItems: allKnowledge.length,
@@ -251,13 +249,12 @@ export async function generateFinalAnswerHelper(thisAgent: ResearchAgent, option
         true,    // allowAnswer
         false,   // allowRead
         false,   // allowSearch
-        false,   // allowCoding
         allKnowledge,
         [],      // URLs already incorporated via knowledge
         options.beastMode ?? options.isFinal ?? true
     );
 
-    const schema = SchemaGen.getAgentSchema(false, false, true, false, false, question);
+    const schema = SchemaGen.getAgentSchema(false, false, true, false, question);
     const composedMessages = composeMsgs(
         messages,
         allKnowledge,
@@ -280,7 +277,11 @@ export async function generateFinalAnswerHelper(thisAgent: ResearchAgent, option
         const normalizedAnswer = coerceToPlainText(rawAnswerPayload).trim();
         const normalizedThink = coerceToPlainText(rawThinkPayload).trim();
 
-        if (normalizedAnswer.length > 0) {
+        // 验证答案有效性
+        const validation = validateAnswer(normalizedAnswer);
+        
+        if (validation.valid) {
+            console.log('✅ Answer validation passed');
             return {
                 action: 'answer',
                 answer: normalizedAnswer,
@@ -289,8 +290,13 @@ export async function generateFinalAnswerHelper(thisAgent: ResearchAgent, option
                 isFinal: options.isFinal ?? true
             };
         }
-
-        throw new Error('LLM returned empty answer payload');
+        
+        // 答案无效，记录详细信息
+        console.error('❌ Answer validation failed:', validation.reason);
+        console.error('Raw answer payload:', rawAnswerPayload);
+        console.error('Normalized answer:', normalizedAnswer);
+        
+        throw new Error(`Answer validation failed: ${validation.reason}`);
     } catch (error) {
         console.error('Error generating final answer (Helper):', error);
 

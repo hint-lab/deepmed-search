@@ -11,7 +11,6 @@ export function getPrompt(
     allowAnswer: boolean = true,
     allowRead: boolean = true,
     allowSearch: boolean = true,
-    allowCoding: boolean = true,
     knowledge?: KnowledgeItem[],
     allURLs?: BoostedSearchSnippet[],
     beastMode?: boolean,
@@ -113,16 +112,6 @@ FAILURE IS NOT AN OPTION. EXECUTE WITH EXTREME PREJUDICE! ⚡️
 - Reflect the gaps and plan a list key clarifying questions that deeply related to the original question and lead to the answer
 </action-reflect>
 `);
-    }
-
-    // 添加编码动作
-    if (allowCoding) {
-        actionSections.push(`
-<action-coding>
-- This JavaScript-based solution helps you handle programming tasks like counting, filtering, transforming, sorting, regex extraction, and data processing.
-- Simply describe your problem in the "codingIssue" field. Include actual values for small inputs or variable names for larger datasets.
-- No code writing is required – senior engineers will handle the implementation.
-</action-coding>`);
     }
 
     // 组合所有动作部分

@@ -11,7 +11,6 @@ import {
     ReflectAction,
     SearchAction,
     VisitAction,
-    CodingAction,
     KnowledgeItem,
     TrackerContext,
     SearchSnippet,
@@ -39,7 +38,6 @@ import { handleSearchAction } from './actions/search';
 import { handleVisitAction } from './actions/visit';
 import { handleReflectAction } from './actions/reflect';
 import { handleAnswerAction } from './actions/answer';
-import { handleCodingAction } from './actions/coding';
 
 // Import publishThink function
 import { publishThink } from './tracker-store';
@@ -98,7 +96,6 @@ export class ResearchAgent {
     public allowSearch: boolean = true;           // 是否允许执行 search 动作
     public allowRead: boolean = true;             // 是否允许执行 visit (read) 动作
     public allowReflect: boolean = true;          // 是否允许执行 reflect 动作
-    public allowCoding: boolean = false;          // 是否允许执行 coding 动作 (初始为 false)
 
     /**
      * 构造函数，初始化 Agent
@@ -238,7 +235,7 @@ export class ResearchAgent {
                 this.thisStep = nextAction;
             }
 
-            const actionsStr = [this.allowSearch && 'search', this.allowRead && 'visit', this.allowAnswer && 'answer', this.allowReflect && 'reflect', this.allowCoding && 'coding'].filter(Boolean).join(', ');
+            const actionsStr = [this.allowSearch && 'search', this.allowRead && 'visit', this.allowAnswer && 'answer', this.allowReflect && 'reflect'].filter(Boolean).join(', ');
             console.log(`${currentQuestion}: ${this.thisStep.action} <- [${actionsStr}]`);
             console.log(this.thisStep)
 
@@ -255,7 +252,6 @@ export class ResearchAgent {
             this.allowReflect = true;
             this.allowRead = true;
             this.allowSearch = true;
-            this.allowCoding = true; // 根据需要可以保留之前的状态
 
             // 执行确定的动作
             let breakLoop = false;
@@ -271,9 +267,6 @@ export class ResearchAgent {
                     break;
                 case 'visit':
                     await handleVisitAction(this, this.thisStep as VisitAction);
-                    break;
-                case 'coding':
-                    await handleCodingAction(this, this.thisStep as CodingAction);
                     break;
                 default:
                     console.warn("Unhandled action type:", (this.thisStep as any).action);

@@ -66,7 +66,6 @@ export async function handleAnswerAction(thisAgent: ResearchAgent, action: Answe
     // 3. Handle evaluation results
     if (currentQuestion.trim() === question) {
         // Handling evaluation for the MAIN question
-        (thisAgent as any).allowCoding = false; // Modify agent state
         if (evaluation.pass) {
             diaryContext.push(`
 At step ${thisAgent.step}, you took **answer** action and finally found the answer to the original question:

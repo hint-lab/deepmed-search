@@ -2,7 +2,7 @@
 import { CoreMessage, LanguageModelUsage } from "ai";
 
 type BaseAction = {
-    action: "search" | "answer" | "reflect" | "visit" | "coding";
+    action: "search" | "answer" | "reflect" | "visit";
     think: string;
 };
 
@@ -42,7 +42,7 @@ export type KnowledgeItem = {
     question: string,
     answer: string,
     references?: Array<Reference> | Array<any>;
-    type: 'qa' | 'side-info' | 'chat-history' | 'url' | 'coding',
+    type: 'qa' | 'side-info' | 'chat-history' | 'url',
     updated?: string,
     sourceCode?: string,
 }
@@ -57,12 +57,7 @@ export type VisitAction = BaseAction & {
     URLTargets: number[] | string[];
 };
 
-export type CodingAction = BaseAction & {
-    action: "coding";
-    codingIssue: string;
-};
-
-export type StepAction = SearchAction | AnswerAction | ReflectAction | VisitAction | CodingAction;
+export type StepAction = SearchAction | AnswerAction | ReflectAction | VisitAction;
 
 export type EvaluationType = 'definitive' | 'freshness' | 'plurality' | 'attribution' | 'completeness' | 'strict';
 

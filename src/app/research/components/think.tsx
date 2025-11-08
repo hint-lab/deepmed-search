@@ -19,7 +19,6 @@ import {
     HelpCircle, 
     Lightbulb, 
     Library, 
-    Code, 
     AlertTriangle 
 } from "lucide-react";
 import { useTranslate } from '@/contexts/language-context';
@@ -879,19 +878,6 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                     )}
                                 </div>
                             )}
-                            
-                            {/* Coding Action 的详细信息 */}
-                            {actionState.thisStep.action === 'coding' && (actionState.thisStep as any).codingIssue && (
-                                <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 space-y-1">
-                                    <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                        💻 {t('codingIssueLabel')}:
-                                    </div>
-                                    <div className="text-xs text-cyan-600 dark:text-cyan-400 pl-4">
-                                        {(actionState.thisStep as any).codingIssue}
-                                    </div>
-                                </div>
-                            )}
-                            
                             {/* 显示知识差距 */}
                             {Array.isArray(actionState.gaps) && actionState.gaps.length > 0 && (
                                 <div className="bg-orange-50/50 dark:bg-orange-900/20 rounded p-2 space-y-1 border border-orange-200 dark:border-orange-800">
