@@ -80,9 +80,9 @@ const CreateKnowledgeBaseButton = ({
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t("name")}</FormLabel>
+                                    <FormLabel>{t("form.name")}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder={t("namePlaceholder")} {...field} />
+                                        <Input placeholder={t("form.namePlaceholder")} {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -93,10 +93,10 @@ const CreateKnowledgeBaseButton = ({
                             name="description"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t("descriptionPlaceholder")}</FormLabel>
+                                    <FormLabel>{t("form.description")}</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder={t("descriptionPlaceholder")}
+                                            placeholder={t("form.descriptionPlaceholder")}
                                             className="resize-none"
                                             {...field}
                                         />

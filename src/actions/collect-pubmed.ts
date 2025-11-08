@@ -414,8 +414,9 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
                         model: (kb.parser_config as any)?.model || 'text-embedding-3-small',
                         maintainFormat: true, // Assume maintain format for Markdown
                         documentName: title,
-                        maxChunkSize: (kb.parser_config as any)?.chunk_size || 1000,
-                        overlapSize: (kb.parser_config as any)?.chunk_overlap || 100,
+                        // 使用知识库的chunk_size字段，如果没有则使用更大的默认值2000
+                        maxChunkSize: kb.chunk_size || 2000,
+                        overlapSize: kb.overlap_size || 200,
                     }
                 );
 

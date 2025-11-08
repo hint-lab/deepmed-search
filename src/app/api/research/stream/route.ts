@@ -1,7 +1,7 @@
 // src/app/api/research/stream/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createNewRedisClient } from '@/lib/redis-client';
-import { checkTaskActive, getTokenTrackerState, getActionTrackerState, TrackerEvent } from '@/lib/deep-research/tracker-store'; // 导入 TrackerEvent
+import { getTokenTrackerState, getActionTrackerState, TrackerEvent } from '@/lib/deep-research/tracker-store'; // 导入 TrackerEvent
 import type { Redis } from 'ioredis';
 import { TokenUsage } from '@/lib/deep-research/types';
 import { ActionState } from '@/lib/deep-research/utils/action-tracker';
@@ -10,12 +10,6 @@ export async function GET(req: NextRequest) {
     const taskId = req.nextUrl.searchParams.get('taskId');
     if (!taskId) {
         return new NextResponse('Missing taskId parameter', { status: 400 });
-    }
-
-    // 检查任务是否活跃
-    const isActive = await checkTaskActive(taskId);
-    if (!isActive) {
-        return new NextResponse('Task not found or inactive', { status: 404 });
     }
 
     // 创建新的 Redis 客户端用于订阅
@@ -31,6 +25,7 @@ export async function GET(req: NextRequest) {
     headers.set('Cache-Control', 'no-cache');
     headers.set('Connection', 'keep-alive');
 
+    let heartbeatTimer: any = null;
     const stream = new ReadableStream({
         async start(controller) {
             console.log(`[SSE ${taskId}] Attempting to create Redis subscriber...`);
@@ -49,18 +44,31 @@ export async function GET(req: NextRequest) {
 
                     // 发送 token 状态
                     if (tokenState) {
-                        const tokenStateData = `event: tokenState\ndata: ${JSON.stringify(tokenState)}\n\n`;
-                        controller.enqueue(new TextEncoder().encode(tokenStateData));
+                        controller.enqueue(new TextEncoder().encode(`event: tokenState\ndata: ${JSON.stringify(tokenState)}\n\n`));
                     }
 
                     // 发送 action 状态
                     if (actionState) {
-                        const actionStateData = `event: actionState\ndata: ${JSON.stringify(actionState)}\n\n`;
-                        controller.enqueue(new TextEncoder().encode(actionStateData));
+                        controller.enqueue(new TextEncoder().encode(`event: actionState\ndata: ${JSON.stringify(actionState)}\n\n`));
                     }
                 } catch (stateError) {
                     console.error(`[SSE ${taskId}] Error fetching initial states:`, stateError);
                 }
+
+                // 初始 ping 与重连建议
+                controller.enqueue(new TextEncoder().encode(`retry: 5000\n\n`));
+                controller.enqueue(new TextEncoder().encode(`: ping ${Date.now()}\n\n`));
+
+                // 心跳，保持连接
+                heartbeatTimer = setInterval(() => {
+                    try {
+                        controller.enqueue(new TextEncoder().encode(`: ping ${Date.now()}\n\n`));
+                    } catch (hbErr) {
+                        console.warn(`[SSE ${taskId}] Heartbeat failed`, hbErr);
+                        clearInterval(heartbeatTimer);
+                        controller.close();
+                    }
+                }, 15000);
 
                 // 监听 Redis 消息
                 subscriber.on('message', async (ch, message) => {
@@ -148,16 +156,19 @@ export async function GET(req: NextRequest) {
                 // 错误处理
                 subscriber.on('error', (error) => {
                     console.error(`[SSE ${taskId}] Redis subscriber error:`, error);
+                    if (heartbeatTimer) clearInterval(heartbeatTimer);
                     controller.close();
                 });
 
             } catch (error) {
                 console.error(`[SSE ${taskId}] Error setting up Redis subscriber:`, error);
+                if (heartbeatTimer) clearInterval(heartbeatTimer);
                 controller.close();
             }
         },
         cancel() {
             console.log(`[SSE ${taskId}] Stream cancelled, cleaning up...`);
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
             subscriber.unsubscribe(channel).catch(console.error);
             subscriber.quit().catch(console.error);
             redis.quit().catch(console.error);

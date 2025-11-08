@@ -72,11 +72,7 @@
     },
     "footer": {
         "copyright": "すべての権利を保有",
-        "developedBy": "開発元",
-        "about": "私たちについて",
-        "privacy": "プライバシーポリシー",
-        "terms": "利用規約",
-        "contact": "お問い合わせ"
+        "developedBy": "開発元"
     },
     "knowledgeBase": {
         "title": "ナレッジベース",

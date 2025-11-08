@@ -17,7 +17,7 @@ export async function segmentText(
   }
 
   // Initialize token tracker
-  const tokenTracker = tracker?.tokenTracker || new TokenTracker();
+  const tokenTracker = tracker?.tokenTracker || new TokenTracker(tracker.taskId);
 
   // Maximum size to send in a single API request (slightly under 64K to be safe)
   const MAX_BATCH_SIZE = 60000;

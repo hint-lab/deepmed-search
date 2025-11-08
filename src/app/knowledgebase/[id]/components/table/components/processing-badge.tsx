@@ -13,7 +13,7 @@ interface DocumentProcessingBadgeProps {
     onRefresh?: () => void;
 }
 
-const POLLING_INTERVAL = 50000;
+const POLLING_INTERVAL = 5000; // 缩短轮询间隔到5秒，更快检测状态变化
 
 export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcessingBadgeProps) {
     const { t } = useTranslate('knowledgeBase.table');
@@ -23,26 +23,40 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
     const [currentProgressMsg, setCurrentProgressMsg] = useState<string | null | undefined>(document.progress_msg);
     const isPollingActive = useRef(false);
     const intervalId = useRef<NodeJS.Timeout | null>(null);
+    const previousStatusRef = useRef<IDocumentProcessingStatus>(document.processing_status || IDocumentProcessingStatus.UNPROCESSED);
 
     const fetchAndUpdateStatus = async () => {
         try {
             const result = await getDocumentStatusAction(document.id);
             if (result.success && result.data) {
                 const newStatus = result.data.processing_status;
-                const oldStatus = status; // 保存当前状态
+                const oldStatus = previousStatusRef.current; // 使用 ref 保存的状态，避免闭包问题
                 setCurrentProgressMsg(result.data.progress_msg);
 
                 if (newStatus !== oldStatus) { // 只有状态实际变化时才更新
                     setStatus(newStatus);
+                    previousStatusRef.current = newStatus; // 更新 ref
 
                     const isNowFinal = newStatus === IDocumentProcessingStatus.SUCCESSED || newStatus === IDocumentProcessingStatus.FAILED;
                     const wasPreviouslyFinal = oldStatus === IDocumentProcessingStatus.SUCCESSED || oldStatus === IDocumentProcessingStatus.FAILED;
 
                     if (isNowFinal) {
                         stopPolling();
-                        // 只有当状态从非最终变为最终时才刷新
+                        // 只有当状态从非最终变为最终时才刷新和显示toast
                         if (!wasPreviouslyFinal) {
                             console.log(`[Polling] Document ${document.id} changed from ${oldStatus} to final state ${newStatus}. Refreshing table.`);
+                            
+                            // 显示处理完成的toast通知
+                            if (newStatus === IDocumentProcessingStatus.SUCCESSED) {
+                                toast.success(t('processingCompleted'), {
+                                    description: `${document.name} ${t('documentProcessingStatus.successed')}`
+                                });
+                            } else if (newStatus === IDocumentProcessingStatus.FAILED) {
+                                toast.error(t('documentProcessingStatus.failed'), {
+                                    description: result.data.progress_msg || `${document.name} 处理失败`
+                                });
+                            }
+                            
                             onRefresh?.();
                         }
                     } else if (newStatus === IDocumentProcessingStatus.CONVERTING || newStatus === IDocumentProcessingStatus.INDEXING) {
@@ -147,6 +161,7 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
     useEffect(() => {
         const initialDocStatus = document.processing_status || IDocumentProcessingStatus.UNPROCESSED;
         setStatus(initialDocStatus);
+        previousStatusRef.current = initialDocStatus; // 同步更新 ref
         setCurrentProgressMsg(document.progress_msg);
         if (initialDocStatus === IDocumentProcessingStatus.CONVERTING || initialDocStatus === IDocumentProcessingStatus.INDEXING) {
             startPolling();

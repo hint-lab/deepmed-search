@@ -78,7 +78,7 @@ export default function ResearchPage() {
         <main className={`flex min-h-screen flex-col items-center p-6 sm:p-10 md:p-16 bg-gradient-to-b from-background via-background to-muted/10 pt-24 sm:pt-20 ${(!result && !error && !stepDetails) ? 'justify-center' : 'justify-start'}`}>
             <div className="w-full max-w-3xl space-y-8 ">
                 <div className="text-center space-y-3 my-6 sm:my-8">
-                    <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
+                    <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text font-bold text-cyan-700 dark:text-cyan-300">
                         {t('title')}
                     </h1>
                     <form onSubmit={handleSubmit} className="mt-6">
@@ -97,7 +97,7 @@ export default function ResearchPage() {
                             <Button
                                 type="submit"
                                 disabled={isPending}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border-y border-r-0 border-border/80 bg-gradient-to-r from-blue-500 to-purple-600 text-white  transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border-y border-r-0 border-border/80 bg-gradient-to-r from-blue-500 to-cyan-600 text-white  transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isPending ? (
                                     <>
@@ -133,7 +133,7 @@ export default function ResearchPage() {
                                 
                                 {/* 文本信息 */}
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                                    <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">
                                         {t('processingMessage')}
                                     </h3>
                                     <p className="text-sm text-muted-foreground max-w-md">

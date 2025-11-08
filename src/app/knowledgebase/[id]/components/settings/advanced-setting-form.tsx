@@ -42,9 +42,7 @@ export default function AdvancedSettingForm() {
     }),
     chunk_size: z.number().min(100).max(2000),
     overlap_size: z.number().min(0).max(1000),
-    separators: z.array(z.string()).min(1, {
-      message: t('validation.separatorRequired'),
-    })
+    separators: z.array(z.string()) // 允许空数组
   });
 
   const form = useForm<FormValues>({
@@ -149,10 +147,7 @@ export default function AdvancedSettingForm() {
             };
 
             const handleRemoveSeparator = (separatorToRemove: string) => {
-              if (field.value.length <= 1) {
-                toast.warning(t('validation.separatorRequired'));
-                return;
-              }
+              // 允许删除所有分隔符，包括最后一个
               field.onChange(field.value.filter(sep => sep !== separatorToRemove));
             };
 

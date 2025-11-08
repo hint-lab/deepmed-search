@@ -88,7 +88,8 @@ export class DocumentSplitter {
 
     constructor(options: DocumentSplitterOptions = {}) {
         this.options = {
-            maxChunkSize: options.maxChunkSize || 1000,
+            // 增大默认分块大小到2000字符，减少分块数量
+            maxChunkSize: options.maxChunkSize || 2000,
             overlapSize: options.overlapSize || 200,
             splitByParagraph: options.splitByParagraph !== undefined ? options.splitByParagraph : true,
             preserveFormat: options.preserveFormat !== undefined ? options.preserveFormat : false,
@@ -128,24 +129,26 @@ export class DocumentSplitter {
                 let bestSplitPoint = -1;
 
                 // 优先段落边界 ('\n\n')，在理想点附近查找
-                const paragraphSearchStart = Math.max(startIndex, idealEndIndex - 100); // 向前回溯一点开始查找
+                // 扩大搜索范围，允许更大的分块
+                const paragraphSearchStart = Math.max(startIndex, idealEndIndex - 300); // 向前回溯更多开始查找
                 const nextParagraph = content.indexOf('\n\n', paragraphSearchStart);
-                // 确保找到的段落在合理范围内（不超过理想点太多）
-                if (nextParagraph !== -1 && nextParagraph > startIndex && nextParagraph < idealEndIndex + 100) {
+                // 确保找到的段落在合理范围内（允许超过理想点更多）
+                if (nextParagraph !== -1 && nextParagraph > startIndex && nextParagraph < idealEndIndex + 500) {
                     bestSplitPoint = nextParagraph + 2; // 包含换行符
                 }
 
-                // 如果没找到段落，尝试句子边界
+                // 如果没找到段落，尝试句子边界（但不包括单个换行符）
                 if (bestSplitPoint === -1) {
-                    const sentenceEndings = ['. ', '! ', '? ', '。', '！', '？', '；', ';', '\n']; // 添加普通换行符作为句子分隔可能
-                    const sentenceSearchStart = Math.max(startIndex, idealEndIndex - 150); // 句子回溯范围可以大一点
+                    // 移除单个换行符'\n'，避免在表格和列表中过度分割
+                    const sentenceEndings = ['\n\n']; 
+                    const sentenceSearchStart = Math.max(startIndex, idealEndIndex - 300); // 扩大句子回溯范围
                     let bestSentenceEnd = -1;
 
                     for (const ending of sentenceEndings) {
                         // 从 sentenceSearchStart 开始查找第一个出现的结束符
                         const sentenceEndIndex = content.indexOf(ending, sentenceSearchStart);
-                        // 确保找到的位置有效且在合理范围内
-                        if (sentenceEndIndex !== -1 && sentenceEndIndex > startIndex && sentenceEndIndex < idealEndIndex + 150) {
+                        // 确保找到的位置有效且在合理范围内（允许超过理想点更多）
+                        if (sentenceEndIndex !== -1 && sentenceEndIndex > startIndex && sentenceEndIndex < idealEndIndex + 300) {
                             const potentialEndPoint = sentenceEndIndex + ending.length;
                             // 取最接近 idealEndIndex 但不小于 startIndex + overlapSize 的点
                             if (potentialEndPoint > startIndex + this.options.overlapSize) {

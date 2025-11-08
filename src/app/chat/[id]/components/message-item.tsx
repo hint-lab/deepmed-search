@@ -355,7 +355,7 @@ function ChatMessageItem({
                     <div className="flex flex-col gap-1">
                         {message.role === 'reason' && (
                             <div className="flex items-center gap-1.5">
-                                <Sparkles className="h-4 w-4 text-purple-500 dark:text-purple-400 shrink-0" />
+                                <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
                                 <div className={cn(
                                     "prose prose-sm dark:prose-invert max-w-none",
                                     isStreaming && !isUser && "animate-blinking-cursor"

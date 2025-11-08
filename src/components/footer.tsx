@@ -30,23 +30,6 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Optional: Additional Links */}
-                <div className="mt-6 pt-6 border-t border-border/50">
-                    <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                        <Link href="/about" className="hover:text-foreground transition-colors">
-                            {t('about')}
-                        </Link>
-                        <Link href="/privacy" className="hover:text-foreground transition-colors">
-                            {t('privacy')}
-                        </Link>
-                        <Link href="/terms" className="hover:text-foreground transition-colors">
-                            {t('terms')}
-                        </Link>
-                        <Link href="/contact" className="hover:text-foreground transition-colors">
-                            {t('contact')}
-                        </Link>
-                    </div>
-                </div>
             </div>
         </footer>
     );

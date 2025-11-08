@@ -42,7 +42,7 @@ const LeftPanel = () => {
                 <div className="w-full max-w-2xl space-y-8">
                     <div className="space-y-4 text-center">
                         <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-blue-600 to-teal-600 dark:from-cyan-400 dark:via-blue-400 dark:to-teal-400">
                                 {t('title')}
                             </span>
                         </h1>
@@ -67,7 +67,7 @@ const LeftPanel = () => {
                                     <div className="h-3 w-3 rounded-full bg-purple-400 animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold mb-2 text-purple-600 dark:text-purple-400">{t('features.security.title')}</h3>
+                            <h3 className="font-semibold mb-2 text-cyan-600 dark:text-cyan-400">{t('features.security.title')}</h3>
                             <p className="text-sm text-muted-foreground">{t('features.security.description')}</p>
                         </div>
                         <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-amber-200 dark:border-amber-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
@@ -162,7 +162,7 @@ const Login = () => {
 
             // 延迟跳转，让用户看到成功提示
             setTimeout(() => {
-                window.location.href = callbackUrl;
+            window.location.href = callbackUrl;
             }, 800);
         } catch (error) {
             console.error('登录失败:', error);
@@ -205,7 +205,7 @@ const Login = () => {
 
                 <Card className="w-full max-w-md border relative z-10 backdrop-blur-sm bg-card/70 shadow-xl hover:shadow-lg transition-all duration-300">
                     <CardHeader className="space-y-1 text-center">
-                        <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">{t('login')}</CardTitle>
+                        <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 via-blue-600 to-teal-600 dark:from-cyan-400 dark:via-blue-400 dark:to-teal-400">{t('login')}</CardTitle>
                         <CardDescription className="text-base">
                             {t('loginDescription')}
                         </CardDescription>
@@ -310,7 +310,7 @@ const Login = () => {
 
                         <div className="text-center text-sm">
                             <span className="text-muted-foreground">{t('noAccount')}</span>{" "}
-                            <a href="/register" className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline underline-offset-4">
+                            <a href="/register" className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 underline underline-offset-4">
                                 {t('signUp')}
                             </a>
                         </div>

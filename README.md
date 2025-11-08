@@ -6,6 +6,12 @@ English | [中文](./README.zh-CN.md)
 
 DeepMed Search is a versatile search application built with the Next.js App Router, featuring a unified interface for Web Search, LLM Introspection, and Knowledge Base (KB) Search.
 
+## 🎬 Product Demo
+
+All in one flow demo:
+
+![DeepMed Search Demo](./public/demo.gif)
+
 ## ✨ Features
 
 ### Unified Search Interface

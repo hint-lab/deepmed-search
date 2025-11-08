@@ -72,11 +72,7 @@
     },
     "footer": {
         "copyright": "Tous droits réservés",
-        "developedBy": "Développé par",
-        "about": "À propos",
-        "privacy": "Politique de confidentialité",
-        "terms": "Conditions d'utilisation",
-        "contact": "Nous contacter"
+        "developedBy": "Développé par"
     },
     "knowledgeBase": {
         "title": "Base de connaissances",

@@ -58,7 +58,8 @@ export type ToolName =
     | 'refBuilder'
     | 'codeGenerator'
     | 'agentBeastMode'
-    | 'brokenChFixer'; // 添加 getModel 调用中使用的所有工具名称
+    | 'brokenChFixer'
+    | 'fallback'; // 回退模型，用于错误恢复
 
 interface ToolConfig {
     model: string;
@@ -169,7 +170,7 @@ if (process.env.NODE_ENV !== 'production') {
         // 手动收集所有已知工具名称以供摘要
         const allToolNames: ToolName[] = [
             'agent', 'evaluator', 'searchGrounding', 'queryRewriter', 'deduplicator',
-            'errorAnalyzer', 'mdFixer', 'refBuilder', 'codeGenerator', 'agentBeastMode', 'brokenChFixer'
+            'errorAnalyzer', 'mdFixer', 'refBuilder', 'codeGenerator', 'agentBeastMode', 'brokenChFixer', 'fallback'
         ];
 
         const configSummary = {

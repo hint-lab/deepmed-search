@@ -13,7 +13,6 @@ import {
     repairMarkdownFinal, repairMarkdownFootnotesOuter
 } from "./utils/text-tools";
 import { repairUnknownChars } from "./tools/broken-ch-fixer";
-import { reviseAnswer } from "./tools/md-fixer";
 import { buildReferences } from "./tools/build-ref";
 import { evaluateQuestion } from './tools/evaluator';
 import { getPrompt } from './utils/prompt';
@@ -227,11 +226,7 @@ export async function processFinalAnswerHelper(thisAgent: ResearchAgent, answerA
                     fixCodeBlockIndentation(
                         repairMarkdownFootnotesOuter(
                             await repairUnknownChars(
-                                await reviseAnswer(
-                                    answerAction.answer,
-                                    allKnowledge,
-                                    context,
-                                    SchemaGen),
+                                answerAction.answer,
                                 context))
                     ),
                     allURLs)));

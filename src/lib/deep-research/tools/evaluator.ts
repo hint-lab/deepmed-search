@@ -669,13 +669,36 @@ export async function evaluateAnswer(
         schemaGen
       );
 
+      const evalObj = result?.object as EvaluationResponse | undefined;
+      if (evalObj) {
+        // Ensure type is set correctly
+        if (!evalObj.type || typeof evalObj.type !== 'string' || String(evalObj.type).toLowerCase() === 'undefined') {
+          evalObj.type = evaluationType;
+        }
+        // Ensure pass is boolean
+        if (typeof evalObj.pass !== 'boolean') {
+          evalObj.pass = false;
+        }
+      }
+
       // fail one, return immediately
-      if (!(result?.object as EvaluationResponse)?.pass) {
-        return result?.object as EvaluationResponse;
+      if (!(evalObj?.pass)) {
+        return evalObj as EvaluationResponse;
       }
     }
   }
 
-  return result?.object as EvaluationResponse;
+  const finalObj = result?.object as EvaluationResponse | undefined;
+  if (finalObj) {
+    if (!finalObj.type || typeof finalObj.type !== 'string' || String(finalObj.type).toLowerCase() === 'undefined') {
+      finalObj.type = evaluationTypes[evaluationTypes.length - 1] ?? 'evaluation';
+    }
+    if (typeof finalObj.pass !== 'boolean') {
+      finalObj.pass = false;
+    }
+  }
+
+  return finalObj as EvaluationResponse;
 
 }
+

@@ -95,7 +95,7 @@ function serializeBigIntAction(obj: any): any {
 
 export const createKnowledgeBaseAction = withAuth(async (session, params: { name: string, description?: string }) => {
     try {
-        const defaultSeparators = ['. ', '! ', '? ', '。', '！', '？', '；', ';', '\n'];
+        const defaultSeparators = [] as string[];
         const knowledgeBase = await prisma.knowledgeBase.create({
             data: {
                 name: params.name,
@@ -103,7 +103,7 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
                 created_at: new Date(),
                 updated_at: new Date(),
                 created_by: session.user.id,
-                separators: defaultSeparators,
+                separators: defaultSeparators ,
                 split_by: "page"
             },
         });

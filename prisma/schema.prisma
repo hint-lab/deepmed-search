@@ -126,8 +126,8 @@ model KnowledgeBase {
   created_at               DateTime   @default(now()) // 创建时间
   updated_at               DateTime   @default(now()) @updatedAt // 更新时间
   created_by               String // 创建者ID
-  chunk_size               Int        @default(1000) // 分块大小
-  overlap_size             Int        @default(100) // 重叠大小
+  chunk_size               Int        @default(2000) // 分块大小（默认2000字符）
+  overlap_size             Int        @default(200) // 重叠大小（默认200字符）
   split_by                 String     @default("page") // 按段落分割
   separators               String[]   @default([]) // 分隔符
   documents                Document[] // 文档列表

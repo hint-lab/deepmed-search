@@ -40,43 +40,135 @@
         "development-tools": "Development Tools"
     },
     "home": {
+        "badge": "Intelligent Search Platform for Medical Researchers",
         "title": "DeepMed Search",
-        "subtitle": "Your intelligent medical document assistant, making document processing simpler and more efficient",
+        "subtitle": "Medical Intelligence Search & Research Platform",
+        "description": "Integrating Web Search Engine, PubMed, Knowledge Base and AI reasoning to provide complete research toolchain from literature retrieval to evidence synthesis. Supporting multi-source search, intelligent deduplication, citation tracking and in-depth analysis.",
         "getStarted": "Get Started",
-        "viewDocs": "View Docs",
+        "quickSearch": "Quick Search",
+        "metrics": {
+            "pubmed": {
+                "label": "PubMed Coverage",
+                "value": "35M+",
+                "sublabel": "Articles"
+            },
+            "speed": {
+                "label": "Search Speed",
+                "value": "<2s",
+                "sublabel": "Avg Response"
+            },
+            "accuracy": {
+                "label": "Dedup Accuracy",
+                "value": "98%",
+                "sublabel": "Semantic"
+            },
+            "formats": {
+                "label": "Supported Formats",
+                "value": "20+",
+                "sublabel": "Doc Types"
+            }
+        },
         "features": {
-            "title": "Core Features",
-            "subtitle": "Comprehensive improvement of your document processing experience, making information management more efficient",
-            "documentProcessing": {
-                "title": "Intelligent Medical Document Processing",
-                "description": "Supports multiple document formats, automatically identifies and extracts key information"
+            "title": "Core Capabilities",
+            "subtitle": "Four search engines working together to cover all scenarios from web search to knowledge base",
+            "webSearch": {
+                "title": "Web Search",
+                "subtitle": "General Web Retrieval",
+                "description": "Medical web search based on Web Search Engine with intelligent filtering and ranking, preserving source traceability. Suitable for quickly accessing the latest information and clinical guidelines.",
+                "feature1": "Multi-engine aggregation",
+                "feature2": "Smart filtering",
+                "feature3": "Source tracking",
+                "stats": "Real-time updates"
             },
-            "documentQA": {
-                "title": "Intelligent Medical Document Q&A",
-                "description": "Parses document content and provides intelligent Q&A for any document format"
+            "pubmedSearch": {
+                "title": "PubMed Search",
+                "subtitle": "Academic Literature Retrieval",
+                "description": "Direct connection to PubMed/PMC database, supporting MeSH vocabulary, advanced search expressions and citation tracking. Providing abstract aggregation and semantic deduplication.",
+                "feature1": "MeSH support",
+                "feature2": "Citation tracking",
+                "feature3": "Semantic dedup",
+                "stats": "35M+ articles"
             },
-            "quickConversion": {
-                "title": "Quick Conversion",
-                "description": "One-click document format conversion, preserving original formatting and style"
+            "deepResearch": {
+                "title": "Deep Research",
+                "subtitle": "AI Deep Analysis",
+                "description": "Multi-step reasoning and evidence synthesis based on large language models. Automatically decomposing complex questions, evaluating evidence quality, and generating structured research reports.",
+                "feature1": "Multi-step reasoning",
+                "feature2": "Evidence evaluation",
+                "feature3": "Visual workflow",
+                "stats": "GPT-4 powered"
             },
-            "dataAnalysis": {
-                "title": "Data Analysis",
-                "description": "Intelligently analyzes document content and generates data visualization reports"
+            "knowledgeBase": {
+                "title": "Knowledge Base",
+                "subtitle": "Enterprise Knowledge Base",
+                "description": "Private document management and retrieval system. Supporting PDF/Word/Excel formats, vectorized storage, semantic search and permission management.",
+                "feature1": "Multi-format support",
+                "feature2": "Vector search",
+                "feature3": "Access control",
+                "stats": "On-premise deployment"
+            }
+        },
+        "useCases": {
+            "title": "Typical Use Cases",
+            "subtitle": "Real user case studies",
+            "clinical": {
+                "title": "Clinical Decision Support",
+                "description": "The oncology department of a tertiary hospital uses PubMed + Deep Research modules to complete literature review and treatment plan evaluation for rare cases within 5 minutes.",
+                "result": "Decision time reduced by 70%"
+            },
+            "drugDevelopment": {
+                "title": "Drug R&D Literature Research",
+                "description": "Biopharmaceutical companies use knowledge base to integrate internal experimental data with external literature, conducting comprehensive research on rare disease targets, genes, and diseases, enabling cross-team knowledge sharing and accelerating drug screening process.",
+                "result": "Research efficiency improved by 3x"
+            },
+            "review": {
+                "title": "Medical Review Writing",
+                "description": "Graduate students use Deep Research to automatically decompose review topics, batch search PubMed, and generate structured literature summaries and citation networks.",
+                "result": "Writing cycle reduced by 50%"
+            }
+        },
+        "technical": {
+            "title": "Technical Features",
+            "security": {
+                "title": "Data Security & Privacy",
+                "point1": "Support local and private deployment",
+                "point2": "HIPAA/GDPR compliance",
+                "point3": "User-level permission management",
+                "point4": "Audit logs and access control"
+            },
+            "performance": {
+                "title": "High Performance Architecture",
+                "point1": "Redis cache acceleration",
+                "point2": "Milvus vector database",
+                "point3": "Distributed task queue (BullMQ)",
+                "point4": "Sub-second response time"
+            },
+            "ai": {
+                "title": "AI Capabilities",
+                "point1": "Support GPT-4/Claude/Gemini",
+                "point2": "Semantic deduplication and clustering",
+                "point3": "Automatic summarization and translation",
+                "point4": "Citation network analysis"
+            },
+            "integration": {
+                "title": "Data Integration",
+                "point1": "PubMed/PMC direct connection",
+                "point2": "Web Search Engine integration",
+                "point3": "Custom knowledge base",
+                "point4": "RESTful API interface"
             }
         },
         "cta": {
-            "title": "Ready to get started?",
-            "subtitle": "Join us to experience the future of intelligent medical document processing",
-            "register": "Register Now"
+            "title": "Ready to Boost Your Research Efficiency?",
+            "subtitle": "Register now for free access to all features. Support for institutional batch deployment and customized services.",
+            "register": "Free Registration",
+            "login": "Login",
+            "contact": "For enterprise customization, please contact enterprise@deepmed.com"
         }
     },
     "footer": {
         "copyright": "All rights reserved",
-        "developedBy": "Developed by",
-        "about": "About Us",
-        "privacy": "Privacy Policy",
-        "terms": "Terms of Service",
-        "contact": "Contact Us"
+        "developedBy": "Developed by"
     },
     "knowledgeBase": {
         "title": "Knowledge Base",

@@ -72,11 +72,7 @@
     },
     "footer": {
         "copyright": "모든 권리 보유",
-        "developedBy": "개발",
-        "about": "회사 소개",
-        "privacy": "개인정보 보호정책",
-        "terms": "이용 약관",
-        "contact": "문의하기"
+        "developedBy": "개발"
     },
     "knowledgeBase": {
         "title": "지식 베이스",

@@ -72,7 +72,7 @@ On the right of the stains: "${rightContext}"
 So what was the original text between these two contexts?`,
       });
 
-      trackers?.tokenTracker.trackUsage('md-fixer', result.usage)
+      trackers?.tokenTracker.trackUsage('broken-ch-fixer', result.usage)
       const replacement = result.text.trim();
 
       // Validate the replacement

@@ -6,6 +6,12 @@
 
 DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，提供统一的网页搜索、大语言模型问答和知识库检索功能。
 
+## 🎬 产品演示
+
+完整demo：
+
+![DeepMed Search 演示](./public/demo.gif)
+
 ## ✨ 功能特性
 
 ### 统一搜索界面

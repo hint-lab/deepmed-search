@@ -402,3 +402,25 @@
 .animate-spin-reverse {
     animation: spin-reverse 1s linear infinite;
 }
+
+/* 浮动动画 - 用于首页医学图标 */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animation-delay-1000 {
+    animation-delay: 1s;
+}
+
+.animation-delay-3000 {
+    animation-delay: 3s;
+}

@@ -96,7 +96,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                             <Button
                                 type="button"
                                 disabled={disableInteractions || isSearchStrEmpty}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-500 to-purple-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isSubmittingWebOrLLM ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -128,7 +128,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                             <Button
                                 type="button"
                                 disabled={disableInteractions || isSearchStrEmpty}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-purple-600 to-indigo-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-600 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isSubmittingWebOrLLM ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -353,7 +353,7 @@ export default function SearchPage() {
                 {/* Pass handleTabChange to Tabs component */}
                 <Tabs value={searchType} onValueChange={handleTabChange} className="w-full">
                     <div className="text-center space-y-3 my-6 sm:my-8">
-                        <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 from-blue-600 via-purple-600 to-pink-600">
+                        <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text font-bold text-cyan-700 dark:text-cyan-300">
                             {t("title")}
                         </h1>
                         <p className="text-muted-foreground">

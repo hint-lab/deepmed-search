@@ -4,6 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useTranslate } from "@/contexts/language-context";
 import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash, File } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { usePathname } from "next/navigation";
 import { SettingsMenu } from "./settings-menu";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 type NavItem = {
     name: string;
@@ -34,6 +37,19 @@ export default function Header() {
     const { t } = useTranslate('nav');
     const session = useSession();
     const pathname = usePathname();
+    const { theme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // 避免 hydration 不匹配
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // 根据主题选择 logo
+    const currentTheme = mounted ? resolvedTheme : 'light';
+    const logoSrc = currentTheme === 'dark' 
+        ? '/assets/svg/logo-with-text-white.svg' 
+        : '/assets/logo-with-text.svg';
 
     const navItems: NavItem[] = [
         {
@@ -111,7 +127,15 @@ export default function Header() {
                         role="navigation"
                     >
                         <SheetHeader>
-                            <SheetTitle>导航菜单</SheetTitle>
+                            <SheetTitle className="flex items-center space-x-2">
+                                <Image
+                                    src={logoSrc}
+                                    alt="DeepMed Search"
+                                    width={100}
+                                    height={26}
+                                    className="h-6 w-auto"
+                                />
+                            </SheetTitle>
                             {/* <SheetDescription>网站导航菜单</SheetDescription> */}
                         </SheetHeader>
                         <div className="mb-4 py-4">
@@ -170,8 +194,15 @@ export default function Header() {
 
                 {/* Logo */}
                 <div className="flex items-center">
-                    <Link href="/" className="flex items-center">
-                        <span className="text-lg lg:text-xl font-bold">DeepMed Search</span>
+                    <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                        <Image
+                            src={logoSrc}
+                            alt="DeepMed Search"
+                            width={120}
+                            height={32}
+                            className="h-8 w-auto"
+                            priority
+                        />
                     </Link>
                 </div>
 

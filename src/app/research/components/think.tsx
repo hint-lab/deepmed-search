@@ -6,7 +6,22 @@ import {
     CardContent,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { 
+    Loader2, 
+    BarChart3, 
+    CheckCircle2, 
+    Square, 
+    Search, 
+    Globe, 
+    BookOpen, 
+    Zap, 
+    MessageCircle, 
+    HelpCircle, 
+    Lightbulb, 
+    Library, 
+    Code, 
+    AlertTriangle 
+} from "lucide-react";
 import { useTranslate } from '@/contexts/language-context';
 
 interface ThinkStep {
@@ -103,10 +118,12 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
         eventSource: EventSource | null;
         isCreated: boolean;
         taskId: string | null;
+        retryMs: number;
     }>({
         eventSource: null,
         isCreated: false,
-        taskId: null
+        taskId: null,
+        retryMs: 1000
     });
 
     useEffect(() => {
@@ -404,6 +421,27 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                 setIsConnected(false);
             }
             clearTimeout(connectionTimeout);
+
+            // 指数退避重连
+            try {
+                if (sseStateRef.current.eventSource) {
+                    sseStateRef.current.eventSource.close();
+                    sseStateRef.current.eventSource = null;
+                    sseStateRef.current.isCreated = false;
+                }
+                const delay = Math.min(sseStateRef.current.retryMs, 15000);
+                console.log(`ThinkStatusDisplay: Will retry SSE in ${delay}ms for taskId: ${taskId}`);
+                setTimeout(() => {
+                    // 仅当 taskId 未变化且当前没有连接时重连
+                    if (sseStateRef.current.taskId === taskId && !sseStateRef.current.eventSource) {
+                        sseStateRef.current.retryMs = Math.min(delay * 2, 15000);
+                        // 触发重新连接：通过重置 isCreated 并调用一次 setIsConnected(false) 促使 Effect 重新执行
+                        setIsConnected(false);
+                    }
+                }, delay);
+            } catch (reErr) {
+                console.error('ThinkStatusDisplay: retry setup error', reErr);
+            }
         };
 
         return () => {
@@ -449,7 +487,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                         
                         {/* 文本信息 */}
                         <div className="text-center space-y-2">
-                            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">
                                 {t('connecting')}
                             </h3>
                             <p className="text-sm text-muted-foreground max-w-md">
@@ -469,7 +507,9 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
             <div className="space-y-6 p-4">
                  {questionEvaluation && (
                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg p-6 border border-indigo-200 dark:border-indigo-800">
-                         <h3 className="text-lg font-semibold text-indigo-700 dark:text-indigo-300 mb-4">📊 {t('questionEvaluation')}</h3>
+                         <h3 className="text-lg font-semibold text-indigo-700 dark:text-indigo-300 mb-4 flex items-center gap-2">
+                             <BarChart3 className="w-5 h-5" /> {t('questionEvaluation')}
+                         </h3>
                          <div className="space-y-3">
                              <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
                                  <p className="text-sm text-gray-700 dark:text-gray-300 italic">
@@ -484,7 +524,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                          ? "bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700"
                                          : "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
                                  )}>
-                                     <span className="text-xl">{questionEvaluation.needsDefinitive ? "✅" : "⬜"}</span>
+                                     <span className="text-xl">{questionEvaluation.needsDefinitive ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Square className="w-5 h-5 text-gray-400" />}</span>
                                      <span className={cn(
                                          "text-sm font-medium",
                                          questionEvaluation.needsDefinitive 
@@ -500,7 +540,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                          ? "bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
                                          : "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
                                  )}>
-                                     <span className="text-xl">{questionEvaluation.needsFreshness ? "✅" : "⬜"}</span>
+                                     <span className="text-xl">{questionEvaluation.needsFreshness ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Square className="w-5 h-5 text-gray-400" />}</span>
                                      <span className={cn(
                                          "text-sm font-medium",
                                          questionEvaluation.needsFreshness 
@@ -516,7 +556,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                          ? "bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700"
                                          : "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
                                  )}>
-                                     <span className="text-xl">{questionEvaluation.needsPlurality ? "✅" : "⬜"}</span>
+                                     <span className="text-xl">{questionEvaluation.needsPlurality ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Square className="w-5 h-5 text-gray-400" />}</span>
                                      <span className={cn(
                                          "text-sm font-medium",
                                          questionEvaluation.needsPlurality 
@@ -532,7 +572,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                          ? "bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
                                          : "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
                                  )}>
-                                     <span className="text-xl">{questionEvaluation.needsCompleteness ? "✅" : "⬜"}</span>
+                                     <span className="text-xl">{questionEvaluation.needsCompleteness ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Square className="w-5 h-5 text-gray-400" />}</span>
                                      <span className={cn(
                                          "text-sm font-medium",
                                          questionEvaluation.needsCompleteness 
@@ -550,7 +590,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                 {Array.isArray(searchQueries) && searchQueries.length > 0 && (
                     <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-lg p-6 border border-teal-200 dark:border-teal-800">
                         <h3 className="text-lg font-semibold text-teal-700 dark:text-teal-300 mb-4 flex items-center gap-2">
-                            <span>🔍</span> {t('searchQueries')} ({searchQueries.length})
+                            <Search className="w-5 h-5" /> {t('searchQueries')} ({searchQueries.length})
                         </h3>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                             {searchQueries.map((query, index) => (
@@ -576,7 +616,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                 {Array.isArray(visitedUrls) && visitedUrls.length > 0 && (
                     <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-lg p-6 border border-amber-200 dark:border-amber-800">
                         <h3 className="text-lg font-semibold text-amber-700 dark:text-amber-300 mb-4 flex items-center gap-2">
-                            <span>🌐</span> {t('visitedPages')} ({visitedUrls.length})
+                            <Globe className="w-5 h-5" /> {t('visitedPages')} ({visitedUrls.length})
                         </h3>
                        <div className="space-y-2 max-h-64 overflow-y-auto">
                             {visitedUrls.map((url, index) => (
@@ -599,7 +639,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                  {Array.isArray(readContents) && readContents.length > 0 && (
                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
                          <h3 className="text-lg font-semibold text-green-700 dark:text-green-300 mb-4 flex items-center gap-2">
-                             <span>📖</span> {t('readContents')} ({readContents.length})
+                             <BookOpen className="w-5 h-5" /> {t('readContents')} ({readContents.length})
                          </h3>
                          <div className="space-y-3 max-h-96 overflow-y-auto">
                              {readContents.map((content, index) => (
@@ -622,7 +662,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                              </a>
                                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                                  <span className="flex items-center gap-1">
-                                                     <span>📊</span>
+                                                     <BarChart3 className="w-3.5 h-3.5" />
                                                      <span>{content.tokens} {t('tokens')}</span>
                                                  </span>
                                              </div>
@@ -715,7 +755,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="text-2xl">📊</span>
+                                <BarChart3 className="w-6 h-6" />
                                 <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">{t('tokenUsage')}</h3>
                             </div>
                             <div className="flex items-center gap-4 text-xs">
@@ -757,13 +797,13 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                             </div>
                             <div className="flex items-center gap-3 text-xs">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-purple-600 dark:text-purple-400">{t('step')}:</span>
-                                    <span className="px-2 py-1 rounded-full bg-purple-200 dark:bg-purple-800 font-bold text-purple-800 dark:text-purple-200">
+                                    <span className="text-cyan-600 dark:text-cyan-400">{t('step')}:</span>
+                                    <span className="px-2 py-1 rounded-full bg-cyan-200 dark:bg-cyan-800 font-bold text-cyan-800 dark:text-cyan-200">
                                         {actionState.totalStep}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-purple-600 dark:text-purple-400">{t('action')}:</span>
+                                    <span className="text-cyan-600 dark:text-cyan-400">{t('action')}:</span>
                                     <span className="px-2 py-1 rounded-full bg-pink-200 dark:bg-pink-800 font-mono text-pink-800 dark:text-pink-200">
                                         {actionState.thisStep.action}
                                     </span>
@@ -774,19 +814,19 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                         {/* 显示详细的中间结果 */}
                         <div className="mt-3 pl-10 pr-2 space-y-2">
                             {actionState.thisStep.think && (
-                                <div className="text-xs text-purple-700 dark:text-purple-300 italic leading-relaxed">
-                                    💭 {actionState.thisStep.think}
+                                <div className="text-xs text-cyan-700 dark:text-cyan-300 italic leading-relaxed flex items-start gap-1">
+                                    <MessageCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> {actionState.thisStep.think}
                                 </div>
                             )}
                             
                             {/* Search Action 的详细信息 */}
                             {actionState.thisStep.action === 'search' && Array.isArray((actionState.thisStep as any).searchRequests) && (actionState.thisStep as any).searchRequests.length > 0 && (
                                 <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 space-y-1">
-                                    <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                        🔍 {t('searchQueriesLabel')}:
+                                    <div className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 flex items-center gap-1">
+                                        <Search className="w-3.5 h-3.5" /> {t('searchQueriesLabel')}:
                                     </div>
                                     {(actionState.thisStep as any).searchRequests.map((query: string, idx: number) => (
-                                        <div key={idx} className="text-xs text-purple-600 dark:text-purple-400 pl-4">
+                                        <div key={idx} className="text-xs text-cyan-600 dark:text-cyan-400 pl-4">
                                             • {query}
                                         </div>
                                     ))}
@@ -797,11 +837,11 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                             {actionState.thisStep.action === 'visit' && (actionState.thisStep as any).URLTargets && 
                              Array.isArray((actionState.thisStep as any).URLTargets) && (actionState.thisStep as any).URLTargets.length > 0 && (
                                 <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 space-y-1">
-                                    <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                        🌐 {t('visitUrlLabel')}:
+                                    <div className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 flex items-center gap-1">
+                                        <Globe className="w-3.5 h-3.5" /> {t('visitUrlLabel')}:
                                     </div>
                                     {(actionState.thisStep as any).URLTargets.map((url: any, idx: number) => (
-                                        <div key={idx} className="text-xs text-purple-600 dark:text-purple-400 pl-4 break-all">
+                                        <div key={idx} className="text-xs text-cyan-600 dark:text-cyan-400 pl-4 break-all">
                                             • {typeof url === 'string' ? url : `URL #${url}`}
                                         </div>
                                     ))}
@@ -811,11 +851,11 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                             {/* Reflect Action 的详细信息 */}
                             {actionState.thisStep.action === 'reflect' && Array.isArray((actionState.thisStep as any).questionsToAnswer) && (actionState.thisStep as any).questionsToAnswer.length > 0 && (
                                 <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 space-y-1">
-                                    <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                        🤔 {t('reflectQuestionsLabel')}:
+                                    <div className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 flex items-center gap-1">
+                                        <HelpCircle className="w-3.5 h-3.5" /> {t('reflectQuestionsLabel')}:
                                     </div>
                                     {(actionState.thisStep as any).questionsToAnswer.map((q: string, idx: number) => (
-                                        <div key={idx} className="text-xs text-purple-600 dark:text-purple-400 pl-4">
+                                        <div key={idx} className="text-xs text-cyan-600 dark:text-cyan-400 pl-4">
                                             • {q}
                                         </div>
                                     ))}
@@ -825,16 +865,16 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                             {/* Answer Action 的详细信息 */}
                             {actionState.thisStep.action === 'answer' && (actionState.thisStep as any).answer && typeof (actionState.thisStep as any).answer === 'string' && (
                                 <div className="bg-white/50 dark:bg-gray-800/50 rounded p-2 space-y-1">
-                                    <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                        💡 {t('answerLabel')}:
+                                    <div className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 flex items-center gap-1">
+                                        <Lightbulb className="w-3.5 h-3.5" /> {t('answerLabel')}:
                                     </div>
-                                    <div className="text-xs text-purple-600 dark:text-purple-400 pl-4 leading-relaxed">
+                                    <div className="text-xs text-cyan-600 dark:text-cyan-400 pl-4 leading-relaxed">
                                         {(actionState.thisStep as any).answer.substring(0, 200)}
                                         {(actionState.thisStep as any).answer.length > 200 && '...'}
                                     </div>
                                     {Array.isArray((actionState.thisStep as any).references) && (actionState.thisStep as any).references.length > 0 && (
-                                        <div className="text-xs text-purple-500 dark:text-purple-400 pl-4 mt-1">
-                                            📚 {t('referencesCount')}: {(actionState.thisStep as any).references.length} {t('sources')}
+                                        <div className="text-xs text-cyan-500 dark:text-cyan-400 pl-4 mt-1">
+                                            <Library className="w-3.5 h-3.5 inline mr-1" /> {t('referencesCount')}: {(actionState.thisStep as any).references.length} {t('sources')}
                                         </div>
                                     )}
                                 </div>
@@ -846,7 +886,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                     <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1">
                                         💻 {t('codingIssueLabel')}:
                                     </div>
-                                    <div className="text-xs text-purple-600 dark:text-purple-400 pl-4">
+                                    <div className="text-xs text-cyan-600 dark:text-cyan-400 pl-4">
                                         {(actionState.thisStep as any).codingIssue}
                                     </div>
                                 </div>

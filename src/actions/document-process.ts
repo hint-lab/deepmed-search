@@ -24,6 +24,21 @@ export async function processDocumentDirectlyAction(
     }
 ): Promise<ServerActionResponse<any>> {
     try {
+        // 获取知识库配置，用于分块参数
+        const knowledgeBase = await prisma.knowledgeBase.findUnique({
+            where: { id: kbId },
+            select: {
+                chunk_size: true,
+                overlap_size: true,
+                split_by: true
+            }
+        });
+
+        // 使用知识库配置的分块大小，如果没有则使用传入的chunkSize，最后使用默认值2000（增大默认值）
+        const maxChunkSize = options.chunkSize || knowledgeBase?.chunk_size || 2000;
+        const overlapSize = knowledgeBase?.overlap_size || 200;
+        const splitByParagraph = knowledgeBase?.split_by === 'paragraph' || knowledgeBase?.split_by === 'page';
+
         // 1. 转换文档
         // 更新文档状态为处理中
         const converted = await convertDocumentAction(documentId, {
@@ -40,8 +55,21 @@ export async function processDocumentDirectlyAction(
         }
 
         // 2. 分割文档
-        const pages = converted.data?.data?.pages || [];
+        // 优先使用清理后的文本，如果没有则使用原始 pages
+        const cleanedMarkdown = converted.data?.cleanedMarkdown;
+        const pages = cleanedMarkdown 
+            ? [{ pageNumber: 1, content: cleanedMarkdown }] // 使用清理后的整体文本
+            : converted.data?.data?.pages || []; // 降级使用原始 pages
+        
         const documentName = converted.data?.metadata?.fileName || '未知文档';
+
+        logger.info('准备分块文档', {
+            documentId,
+            useCleanedText: !!cleanedMarkdown,
+            pagesCount: pages.length,
+            maxChunkSize,
+            overlapSize
+        });
 
         const split = await splitDocumentAction(
             documentId,
@@ -50,7 +78,10 @@ export async function processDocumentDirectlyAction(
                 model: options.model,
                 maintainFormat: options.maintainFormat,
                 prompt: options.prompt,
-                documentName
+                documentName,
+                maxChunkSize,
+                overlapSize,
+                splitByParagraph
             }
         );
 
@@ -155,7 +186,43 @@ export async function convertDocumentAction(
             };
         }
         // 提取Markdown内容
-        const markdown_content = result.data?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
+        let markdown_content = result.data?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
+
+        // 使用 LLM 清理 PDF 提取的多余换行（可通过环境变量控制）
+        const enableTextCleaning = process.env.ENABLE_TEXT_CLEANING !== 'false'; // 默认启用
+        
+        if (enableTextCleaning && markdown_content && markdown_content.length > 0) {
+            try {
+                logger.info('开始清理文档文本', {
+                    documentId,
+                    originalLength: markdown_content.length
+                });
+
+                const { cleanLongText } = await import('@/lib/text-cleaner');
+                const cleanResult = await cleanLongText(markdown_content);
+
+                if (cleanResult.success && cleanResult.cleanedText) {
+                    markdown_content = cleanResult.cleanedText;
+                    logger.info('文档文本清理完成', {
+                        documentId,
+                        originalLength: result.data?.pages?.map((p: { content: string }) => p.content).join('\n\n').length,
+                        cleanedLength: markdown_content.length
+                    });
+                } else {
+                    logger.warn('文档文本清理失败，使用原始文本', {
+                        documentId,
+                        error: cleanResult.error
+                    });
+                }
+            } catch (error) {
+                logger.error('文档文本清理出错，使用原始文本', {
+                    documentId,
+                    error: error instanceof Error ? error.message : '未知错误'
+                });
+            }
+        } else if (!enableTextCleaning) {
+            logger.info('文本清理功能已禁用', { documentId });
+        }
 
         // 将完整结果保存为字符串
         const rawData = result.data ? JSON.stringify(result.data) : '{}';
@@ -240,7 +307,8 @@ export async function convertDocumentAction(
                     outputTokens: result.metadata?.outputTokens,
                     fileUrl: result.metadata?.fileUrl,
                     contentUrl: content_url || '',
-                }
+                },
+                cleanedMarkdown: markdown_content // 添加清理后的文本，供分块使用
             }
         };
     } catch (error: any) {
@@ -274,10 +342,11 @@ export async function splitDocumentAction(
         });
 
         // 创建文档分割器
+        // 使用传入的配置，如果没有则使用更大的默认值（2000字符）以减少分块数量
         const splitter = new DocumentSplitter({
-            maxChunkSize: options.maxChunkSize || 1000,
-            overlapSize: options.overlapSize || 100,
-            splitByParagraph: options.splitByParagraph || false,
+            maxChunkSize: options.maxChunkSize || 2000,
+            overlapSize: options.overlapSize || 200,
+            splitByParagraph: options.splitByParagraph !== undefined ? options.splitByParagraph : true,
             preserveFormat: options.maintainFormat
         });
 
@@ -381,18 +450,47 @@ export async function indexDocumentChunksAction(
             };
         }
 
+        // 计算总 token 数（简单估算：按空格分词）
+        const totalTokens = chunks.reduce((sum, chunk) => {
+            const tokens = chunk.content.split(/\s+/).filter(t => t.length > 0).length;
+            return sum + tokens;
+        }, 0);
+
         logger.info('文档块索引完成', {
             documentId,
-            indexedCount: indexResult.indexedCount
+            indexedCount: indexResult.indexedCount,
+            totalChunks: chunks.length,
+            totalTokens
         });
 
         await prisma.document.update({
             where: { id: documentId },
             data: {
                 chunk_num: chunks.length,
+                token_num: totalTokens,
                 processing_status: IDocumentProcessingStatus.SUCCESSED,
-                progress: 100
+                progress: 100,
+                progress_msg: '处理完成'
             }
+        });
+
+        // 更新知识库的总 token 数和分块数
+        await prisma.knowledgeBase.update({
+            where: { id: kbId },
+            data: {
+                chunk_num: {
+                    increment: chunks.length
+                },
+                token_num: {
+                    increment: totalTokens
+                }
+            }
+        });
+
+        logger.info('已更新知识库统计', {
+            kbId,
+            addedChunks: chunks.length,
+            addedTokens: totalTokens
         });
 
         return {

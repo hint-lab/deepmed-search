@@ -40,43 +40,135 @@
         "development-tools": "开发工具"
     },
     "home": {
+        "badge": "为医学研究者打造的智能检索平台",
         "title": "DeepMed Search",
-        "subtitle": "您的智能医学文档助手，让文档处理更简单、更高效",
+        "subtitle": "医学智能检索与研究平台",
+        "description": "整合 WebSearch Engine、PubMed、知识库与 AI 推理，提供从文献检索到证据综合的完整研究工具链。支持多源检索、智能去重、引用追踪与深度分析。",
         "getStarted": "开始使用",
-        "viewDocs": "查看文档",
+        "quickSearch": "快速检索",
+        "metrics": {
+            "pubmed": {
+                "label": "PubMed 覆盖",
+                "value": "3500万+",
+                "sublabel": "篇文献"
+            },
+            "speed": {
+                "label": "检索速度",
+                "value": "<2s",
+                "sublabel": "平均响应"
+            },
+            "accuracy": {
+                "label": "去重准确率",
+                "value": "98%",
+                "sublabel": "语义去重"
+            },
+            "formats": {
+                "label": "支持格式",
+                "value": "20+",
+                "sublabel": "文档类型"
+            }
+        },
         "features": {
-            "title": "核心功能",
-            "subtitle": "全方位提升您的文档处理体验，让信息管理更加高效",
-            "documentProcessing": {
-                "title": "智能医学文档处理",
-                "description": "支持多种文档格式，自动识别和提取关键信息"
+            "title": "核心功能模块",
+            "subtitle": "四大检索引擎协同工作，覆盖从网页搜索到知识库的全场景需求",
+            "webSearch": {
+                "title": "Web Search",
+                "subtitle": "通用网页检索",
+                "description": "基于 WebSearch Engine 的医学网页搜索，智能过滤与排序，保留来源追溯。适合快速获取最新资讯与临床指南。",
+                "feature1": "多引擎聚合",
+                "feature2": "智能过滤",
+                "feature3": "来源追溯",
+                "stats": "实时更新"
             },
-            "documentQA": {
-                "title": "智能医学文档问答",
-                "description": "无论何种文档格式，自动解析文档内容，并进行智能问答"
+            "pubmedSearch": {
+                "title": "PubMed Search",
+                "subtitle": "学术文献检索",
+                "description": "直连 PubMed/PMC 数据库，支持 MeSH 词表、高级检索式与引文追踪。提供摘要聚合与语义去重功能。",
+                "feature1": "MeSH 支持",
+                "feature2": "引文追踪",
+                "feature3": "语义去重",
+                "stats": "3500万+ 文献"
             },
-            "quickConversion": {
-                "title": "快速转换",
-                "description": "一键转换文档格式，保持原有格式和样式"
+            "deepResearch": {
+                "title": "Deep Research",
+                "subtitle": "AI 深度分析",
+                "description": "基于大语言模型的多步推理与证据综合。自动分解复杂问题、评估证据质量，生成结构化研究报告。",
+                "feature1": "多步推理",
+                "feature2": "证据评估",
+                "feature3": "可视化流程",
+                "stats": "GPT-4 驱动"
             },
-            "dataAnalysis": {
-                "title": "数据分析",
-                "description": "智能分析文档内容，生成数据可视化报告"
+            "knowledgeBase": {
+                "title": "Knowledge Base",
+                "subtitle": "企业知识库",
+                "description": "私有文档管理与检索系统。支持 PDF/Word/Excel 等格式，向量化存储，支持语义检索与权限管理。",
+                "feature1": "多格式支持",
+                "feature2": "向量检索",
+                "feature3": "权限控制",
+                "stats": "私有化部署"
+            }
+        },
+        "useCases": {
+            "title": "典型应用场景",
+            "subtitle": "真实用户案例展示",
+            "clinical": {
+                "title": "临床决策支持",
+                "description": "某三甲医院肿瘤科使用 PubMed + Deep Research 模块，在 5 分钟内完成罕见病例的文献综述与治疗方案评估。",
+                "result": "决策时间缩短 70%"
+            },
+            "drugDevelopment": {
+                "title": "药物研发文献调研",
+                "description": "生物制药公司利用知识库整合内部实验数据与外部文献，对罕见病靶点、基因、疾病全面调研，实现跨团队知识共享，加速药物筛选流程。",
+                "result": "调研效率提升 3x"
+            },
+            "review": {
+                "title": "医学综述撰写",
+                "description": "研究生使用 Deep Research 自动分解综述主题，批量检索 PubMed，生成结构化文献摘要与引用网络。",
+                "result": "撰写周期缩短 50%"
+            }
+        },
+        "technical": {
+            "title": "技术特性",
+            "security": {
+                "title": "数据安全与隐私",
+                "point1": "支持本地部署与私有化",
+                "point2": "符合 HIPAA/GDPR 合规要求",
+                "point3": "用户级权限管理",
+                "point4": "审计日志与访问控制"
+            },
+            "performance": {
+                "title": "高性能架构",
+                "point1": "Redis 缓存加速检索",
+                "point2": "Milvus 向量数据库",
+                "point3": "分布式任务队列 (BullMQ)",
+                "point4": "亚秒级响应速度"
+            },
+            "ai": {
+                "title": "AI 能力",
+                "point1": "支持 GPT-4/Claude/Gemini",
+                "point2": "语义去重与聚类",
+                "point3": "自动摘要与翻译",
+                "point4": "引文网络分析"
+            },
+            "integration": {
+                "title": "数据整合",
+                "point1": "PubMed/PMC 直连",
+                "point2": "WebSearch Engine 集成",
+                "point3": "自定义知识库",
+                "point4": "RESTful API 接口"
             }
         },
         "cta": {
-            "title": "准备好开始了吗？",
-            "subtitle": "加入我们，体验智能医学文档处理的未来",
-            "register": "立即注册"
+            "title": "准备好提升研究效率了吗？",
+            "subtitle": "立即注册，免费体验完整功能。支持机构批量部署与定制化服务。",
+            "register": "免费注册",
+            "login": "登录账号",
+            "contact": "企业用户咨询定制方案，请联系 enterprise@deepmed.com"
         }
     },
     "footer": {
         "copyright": "保留所有权利",
-        "developedBy": "由",
-        "about": "关于我们",
-        "privacy": "隐私政策",
-        "terms": "使用条款",
-        "contact": "联系我们"
+        "developedBy": "由"
     },
     "knowledgeBase": {
         "title": "知识库",

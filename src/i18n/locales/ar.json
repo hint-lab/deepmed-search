@@ -72,11 +72,7 @@
     },
     "footer": {
         "copyright": "جميع الحقوق محفوظة",
-        "developedBy": "تم التطوير بواسطة",
-        "about": "من نحن",
-        "privacy": "سياسة الخصوصية",
-        "terms": "شروط الاستخدام",
-        "contact": "اتصل بنا"
+        "developedBy": "تم التطوير بواسطة"
     },
     "knowledgeBase": {
         "title": "قاعدة المعرفة",
