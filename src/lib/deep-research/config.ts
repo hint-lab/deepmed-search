@@ -1,9 +1,13 @@
 import { createOpenAI, OpenAIProviderSettings } from '@ai-sdk/openai';
 import logger from '@/utils/logger';
+
+// ========== API 密钥配置 ==========
 // 从环境变量读取 API 密钥和其他配置
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-export const JINA_API_KEY = process.env.JINA_API_KEY;
-export const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;      // OpenAI 的 API Key
+export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;  // DeepSeek 的 API Key
+export const JINA_API_KEY = process.env.JINA_API_KEY;          // Jina AI 的 API Key
+export const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;    // OpenAI 自定义端点（可选）
+export const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL; // DeepSeek 自定义端点（可选，默认 https://api.deepseek.com）
 
 
 // 直接在代码中定义回退默认值
@@ -124,23 +128,37 @@ export function getModel(toolName: ToolName) {
 
     logger.info(`getModel 调用，工具: ${String(toolName)}, 提供者: ${LLM_PROVIDER}, 解析配置:`, config);
 
-    if (!OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY 在环境变量中未找到');
+    const opt: OpenAIProviderSettings = {};
+    
+    // 根据提供者设置 API Key 和 Base URL
+    if (LLM_PROVIDER === 'deepseek') {
+        // DeepSeek 配置
+        if (!DEEPSEEK_API_KEY) {
+            throw new Error('DEEPSEEK_API_KEY 在环境变量中未找到');
+        }
+        opt.apiKey = DEEPSEEK_API_KEY;
+        opt.baseURL = DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
+        opt.compatibility = 'compatible'; // DeepSeek 需要兼容模式
+        logger.info(`使用 DeepSeek API, Base URL: ${opt.baseURL}`);
+    } else {
+        // OpenAI 配置
+        if (!OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY 在环境变量中未找到');
+        }
+        opt.apiKey = OPENAI_API_KEY;
+        if (OPENAI_BASE_URL) {
+            opt.baseURL = OPENAI_BASE_URL;
+            logger.info(`使用 OpenAI Base URL: ${opt.baseURL}`);
+        }
+        if (openAICompatibility) {
+            opt.compatibility = openAICompatibility;
+        }
     }
-    const opt: OpenAIProviderSettings = {
-        apiKey: OPENAI_API_KEY,
-    };
-    if (openAICompatibility) {
-        opt.compatibility = openAICompatibility;
-    }
-    if (OPENAI_BASE_URL) {
-        opt.baseURL = OPENAI_BASE_URL;
-        logger.info(`使用 OpenAI Base URL: ${opt.baseURL}`);
-    }
+    
     try {
         return createOpenAI(opt)(config.model);
     } catch (error) {
-        logger.error(`为模型 ${config.model} 创建 OpenAI 客户端失败，选项:`, opt, error);
+        logger.error(`为模型 ${config.model} 创建客户端失败，提供者: ${LLM_PROVIDER}, 选项:`, opt, error);
         throw error;
     }
 }
@@ -148,8 +166,12 @@ export function getModel(toolName: ToolName) {
 // --- 初始验证和日志记录 ---
 
 // 根据选定的提供者验证必需的 API 密钥
-if ((LLM_PROVIDER === 'openai' || LLM_PROVIDER === 'deepseek') && !OPENAI_API_KEY) {
-    logger.error(`错误: LLM_PROVIDER 是 '${LLM_PROVIDER}' 但 OPENAI_API_KEY 未设置。`);
+if (LLM_PROVIDER === 'openai' && !OPENAI_API_KEY) {
+    logger.error(`错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。`);
+}
+
+if (LLM_PROVIDER === 'deepseek' && !DEEPSEEK_API_KEY) {
+    logger.error(`错误: LLM_PROVIDER 是 'deepseek' 但 DEEPSEEK_API_KEY 未设置。`);
 }
 
 // 警告搜索提供者密钥缺失

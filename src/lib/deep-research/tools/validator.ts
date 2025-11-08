@@ -1,6 +1,20 @@
 /**
- * Answer Validator - 验证生成的答案是否有效
- * 在评估器之前进行基础校验，拦截无效输出
+ * Answer Validator - 答案验证器
+ * 
+ * 在答案评估器（evaluator）之前进行快速的基础校验，拦截明显无效的输出。
+ * 
+ * 设计理念：
+ * - **快速失败**：在昂贵的 LLM 评估之前，用简单的规则快速过滤无效答案
+ * - **多层检查**：从类型、空值、长度、结构、内容等多个维度验证
+ * - **防御性编程**：处理各种边界情况（undefined, null, 空对象等）
+ * 
+ * 使用场景：
+ * - agent-helpers.ts 的 generateFinalAnswerHelper 中
+ * - 在答案生成后立即验证，避免无效答案进入评估流程
+ * 
+ * 与 evaluator 的区别：
+ * - Validator: 快速、同步、基于规则的检查
+ * - Evaluator: 慢速、异步、基于 LLM 的语义评估
  */
 
 export interface ValidationResult {

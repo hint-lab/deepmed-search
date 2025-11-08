@@ -1,8 +1,8 @@
-import {segmentText} from './segment';
+import {segmentText} from './jina-segment';
 import {Reference, TrackerContext, WebContent} from "../types";
 import {Schemas} from "../utils/schemas";
 import {cosineSimilarity, jaccardRank} from "./cosine";
-import {getEmbeddings} from "./embeddings";
+import {getEmbeddings} from "./jina-embeddings";
 
 export async function buildReferences(
   answer: string,

@@ -1,12 +1,12 @@
 import {BoostedSearchSnippet, KnowledgeItem, SearchSnippet, TrackerContext, VisitAction, WebContent} from "../types";
 import {getI18nText, smartMergeStrings} from "./text-tools";
 import {rerankDocuments} from "../tools/jina-rerank";
-import {readUrl} from "../tools/read";
+import {readUrl} from "../tools/jina-read";
 import {Schemas} from "./schemas";
 import {cherryPick} from "../tools/jina-latechunk";
 import {formatDateBasedOnType} from "./date-tools";
 import {classifyText} from "../tools/jina-classify-spam";
-import {segmentText} from "../tools/segment";
+import {segmentText} from "../tools/jina-segment";
 
 export function normalizeUrl(urlString: string, debug = false, options = {
   removeAnchors: true,

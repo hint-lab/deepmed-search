@@ -153,6 +153,7 @@ export class ObjectGeneratorSafe {
         messages,
         maxTokens: getToolConfig(model).maxTokens,
         temperature: getToolConfig(model).temperature,
+        mode: 'json', // 强制 JSON 输出模式
       });
 
       this.tokenTracker.trackUsage(model, result.usage);
@@ -198,6 +199,7 @@ export class ObjectGeneratorSafe {
               prompt: `Following the given JSON schema, extract the field from below: \n\n ${failedOutput}`,
               maxTokens: getToolConfig('fallback').maxTokens,
               temperature: getToolConfig('fallback').temperature,
+              mode: 'json', // 强制 JSON 输出模式
             });
 
             this.tokenTracker.trackUsage('fallback', fallbackResult.usage); // Track against fallback model
@@ -222,18 +224,28 @@ export class ObjectGeneratorSafe {
   private async handleGenerateObjectError<T>(error: unknown): Promise<GenerateObjectResult<T>> {
     if (NoObjectGeneratedError.isInstance(error)) {
       console.error('Object not generated according to schema, fallback to manual parsing');
+      
+      const errorText = (error as any).text;
+      console.log('=== DeepSeek 原始响应 (前 500 字符) ===');
+      console.log(errorText?.substring(0, 500));
+      console.log('=== 响应长度:', errorText?.length, '字符 ===');
+      console.log('=== 响应结尾 (最后 200 字符) ===');
+      console.log(errorText?.substring(Math.max(0, errorText.length - 200)));
+      
       try {
         // First try standard JSON parsing
-        const partialResponse = JSON.parse((error as any).text);
+        const partialResponse = JSON.parse(errorText);
         console.log('JSON parse success!')
         return {
           object: partialResponse as T,
           usage: (error as any).usage
         };
       } catch (parseError) {
+        console.error('JSON 解析失败:', parseError);
+        
         // Use Hjson to parse the error response for more lenient parsing
         try {
-          const hjsonResponse = Hjson.parse((error as any).text);
+          const hjsonResponse = Hjson.parse(errorText);
           console.log('Hjson parse success!')
           return {
             object: hjsonResponse as T,

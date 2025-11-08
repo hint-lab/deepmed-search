@@ -1,7 +1,7 @@
 import {TrackerContext} from "../types";
 import {Schemas} from "../utils/schemas";
 import {cosineSimilarity} from "./cosine";
-import {getEmbeddings} from "./embeddings";
+import {getEmbeddings} from "./jina-embeddings";
 
 // Refactored cherryPick function
 export async function cherryPick(question: string, longContext: string, options: any = {}, trackers: TrackerContext, schemaGen: Schemas, url: string) {
