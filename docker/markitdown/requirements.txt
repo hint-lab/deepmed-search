@@ -1,0 +1,5 @@
+markitdown[all]
+flask
+werkzeug
+requests
+

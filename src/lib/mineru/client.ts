@@ -36,6 +36,14 @@ export class MinerUClient {
         fileName: options.fileName,
       });
 
+      // 检查文件 URL 是否为本地地址
+      if (options.fileUrl.includes('localhost') || options.fileUrl.includes('127.0.0.1')) {
+        logger.warn('[MinerU] 警告：文件 URL 使用本地地址，MinerU 云端服务无法访问', {
+          fileUrl: options.fileUrl,
+          hint: '请参考 src/lib/mineru/LIMITATIONS.md 了解解决方案',
+        });
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -63,8 +71,21 @@ export class MinerUClient {
 
       const data = await response.json();
       
+      logger.info('[MinerU] API 响应', {
+        success: data.success,
+        hasData: !!data.data,
+        hasTaskId: !!data.data?.task_id,
+        error: data.error,
+        data: data,
+      });
+      
       if (!data.success || !data.data?.task_id) {
-        throw new Error(data.error || 'Failed to create task');
+        const errorMsg = data.error || data.message || 'Failed to create task';
+        logger.error('[MinerU] 任务创建失败（响应数据）', {
+          errorMsg,
+          fullResponse: data,
+        });
+        throw new Error(errorMsg);
       }
 
       logger.info('[MinerU] 任务创建成功', {

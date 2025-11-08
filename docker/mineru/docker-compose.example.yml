@@ -1,0 +1,49 @@
+# MinerU Docker Compose 示例
+# 展示如何使用 GPU 版本
+
+version: '3.8'
+
+services:
+  # CPU 版本（默认）
+  mineru-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    container_name: mineru-cpu
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      MINERU_MODEL_SOURCE: local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # GPU 版本（需要 NVIDIA GPU + Docker GPU 支持）
+  mineru-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mineru-gpu
+    ports:
+      - "8001:8000"
+    environment:
+      PORT: 8000
+      MINERU_MODEL_SOURCE: local
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+

@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD", "pg_isready -U ${POSTGRES_USER:-postgres} -q" ]
+      test: ["CMD", "pg_isready", "-U", "postgres", "-q"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -85,6 +85,55 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # MarkItDown 文档转换服务
+  markitdown:
+    build:
+      context: ./docker/markitdown
+      dockerfile: Dockerfile
+    container_name: deepmed-markitdown
+    restart: always
+    ports:
+      - "${MARKITDOWN_PORT:-5001}:5000"
+    environment:
+      PORT: 5000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MinerU 文档转换服务（开源自托管版本）
+  # 基于官方 vLLM 镜像，支持 GPU 加速
+  # 参考：https://opendatalab.github.io/MinerU/zh/quick_start/docker_deployment/
+  mineru:
+    build:
+      context: ./docker/mineru
+      # 使用 Dockerfile（GPU 版本，推荐）或 Dockerfile.cpu（CPU 版本）
+      dockerfile: Dockerfile.cpu
+    container_name: deepmed-mineru
+    restart: always
+    ports:
+      - "${MINERU_DOCKER_PORT:-8000}:8000"
+    environment:
+      PORT: 8000
+      MINERU_MODEL_SOURCE: local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # 如果使用 GPU 版本（Dockerfile），需要启用 GPU 支持
+    # 并将上面的 dockerfile: Dockerfile.cpu 改为 dockerfile: Dockerfile
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
 volumes:
   postgres-data:

@@ -1,0 +1,54 @@
+# MinerU Docker 镜像（CPU 版本，无需 GPU）
+# 参考：https://opendatalab.github.io/MinerU/zh/quick_start/docker_deployment/
+
+# 使用国内 Docker Hub 镜像
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# 配置国内 APT 镜像源（阿里云）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list 2>/dev/null || true && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list 2>/dev/null || true
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    fonts-noto-core \
+    fonts-noto-cjk \
+    fontconfig \
+    libgl1 \
+    libglib2.0-0 \
+    && fc-cache -fv \
+    && rm -rf /var/lib/apt/lists/*
+
+# 配置 pip 国内镜像源（阿里云）
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set global.trusted-host mirrors.aliyun.com
+
+# 安装 MinerU（CPU 模式）
+RUN pip install --no-cache-dir -U 'mineru[core]'
+
+# 下载模型配置（使用 ModelScope 国内源）
+RUN mineru-models-download -s modelscope -m all
+
+# 安装 Flask 用于 API 服务
+RUN pip install --no-cache-dir flask werkzeug requests
+
+# 复制 API 服务脚本
+COPY api_server.py /app/
+
+# 暴露端口
+EXPOSE 8000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 设置环境变量并启动服务
+ENV MINERU_MODEL_SOURCE=local
+CMD ["python", "api_server.py"]
+

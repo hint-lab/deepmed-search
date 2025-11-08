@@ -1,0 +1,10 @@
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://dockerproxy.com",
+    "https://mirror.ccs.tencentyun.com",
+    "https://registry.docker-cn.com"
+  ],
+  "dns": ["8.8.8.8", "8.8.4.4"]
+}
+

@@ -1,0 +1,16 @@
+# BuildKit 配置文件
+# 启用缓存和国内镜像加速
+
+[worker.oci]
+  enabled = true
+  
+[worker.containerd]
+  enabled = true
+  
+[registry."docker.io"]
+  mirrors = ["docker.m.daocloud.io", "dockerproxy.com"]
+  
+[registry."docker.m.daocloud.io"]
+  http = false
+  insecure = false
+

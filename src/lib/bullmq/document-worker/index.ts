@@ -1,11 +1,10 @@
 import { createWorker } from '../queue-manager';
 import { DocumentProcessJobData, DocumentProcessJobResult } from './types';
-import { processDocumentWithMinerU } from '../../mineru';
+import { parseDocument } from '../../document-parser';
 import { TaskType } from '../types';
 import { Job } from 'bullmq';
 import logger from '@/utils/logger';
 import { getReadableUrl } from '../../minio/operations';
-import { MinerUProcessResult } from '@/lib/mineru/types';
 // 文档处理函数
 export async function processDocument(data: DocumentProcessJobData): Promise<DocumentProcessJobResult> {
     const { documentId, options, documentInfo } = data;
@@ -30,29 +29,29 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             fileUrl
         });
 
-        // 使用 MinerU 处理文档
-        const result: MinerUProcessResult = await processDocumentWithMinerU(fileUrl, {
+        // 使用统一的文档解析器（根据 DOCUMENT_PARSER 环境变量自动选择）
+        const result = await parseDocument(fileUrl, {
             fileName: documentInfo.name || filePath.split('/').pop() || 'document',
             maintainFormat: options.maintainFormat,
             prompt: options.prompt || '',
         });
         
-        // 转换 MinerUProcessResult 到 DocumentProcessJobResult 格式
+        // 转换 DocumentParseResult 到 DocumentProcessJobResult 格式
         return {
             success: result.success,
-            data: result.success && result.data ? {
-                pages: result.data.pages?.map(page => ({
+            data: result.success ? {
+                pages: result.pages?.map(page => ({
                     content: page.content,
                     contentLength: page.content.length,
                 })),
-                extracted: result.data.extracted,
-                summary: result.data.pages ? {
-                    totalPages: result.data.pages.length,
+                extracted: result.content || '',
+                summary: result.pages ? {
+                    totalPages: result.pages.length,
                     ocr: {
-                        successful: result.data.pages.length,
+                        successful: result.pages.length,
                         failed: 0,
                     },
-                    extracted: result.data.extracted,
+                    extracted: result.content || '',
                 } : undefined,
             } : undefined,
             error: result.error || '',
