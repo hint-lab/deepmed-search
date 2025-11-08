@@ -67,6 +67,7 @@ DeepMed Search is a versatile search application built with the Next.js App Rout
 - **AI Services**: Vercel AI SDK with OpenAI provider (embeddings and chat)
 - **Search Services**: Tavily, Jina, DuckDuckGo
 - **LLM Providers**: OpenAI, DeepSeek, Google Vertex AI
+- **Document Processing**: MinerU API (PDF to Markdown conversion)
 - **File Storage**: MinIO (optional)
 - **Cache**: Redis (optional)
 
@@ -228,6 +229,10 @@ JINA_API_KEY="your-jina-api-key"
 # DEEPSEEK_API_KEY="your-deepseek-api-key"
 # GEMINI_API_KEY="your-gemini-api-key"
 
+# Optional: MinerU API (for document processing)
+# MINERU_API_KEY="your-mineru-api-key"
+# MINERU_BASE_URL="https://mineru.net/api/v4/extract/task"
+
 # Optional: MinIO file storage
 # MINIO_ENDPOINT="localhost:9000"
 # MINIO_ACCESS_KEY="minioadmin"
@@ -325,7 +330,7 @@ yarn db:studio
 Knowledge base search is based on vector embedding technology:
 
 1. **Document Upload**: Users upload documents (PDF, DOCX, TXT, etc.)
-2. **Text Extraction**: System extracts text content from documents
+2. **Text Extraction**: System extracts text content from documents using MinerU API
 3. **Chunking**: Long texts are split into appropriately sized chunks
 4. **Generate Embeddings**: Vercel AI SDK (with OpenAI provider) generates vector representations for each text chunk
 5. **Store Vectors**: Vectors are stored in Milvus vector database

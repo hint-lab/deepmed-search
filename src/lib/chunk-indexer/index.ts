@@ -1,5 +1,5 @@
 import { DocumentChunk } from '../document-splitter';
-import { getEmbeddings } from '../openai/embedding';
+import { getEmbeddings } from '../llm-provider';
 import { insertVectors } from '../milvus/operations';
 import logger from '@/utils/logger';
 

@@ -2,18 +2,7 @@
 
 import { MilvusClient } from '@zilliz/milvus2-sdk-node';
 import logger from '@/utils/logger';
-
-// Milvus 配置
-const MILVUS_ADDRESS = process.env.MILVUS_ADDRESS || 'localhost:19530';
-const COLLECTION_NAME = 'deepmed_chunks';
-
-// 向量维度配置
-export const VECTOR_DIMENSIONS = {
-    'text-embedding-ada-002': 1536,
-    'text-embedding-3-small': 1536,
-    'text-embedding-3-large': 3072,
-    'openai-text-embedding': 1536, // 默认
-} as const;
+import { MILVUS_ADDRESS, COLLECTION_NAME } from './config';
 
 let milvusClient: MilvusClient | null = null;
 
@@ -164,7 +153,7 @@ export async function closeMilvusConnection() {
 /**
  * 获取集合名称
  */
-export function getCollectionName(): string {
+export async function getCollectionName(): Promise<string> {
     return COLLECTION_NAME;
 }
 

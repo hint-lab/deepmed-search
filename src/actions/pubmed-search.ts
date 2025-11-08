@@ -1,7 +1,7 @@
 'use server';
 
 import { searchPubMed, PubMedSearchResult } from '@/lib/pubmed';
-import { chatClient } from '@/lib/deepseek/chat/client';
+import { ProviderFactory, ProviderType } from '@/lib/llm-provider';
 
 /**
  * Server Action用于从服务器端执行PubMed搜索
@@ -74,10 +74,14 @@ export async function getPubMedSuggestionsAction(
         3. Adding common variations or synonyms
         4. Maintaining the core research intent`;
 
-        const response = await chatClient.chat('pubmed_suggestions', prompt);
+        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+        const response = await provider.chat({
+            dialogId: 'pubmed_suggestions',
+            input: prompt,
+        });
         
         if (!response.content) {
-            throw new Error('Failed to get suggestions from DeepSeek');
+            throw new Error('Failed to get suggestions from LLM');
         }
 
         // 解析返回的文本，每行作为一个建议

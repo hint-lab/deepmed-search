@@ -68,7 +68,7 @@ export async function searchSimilarChunks({
         // 确保集合存在
         await ensureCollection();
         const client = await getMilvusClient();
-        const collectionName = getCollectionName();
+        const collectionName = await getCollectionName();
 
         // 如果没有向量，只能使用 BM25（从 PostgreSQL 获取）
         if (!queryVector.length) {
@@ -90,7 +90,7 @@ export async function searchSimilarChunks({
         // 执行向量搜索
         const searchResult = await client.search({
             collection_name: collectionName,
-            vector: queryVector,
+            data: [queryVector],
             filter: filterExpr,
             limit: resultLimit,
             output_fields: ['id', 'chunk_id', 'content', 'doc_id', 'doc_name', 'kb_id'],
@@ -264,7 +264,7 @@ export async function insertVectors({
         // 确保集合存在
         await ensureCollection();
         const client = await getMilvusClient();
-        const collectionName = getCollectionName();
+        const collectionName = await getCollectionName();
 
         // 1. 检查知识库是否存在
         const knowledgeBase = await prisma.knowledgeBase.findUnique({
@@ -394,7 +394,7 @@ export async function updateChunkEmbedding(
         // 更新 Milvus 中的向量
         await ensureCollection();
         const client = await getMilvusClient();
-        const collectionName = getCollectionName();
+        const collectionName = await getCollectionName();
 
         // 先删除旧的
         await client.delete({
@@ -433,7 +433,7 @@ export async function deleteKnowledgeBaseVectors(kbId: string): Promise<boolean>
     try {
         await ensureCollection();
         const client = await getMilvusClient();
-        const collectionName = getCollectionName();
+        const collectionName = await getCollectionName();
 
         await client.delete({
             collection_name: collectionName,
@@ -458,7 +458,7 @@ export async function deleteDocumentVectors(docId: string): Promise<boolean> {
     try {
         await ensureCollection();
         const client = await getMilvusClient();
-        const collectionName = getCollectionName();
+        const collectionName = await getCollectionName();
 
         await client.delete({
             collection_name: collectionName,

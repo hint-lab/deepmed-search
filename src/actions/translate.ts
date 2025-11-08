@@ -2,7 +2,7 @@
 
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
-import { chatClient } from '@/lib/deepseek/chat/client'; // 假设使用 chatClient
+import { ProviderFactory, ProviderType } from '@/lib/llm-provider';
 
 // --- Language Code to Full Name Mapping ---
 // (可以根据需要扩展更多语言)
@@ -45,10 +45,12 @@ async function performTranslation(text: string, targetLanguageCode: string, sour
     console.log("Generated LLM Prompt:", prompt);
 
     try {
-        // 使用 chatClient 进行非流式调用
-        // 注意：'translation_context' 是一个示例 ID，你可能需要根据 chatClient 的具体实现调整
-        // 或者根据需要传递 session/user 相关信息来创建上下文
-        const response = await chatClient.chat('translation_context', prompt);
+        // 使用 LLM Provider 进行非流式调用
+        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+        const response = await provider.chat({
+            dialogId: 'translation_context',
+            input: prompt,
+        });
 
         if (!response || !response.content) {
             throw new Error('LLM translation failed or returned empty content.');

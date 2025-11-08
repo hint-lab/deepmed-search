@@ -4,8 +4,9 @@ export {
     ensureCollection,
     closeMilvusConnection,
     getCollectionName,
-    VECTOR_DIMENSIONS,
 } from './client';
+
+export { VECTOR_DIMENSIONS } from './config';
 
 export {
     searchSimilarChunks,

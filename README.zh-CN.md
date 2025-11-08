@@ -67,6 +67,7 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **AI 服务**：Vercel AI SDK 配合 OpenAI provider（嵌入和对话）
 - **搜索服务**：Tavily、Jina、DuckDuckGo
 - **LLM 提供商**：OpenAI、DeepSeek、Google Vertex AI
+- **文档处理**：MinerU API（PDF 转 Markdown）
 - **文件存储**：MinIO（可选）
 - **缓存**：Redis（可选）
 
@@ -227,6 +228,10 @@ JINA_API_KEY="your-jina-api-key"
 # DEEPSEEK_API_KEY="your-deepseek-api-key"
 # GEMINI_API_KEY="your-gemini-api-key"
 
+# 可选：MinerU API（用于文档处理）
+# MINERU_API_KEY="your-mineru-api-key"
+# MINERU_BASE_URL="https://mineru.net/api/v4/extract/task"
+
 # 可选：MinIO 文件存储
 # MINIO_ENDPOINT="localhost:9000"
 # MINIO_ACCESS_KEY="minioadmin"
@@ -324,7 +329,7 @@ yarn db:studio
 知识库搜索基于向量嵌入技术：
 
 1. **文档上传**：用户上传文档（PDF、DOCX、TXT 等）
-2. **文本提取**：系统提取文档中的文本内容
+2. **文本提取**：系统使用 MinerU API 提取文档中的文本内容
 3. **分块处理**：将长文本切分成合适大小的块
 4. **生成嵌入**：通过 Vercel AI SDK（使用 OpenAI provider）生成每个文本块的向量表示
 5. **存储向量**：将向量存储在 Milvus 向量数据库中

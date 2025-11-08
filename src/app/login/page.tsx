@@ -155,8 +155,15 @@ const Login = () => {
                 }));
             }
 
-            // 重定向到目标页面
-            window.location.href = callbackUrl;
+            // 显示成功提示
+            toast.success("登录成功", {
+                description: `欢迎回来，${user?.name || user?.email || ''}！`,
+            });
+
+            // 延迟跳转，让用户看到成功提示
+            setTimeout(() => {
+                window.location.href = callbackUrl;
+            }, 800);
         } catch (error) {
             console.error('登录失败:', error);
             toast.error("登录失败", {

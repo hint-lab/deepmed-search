@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ModelOptions } from 'zerox/node-zerox/dist/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -179,7 +178,7 @@ export default function DocumentTestPage() {
         try {
             const form = e.currentTarget;
             const formData = new FormData(form);
-            const model = formData.get('model') as string || ModelOptions.OPENAI_GPT_4O_MINI;
+            const model = formData.get('model') as string || 'default';
             const maintainFormat = formData.get('maintainFormat') === 'on';
             const prompt = formData.get('prompt') as string || '';
 
@@ -256,7 +255,7 @@ export default function DocumentTestPage() {
             });
 
             const response = await convertDocumentAction(documentId, {
-                model: ModelOptions.OPENAI_GPT_4O_MINI,
+                model: 'default',
                 maintainFormat: true
             });
 
@@ -314,7 +313,7 @@ export default function DocumentTestPage() {
                 documentId,
                 convertedResult.data.pages,
                 {
-                    model: ModelOptions.OPENAI_GPT_4O_MINI,
+                    model: 'default',
                     maintainFormat: true,
                     documentName: convertedResult.metadata?.fileName || '未知文档'
                 }
@@ -680,13 +679,12 @@ export default function DocumentTestPage() {
                     <form onSubmit={handleProcessTest} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="model">模型</Label>
-                            <Select name="model" defaultValue={ModelOptions.OPENAI_GPT_4O_MINI}>
+                            <Select name="model" defaultValue="default">
                                 <SelectTrigger>
                                     <SelectValue placeholder="选择模型" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ModelOptions.OPENAI_GPT_4O}>GPT-4o</SelectItem>
-                                    <SelectItem value={ModelOptions.OPENAI_GPT_4O_MINI}>GPT-4o-mini</SelectItem>
+                                    <SelectItem value="default">默认模型</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

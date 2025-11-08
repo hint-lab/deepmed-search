@@ -1,13 +1,11 @@
 import { createWorker } from '../queue-manager';
 import { DocumentProcessJobData, DocumentProcessJobResult } from './types';
-import { processDocumentWithZerox } from '../../zerox';
-import { ModelProvider } from 'zerox/node-zerox/dist/types';
+import { processDocumentWithMinerU } from '../../mineru';
 import { TaskType } from '../types';
 import { Job } from 'bullmq';
 import logger from '@/utils/logger';
 import { getReadableUrl } from '../../minio/operations';
-import { DocumentSplitter } from '../../document-splitter';
-import { ZeroxProcessResult } from '@/lib/zerox/types';
+import { MinerUProcessResult } from '@/lib/mineru/types';
 // 文档处理函数
 export async function processDocument(data: DocumentProcessJobData): Promise<DocumentProcessJobResult> {
     const { documentId, options, documentInfo } = data;
@@ -32,27 +30,35 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             fileUrl
         });
 
-        // 使用 processDocumentWithZerox 处理文档
-        const result: ZeroxProcessResult = await processDocumentWithZerox(fileUrl, {
-            modelProvider: ModelProvider.OPENAI,
-            model: options.model,
+        // 使用 MinerU 处理文档
+        const result: MinerUProcessResult = await processDocumentWithMinerU(fileUrl, {
+            fileName: documentInfo.name || filePath.split('/').pop() || 'document',
             maintainFormat: options.maintainFormat,
             prompt: options.prompt || '',
-            cleanup: true,
-            concurrency: 10,
-            maxImageSize: 15,
-            imageDensity: 300,
-            imageHeight: 2048,
-            correctOrientation: true,
-            trimEdges: true
         });
-        // 需要将 ZeroxProcessResult 转换成 DocumentProcessJobResult 的格式
+        
+        // 转换 MinerUProcessResult 到 DocumentProcessJobResult 格式
         return {
-            ...result,
+            success: result.success,
+            data: result.success && result.data ? {
+                pages: result.data.pages?.map(page => ({
+                    content: page.content,
+                    contentLength: page.content.length,
+                })),
+                extracted: result.data.extracted,
+                summary: result.data.pages ? {
+                    totalPages: result.data.pages.length,
+                    ocr: {
+                        successful: result.data.pages.length,
+                        failed: 0,
+                    },
+                    extracted: result.data.extracted,
+                } : undefined,
+            } : undefined,
             error: result.error || '',
             metadata: {
                 ...result.metadata,
-                fileUrl
+                fileUrl,
             },
         };
     } catch (error) {

@@ -1,5 +1,0 @@
-export * from './types';
-export * from './config';
-export * from './processor';
-
-require('./zerox-patch')

@@ -4,14 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
-import { chatClient } from '@/lib/deepseek/chat/client';
-import { kbReferenceTool } from '@/lib/deepseek/chat/tools';
+import { ProviderFactory, ProviderType, ChunkResponse, getEmbeddings } from '@/lib/llm-provider';
+import { kbReferenceTool } from '@/lib/tools';
 import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
 import { searchSimilarChunks, ChunkSearchResult } from '@/lib/milvus/operations';
-import { getEmbeddings } from '@/lib/openai/embedding';
 import { auth } from '@/lib/auth';
-import { ChunkResponse } from '@/lib/deepseek';
 
 interface ReferenceData {
     type: string;
@@ -101,8 +99,13 @@ export const sendChatMessageAction = withAuth(async (
         if (isReason) {
             console.log('思考模式，生成AI思考回复');
 
-            // 使用 chatClient 处理思考模式输出
-            const response = await chatClient.chat(dialogId, content, true);
+            // 使用 LLM Provider 处理思考模式输出
+            const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+            const response = await provider.chat({
+                dialogId,
+                input: content,
+                isReason: true,
+            });
 
             console.log('思考模式，生成AI思考回复成功:', {
                 response: response
@@ -135,10 +138,12 @@ export const sendChatMessageAction = withAuth(async (
         const systemPrompt = `
         你可以通过调用 kb_reference 工具来引用知识库片段。每当你需要引用知识库内容时，请调用该工具，并传递文档ID、片段ID和片段内容。
         `;
-        chatClient.setSystemPrompt(dialogId, systemPrompt);
+        
+        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+        provider.setSystemPrompt(dialogId, systemPrompt);
 
-        // 使用 chatClient 处理非流式输出
-        const response = await chatClient.chat(dialogId, content);
+        // 使用 LLM Provider 处理非流式输出
+        const response = await provider.chat({ dialogId, input: content });
 
         // 创建助手消息
         const assistantMessage = await prisma.message.create({
@@ -241,10 +246,12 @@ export async function getChatMessageStream(
                     let reasoningContent = '';
                     let currentlyProcessingReasoning = true;
 
-                    await chatClient.chatStream(
+                    const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+                    await provider.chatStream({
                         dialogId,
-                        content,
-                        (chunk: ChunkResponse) => {
+                        input: content,
+                        isReason: true,
+                        onChunk: (chunk: ChunkResponse) => {
                             if (typeof chunk === 'string') {
                                 if (chunk.startsWith('[REASONING]')) {
                                     const reasoningChunk = chunk.substring('[REASONING]'.length);
@@ -267,9 +274,8 @@ export async function getChatMessageStream(
                                 // 如果 chunk 是对象，可以在这里添加特定处理逻辑，例如函数调用相关的
                                 console.log("Received object chunk:", chunk);
                             }
-                        },
-                        true
-                    );
+                        }
+                    });
 
                     if (assistantMessageId) {
                         await prisma.message.update({
@@ -373,8 +379,10 @@ export async function getChatMessageStream(
                     // 是否找到了相关片段
                     const hasRelevantChunks = contextChunks.trim().length > 0;
 
+                    const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+
                     // 先设置系统提示
-                    chatClient.setSystemPrompt(
+                    provider.setSystemPrompt(
                         dialogId,
                         hasRelevantChunks
                             ? `你是DeepMed团队开发的一个专业的医学AI助手。请基于以下知识库内容回答问题。
@@ -389,23 +397,24 @@ ${contextChunks}
 注意：针对用户的问题，我没有在知识库中找到相关内容。请诚实地告诉用户你没有相关信息，不要编造答案。可以礼貌地建议用户尝试其他相关问题或提供更多细节。`
                     );
 
-                    // 只有在有相关片段时才设置工具
-                    if (hasRelevantChunks) {
-                        console.log("找到相关片段，设置引用工具");
-                        chatClient.setTools([kbReferenceTool]);
-                    } else {
-                        console.log("未找到相关片段，不设置引用工具");
-                        chatClient.setTools([]);
-                    }
-
                     console.log("开始生成回复...");
                     let accumulatedContent = '';
                     let references: ReferenceData[] = [];
 
-                    await chatClient.chatWithFunctionsStream(
+                    // 准备工具配置
+                    const tools = hasRelevantChunks ? [kbReferenceTool] : [];
+                    
+                    if (hasRelevantChunks) {
+                        console.log("找到相关片段，使用引用工具");
+                    } else {
+                        console.log("未找到相关片段，不使用引用工具");
+                    }
+
+                    await provider.chatWithToolsStream({
                         dialogId,
-                        content,
-                        (chunk: ChunkResponse) => {
+                        input: content,
+                        tools,
+                        onChunk: (chunk: ChunkResponse) => {
                             // console.log("收到流响应:", typeof chunk === 'string' ? chunk : JSON.stringify(chunk));
 
                             if (typeof chunk === 'string') {
@@ -444,9 +453,8 @@ ${contextChunks}
                                     sendEvent({ type: 'content', chunk: contentToAppend });
                                 }
                             }
-                        },
-                        false
-                    );
+                        }
+                    });
 
                     console.log("流式回复完成, 内容长度:", accumulatedContent.length);
 

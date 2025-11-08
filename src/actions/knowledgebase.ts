@@ -223,7 +223,7 @@ export const listKnowledgeBasesAction = withAuth(async (session, params?: {
     tags?: string[];
 }) => {
     const { keyword, page = 1, pageSize = 10, tags } = params || {};
-    const where: any = {
+    const where: Prisma.KnowledgeBaseWhereInput = {
         visible: true // 默认只查询可见的知识库
     };
 
