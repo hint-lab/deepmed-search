@@ -212,14 +212,16 @@ export class ResearchAgent {
                     
                     await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作。基于现有${knowledgeInfo}尝试生成答案。`);
                     
-                    // 使用后备动作：尝试回答
-                    this.thisStep = {
-                        action: 'answer',
-                        answer: '',
-                        references: [],
-                        think: `由于无法确定下一步，尝试基于现有知识生成答案（共 ${this.allKnowledge.length} 条知识可用）`,
-                        isFinal: false
-                    };
+                    const fallbackAnswer = await generateFinalAnswerHelper(this, {
+                        currentQuestion,
+                        isFinal: false,
+                        beastMode: false
+                    });
+
+                    fallbackAnswer.isFinal = false;
+                    fallbackAnswer.references = fallbackAnswer.references || [];
+                    fallbackAnswer.think = `由于无法确定下一步，尝试基于现有知识生成答案（共 ${this.allKnowledge.length} 条知识可用）。${fallbackAnswer.think ? `\n${fallbackAnswer.think}` : ''}`;
+                    this.thisStep = fallbackAnswer;
                 } else {
                     await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作，且知识不足（仅 ${this.allKnowledge.length} 条）。研究过程提前结束。`);
                     // 确保 thisStep 有值，即使 LLM 失败

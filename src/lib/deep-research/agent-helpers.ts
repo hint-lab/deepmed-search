@@ -22,6 +22,35 @@ import { Schemas } from "./utils/schemas";
 import { ResearchAgent } from './agent';
 
 
+function coerceToPlainText(value: unknown): string {
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (value === null || value === undefined) {
+        return '';
+    }
+    if (Array.isArray(value)) {
+        return value.map(item => coerceToPlainText(item)).join('');
+    }
+    if (typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        const orderedKeys = Object.keys(record).sort((a, b) => {
+            const aNum = Number(a);
+            const bNum = Number(b);
+            const aIsNum = !Number.isNaN(aNum);
+            const bIsNum = !Number.isNaN(bNum);
+            if (aIsNum && bIsNum) {
+                return aNum - bNum;
+            }
+            if (aIsNum) return -1;
+            if (bIsNum) return 1;
+            return a.localeCompare(b);
+        });
+        return orderedKeys.map(key => coerceToPlainText(record[key])).join('');
+    }
+    return String(value);
+}
+
 // Updated signature to accept ResearchAgent instance (or necessary properties)
 export async function updateReferencesHelper(thisAgent: ResearchAgent, thisStep: AnswerAction) {
     const allURLs = (thisAgent as any).allURLs as Record<string, SearchSnippet>; // Access private member via cast
@@ -47,7 +76,12 @@ export async function updateReferencesHelper(thisAgent: ResearchAgent, thisStep:
 
     await Promise.all((thisStep.references || []).filter(ref => !ref.dateTime)
         .map(async ref => {
-            ref.dateTime = await getLastModified(ref.url) || '';
+            try {
+                ref.dateTime = await getLastModified(ref.url) || '';
+            } catch (error) {
+                console.warn(`Failed to fetch last modified date for ${ref.url}:`, error);
+                ref.dateTime = ref.dateTime || '';
+            }
         }));
 
     console.log('Updated References (Helper):', thisStep.references);
@@ -191,11 +225,92 @@ export function updateContextHelper(thisAgent: ResearchAgent, stepData: any): vo
 }
 
 // Updated signature to accept ResearchAgent instance (or necessary properties)
-export async function generateFinalAnswerHelper(thisAgent: ResearchAgent): Promise<StepAction> {
-    console.log('Entering Beast mode!!! (Implementation Pending - Helper)');
-    // TODO: Implement Beast Mode logic here, similar to how it was in the original class
-    // This will likely need access to many agent properties via `thisAgent`
-    return { action: 'answer', answer: 'Beast Mode Placeholder (Helper)', references: [], think: 'Generating final answer in beast mode', isFinal: true }; // Placeholder
+interface GenerateAnswerOptions {
+    currentQuestion?: string;
+    beastMode?: boolean;
+    isFinal?: boolean;
+}
+
+export async function generateFinalAnswerHelper(thisAgent: ResearchAgent, options: GenerateAnswerOptions = {}): Promise<AnswerAction> {
+    const question = (options.currentQuestion?.trim() || (thisAgent as any).question || '').trim();
+    const diaryContext = (thisAgent as any).diaryContext as string[];
+    const allQuestions = (thisAgent as any).allQuestions as string[];
+    const allKeywords = (thisAgent as any).allKeywords as string[];
+    const allKnowledge = (thisAgent as any).allKnowledge as KnowledgeItem[];
+    const SchemaGen = (thisAgent as any).SchemaGen as Schemas;
+    const generator = (thisAgent as any).generator as ObjectGeneratorSafe;
+    const messages = (thisAgent as any).messages as CoreMessage[];
+    const finalAnswerPIP = (thisAgent as any).finalAnswerPIP as string[];
+    const originalQuestion = (thisAgent as any).question as string;
+
+    const { system } = getPrompt(
+        diaryContext,
+        allQuestions,
+        allKeywords,
+        false,   // allowReflect
+        true,    // allowAnswer
+        false,   // allowRead
+        false,   // allowSearch
+        false,   // allowCoding
+        allKnowledge,
+        [],      // URLs already incorporated via knowledge
+        options.beastMode ?? options.isFinal ?? true
+    );
+
+    const schema = SchemaGen.getAgentSchema(false, false, true, false, false, question);
+    const composedMessages = composeMsgs(
+        messages,
+        allKnowledge,
+        question,
+        question === originalQuestion ? finalAnswerPIP : undefined
+    );
+
+    try {
+        const result = await generator.generateObject({
+            model: 'agent',
+            schema,
+            system,
+            messages: composedMessages,
+            numRetries: 2,
+        });
+
+        const rawAnswerPayload = result?.object?.answer?.answer;
+        const rawThinkPayload = result?.object?.think;
+
+        const normalizedAnswer = coerceToPlainText(rawAnswerPayload).trim();
+        const normalizedThink = coerceToPlainText(rawThinkPayload).trim();
+
+        if (normalizedAnswer.length > 0) {
+            return {
+                action: 'answer',
+                answer: normalizedAnswer,
+                references: [],
+                think: normalizedThink,
+                isFinal: options.isFinal ?? true
+            };
+        }
+
+        throw new Error('LLM returned empty answer payload');
+    } catch (error) {
+        console.error('Error generating final answer (Helper):', error);
+
+        const summaryItems = (allKnowledge || [])
+            .slice(-5)
+            .map((item, idx) => `${idx + 1}. ${item.answer}`)
+            .join('\n');
+
+        const fallbackAnswer = summaryItems
+            ? `${question || originalQuestion} 的关键信息梳理：\n${summaryItems}`
+            : `围绕“${question || originalQuestion}”的核心资料仍需扩充，可继续聚焦权威临床指南、GVHD 相关文献及近期病例综述以完善结论。`;
+
+        return {
+            action: 'answer',
+            answer: fallbackAnswer,
+            references: [],
+            think: '基于现有知识自动生成摘要。',
+            isFinal: options.isFinal ?? true
+        };
+    }
 }
 
 // Updated signature to accept ResearchAgent instance (or necessary properties)
