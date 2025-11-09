@@ -695,5 +695,68 @@
     "header": {
         "language": "Language",
         "simplifiedChinese": "Simplified Chinese"
+    },
+    "apiConfig": {
+        "title": "API Keys Configuration",
+        "description": "Manage your API keys and configuration",
+        "back": "Back",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "saveSuccess": "Configuration saved successfully",
+        "saveError": "Failed to save configuration",
+        "loadError": "Failed to load configuration",
+        "unauthorized": "Unauthorized, please login first",
+        "reset": "Reset",
+        "resetting": "Resetting...",
+        "resetSuccess": "Configuration cleared",
+        "resetError": "Failed to reset configuration",
+        "resetConfirmTitle": "Confirm Reset Configuration",
+        "resetConfirmDescription": "This action will clear all API configurations. This action cannot be undone. Are you sure you want to continue?",
+        "openai": {
+            "title": "OpenAI Configuration",
+            "description": "Configure OpenAI API key and model",
+            "apiKey": "API Key",
+            "apiKeyPlaceholder": "Enter your OpenAI API key",
+            "baseUrl": "Base URL",
+            "baseUrlPlaceholder": "https://api.openai.com/v1",
+            "model": "Model",
+            "modelPlaceholder": "gpt-4o-mini"
+        },
+        "deepseek": {
+            "title": "DeepSeek Configuration",
+            "description": "Configure DeepSeek API key",
+            "apiKey": "API Key",
+            "apiKeyPlaceholder": "Enter your DeepSeek API key",
+            "baseUrl": "Base URL",
+            "baseUrlPlaceholder": "https://api.deepseek.com"
+        },
+        "gemini": {
+            "title": "Gemini Configuration",
+            "description": "Configure Google Gemini API key",
+            "apiKey": "API Key",
+            "apiKeyPlaceholder": "Enter your Gemini API key",
+            "baseUrl": "Base URL",
+            "baseUrlPlaceholder": "Enter Gemini Base URL"
+        },
+        "search": {
+            "title": "Search Service Configuration",
+            "description": "Configure search provider and API keys",
+            "provider": "Search Provider",
+            "providerPlaceholder": "Select search provider",
+            "providerJina": "Jina",
+            "providerDuckDuckGo": "DuckDuckGo",
+            "providerTavily": "Tavily",
+            "tavilyApiKey": "Tavily API Key",
+            "tavilyApiKeyPlaceholder": "Enter your Tavily API key",
+            "jinaApiKey": "Jina API Key",
+            "jinaApiKeyPlaceholder": "Enter your Jina API key"
+        },
+        "ncbi": {
+            "title": "NCBI Configuration",
+            "description": "Configure NCBI API key (optional)",
+            "apiKey": "API Key",
+            "apiKeyPlaceholder": "Enter your NCBI API key (optional)"
+        }
     }
 }

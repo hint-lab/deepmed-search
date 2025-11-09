@@ -10,7 +10,7 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings, Sun, Moon, Monitor, Globe, LogOut } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, Globe, LogOut, Key } from 'lucide-react';
 import { useLanguageContext } from '@/contexts/language-context';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -121,6 +121,15 @@ export function SettingsMenu() {
                             {currentLanguage === 'ja' && 'システム'}
                         </span>
                         {mounted && theme === 'system' && <span className="ml-auto">✓</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/settings/api-config')}>
+                        <Key className="mr-2 h-4 w-4" />
+                        <span>
+                            {currentLanguage === 'zh' && '密钥配置'}
+                            {currentLanguage === 'en' && 'API Keys'}
+                            {currentLanguage === 'ja' && 'APIキー'}
+                        </span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">

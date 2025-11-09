@@ -27,6 +27,7 @@ model User {
   dialogs                 Dialog[] // 用户的对话列表
   messages                Message[] // 用户的消息列表
   systemTokens            SystemToken[] // 用户的系统令牌列表
+  apiConfig               UserApiConfig? // 用户的API配置
   createdAt               DateTime                 @default(now()) // 创建时间
   updatedAt               DateTime                 @updatedAt // 更新时间
 }
@@ -270,4 +271,27 @@ model RelatedQuestion {
   dialog    Dialog   @relation(fields: [dialogId], references: [id]) // 对话关联
   createdAt DateTime @default(now()) // 创建时间
   updatedAt DateTime @updatedAt // 更新时间
+}
+
+/// 用户API配置模型
+/// 存储用户的API密钥和配置信息
+model UserApiConfig {
+  id                String   @id @default(cuid()) // 配置唯一标识
+  userId            String   @unique // 用户ID（唯一，一个用户一条记录）
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
+  openaiBaseUrl     String?  // OpenAI Base URL
+  openaiApiKey      String?  // OpenAI API Key
+  openaiApiModel    String?  // OpenAI API Model
+  deepseekApiKey    String?  // DeepSeek API Key
+  deepseekBaseUrl   String?  // DeepSeek Base URL
+  geminiApiKey      String?  // Gemini API Key
+  geminiBaseUrl     String?  // Gemini Base URL
+  tavilyApiKey      String?  // Tavily API Key
+  searchProvider    String?  // 搜索提供者 (jina, duckduckgo, tavily)
+  jinaApiKey        String?  // Jina API Key
+  ncbiApiKey        String?  // NCBI API Key
+  createdAt         DateTime @default(now()) // 创建时间
+  updatedAt         DateTime @updatedAt // 更新时间
+
+  @@index([userId]) // 用户ID索引
 }
