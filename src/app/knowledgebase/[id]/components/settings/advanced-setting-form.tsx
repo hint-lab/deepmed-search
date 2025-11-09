@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-// import ChunkMethodCard from './chunk-method-card';
+import ChunkMethodCard from './chunk-method-card';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -76,7 +76,8 @@ export default function AdvancedSettingForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* <ChunkMethodCard /> */}
+        <ChunkMethodCard />
+
         <FormField
           control={form.control}
           name="chunk_size"

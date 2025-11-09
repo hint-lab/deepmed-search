@@ -46,7 +46,7 @@ export default function KnowledgeBaseLayout({ children }: KnowledgeBaseLayoutPro
                 />
             </div>
             {/* 主内容区域 */}
-            <div className="flex-1 w-full lg:w-[calc(100%-16rem)] pt-2">
+            <div className="flex-1 w-full lg:w-[calc(100%-16rem)] py-2">
                 {/* 渲染子页面内容 */}
                 {children}
             </div>

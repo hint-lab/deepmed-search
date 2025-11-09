@@ -14,7 +14,7 @@ import {
 
 
 // 定义 ViewType
-export type ViewType = 'files' | 'settings' | 'chat';
+export type ViewType = 'files' | 'settings' | 'chat' | 'table' | 'snippets';
 // 定义 Context 类型
 interface KnowledgeBaseContextType {
     knowledgeBases: IKnowledgeBase[]; // 列表使用 ListItem 类型
@@ -48,7 +48,7 @@ export function KnowledgeBaseProvider({ children }: { children: ReactNode }) {
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [currentView, setCurrentView] = useState<ViewType>('files');
+    const [currentView, setCurrentView] = useState<ViewType>('table');
     const [currentKnowledgeBaseId, _setCurrentKnowledgeBaseId] = useState<string | null>(null);
     const [searchString, setSearchString] = useState('');
     // 新增状态

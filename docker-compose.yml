@@ -86,6 +86,22 @@ services:
       timeout: 5s
       retries: 5
 
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: deepmed-queue-worker
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=512
+      BULLMQ_CONCURRENCY: ${BULLMQ_CONCURRENCY:-8}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      DATABASE_URL: ${DATABASE_URL}
+    restart: unless-stopped
+
   # MarkItDown 文档转换服务
   markitdown:
     build:
@@ -104,6 +120,17 @@ services:
       retries: 3
       start_period: 10s
 
+
+  attu:
+    image: zilliz/attu:latest
+    container_name: attu
+    ports:
+      - "8001:3000"
+    environment:
+      MILVUS_URL: milvus:19530
+    depends_on:
+      - milvus
+    restart: unless-stopped
   # MinerU 文档转换服务（开源自托管版本）
   # 基于官方 vLLM 镜像，支持 GPU 加速
   # 参考：https://opendatalab.github.io/MinerU/zh/quick_start/docker_deployment/

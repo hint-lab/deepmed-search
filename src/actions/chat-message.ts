@@ -336,6 +336,8 @@ export async function getChatMessageStream(
                                     type: 'kb_chunks',
                                     chunks: []
                                 });
+                                // 即使没有找到片段，也设置一个标记，表示已经搜索过知识库
+                                contextChunks = '[NO_CHUNKS_FOUND]';
                             } else {
                                 console.log(`找到 ${chunks.length} 个相关片段:`,
                                     chunks.map(c => ({ id: c.chunk_id, similarity: c.similarity })));
@@ -376,38 +378,53 @@ export async function getChatMessageStream(
 
                     console.log("设置系统提示和工具...");
 
-                    // 是否找到了相关片段
-                    const hasRelevantChunks = contextChunks.trim().length > 0;
+                    // 是否找到了相关片段（检查是否使用了知识库）
+                    const hasRelevantChunks = contextChunks.trim().length > 0 && contextChunks !== '[NO_CHUNKS_FOUND]';
+                    const hasSearchedKB = isUsingKB && dialog.knowledgeBase && contextChunks !== '';
 
                     const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
 
                     // 先设置系统提示
-                    provider.setSystemPrompt(
-                        dialogId,
-                        hasRelevantChunks
-                            ? `你是DeepMed团队开发的一个专业的医学AI助手。请基于以下知识库内容回答问题。
+                    if (hasRelevantChunks) {
+                        provider.setSystemPrompt(
+                            dialogId,
+                            `你是DeepMed团队开发的一个专业的医学AI助手。请基于以下知识库内容回答问题。
                             
 ${contextChunks}
 
 当你引用知识库内容时，请在句子后标注来源，例如[1]、[2]等。引用时使用kb_reference工具标记引用的内容。
 
 如果问题超出了以上知识范围，请诚实地表明你不知道，不要编造答案。只回答基于以上知识库内容的问题。`
-                            : `你是DeepMed团队开发的一个专业的医学AI助手。
+                        );
+                    } else if (hasSearchedKB && dialog.knowledgeBase) {
+                        // 搜索了知识库但没有找到相关内容
+                        provider.setSystemPrompt(
+                            dialogId,
+                            `你是DeepMed团队开发的一个专业的医学AI助手。
 
-注意：针对用户的问题，我没有在知识库中找到相关内容。请诚实地告诉用户你没有相关信息，不要编造答案。可以礼貌地建议用户尝试其他相关问题或提供更多细节。`
-                    );
+注意：针对用户的问题，我已经在知识库"${dialog.knowledgeBase.name}"中搜索过了，但没有找到相关内容。请诚实地告诉用户你没有在知识库中找到相关信息，不要编造答案。可以礼貌地建议用户尝试其他相关问题或提供更多细节。`
+                        );
+                    } else {
+                        // 没有使用知识库
+                        provider.setSystemPrompt(
+                            dialogId,
+                            `你是DeepMed团队开发的一个专业的医学AI助手。`
+                        );
+                    }
 
                     console.log("开始生成回复...");
                     let accumulatedContent = '';
                     let references: ReferenceData[] = [];
 
-                    // 准备工具配置
-                    const tools = hasRelevantChunks ? [kbReferenceTool] : [];
+                    // 准备工具配置：如果使用了知识库（无论是否找到片段），都提供引用工具
+                    const tools = hasSearchedKB ? [kbReferenceTool] : [];
                     
                     if (hasRelevantChunks) {
                         console.log("找到相关片段，使用引用工具");
+                    } else if (hasSearchedKB) {
+                        console.log("已搜索知识库但未找到相关片段，仍提供引用工具以便AI告知用户");
                     } else {
-                        console.log("未找到相关片段，不使用引用工具");
+                        console.log("未使用知识库，不使用引用工具");
                     }
 
                     await provider.chatWithToolsStream({

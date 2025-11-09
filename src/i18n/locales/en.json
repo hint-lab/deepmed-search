@@ -211,6 +211,8 @@
         "noData": "No data available",
         "noMoreData": "No more data",
         "documentTable": "Document List",
+        "llmSegmentation": "LLM Segmentation",
+        "ruleSegmentation": "Rule-based Segmentation",
         "table": {
             "documentName": "Document Name",
             "documentUploadDate": "Upload Date",
@@ -259,6 +261,21 @@
             "deleteDocSuccess": "Document deleted successfully",
             "deleteDocError": "Failed to delete document"
         },
+        "snippetSearch": {
+            "title": "Search Knowledge Snippets",
+            "description": "Quickly locate relevant chunks within this knowledge base by entering keywords.",
+            "placeholder": "Enter keywords to search within document chunks",
+            "search": "Search",
+            "searching": "Searching",
+            "loading": "Loading results…",
+            "resultCount": "{{count}} snippets found",
+            "empty": "No matching snippets were found. Try different keywords.",
+            "emptyKeyword": "Please enter keywords before searching.",
+            "linkDocument": "Open document",
+            "updatedAt": "Updated: {{value}}",
+            "errorFallback": "Unable to find matching snippets. Please try again later.",
+            "unknownError": "Search failed. Please try again."
+        },
         "settings": {
             "title": "Settings",
             "basicTitle": "Basic Settings",
@@ -301,6 +318,8 @@
             "name": "Knowledge Base Name",
             "namePlaceholder": "Please enter knowledge base name",
             "nameDescription": "This will be the unique identifier for your knowledge base",
+            "addSeparatorPlaceholder": "Enter separator and press Enter",
+            "add": "Add",
             "description": "Description",
             "descriptionPlaceholder": "Please enter knowledge base description",
             "descriptionDescription": "Briefly describe the purpose of this knowledge base",

@@ -18,7 +18,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useTranslation } from 'react-i18next';
+import { useTranslate } from '@/contexts/language-context';
+import { useSelectParserList, ParserItem } from '@/hooks/use-user-setting';
 import { useState } from 'react';
 
 interface ChunkMethodDialogProps {
@@ -42,7 +43,8 @@ export function ChunkMethodDialog({
     hideModal,
     loading,
 }: ChunkMethodDialogProps) {
-    const { t } = useTranslation('translation', { keyPrefix: 'dataset' });
+    const { t } = useTranslate('knowledgeBase');
+    const parserList = useSelectParserList();
     const [selectedParser, setSelectedParser] = useState(parserId);
     const [chunkSize, setChunkSize] = useState(parserConfig?.chunk_size || 500);
     const [overlap, setOverlap] = useState(parserConfig?.overlap || 50);
@@ -61,33 +63,35 @@ export function ChunkMethodDialog({
         <Dialog open={visible} onOpenChange={hideModal}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>修改分块方法</DialogTitle>
+                    <DialogTitle>{t('changeChunkMethod')}</DialogTitle>
                     <DialogDescription>
-                        选择合适的分块方法来处理您的文档
+                        {t('docParser.methodExamplesDescription')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="parser" className="text-right">
-                            分块方法
+                            {t('chunkMethod')}
                         </Label>
                         <Select
                             value={selectedParser}
                             onValueChange={setSelectedParser}
                         >
                             <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="选择分块方法" />
+                                <SelectValue placeholder={t('selectChunkMethod')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="text">文本分块</SelectItem>
-                                <SelectItem value="markdown">Markdown分块</SelectItem>
-                                <SelectItem value="pdf">PDF分块</SelectItem>
+                                {parserList.map((item: ParserItem) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="chunkSize" className="text-right">
-                            分块大小
+                            {t('form.chunkSize')}
                         </Label>
                         <Input
                             id="chunkSize"
@@ -99,7 +103,7 @@ export function ChunkMethodDialog({
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="overlap" className="text-right">
-                            重叠大小
+                            {t('form.chunkOverlap')}
                         </Label>
                         <Input
                             id="overlap"
@@ -112,10 +116,10 @@ export function ChunkMethodDialog({
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={hideModal}>
-                        取消
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={handleOk} disabled={loading}>
-                        {loading ? '处理中...' : '确定'}
+                        {loading ? t('processing') : t('common.ok')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

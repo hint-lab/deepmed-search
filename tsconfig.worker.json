@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "sourceMap": false,
+    "declaration": false,
+    "isolatedModules": false
+  },
+  "include": [
+    "src/worker/**/*",
+    "src/lib/**/*",
+    "src/actions/**/*"
+  ]
+}
+

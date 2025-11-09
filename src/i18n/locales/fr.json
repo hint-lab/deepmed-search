@@ -115,6 +115,8 @@
         "noData": "Aucune donnée disponible",
         "noMoreData": "Pas plus de données",
         "documentTable": "Liste des documents",
+        "llmSegmentation": "Segmentation LLM",
+        "ruleSegmentation": "Segmentation basée sur des règles",
         "table": {
             "documentName": "Nom du document",
             "documentUploadDate": "Date de téléchargement",
@@ -203,8 +205,10 @@
         },
         "form": {
             "name": "Nom de la base de connaissances",
-            "namePlaceholder": "Veuillez entrer le nom de la base de connaissances",
-            "nameDescription": "Ce sera l'identifiant unique pour votre base de connaissances",
+            "namePlaceholder": "Veuillez saisir le nom de la base de connaissances",
+            "nameDescription": "Ceci sera l'identifiant unique de votre base de connaissances",
+            "addSeparatorPlaceholder": "Saisissez un séparateur puis appuyez sur Entrée",
+            "add": "Ajouter",
             "description": "Description",
             "descriptionPlaceholder": "Veuillez entrer la description de la base de connaissances",
             "descriptionDescription": "Décrivez brièvement l'objectif de cette base de connaissances",

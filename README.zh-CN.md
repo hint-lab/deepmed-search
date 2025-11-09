@@ -73,7 +73,10 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **AI 服务**：Vercel AI SDK 配合 OpenAI provider（嵌入和对话）
 - **搜索服务**：Tavily、Jina、DuckDuckGo
 - **LLM 提供商**：OpenAI、DeepSeek、Google Vertex AI
-- **文档处理**：MinerU API（PDF 转 Markdown）
+- **文档处理**：支持三种解析器类型：
+  - **MarkItDown Docker**：多格式文档解析（PDF、DOCX、PPT、图片等）
+  - **MinerU Docker**：高质量 PDF 解析（自托管）
+  - **MinerU Cloud**：云端 PDF 解析服务
 - **文件存储**：MinIO（可选）
 - **缓存**：Redis（可选）
 
@@ -194,6 +197,8 @@ docker-compose down -v
 - **Milvus**：专业向量数据库，用于高性能向量检索
 - **Redis**：用于缓存和队列系统
 - **MinIO**：S3 兼容的对象存储，用于文件存储和 Milvus 向量持久化
+- **MarkItDown**：文档解析服务，支持多格式文档处理（端口 5001）
+- **MinerU**：文档解析服务，支持高质量 PDF 处理（端口 8000）
 
 ### 3. 安装依赖
 
@@ -234,7 +239,17 @@ JINA_API_KEY="your-jina-api-key"
 # DEEPSEEK_API_KEY="your-deepseek-api-key"
 # GEMINI_API_KEY="your-gemini-api-key"
 
-# 可选：MinerU API（用于文档处理）
+# 文档解析器配置（选择一种）
+# 选项 1：MarkItDown Docker（推荐，支持多格式文档）
+DOCUMENT_PARSER=markitdown-docker
+MARKITDOWN_URL=http://localhost:5001
+
+# 选项 2：MinerU Docker（推荐，高质量 PDF 解析）
+# DOCUMENT_PARSER=mineru-docker
+# MINERU_DOCKER_URL=http://localhost:8000
+
+# 选项 3：MinerU Cloud（云端服务，需要 API Key）
+# DOCUMENT_PARSER=mineru-cloud
 # MINERU_API_KEY="your-mineru-api-key"
 # MINERU_BASE_URL="https://mineru.net/api/v4/extract/task"
 
@@ -308,6 +323,8 @@ yarn dev
 | **Redis** | `localhost:6379` | 无密码 |
 | **MinIO API** | http://localhost:9000 | 用户: `minioadmin`<br/>密码: `minioadmin` |
 | **MinIO 控制台** | http://localhost:9001 | 用户: `minioadmin`<br/>密码: `minioadmin` |
+| **MarkItDown** | http://localhost:5001 | 文档解析 API |
+| **MinerU Docker** | http://localhost:8000 | 文档解析 API（如启用） |
 | **Prisma Studio** | http://localhost:5555 | 运行 `yarn db:studio` 后访问 |
 
 ## 📖 开发指南
@@ -335,7 +352,7 @@ yarn db:studio
 知识库搜索基于向量嵌入技术：
 
 1. **文档上传**：用户上传文档（PDF、DOCX、TXT 等）
-2. **文本提取**：系统使用 MinerU API 提取文档中的文本内容
+2. **文本提取**：系统使用配置的解析器（MarkItDown 或 MinerU）提取文档中的文本内容
 3. **分块处理**：将长文本切分成合适大小的块
 4. **生成嵌入**：通过 Vercel AI SDK（使用 OpenAI provider）生成每个文本块的向量表示
 5. **存储向量**：将向量存储在 Milvus 向量数据库中
@@ -532,6 +549,13 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/deepmed"
 ```bash
 # 启动数据库
 docker-compose up -d postgres
+
+# 启动文档解析器（选择一种）
+# 选项 1：MarkItDown（推荐，支持多格式文档）
+docker-compose up -d markitdown
+
+# 选项 2：MinerU Docker（高质量 PDF 解析）
+# docker-compose up -d mineru
 
 # 启动应用
 yarn dev

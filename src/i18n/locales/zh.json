@@ -211,6 +211,8 @@
         "noData": "暂无数据",
         "noMoreData": "没有更多数据",
         "documentTable": "文档列表",
+        "llmSegmentation": "大模型分块",
+        "ruleSegmentation": "规则分块",
         "table": {
             "documentName": "文档名",
             "documentUploadDate": "上传日期",
@@ -259,6 +261,21 @@
             "deleteDocSuccess": "文档已成功删除",
             "deleteDocError": "删除文档失败"
         },
+        "snippetSearch": {
+            "title": "片段搜索",
+            "description": "输入关键词，快速在当前知识库中定位相关内容片段。",
+            "placeholder": "请输入关键词搜索分块内容",
+            "search": "搜索",
+            "searching": "搜索中",
+            "loading": "正在加载结果…",
+            "resultCount": "共找到 {{count}} 条片段",
+            "empty": "未找到相关片段，请尝试其他关键词。",
+            "emptyKeyword": "请先输入搜索关键词。",
+            "linkDocument": "查看文档",
+            "updatedAt": "更新时间：{{value}}",
+            "errorFallback": "暂时无法找到相关片段，请稍后重试。",
+            "unknownError": "搜索失败，请稍后重试。"
+        },
         "settings": {
             "title": "设置",
             "basicTitle": "基础设置",
@@ -301,6 +318,8 @@
             "name": "知识库名称",
             "namePlaceholder": "请输入知识库名称",
             "nameDescription": "这将作为你的知识库的唯一标识",
+            "addSeparatorPlaceholder": "添加分隔符",
+            "add": "添加",
             "description": "描述",
             "descriptionPlaceholder": "请输入知识库描述",
             "descriptionDescription": "简单描述这个知识库的用途",

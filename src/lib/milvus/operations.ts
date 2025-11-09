@@ -87,6 +87,14 @@ export async function searchSimilarChunks({
             filterExpr += ` && ${filter}`;
         }
 
+        console.log('[Milvus] Search filter expression:', filterExpr);
+        console.log('[Milvus] Search params:', {
+            collection: collectionName,
+            vectorDim: queryVector.length,
+            resultLimit,
+            kbId
+        });
+
         // 执行向量搜索
         const searchResult = await client.search({
             collection_name: collectionName,
@@ -97,18 +105,39 @@ export async function searchSimilarChunks({
             params: { nprobe: 10 },
         });
 
+        console.log('[Milvus] Search raw results count:', searchResult.results.length);
+        if (searchResult.results.length > 0) {
+            console.log('[Milvus] First result sample:', {
+                id: searchResult.results[0]?.id,
+                chunk_id: searchResult.results[0]?.chunk_id,
+                kb_id: searchResult.results[0]?.kb_id,
+                distance: searchResult.results[0]?.distance
+            });
+        }
+
         logger.info('Milvus 搜索结果', { 
-            resultCount: searchResult.results.length 
+            resultCount: searchResult.results.length,
+            filterExpr,
+            kbId
         });
 
         // 获取 chunk_id 列表，从 PostgreSQL 获取完整数据
         const chunkIds = searchResult.results.map((r: any) => r.chunk_id);
         
+        console.log('[Milvus] Extracted chunk_ids:', chunkIds.slice(0, 5), `... (total: ${chunkIds.length})`);
+        
         if (chunkIds.length === 0) {
+            console.log('[Milvus] No chunk_ids extracted from search results');
             return [];
         }
 
         // 从 PostgreSQL 获取详细信息
+        console.log('[Milvus] Querying PostgreSQL with conditions:', {
+            chunk_id_count: chunkIds.length,
+            kb_id: kbId,
+            available_int: 1
+        });
+        
         const chunks = await prisma.chunk.findMany({
             where: {
                 chunk_id: { in: chunkIds },
@@ -116,6 +145,55 @@ export async function searchSimilarChunks({
                 available_int: 1
             }
         });
+
+        console.log('[Milvus] PostgreSQL returned chunks:', chunks.length);
+        
+        // 如果没有找到任何 chunks，尝试不加 available_int 过滤
+        let finalChunks = chunks;
+        if (chunks.length === 0) {
+            console.log('[Milvus] Retrying without available_int filter...');
+            const chunksWithoutFilter = await prisma.chunk.findMany({
+                where: {
+                    chunk_id: { in: chunkIds },
+                    kb_id: kbId
+                }
+            });
+            console.log('[Milvus] Without filter found:', chunksWithoutFilter.length);
+            
+            if (chunksWithoutFilter.length > 0) {
+                console.log('[Milvus] Using chunks without available_int filter');
+                console.log('[Milvus] Sample chunk status:', 
+                    chunksWithoutFilter.slice(0, 3).map(c => ({ 
+                        id: c.chunk_id, 
+                        avail: c.available_int 
+                    }))
+                );
+                finalChunks = chunksWithoutFilter;
+            } else {
+                // 检查是否是 chunk_id 不匹配的问题
+                console.log('[Milvus] Still found 0 chunks in PostgreSQL!');
+                console.log('[Milvus] Sample chunk_ids from Milvus:', chunkIds.slice(0, 5));
+                
+                // 检查这个知识库在 PostgreSQL 中有多少 chunks
+                const totalChunksInPg = await prisma.chunk.count({
+                    where: { kb_id: kbId }
+                });
+                console.log(`[Milvus] Total chunks in PostgreSQL for this KB: ${totalChunksInPg}`);
+                
+                if (totalChunksInPg > 0) {
+                    // 获取 PostgreSQL 中的一些 chunk_id 样例
+                    const samplePgChunks = await prisma.chunk.findMany({
+                        where: { kb_id: kbId },
+                        select: { chunk_id: true },
+                        take: 5
+                    });
+                    console.log('[Milvus] Sample chunk_ids from PostgreSQL:', samplePgChunks.map(c => c.chunk_id));
+                    console.log('[Milvus] ⚠️ DATA SYNC ISSUE: Milvus has different chunk_ids than PostgreSQL!');
+                }
+                
+                return [];
+            }
+        }
 
         // 创建 chunk_id 到 similarity 的映射
         const similarityMap = new Map<string, number>();
@@ -126,7 +204,7 @@ export async function searchSimilarChunks({
         });
 
         // 合并结果
-        const results = chunks
+        const results = finalChunks
             .map(chunk => {
                 const vectorSimilarity = similarityMap.get(chunk.chunk_id) || 0;
                 

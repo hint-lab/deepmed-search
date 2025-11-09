@@ -115,6 +115,8 @@
         "noData": "データがありません",
         "noMoreData": "これ以上のデータはありません",
         "documentTable": "ドキュメント一覧",
+        "llmSegmentation": "LLM セグメンテーション",
+        "ruleSegmentation": "ルールベースセグメンテーション",
         "table": {
             "documentName": "ドキュメント名",
             "documentUploadDate": "アップロード日",
@@ -163,6 +165,21 @@
             "deleteDocSuccess": "ドキュメントが正常に削除されました",
             "deleteDocError": "ドキュメントの削除に失敗しました"
         },
+        "snippetSearch": {
+            "title": "スニペット検索",
+            "description": "キーワードを入力して、このナレッジベース内の関連チャンクをすばやく見つけます。",
+            "placeholder": "チャンク内容を検索するキーワードを入力してください",
+            "search": "検索",
+            "searching": "検索中",
+            "loading": "結果を読み込み中…",
+            "resultCount": "{{count}} 件のスニペットが見つかりました",
+            "empty": "一致するスニペットが見つかりませんでした。別のキーワードをお試しください。",
+            "emptyKeyword": "検索キーワードを入力してください。",
+            "linkDocument": "ドキュメントを開く",
+            "updatedAt": "更新日時: {{value}}",
+            "errorFallback": "一致するスニペットを取得できませんでした。後でもう一度お試しください。",
+            "unknownError": "検索に失敗しました。もう一度お試しください。"
+        },
         "settings": {
             "title": "設定",
             "basicTitle": "基本設定",
@@ -205,6 +222,8 @@
             "name": "ナレッジベース名",
             "namePlaceholder": "ナレッジベース名を入力してください",
             "nameDescription": "これはあなたのナレッジベースの一意の識別子となります",
+            "addSeparatorPlaceholder": "区切り文字を入力し、Enter キーで追加",
+            "add": "追加",
             "description": "説明",
             "descriptionPlaceholder": "ナレッジベースの説明を入力してください",
             "descriptionDescription": "このナレッジベースの目的を簡単に説明してください",

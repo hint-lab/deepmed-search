@@ -109,7 +109,7 @@ export default function ChunksPage() {
 
     if (loading) {
         return (
-            <div className="container mx-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+            <div className="container mx-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-2 h-full">
                 <div className="flex flex-col h-full overflow-hidden">
                     <Skeleton className="h-10 w-3/4 mb-4 flex-shrink-0" />
                     <Skeleton className="h-6 w-1/2 mb-6 flex-shrink-0" />
@@ -137,7 +137,7 @@ export default function ChunksPage() {
             </div>
 
             {/* Use Flexbox for horizontal layout */}
-            <div className="flex flex-row gap-8 flex-grow overflow-hidden">
+            <div className="flex flex-row gap-2 flex-grow overflow-hidden">
                 {/* Left Column: Chunks List - takes half width */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto p-2 pr-4 border rounded-md">
                     <div className="space-y-3">

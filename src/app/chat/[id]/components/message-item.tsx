@@ -386,77 +386,90 @@ function ChatMessageItem({
                                 </div>
                             </>
                         )}
-                        {message.metadata?.kbChunks && (
+                        {message.metadata?.kbChunks !== undefined && (
                             <div className="mt-2 text-xs text-gray-500">
-                                <details className="group">
-                                    <summary className="cursor-pointer font-medium transition-colors hover:text-blue-500">
-                                        {t('source')}：{message.metadata.kbName}（{message.metadata.kbChunks.length} {t('chunks')}）
-                                    </summary>
-                                    <div className="flex justify-between items-center text-xs text-gray-400 mt-1 mb-2 px-1">
-                                        <span>{t('sortedBySimilarity')}</span>
-                                        <span>{t('similarityRange')}</span>
+                                {message.metadata.kbChunks.length === 0 ? (
+                                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                                        <div className="flex items-center gap-2">
+                                            <svg className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span className="text-amber-800 dark:text-amber-300">
+                                                {t('noChunks')} - {t('source')}：{message.metadata.kbName || ''}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
-                                        {message.metadata.kbChunks
-                                            .slice()
-                                            .sort((a, b) => getSortKey(a) - getSortKey(b))
-                                            .map((chunk, i) => {
-                                                const expanded = expandedIndexes.includes(i);
-                                                return (
-                                                    <div
-                                                        key={i}
-                                                        id={`kb-ref-${i + 1}`}
-                                                        className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md hover:border-l-6 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
-                                                    >
-                                                        <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
-                                                            <span onClick={() => toggleExpand(i)} className="flex-grow cursor-pointer">
-                                                                {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
-                                                                <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? t('collapse') : t('expand')}</span>
-                                                            </span>
-                                                            <span className="ml-auto px-2 py-0.5 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
-                                                                {t('similarity')}: {getSimilarityScore(chunk)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
-                                                            <div
-                                                                className="h-1 bg-blue-500 rounded-full"
-                                                                style={{
-                                                                    width: getSimilarityWidth(chunk)
-                                                                }}
-                                                            ></div>
-                                                        </div>
+                                ) : (
+                                    <details className="group">
+                                        <summary className="cursor-pointer font-medium transition-colors hover:text-blue-500">
+                                            {t('source')}：{message.metadata.kbName}（{message.metadata.kbChunks.length} {t('chunks')}）
+                                        </summary>
+                                        <div className="flex justify-between items-center text-xs text-gray-400 mt-1 mb-2 px-1">
+                                            <span>{t('sortedBySimilarity')}</span>
+                                            <span>{t('similarityRange')}</span>
+                                        </div>
+                                        <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
+                                            {message.metadata.kbChunks
+                                                .slice()
+                                                .sort((a, b) => getSortKey(a) - getSortKey(b))
+                                                .map((chunk, i) => {
+                                                    const expanded = expandedIndexes.includes(i);
+                                                    return (
                                                         <div
-                                                            className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}
-                                                            onClick={(e) => {
-                                                                // 仅当点击的不是链接时才展开/折叠
-                                                                if ((e.target as HTMLElement).tagName !== 'A') {
-                                                                    toggleExpand(i);
-                                                                }
-                                                            }}
+                                                            key={i}
+                                                            id={`kb-ref-${i + 1}`}
+                                                            className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md hover:border-l-6 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
                                                         >
-                                                            <ReactMarkdown
-                                                                components={{
-                                                                    a: ({ node, ...props }) => (
-                                                                        <a
-                                                                            {...props}
-                                                                            className="text-blue-600 underline break-all"
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation(); // 阻止冒泡，防止触发外层div的点击事件
-                                                                            }}
-                                                                        />
-                                                                    ),
+                                                            <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
+                                                                <span onClick={() => toggleExpand(i)} className="flex-grow cursor-pointer">
+                                                                    {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
+                                                                    <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? t('collapse') : t('expand')}</span>
+                                                                </span>
+                                                                <span className="ml-auto px-2 py-0.5 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
+                                                                    {t('similarity')}: {getSimilarityScore(chunk)}
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
+                                                                <div
+                                                                    className="h-1 bg-blue-500 rounded-full"
+                                                                    style={{
+                                                                        width: getSimilarityWidth(chunk)
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                            <div
+                                                                className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}
+                                                                onClick={(e) => {
+                                                                    // 仅当点击的不是链接时才展开/折叠
+                                                                    if ((e.target as HTMLElement).tagName !== 'A') {
+                                                                        toggleExpand(i);
+                                                                    }
                                                                 }}
                                                             >
-                                                                {typeof chunk.content === 'string' ? chunk.content : ''}
-                                                            </ReactMarkdown>
+                                                                <ReactMarkdown
+                                                                    components={{
+                                                                        a: ({ node, ...props }) => (
+                                                                            <a
+                                                                                {...props}
+                                                                                className="text-blue-600 underline break-all"
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation(); // 阻止冒泡，防止触发外层div的点击事件
+                                                                                }}
+                                                                            />
+                                                                        ),
+                                                                    }}
+                                                                >
+                                                                    {typeof chunk.content === 'string' ? chunk.content : ''}
+                                                                </ReactMarkdown>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                })}
                                     </div>
                                 </details>
+                                )}
                             </div>
                         )}
                     </div>

@@ -40,6 +40,7 @@ interface KnowledgeBaseTableProps {
 
 export interface KnowledgeBaseTableRef {
   refresh: () => void;
+  search: (value: string) => void;
 }
 
 const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableProps>(
@@ -80,12 +81,15 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     useImperativeHandle(ref, () => ({
       refresh: () => {
         setRefreshTrigger(prev => prev + 1);
+      },
+      search: (value: string) => {
+        handleSearch(value);
       }
     }));
 
     useEffect(() => {
       refreshData();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, refreshData]);
 
     const table = useReactTable({
       data: documents,

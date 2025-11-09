@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useTranslate } from '@/contexts/language-context';
 
 export interface ParserItem {
     value: string;
@@ -6,56 +7,18 @@ export interface ParserItem {
 }
 
 export function useSelectParserList() {
+    const { t } = useTranslate('knowledgeBase');
+    
     const parserList = useMemo<ParserItem[]>(() => [
         {
-            value: 'naive',
-            label: '简单分块',
+            value: 'llm_segmentation',
+            label: t('llmSegmentation'),
         },
         {
-            value: 'book',
-            label: '图书分块',
+            value: 'rule_segmentation',
+            label: t('ruleSegmentation'),
         },
-        {
-            value: 'laws',
-            label: '法律文档',
-        },
-        {
-            value: 'manual',
-            label: '说明手册',
-        },
-        {
-            value: 'picture',
-            label: '图片文档',
-        },
-        {
-            value: 'paper',
-            label: '论文文档',
-        },
-        {
-            value: 'presentation',
-            label: '演示文稿',
-        },
-        {
-            value: 'qa',
-            label: '问答文档',
-        },
-        {
-            value: 'resume',
-            label: '简历文档',
-        },
-        {
-            value: 'table',
-            label: '表格文档',
-        },
-        {
-            value: 'one',
-            label: '单文档',
-        },
-        {
-            value: 'knowledge_graph',
-            label: '知识图谱',
-        },
-    ], []);
+    ], [t]);
 
     return parserList;
 }

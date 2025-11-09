@@ -16,7 +16,8 @@
     "postinstall": "prisma generate",
     "lint": "next lint",
     "start": "next start",
-    "create:user": "npx tsx src/scripts/create-test-user.ts"
+    "create:user": "npx tsx src/scripts/create-test-user.ts",
+    "build:worker": "tsup src/worker/index.ts --format esm --platform=node --tsconfig tsconfig.worker.json --out-dir dist --clean"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^0.2.13",
@@ -117,6 +118,7 @@
     "eslint-config-next": "15.2.4",
     "prisma": "^6.5.0",
     "tailwindcss": "^4.0.0",
+    "tsup": "^8.5.0",
     "typescript": "^5"
   },
   "prisma": {

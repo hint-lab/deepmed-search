@@ -73,7 +73,10 @@ All in one flow demo:
 - **AI Services**: Vercel AI SDK with OpenAI provider (embeddings and chat)
 - **Search Services**: Tavily, Jina, DuckDuckGo
 - **LLM Providers**: OpenAI, DeepSeek, Google Vertex AI
-- **Document Processing**: MinerU API (PDF to Markdown conversion)
+- **Document Processing**: Supports three parser types:
+  - **MarkItDown Docker**: Multi-format document parsing (PDF, DOCX, PPT, images, etc.)
+  - **MinerU Docker**: High-quality PDF parsing (self-hosted)
+  - **MinerU Cloud**: Cloud-based PDF parsing service
 - **File Storage**: MinIO (optional)
 - **Cache**: Redis (optional)
 
@@ -195,6 +198,8 @@ docker-compose down -v
 - **Milvus**: Professional vector database for high-performance vector retrieval
 - **Redis**: Used for caching and queue system
 - **MinIO**: S3-compatible object storage for file storage and Milvus vector persistence
+- **MarkItDown**: Document parser service for multi-format document processing (port 5001)
+- **MinerU**: Document parser service for high-quality PDF processing (port 8000)
 
 ### 2. Install Dependencies
 
@@ -235,7 +240,17 @@ JINA_API_KEY="your-jina-api-key"
 # DEEPSEEK_API_KEY="your-deepseek-api-key"
 # GEMINI_API_KEY="your-gemini-api-key"
 
-# Optional: MinerU API (for document processing)
+# Document Parser Configuration (choose one)
+# Option 1: MarkItDown Docker (recommended for multi-format documents)
+DOCUMENT_PARSER=markitdown-docker
+MARKITDOWN_URL=http://localhost:5001
+
+# Option 2: MinerU Docker (recommended for high-quality PDF parsing)
+# DOCUMENT_PARSER=mineru-docker
+# MINERU_DOCKER_URL=http://localhost:8000
+
+# Option 3: MinerU Cloud (cloud service, requires API key)
+# DOCUMENT_PARSER=mineru-cloud
 # MINERU_API_KEY="your-mineru-api-key"
 # MINERU_BASE_URL="https://mineru.net/api/v4/extract/task"
 
@@ -309,6 +324,8 @@ Visit http://localhost:3000 to start using the application!
 | **Redis** | `localhost:6379` | No password |
 | **MinIO API** | http://localhost:9000 | User: `minioadmin`<br/>Password: `minioadmin` |
 | **MinIO Console** | http://localhost:9001 | User: `minioadmin`<br/>Password: `minioadmin` |
+| **MarkItDown** | http://localhost:5001 | Document parser API |
+| **MinerU Docker** | http://localhost:8000 | Document parser API (if enabled) |
 | **Prisma Studio** | http://localhost:5555 | Access after running `yarn db:studio` |
 
 ## 📖 Development Guide
@@ -336,7 +353,7 @@ yarn db:studio
 Knowledge base search is based on vector embedding technology:
 
 1. **Document Upload**: Users upload documents (PDF, DOCX, TXT, etc.)
-2. **Text Extraction**: System extracts text content from documents using MinerU API
+2. **Text Extraction**: System extracts text content from documents using configured parser (MarkItDown or MinerU)
 3. **Chunking**: Long texts are split into appropriately sized chunks
 4. **Generate Embeddings**: Vercel AI SDK (with OpenAI provider) generates vector representations for each text chunk
 5. **Store Vectors**: Vectors are stored in Milvus vector database
@@ -538,6 +555,13 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/deepmed"
 ```bash
 # Start database
 docker-compose up -d postgres
+
+# Start document parser (choose one)
+# Option 1: MarkItDown (recommended for multi-format documents)
+docker-compose up -d markitdown
+
+# Option 2: MinerU Docker (for high-quality PDF parsing)
+# docker-compose up -d mineru
 
 # Start application
 yarn dev
