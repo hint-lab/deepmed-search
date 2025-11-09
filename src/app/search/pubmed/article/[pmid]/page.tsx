@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getPubMedArticleDetails } from '@/lib/pubmed/api';
+import { getPubMedArticleDetailsAction } from '@/actions/pubmed-search';
 import { PubMedArticle } from '@/lib/pubmed/types';
 import { Loader2, AlertTriangle, ArrowLeft, Library, ExternalLink } from 'lucide-react'; // Added icons
 import { Button } from '@/components/ui/button';
@@ -189,14 +189,14 @@ export default function PubMedArticlePage() {
             setArticle(null);
             console.log(`Fetching article details for PMID: ${pmid}`);
             try {
-                const fetchedArticle = await getPubMedArticleDetails(pmid);
+                const response = await getPubMedArticleDetailsAction(pmid);
                 if (!isMounted) return; // Exit if component unmounted
 
-                if (fetchedArticle) {
-                    console.log("Article details fetched:", fetchedArticle);
-                    setArticle(fetchedArticle);
+                if (response.success && response.data) {
+                    console.log("Article details fetched:", response.data);
+                    setArticle(response.data);
                 } else {
-                    setError(`无法找到 PMID 为 ${pmid} 的文章。`);
+                    setError(response.error || `无法找到 PMID 为 ${pmid} 的文章。`);
                 }
             } catch (err: any) {
                 if (!isMounted) return;

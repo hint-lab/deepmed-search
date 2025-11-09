@@ -5,6 +5,8 @@ import { searchTavily } from '@/lib/web-search/tavily';
 import { searchDuckDuckGo } from '@/lib/web-search/duckduckgo';
 import { searchJina } from '@/lib/web-search/jina'; // Import Jina lib function
 import { StandardSearchResult } from '@/lib/web-search/common'; // Import the standard interface
+import { getUserApiConfigForSearch } from '@/lib/api-config-utils';
+import { auth } from '@/lib/auth';
 
 // Define supported search engine types
 export type SearchEngineType = 'tavily' | 'duckduckgo' | 'jina';
@@ -27,16 +29,22 @@ export async function performWebSearch(
     console.log(`ACTION: Performing web search for "${query}" using engine: ${engine}`);
 
     try {
+        // 获取当前用户的 userId
+        const session = await auth();
+        const userId = session?.user?.id;
+
+        // 获取用户API配置（优先数据库，为空则从.env获取）
+        const apiConfig = await getUserApiConfigForSearch(userId);
+
         let results: StandardSearchResult[] = [];
 
         switch (engine) {
             case 'tavily':
-                const tavilyApiKey = process.env.TAVILY_API_KEY;
-                if (!tavilyApiKey) {
+                if (!apiConfig.tavilyApiKey) {
                     console.error('ACTION: TAVILY_API_KEY is not configured.');
                     return { success: false, error: 'Tavily search service is not configured.' };
                 }
-                results = await searchTavily(query, tavilyApiKey);
+                results = await searchTavily(query, apiConfig.tavilyApiKey);
                 break;
 
             case 'duckduckgo':
@@ -44,12 +52,11 @@ export async function performWebSearch(
                 break;
 
             case 'jina':
-                const jinaApiKey = process.env.JINA_API_KEY; // Optional Jina key
-                if (!jinaApiKey) {
+                if (!apiConfig.jinaApiKey) {
                     console.error('ACTION: JINA_API_KEY is not configured.');
                     return { success: false, error: 'JINA search service is not configured.' };
                 }
-                results = await searchJina(query, jinaApiKey);
+                results = await searchJina(query, apiConfig.jinaApiKey);
                 break;
 
             default:

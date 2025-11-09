@@ -34,7 +34,7 @@ const LlmOutputSchema = z.object({
 });
 
 // --- searchSimulator Function ---
-export async function searchSimulator(query: string, model: string): Promise<SearchResult[]> {
+export async function searchSimulator(query: string, model: string, userId?: string | null): Promise<SearchResult[]> {
     // Map the short model name from options to the full model ID
     const modelMapping: { [key: string]: string } = {
         'gemini': 'gemini-2.5-flash-preview-04-17-nothinking',
@@ -48,7 +48,7 @@ export async function searchSimulator(query: string, model: string): Promise<Sea
     console.log(`[LLM Search Lib] Received short model: ${model}, Mapped to modelId: ${modelId}`); // Add logging
 
     const { maxTokens, temperature } = getModelOptions(modelId);
-    const modelInstance = getModelInstance(modelId);
+    const modelInstance = await getModelInstance(modelId, userId);
     const objectGenerator = new ObjectGeneratorSafe();
 
     const systemPrompt = `You are an advanced AI search engine simulator. Your task is to generate a realistic search engine results page (SERP) for a given query. Generate a list of search results based on the query: "${query}".
@@ -116,8 +116,9 @@ export async function searchSimulator(query: string, model: string): Promise<Sea
 // export default searchSimulator;
 
 // Assuming 'model' holds the short name like 'gemini', 'gpt', or 'deepseek' from options
-export async function performLlmSearch(query: string, options?: { model?: string;[key: string]: any }): Promise<SearchResult[]> {
+export async function performLlmSearch(query: string, options?: { model?: string; userId?: string | null;[key: string]: any }): Promise<SearchResult[]> {
     const model = options?.model; // Extract the short model name
+    const userId = options?.userId; // Extract the user ID
 
     // Map the short model name from options to the full model ID
     const modelMapping: { [key: string]: string } = {
@@ -131,8 +132,8 @@ export async function performLlmSearch(query: string, options?: { model?: string
     const modelId = (model && modelMapping[model]) ? modelMapping[model] : 'gemini-2.5-flash-preview-04-17-nothinking';
     console.log(`[LLM Search Lib] Received short model: ${model}, Mapped to modelId: ${modelId}`); // Add logging
 
-    // Call searchSimulator with the query and the resolved modelId
-    return searchSimulator(query, modelId);
+    // Call searchSimulator with the query, the resolved modelId, and userId
+    return searchSimulator(query, modelId, userId);
 
     // Remove the placeholder code below if it existed
     // const provider = getLlmProvider(modelId); // Example: Assuming you have a function to get the provider

@@ -5,7 +5,6 @@ import { PubMedArticle, PubMedSearchResult } from './types';
 // You might need node-fetch if using an older Node.js version without global fetch
 // import fetch from 'node-fetch';
 
-const NCBI_API_KEY = process.env.NCBI_API_KEY; // Use environment variables for API keys
 const EUTILS_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
 
 const parser = new xml2js.Parser({ explicitArray: false });
@@ -36,12 +35,14 @@ function createTimeoutSignal(timeoutMs: number): AbortSignal | undefined {
  * @param term 搜索关键词
  * @param retmax 每页最大结果数量 (default: 10)
  * @param page 要获取的页码 (1-based, default: 1)
+ * @param ncbiApiKey NCBI API Key (可选，优先使用用户配置，否则使用环境变量)
  * @returns PubMed搜索结果 (包含当前页的文章和总数)
  */
 export async function searchPubMed(
     term: string,
     retmax: number = 10, // Default results per page
-    page: number = 1     // Default to page 1
+    page: number = 1,     // Default to page 1
+    ncbiApiKey?: string   // Optional API key
 ): Promise<PubMedSearchResult> {
     if (!term) {
         throw new Error('Search term cannot be empty');
@@ -51,6 +52,9 @@ export async function searchPubMed(
 
     const retstart = (page - 1) * retmax;
 
+    // 获取 API key，优先使用传入的参数，否则使用环境变量
+    const apiKey = ncbiApiKey || process.env.NCBI_API_KEY;
+
     console.log(`Searching PubMed for: "${term}", Page: ${page}, ResultsPerPage: ${retmax}, RetStart: ${retstart}`);
 
     // --- Step 1: ESearch - Get count and history info --- 
@@ -59,7 +63,7 @@ export async function searchPubMed(
     esearchUrl.searchParams.set('term', term);
     esearchUrl.searchParams.set('retmax', '0'); // Get count and history only
     esearchUrl.searchParams.set('usehistory', 'y');
-    if (NCBI_API_KEY) esearchUrl.searchParams.set('api_key', NCBI_API_KEY);
+    if (apiKey) esearchUrl.searchParams.set('api_key', apiKey);
 
     let count = 0;
     let queryKey: string | undefined;
@@ -105,7 +109,7 @@ export async function searchPubMed(
     efetchParams.set('retmode', 'xml');
     efetchParams.set('retstart', String(retstart));
     efetchParams.set('retmax', String(retmax));
-    if (NCBI_API_KEY) efetchParams.set('api_key', NCBI_API_KEY);
+    if (apiKey) efetchParams.set('api_key', apiKey);
 
     // Retry logic for EFetch
     const MAX_RETRIES = 3;
@@ -270,9 +274,10 @@ export async function searchPubMed(
 /**
  * Fetches the details of a single PubMed article by its PMID, including the abstract.
  * @param pmid The PubMed ID of the article to fetch.
+ * @param ncbiApiKey NCBI API Key (可选，优先使用用户配置，否则使用环境变量)
  * @returns A PubMedArticle object or null if not found or an error occurs.
  */
-export async function getPubMedArticleDetails(pmid: string): Promise<PubMedArticle | null> {
+export async function getPubMedArticleDetails(pmid: string, ncbiApiKey?: string): Promise<PubMedArticle | null> {
     if (!pmid || typeof pmid !== 'string' || !pmid.trim()) {
         console.error("Invalid PMID provided to getPubMedArticleDetails");
         return null;
@@ -280,12 +285,15 @@ export async function getPubMedArticleDetails(pmid: string): Promise<PubMedArtic
 
     console.log(`Fetching details for PMID: ${pmid}`);
 
+    // 获取 API key，优先使用传入的参数，否则使用环境变量
+    const apiKey = ncbiApiKey || process.env.NCBI_API_KEY;
+
     const efetchUrl = new URL(`${EUTILS_BASE}efetch.fcgi`);
     efetchUrl.searchParams.set('db', 'pubmed');
     efetchUrl.searchParams.set('id', pmid.trim());
     efetchUrl.searchParams.set('rettype', 'abstract');
     efetchUrl.searchParams.set('retmode', 'xml');
-    if (NCBI_API_KEY) efetchUrl.searchParams.set('api_key', NCBI_API_KEY);
+    if (apiKey) efetchUrl.searchParams.set('api_key', apiKey);
 
     let fetchXmlText: string | null = null;
     let lastError: Error | null = null;

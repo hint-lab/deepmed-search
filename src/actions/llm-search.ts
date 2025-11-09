@@ -3,6 +3,8 @@
 import { searchSimulator, SearchResult } from '@/lib/llm-search';
 import { ServerActionResponse } from '@/types/actions';
 import { z } from 'zod';
+import { withAuth } from '@/lib/auth-utils';
+import { Session } from 'next-auth';
 
 // Define the Action's specific response structure if needed, or reuse SearchResult
 export interface LlmSearchActionResult extends SearchResult {
@@ -23,17 +25,18 @@ const SearchResultsWrapperSchema = z.object({
     searchResults: SearchResultsSchema // 将原 schema 嵌套
 });
 
-export async function performLlmSearchAction(
+export const performLlmSearchAction = withAuth(async (
+    session: Session,
     query: string,
     options?: { model?: string /* Add other potential options here */ }
-): Promise<ServerActionResponse<LlmSearchActionResult[]>> {
-
+): Promise<ServerActionResponse<LlmSearchActionResult[]>> => {
     try {
         const modelToUse = options?.model; // Get modelId from options
-        console.log(`ACTION: Calling LLM Search Simulator for query: "${query}" ${modelToUse ? `with model: ${modelToUse}` : 'using default model'}`);
+        const userId = session.user?.id; // Get userId from session
+        console.log(`ACTION: Calling LLM Search Simulator for query: "${query}" ${modelToUse ? `with model: ${modelToUse}` : 'using default model'}${userId ? ` (userId: ${userId})` : ''}`);
 
-        // Pass the query and the options object (which might contain modelId)
-        const simResponse: SearchResult[] = await searchSimulator(query, modelToUse || 'default');
+        // Pass the query, model, and userId to searchSimulator
+        const simResponse: SearchResult[] = await searchSimulator(query, modelToUse || 'default', userId);
 
         // simResponse is already SearchResult[], no need to access .results
         const actionResults: LlmSearchActionResult[] = simResponse; // Assuming LlmSearchActionResult is compatible
@@ -45,4 +48,4 @@ export async function performLlmSearchAction(
         console.error('ACTION: Error calling LLM Search Simulator:', error);
         return { success: false, error: error.message || "Failed to perform LLM-based search." };
     }
-} 
+}); 

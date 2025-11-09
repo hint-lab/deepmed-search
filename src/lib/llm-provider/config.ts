@@ -46,9 +46,9 @@ export function validateConfig<T extends BaseProviderConfig>(
   config: Partial<T>,
   defaults: Partial<T>
 ): T {
-  if (!config.apiKey) {
-    throw new Error('API Key is required');
-  }
+  // if (!config.apiKey) {
+  //   throw new Error('API Key is required');
+  // }
 
   return {
     ...defaults,
