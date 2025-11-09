@@ -29,9 +29,10 @@ function getLanguageName(code: string): string {
  * @param text 要翻译的文本。
  * @param targetLanguageCode 目标语言代码 (例如 'en', 'zh')。
  * @param sourceLanguageCode 可选：源语言代码。
+ * @param userId 用户ID（可选），用于获取用户特定的API配置。
  * @returns 翻译后的文本。
  */
-async function performTranslation(text: string, targetLanguageCode: string, sourceLanguageCode?: string): Promise<string> {
+async function performTranslation(text: string, targetLanguageCode: string, sourceLanguageCode?: string, userId?: string | null): Promise<string> {
 
     const targetLanguageName = getLanguageName(targetLanguageCode);
     const sourceLanguageName = sourceLanguageCode ? getLanguageName(sourceLanguageCode) : 'the original language';
@@ -46,7 +47,7 @@ async function performTranslation(text: string, targetLanguageCode: string, sour
 
     try {
         // 使用 LLM Provider 进行非流式调用
-        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+        const provider = await ProviderFactory.getProviderForUser(ProviderType.DeepSeek, userId);
         const response = await provider.chat({
             dialogId: 'translation_context',
             input: prompt,
@@ -97,8 +98,8 @@ export const translateTextAction = withAuth(async (
     });
 
     try {
-        // 调用核心翻译逻辑，传递语言代码
-        const translatedText = await performTranslation(text, targetLanguage, sourceLanguage);
+        // 调用核心翻译逻辑，传递语言代码和用户ID
+        const translatedText = await performTranslation(text, targetLanguage, sourceLanguage, session.user.id);
 
         console.log('Translation successful:', {
             userId: session.user.id,

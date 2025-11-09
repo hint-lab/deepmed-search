@@ -100,7 +100,7 @@ export const sendChatMessageAction = withAuth(async (
             console.log('思考模式，生成AI思考回复');
 
             // 使用 LLM Provider 处理思考模式输出
-            const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+            const provider = await ProviderFactory.getProviderForUser(ProviderType.DeepSeek, session.user.id);
             const response = await provider.chat({
                 dialogId,
                 input: content,
@@ -139,7 +139,7 @@ export const sendChatMessageAction = withAuth(async (
         你可以通过调用 kb_reference 工具来引用知识库片段。每当你需要引用知识库内容时，请调用该工具，并传递文档ID、片段ID和片段内容。
         `;
         
-        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+        const provider = await ProviderFactory.getProviderForUser(ProviderType.DeepSeek, session.user.id);
         provider.setSystemPrompt(dialogId, systemPrompt);
 
         // 使用 LLM Provider 处理非流式输出
@@ -246,7 +246,7 @@ export async function getChatMessageStream(
                     let reasoningContent = '';
                     let currentlyProcessingReasoning = true;
 
-                    const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+                    const provider = await ProviderFactory.getProviderForUser(ProviderType.DeepSeek, userId);
                     await provider.chatStream({
                         dialogId,
                         input: content,
@@ -382,7 +382,7 @@ export async function getChatMessageStream(
                     const hasRelevantChunks = contextChunks.trim().length > 0 && contextChunks !== '[NO_CHUNKS_FOUND]';
                     const hasSearchedKB = isUsingKB && dialog.knowledgeBase && contextChunks !== '';
 
-                    const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+                    const provider = await ProviderFactory.getProviderForUser(ProviderType.DeepSeek, userId);
 
                     // 先设置系统提示
                     if (hasRelevantChunks) {

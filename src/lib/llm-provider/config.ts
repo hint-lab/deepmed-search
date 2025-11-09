@@ -4,6 +4,7 @@ import {
   GoogleConfig,
   BaseProviderConfig,
 } from './types';
+import { getUserLlmApiConfig } from '@/lib/api-config-utils';
 
 /**
  * DeepSeek 默认配置
@@ -95,6 +96,112 @@ export function getGoogleConfigFromEnv(): GoogleConfig {
     {
       apiKey: process.env.GEMINI_API_KEY || '',
       baseUrl: process.env.GEMINI_BASE_URL,
+      model: process.env.GEMINI_API_MODEL,
+    },
+    DEFAULT_GOOGLE_CONFIG
+  );
+}
+
+/**
+ * 从数据库或环境变量获取 DeepSeek 配置
+ * 优先从数据库获取，如果字段为空则从环境变量获取
+ */
+export async function getDeepSeekConfig(userId?: string | null): Promise<DeepSeekConfig> {
+  let config: Partial<DeepSeekConfig> = {};
+
+  // 如果提供了 userId，尝试从数据库获取配置
+  if (userId) {
+    try {
+      const userConfig = await getUserLlmApiConfig(userId);
+      if (userConfig.deepseekApiKey || userConfig.deepseekBaseUrl) {
+        config = {
+          apiKey: userConfig.deepseekApiKey || '',
+          baseUrl: userConfig.deepseekBaseUrl,
+        };
+      }
+    } catch (error) {
+      console.error('获取用户DeepSeek配置失败:', error);
+      // 如果数据库查询失败，继续使用环境变量
+    }
+  }
+
+  // 如果数据库中的值为空，则从环境变量获取
+  return validateConfig<DeepSeekConfig>(
+    {
+      apiKey: config.apiKey || process.env.DEEPSEEK_API_KEY || '',
+      baseUrl: config.baseUrl || process.env.DEEPSEEK_BASE_URL,
+      model: process.env.DEEPSEEK_API_MODEL,
+      reasonModel: process.env.DEEPSEEK_API_REASON_MODEL,
+      organization: process.env.DEEPSEEK_ORGANIZATION,
+    },
+    DEFAULT_DEEPSEEK_CONFIG
+  );
+}
+
+/**
+ * 从数据库或环境变量获取 OpenAI 配置
+ * 优先从数据库获取，如果字段为空则从环境变量获取
+ */
+export async function getOpenAIConfig(userId?: string | null): Promise<OpenAIConfig> {
+  let config: Partial<OpenAIConfig> = {};
+
+  // 如果提供了 userId，尝试从数据库获取配置
+  if (userId) {
+    try {
+      const userConfig = await getUserLlmApiConfig(userId);
+      if (userConfig.openaiApiKey || userConfig.openaiBaseUrl || userConfig.openaiApiModel) {
+        config = {
+          apiKey: userConfig.openaiApiKey || '',
+          baseUrl: userConfig.openaiBaseUrl,
+          model: userConfig.openaiApiModel,
+        };
+      }
+    } catch (error) {
+      console.error('获取用户OpenAI配置失败:', error);
+      // 如果数据库查询失败，继续使用环境变量
+    }
+  }
+
+  // 如果数据库中的值为空，则从环境变量获取
+  return validateConfig<OpenAIConfig>(
+    {
+      apiKey: config.apiKey || process.env.OPENAI_API_KEY || '',
+      baseUrl: config.baseUrl || process.env.OPENAI_BASE_URL,
+      model: config.model || process.env.OPENAI_API_MODEL,
+      organization: process.env.OPENAI_ORGANIZATION,
+    },
+    DEFAULT_OPENAI_CONFIG
+  );
+}
+
+/**
+ * 从数据库或环境变量获取 Google 配置
+ * 优先从数据库获取，如果字段为空则从环境变量获取
+ */
+export async function getGoogleConfig(userId?: string | null): Promise<GoogleConfig> {
+  let config: Partial<GoogleConfig> = {};
+
+  // 如果提供了 userId，尝试从数据库获取配置
+  if (userId) {
+    try {
+      const userConfig = await getUserLlmApiConfig(userId);
+      if (userConfig.geminiApiKey || userConfig.geminiBaseUrl) {
+        config = {
+          apiKey: userConfig.geminiApiKey || '',
+          baseUrl: userConfig.geminiBaseUrl,
+        };
+      }
+    } catch (error) {
+      console.error('获取用户Google配置失败:', error);
+      // 如果数据库查询失败，继续使用环境变量
+    }
+  }
+
+  // 如果数据库中的值为空，则从环境变量获取
+  return validateConfig<GoogleConfig>(
+    {
+      apiKey: config.apiKey || process.env.GEMINI_API_KEY || '',
+      baseUrl: config.baseUrl || process.env.GEMINI_BASE_URL,
       model: process.env.GEMINI_API_MODEL,
     },
     DEFAULT_GOOGLE_CONFIG

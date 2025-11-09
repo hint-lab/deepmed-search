@@ -5,6 +5,9 @@ import {
   getDeepSeekConfigFromEnv,
   getOpenAIConfigFromEnv,
   getGoogleConfigFromEnv,
+  getDeepSeekConfig,
+  getOpenAIConfig,
+  getGoogleConfig,
 } from './config';
 import {
   Provider,
@@ -53,6 +56,7 @@ export class ProviderFactory {
 
   /**
    * 获取或创建提供商实例（单例模式）
+   * @deprecated 使用 getProviderForUser 替代，以支持用户特定配置
    */
   static getProvider(type: ProviderType): Provider {
     if (!this.providers.has(type)) {
@@ -74,6 +78,45 @@ export class ProviderFactory {
     }
     
     return this.providers.get(type)!;
+  }
+
+  /**
+   * 根据userId获取或创建提供商实例
+   * 优先使用用户数据库配置，如果字段为空则使用环境变量
+   * @param type 提供商类型
+   * @param userId 用户ID（可选）
+   * @returns 提供商实例
+   */
+  static async getProviderForUser(type: ProviderType, userId?: string | null): Promise<Provider> {
+    // 如果没有userId，使用默认的单例模式
+    if (!userId) {
+      return this.getProvider(type);
+    }
+
+    // 为每个用户创建独立的provider实例（使用userId作为key）
+    const providerKey = `${type}:${userId}`;
+    
+    // 检查是否已有该用户的provider实例
+    // 注意：由于配置可能变化，我们每次都重新创建以确保使用最新配置
+    // 如果需要缓存，可以在这里添加缓存逻辑
+    
+    logger.info(`[ProviderFactory] Creating provider for user: ${type} (userId: ${userId})`);
+    
+    let config: DeepSeekConfig | OpenAIConfig | GoogleConfig;
+    
+    switch (type) {
+      case ProviderType.DeepSeek:
+        config = await getDeepSeekConfig(userId);
+        return new DeepSeekProvider(config);
+      case ProviderType.OpenAI:
+        config = await getOpenAIConfig(userId);
+        return new OpenAIProvider(config);
+      case ProviderType.Google:
+        config = await getGoogleConfig(userId);
+        return new GoogleProvider(config);
+      default:
+        throw new Error(`Unsupported provider type: ${type}`);
+    }
   }
 
   /**

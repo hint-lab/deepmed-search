@@ -4,7 +4,6 @@ import { searchPubMed, PubMedSearchResult } from '@/lib/pubmed';
 import { ProviderFactory, ProviderType } from '@/lib/llm-provider';
 import { withAuth } from '@/lib/auth-utils';
 import { Session } from 'next-auth';
-import { getUserLlmApiConfig } from '@/lib/api-config-utils';
 
 /**
  * Server Action用于从服务器端执行PubMed搜索
@@ -70,20 +69,8 @@ export const getPubMedSuggestionsAction = withAuth(async (
         const userId = session.user?.id;
         console.log(`[Server Action] 获取PubMed搜索建议: "${query}"${userId ? ` (userId: ${userId})` : ''}`);
         
-        // 获取用户的 LLM API 配置
-        const llmConfig = await getUserLlmApiConfig(userId);
-        const deepseekApiKey = llmConfig.deepseekApiKey;
-        const deepseekBaseUrl = llmConfig.deepseekBaseUrl;
-        
-        if (!deepseekApiKey) {
-            throw new Error('DeepSeek API Key 未配置，请先在设置中配置 API Key');
-        }
-        
-        // 使用用户配置创建 provider
-        const provider = ProviderFactory.createDeepSeek({
-            apiKey: deepseekApiKey,
-            baseUrl: deepseekBaseUrl,
-        });
+        // 使用 getProviderForUser 获取用户配置的 provider
+        const provider = await ProviderFactory.getProviderForUser(ProviderType.DeepSeek, userId);
         
         const prompt = `Given the following Chinese medical research query: "${query}"
         Please provide 3-5 optimized search queries in English that would be effective for searching PubMed.
