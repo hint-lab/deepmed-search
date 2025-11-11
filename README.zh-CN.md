@@ -100,46 +100,81 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 graph TD
     subgraph Frontend["前端层 (Next.js)"]
         UI["用户界面<br/>(React 组件)"]
-        Hooks["Hooks & Context<br/>(状态管理)"]
+        Settings["设置页面<br/>(LLM/搜索/文档)"]
     end
 
     subgraph Backend["后端层 (Next.js Server)"]
         Actions["Server Actions<br/>(请求处理)"]
+        API["API 路由<br/>(队列/状态)"]
         Lib["核心库<br/>(业务逻辑)"]
-        Auth["身份认证<br/>(NextAuth)"]
+        Auth["身份认证<br/>(NextAuth v5)"]
+        Context["AsyncLocalStorage<br/>(用户上下文隔离)"]
+    end
+
+    subgraph Queue["队列系统"]
+        BullMQ["BullMQ<br/>(任务队列)"]
+        Worker["队列 Worker<br/>(后台处理)"]
+        Redis["Redis<br/>(队列后端)"]
     end
 
     subgraph Storage["数据存储层"]
-        PG["PostgreSQL<br/>(结构化数据)"]
+        PG["PostgreSQL<br/>(用户、加密密钥等)"]
         Milvus["Milvus<br/>(向量数据库)"]
-        Files["MinIO<br/>(文件 + 向量存储)"]
+        MinIO["MinIO<br/>(文件 + 向量)"]
     end
 
-    subgraph External["外部服务"]
-        AISDK["Vercel AI SDK<br/>(嵌入与对话)"]
-        SearchAPI["搜索 API<br/>(Tavily/Jina/DuckDuckGo)"]
-        LLMProviders["LLM 提供商<br/>(OpenAI/DeepSeek/Vertex AI)"]
+    subgraph External["外部服务（用户配置）"]
+        LLMProviders["LLM 提供商<br/>(OpenAI/DeepSeek/Google)"]
+        SearchAPI["搜索 API<br/>(Tavily/Jina/NCBI)"]
+        DocParser["文档解析器<br/>(MarkItDown/MinerU)"]
+        AISDK["Vercel AI SDK<br/>(向量嵌入)"]
     end
 
-    %% 连接关系
-    UI <--> Hooks
-    Hooks --> Actions
+    %% 前端连接
+    UI --> Actions
+    UI --> API
+    Settings --> Actions
+
+    %% 后端连接
     Actions --> Lib
-    Lib --> PG
-    Lib --> Files
-    Lib --> AISDK
-    Lib --> SearchAPI
-    Lib --> LLMProviders
+    API --> BullMQ
+    Actions --> PG
     Auth <--> PG
+    Lib --> Context
+    
+    %% 队列连接
+    BullMQ <--> Redis
+    BullMQ --> Worker
+    Worker --> Context
+    Context --> PG
+    
+    %% Worker 到外部服务
+    Worker --> LLMProviders
+    Worker --> SearchAPI
+    Worker --> DocParser
+    
+    %% 存储连接
+    Lib --> PG
+    Lib --> Milvus
+    Lib --> MinIO
+    Worker --> PG
+    Worker --> Milvus
+    
+    %% 外部服务连接
+    Lib --> AISDK
+    Lib --> LLMProviders
+    Lib --> SearchAPI
 
     %% 样式
     classDef frontend fill:#D1E8FF,stroke:#333
     classDef backend fill:#E0E0E0,stroke:#333
+    classDef queue fill:#FFE6CC,stroke:#333
     classDef database fill:#FFF2CC,stroke:#333
     classDef external fill:#FFD1DC,stroke:#333
 
     class Frontend frontend
     class Backend backend
+    class Queue queue
     class Storage database
     class External external
 ```

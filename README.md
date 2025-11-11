@@ -100,47 +100,81 @@ All in one flow demo:
 graph TD
     subgraph Frontend["Frontend (Next.js)"]
         UI["User Interface<br/>(React Components)"]
-        Hooks["Hooks & Context<br/>(State Management)"]
+        Settings["Settings Pages<br/>(LLM/Search/Document)"]
     end
 
     subgraph Backend["Backend (Next.js Server)"]
         Actions["Server Actions<br/>(Request Handling)"]
+        API["API Routes<br/>(Queue/Status)"]
         Lib["Core Libraries<br/>(Business Logic)"]
-        Auth["Authentication<br/>(NextAuth)"]
+        Auth["Authentication<br/>(NextAuth v5)"]
+        Context["AsyncLocalStorage<br/>(User Context Isolation)"]
+    end
+
+    subgraph Queue["Queue System"]
+        BullMQ["BullMQ<br/>(Task Queue)"]
+        Worker["Queue Worker<br/>(Background Processing)"]
+        Redis["Redis<br/>(Queue Backend)"]
     end
 
     subgraph Storage["Data Storage"]
-        PG["PostgreSQL<br/>(Structured Data)"]
+        PG["PostgreSQL<br/>(Users, Encrypted Keys, etc.)"]
         Milvus["Milvus<br/>(Vector Database)"]
-        Files["MinIO<br/>(Files + Vector Storage)"]
+        MinIO["MinIO<br/>(Files + Vectors)"]
     end
 
-    subgraph External["External Services"]
-        AISDK["Vercel AI SDK<br/>(Embeddings & Chat)"]
-        SearchAPI["Search APIs<br/>(Tavily/Jina/DuckDuckGo)"]
-        LLMProviders["LLM Providers<br/>(OpenAI/DeepSeek/Vertex AI)"]
+    subgraph External["External Services (User-Configured)"]
+        LLMProviders["LLM Providers<br/>(OpenAI/DeepSeek/Google)"]
+        SearchAPI["Search APIs<br/>(Tavily/Jina/NCBI)"]
+        DocParser["Document Parsers<br/>(MarkItDown/MinerU)"]
+        AISDK["Vercel AI SDK<br/>(Vector Embeddings)"]
     end
 
-    %% Connections
-    UI <--> Hooks
-    Hooks --> Actions
+    %% Frontend Connections
+    UI --> Actions
+    UI --> API
+    Settings --> Actions
+
+    %% Backend Connections
     Actions --> Lib
+    API --> BullMQ
+    Actions --> PG
+    Auth <--> PG
+    Lib --> Context
+    
+    %% Queue Connections
+    BullMQ <--> Redis
+    BullMQ --> Worker
+    Worker --> Context
+    Context --> PG
+    
+    %% Worker to External Services
+    Worker --> LLMProviders
+    Worker --> SearchAPI
+    Worker --> DocParser
+    
+    %% Storage Connections
     Lib --> PG
     Lib --> Milvus
-    Lib --> Files
+    Lib --> MinIO
+    Worker --> PG
+    Worker --> Milvus
+    
+    %% External Service Connections
     Lib --> AISDK
-    Lib --> SearchAPI
     Lib --> LLMProviders
-    Auth <--> PG
+    Lib --> SearchAPI
 
     %% Styles
     classDef frontend fill:#D1E8FF,stroke:#333
     classDef backend fill:#E0E0E0,stroke:#333
+    classDef queue fill:#FFE6CC,stroke:#333
     classDef database fill:#FFF2CC,stroke:#333
     classDef external fill:#FFD1DC,stroke:#333
 
     class Frontend frontend
     class Backend backend
+    class Queue queue
     class Storage database
     class External external
 ```
