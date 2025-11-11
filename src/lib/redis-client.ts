@@ -1,22 +1,42 @@
 import IORedis, { Redis, RedisOptions } from 'ioredis';
 import logger from '@/utils/logger';
-// 从环境变量或默认值获取 Redis 连接信息
-const redisHost = process.env.REDIS_HOST || 'localhost';
-const redisPort = parseInt(process.env.REDIS_PORT || '6379');
-const redisPassword = process.env.REDIS_PASSWORD;
 
-logger.info(`初始化 Redis 客户端，连接至: ${redisHost}:${redisPort}`);
+// 从环境变量获取 Redis 连接信息
+function getRedisConnectionOptions(): RedisOptions {
+    // 优先使用 REDIS_URL
+    if (process.env.REDIS_URL) {
+        const url = new URL(process.env.REDIS_URL);
+        const options: RedisOptions = {
+            host: url.hostname,
+            port: parseInt(url.port || '6379'),
+            password: url.password || process.env.REDIS_PASSWORD,
+            maxRetriesPerRequest: null, // 推荐用于 BullMQ 兼容性
+            enableReadyCheck: true,     // 启用就绪检查
+        };
+        logger.info(`初始化 Redis 客户端（从 REDIS_URL），连接至: ${options.host}:${options.port}`);
+        return options;
+    }
+
+    // 回退到独立配置
+    const redisHost = process.env.REDIS_HOST || 'localhost';
+    const redisPort = parseInt(process.env.REDIS_PORT || '6379');
+    const redisPassword = process.env.REDIS_PASSWORD;
+
+    logger.info(`初始化 Redis 客户端（从 REDIS_HOST/PORT），连接至: ${redisHost}:${redisPort}`);
+
+    return {
+        host: redisHost,
+        port: redisPort,
+        password: redisPassword,
+        maxRetriesPerRequest: null, // 推荐用于 BullMQ 兼容性
+        enableReadyCheck: true,     // 启用就绪检查
+        // 如果需要 TLS，请添加 TLS 选项，例如:
+        // tls: process.env.REDIS_TLS_ENABLED === 'true' ? {} : undefined,
+    };
+}
 
 // 定义 Redis 连接选项
-const connectionOptions: RedisOptions = {
-    host: redisHost,
-    port: redisPort,
-    password: redisPassword,
-    maxRetriesPerRequest: null, // 推荐用于 BullMQ 兼容性
-    enableReadyCheck: true,     // 启用就绪检查
-    // 如果需要 TLS，请添加 TLS 选项，例如:
-    // tls: process.env.REDIS_TLS_ENABLED === 'true' ? {} : undefined,
-};
+const connectionOptions: RedisOptions = getRedisConnectionOptions();
 
 // 单例 Redis 客户端实例 (用于常规操作)
 let redisClient: Redis | null = null;

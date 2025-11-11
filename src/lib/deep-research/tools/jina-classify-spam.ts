@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { TokenTracker } from "../utils/token-tracker";
-import { JINA_API_KEY } from "../config";
+import { getJinaApiKey } from "../user-context";
 
 const JINA_API_URL = 'https://api.jina.ai/v1/classify';
 

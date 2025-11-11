@@ -1,7 +1,7 @@
 import axios from 'axios';
-import {TokenTracker} from "../utils/token-tracker";
-import {JINA_API_KEY} from "../config";
-import {TrackerContext} from "../types";
+import { TokenTracker } from "../utils/token-tracker";
+import { getJinaApiKey } from "../user-context";
+import { TrackerContext } from "../types";
 
 export async function segmentText(
   content: string,
@@ -39,7 +39,8 @@ export async function segmentText(
     console.log(`[Segment] Processing batch ${i + 1}/${batches.length} (size: ${batch.length})`);
 
     try {
-      const {data} = await axios.post(
+      const jinaApiKey = getJinaApiKey(); // 从用户上下文获取
+      const { data } = await axios.post(
         'https://api.jina.ai/v1/segment',
         {
           content: batch,
@@ -49,7 +50,7 @@ export async function segmentText(
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${JINA_API_KEY}`,
+            'Authorization': `Bearer ${jinaApiKey}`,
           },
           timeout: 10000,
           responseType: 'json'
@@ -72,11 +73,11 @@ export async function segmentText(
       // Adjust chunk positions to account for the offset of this batch
       const adjustedPositions = data.chunk_positions
         ? data.chunk_positions.map((position: [number, number]) => {
-            return [
-              position[0] + offset,
-              position[1] + offset
-            ] as [number, number];
-          })
+          return [
+            position[0] + offset,
+            position[1] + offset
+          ] as [number, number];
+        })
         : [];
 
       return {

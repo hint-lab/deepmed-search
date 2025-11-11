@@ -48,6 +48,7 @@ import { publishThink } from './tracker-store';
  * ResearchAgent 的配置选项接口
  */
 export interface ResearchAgentOptions {
+    userId: string; // 用户ID（必需：用于获取用户配置的API keys）
     question: string; // 初始研究问题
     messages: CoreMessage[]; // 对话历史
     tokenBudget: number; // Token 预算
@@ -66,6 +67,7 @@ export interface ResearchAgentOptions {
  * ResearchAgent 类，负责执行深度研究任务
  */
 export class ResearchAgent {
+    public userId: string;                       // 用户ID（必需：用于获取用户配置的API keys）
     public options: ResearchAgentOptions;        // Agent 配置选项
     public context: TrackerContext;              // 追踪器上下文 (token, action)
     public SchemaGen: Schemas;                  // 用于生成 Zod schema 的实例
@@ -102,6 +104,7 @@ export class ResearchAgent {
      * @param options Agent 配置选项
      */
     constructor(options: ResearchAgentOptions) {
+        this.userId = options.userId; // 保存用户ID
         this.options = options;
         this.question = options.question.trim();
         this.messages = options.messages;
@@ -119,9 +122,9 @@ export class ResearchAgent {
             actionTracker: options.existingContext?.actionTracker || new ActionTracker(taskId)
         };
 
-        // 初始化工具
+        // 初始化工具（传递 userId）
         this.SchemaGen = new Schemas();
-        this.generator = new ObjectGeneratorSafe(this.context.tokenTracker);
+        this.generator = new ObjectGeneratorSafe(this.context.tokenTracker, this.userId);
 
         // 基于问题和消息初始化状态
         this.gaps = [this.question]; // 初始知识空白为原始问题
@@ -200,15 +203,15 @@ export class ResearchAgent {
                     weightedURLsCount: this.weightedURLs.length,
                     gapsCount: this.gaps.length
                 });
-                
+
                 // 尝试后备策略：如果有足够的知识，尝试回答；否则尝试重新搜索
                 if (this.allKnowledge.length >= 3) {
-                    const knowledgeInfo = this.allKnowledge.length > 15 
+                    const knowledgeInfo = this.allKnowledge.length > 15
                         ? `知识较多（${this.allKnowledge.length} 条），将选择最相关的 15 条`
                         : `${this.allKnowledge.length} 条知识`;
-                    
+
                     await publishThink(this.context.taskId, `⚠️ LLM 未能生成有效的下一步动作。基于现有${knowledgeInfo}尝试生成答案。`);
-                    
+
                     const fallbackAnswer = await generateFinalAnswerHelper(this, {
                         currentQuestion,
                         isFinal: false,

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { TokenTracker } from "../utils/token-tracker";
 import { ReadResponse, TrackerContext } from '../types';
-import { JINA_API_KEY } from "../config";
+import { getJinaApiKey } from "../user-context";
 
 export async function readUrl(
   url: string,
@@ -18,9 +18,10 @@ export async function readUrl(
     throw new Error('Invalid URL, only http and https URLs are supported');
   }
 
+  const jinaApiKey = getJinaApiKey(); // 从用户上下文获取
   const headers: Record<string, string> = {
     'Accept': 'application/json',
-    'Authorization': `Bearer ${JINA_API_KEY}`,
+    'Authorization': `Bearer ${jinaApiKey}`,
     'Content-Type': 'application/json',
     'X-Retain-Images': 'none',
     'X-Md-Link-Style': 'discarded',
@@ -52,7 +53,7 @@ export async function readUrl(
       tokens: data.data.usage?.tokens || 0
     };
     console.log('Read:', readInfo);
-    
+
     // Publish read content to frontend
     if (trackers) {
       const { publishReadContent } = await import('../tracker-store');
@@ -80,7 +81,7 @@ export async function readUrl(
         if (status === 402) {
           throw new Error(errorData?.readableMessage || 'Insufficient balance');
         }
-        
+
         // 对于常见的临时错误，提供更友好的错误信息
         if (status === 503) {
           throw new Error(`网站暂时不可用 (HTTP 503)，请稍后重试`);
@@ -89,7 +90,7 @@ export async function readUrl(
         } else if (status === 403) {
           throw new Error(`访问被拒绝 (HTTP 403)，网站可能有反爬虫保护`);
         }
-        
+
         throw new Error(errorData?.readableMessage || `HTTP Error ${status}`);
       } else if (error.request) {
         // The request was made but no response was received

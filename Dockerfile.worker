@@ -45,8 +45,11 @@ COPY --from=builder /app/dist ./dist
 # 拷贝已经在 builder 阶段生成好的 Prisma Client（避免生产镜像忽略 postinstall 导致未生成）
 COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
 
+# 创建 logs 目录并设置权限（在切换用户之前）
+RUN mkdir -p /app/logs && chown -R node:node /app/logs
+
 USER node
 
 ENTRYPOINT ["dumb-init","--"]
-CMD ["node","dist/index.js"]
+CMD ["node","dist/index.cjs"]
 

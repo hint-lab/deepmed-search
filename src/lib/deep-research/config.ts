@@ -2,12 +2,8 @@ import { createOpenAI, OpenAIProviderSettings } from '@ai-sdk/openai';
 import logger from '@/utils/logger';
 
 // ========== API 密钥配置 ==========
-// 从环境变量读取 API 密钥和其他配置
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;      // OpenAI 的 API Key
-export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;  // DeepSeek 的 API Key
-export const JINA_API_KEY = process.env.JINA_API_KEY;          // Jina AI 的 API Key
-export const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;    // OpenAI 自定义端点（可选）
-export const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL; // DeepSeek 自定义端点（可选，默认 https://api.deepseek.com）
+// 注意：所有 API keys 都从用户配置（AsyncLocalStorage）获取
+// 不再使用环境变量，所有配置均由用户在 /settings/llm 和 /settings/search 页面设置
 
 
 // 直接在代码中定义回退默认值
@@ -25,29 +21,11 @@ const FALLBACK_DEFAULTS = {
 export type LLMProvider = 'openai' | 'deepseek'; // LLM 提供者类型 (支持 openai 和 deepseek，deepseek 使用 OpenAI 兼容接口)
 export type SearchProvider = 'jina' | 'duck'; // 搜索提供者类型 (目前支持 jina 和 duck)
 
-// 确定 LLM 提供者
-export const LLM_PROVIDER: LLMProvider = (() => {
-    const provider = process.env.LLM_PROVIDER || FALLBACK_DEFAULTS.LLM_PROVIDER;
-    if (provider !== 'openai' && provider !== 'deepseek') {
-        console.warn(`无效或不支持的 LLM_PROVIDER: ${provider}。将使用默认值 '${FALLBACK_DEFAULTS.LLM_PROVIDER}'。`);
-        return FALLBACK_DEFAULTS.LLM_PROVIDER as LLMProvider;
-    }
-    return provider as LLMProvider;
-})();
+// LLM 提供者（仅用于内部默认值，实际使用时从用户配置获取）
+export const LLM_PROVIDER: LLMProvider = FALLBACK_DEFAULTS.LLM_PROVIDER as LLMProvider;
 
-// 确定搜索提供者
-export const SEARCH_PROVIDER: SearchProvider = (() => {
-    const provider = process.env.SEARCH_PROVIDER || FALLBACK_DEFAULTS.SEARCH_PROVIDER;
-    if (!isValidSearchProvider(provider)) {
-        logger.warn(`无效的 SEARCH_PROVIDER: ${provider}。将使用默认值 '${FALLBACK_DEFAULTS.SEARCH_PROVIDER}'。`);
-        return FALLBACK_DEFAULTS.SEARCH_PROVIDER as SearchProvider;
-    }
-    return provider;
-})();
-
-function isValidSearchProvider(provider: string): provider is SearchProvider {
-    return ['jina', 'duck'].includes(provider);
-}
+// 搜索提供者（仅用于内部默认值，实际使用时从用户配置获取）
+export const SEARCH_PROVIDER: SearchProvider = FALLBACK_DEFAULTS.SEARCH_PROVIDER as SearchProvider;
 
 // 明确定义工具名称 (如果固定或需要推断)
 // 示例: 如果你知道你会使用 'agent', 'evaluator', 'searchGrounding'
@@ -70,49 +48,14 @@ interface ToolConfig {
     maxTokens: number;
 }
 
-// 从环境变量获取工具配置
+// 获取工具配置（使用默认值）
 export function getToolConfig(toolName: ToolName): ToolConfig {
-    const upperToolName = toolName.toUpperCase();
-
-    // 优先级：工具特定环境变量 -> 通用环境变量 -> 回退默认值
-    const model = process.env[`DEEPRESEARCH_${upperToolName}_MODEL`] ||
-        process.env.DEEPRESEARCH_DEFAULT_MODEL ||
-        FALLBACK_DEFAULTS.DEFAULT_MODEL_NAME;
-
-    const temperature = (() => {
-        let tempValue = process.env[`DEEPRESEARCH_${upperToolName}_TEMP`];
-        let defaultValue = FALLBACK_DEFAULTS.DEFAULT_TEMPERATURE;
-        // 如果工具特定的未设置，尝试通用默认值
-        if (tempValue === undefined) {
-            tempValue = process.env.DEEPRESEARCH_DEFAULT_TEMP;
-        }
-        // 如果仍然未定义，使用回退默认值
-        if (tempValue === undefined) {
-            return defaultValue;
-        }
-        const parsed = parseFloat(tempValue);
-        return isNaN(parsed) ? defaultValue : parsed;
-    })();
-
-    const maxTokens = (() => {
-        let tokensValue = process.env[`DEEPRESEARCH_${upperToolName}_MAX_TOKENS`];
-        let defaultValue = FALLBACK_DEFAULTS.DEFAULT_MAX_TOKENS;
-        // 如果工具特定的未设置，尝试通用默认值
-        if (tokensValue === undefined) {
-            tokensValue = process.env.DEEPRESEARCH_DEFAULT_MAX_TOKENS;
-        }
-        // 如果仍然未定义，使用回退默认值
-        if (tokensValue === undefined) {
-            return defaultValue;
-        }
-        const parsed = parseInt(tokensValue, 10);
-        return isNaN(parsed) ? defaultValue : parsed;
-    })();
-
+    // 所有工具使用统一的默认配置
+    // 用户的 LLM 配置会在运行时通过 AsyncLocalStorage 应用
     return {
-        model,
-        temperature,
-        maxTokens
+        model: FALLBACK_DEFAULTS.DEFAULT_MODEL_NAME,
+        temperature: FALLBACK_DEFAULTS.DEFAULT_TEMPERATURE,
+        maxTokens: FALLBACK_DEFAULTS.DEFAULT_MAX_TOKENS
     };
 }
 
@@ -121,103 +64,41 @@ export function getMaxTokens(toolName: ToolName): number {
 }
 
 // 根据配置的提供者和工具设置获取模型实例
+// 优先从 AsyncLocalStorage 的用户上下文获取配置
+// 如果上下文不存在，则回退到环境变量（用于非研究任务）
 export function getModel(toolName: ToolName) {
     const config = getToolConfig(toolName);
-    // 从环境变量获取特定于提供者的设置
-    const openAICompatibility = (process.env.OPENAI_COMPATIBILITY as 'strict' | 'compatible' | undefined) || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY;
-
-    logger.info(`getModel 调用，工具: ${String(toolName)}, 提供者: ${LLM_PROVIDER}, 解析配置:`, config);
-
     const opt: OpenAIProviderSettings = {};
-    
-    // 根据提供者设置 API Key 和 Base URL
-    if (LLM_PROVIDER === 'deepseek') {
-        // DeepSeek 配置
-        if (!DEEPSEEK_API_KEY) {
-            throw new Error('DEEPSEEK_API_KEY 在环境变量中未找到');
-        }
-        opt.apiKey = DEEPSEEK_API_KEY;
-        opt.baseURL = DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
-        opt.compatibility = 'compatible'; // DeepSeek 需要兼容模式
-        logger.info(`使用 DeepSeek API, Base URL: ${opt.baseURL}`);
-    } else {
-        // OpenAI 配置
-        if (!OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY 在环境变量中未找到');
-        }
-        opt.apiKey = OPENAI_API_KEY;
-        if (OPENAI_BASE_URL) {
-            opt.baseURL = OPENAI_BASE_URL;
-            logger.info(`使用 OpenAI Base URL: ${opt.baseURL}`);
-        }
-        if (openAICompatibility) {
-            opt.compatibility = openAICompatibility;
-        }
+
+    // 尝试从用户上下文获取配置（AsyncLocalStorage）
+    const { hasUserContext, getLLMConfig } = require('./user-context');
+
+    if (!hasUserContext()) {
+        throw new Error('未找到用户上下文。所有 LLM 调用必须在用户上下文中执行。请确保已在 /settings/llm 页面配置 API Key');
     }
-    
+
+    // 使用用户特定的配置（从 AsyncLocalStorage）
+    const llmConfig = getLLMConfig();
+
+    opt.apiKey = llmConfig.apiKey;
+    if (llmConfig.baseUrl) {
+        opt.baseURL = llmConfig.baseUrl;
+    }
+    opt.compatibility = llmConfig.type === 'deepseek' ? 'compatible' : 'strict';
+
+    logger.info(`[getModel] 使用用户配置 (${llmConfig.type}), 工具: ${String(toolName)}, 模型: ${config.model}`);
+
     try {
         return createOpenAI(opt)(config.model);
     } catch (error) {
-        logger.error(`为模型 ${config.model} 创建客户端失败，提供者: ${LLM_PROVIDER}, 选项:`, opt, error);
+        logger.error(`为模型 ${config.model} 创建客户端失败，选项:`, opt, error);
         throw error;
     }
 }
 
-// --- 初始验证和日志记录 ---
+// --- 运行时配置 ---
+// 注意：所有 API keys 和 LLM 配置都从用户配置（AsyncLocalStorage）获取
+// 不再依赖环境变量
 
-// 根据选定的提供者验证必需的 API 密钥
-if (LLM_PROVIDER === 'openai' && !OPENAI_API_KEY) {
-    logger.error(`错误: LLM_PROVIDER 是 'openai' 但 OPENAI_API_KEY 未设置。`);
-}
-
-if (LLM_PROVIDER === 'deepseek' && !DEEPSEEK_API_KEY) {
-    logger.error(`错误: LLM_PROVIDER 是 'deepseek' 但 DEEPSEEK_API_KEY 未设置。`);
-}
-
-// 警告搜索提供者密钥缺失
-if (SEARCH_PROVIDER === 'jina' && !JINA_API_KEY) logger.warn("警告: SEARCH_PROVIDER 是 'jina' 但 JINA_API_KEY 未设置。");
-
-// 定义 STEP_SLEEP (从环境变量读取或使用默认值)
-export const STEP_SLEEP = (() => {
-    const value = process.env.STEP_SLEEP;
-    if (value === undefined) {
-        return FALLBACK_DEFAULTS.STEP_SLEEP;
-    }
-    const parsed = parseInt(value, 10);
-    return isNaN(parsed) ? FALLBACK_DEFAULTS.STEP_SLEEP : parsed;
-})();
-
-// 仅在非生产环境中记录有效配置
-if (process.env.NODE_ENV !== 'production') {
-    try {
-        // 手动收集所有已知工具名称以供摘要
-        const allToolNames: ToolName[] = [
-            'agent', 'evaluator', 'searchGrounding', 'queryRewriter', 'deduplicator',
-            'errorAnalyzer', 'mdFixer', 'refBuilder', 'agentBeastMode', 'brokenChFixer', 'fallback'
-        ];
-
-        const configSummary = {
-            provider: {
-                name: LLM_PROVIDER, // LLM 提供者名称
-                effectiveDefaultModel: getToolConfig('agent').model, // agent 使用的有效默认模型
-                ...((LLM_PROVIDER === 'openai' || LLM_PROVIDER === 'deepseek') && { baseUrl: OPENAI_BASE_URL }), // Base URL
-                ...((LLM_PROVIDER === 'openai' || LLM_PROVIDER === 'deepseek') && { compatibility: process.env.OPENAI_COMPATIBILITY || FALLBACK_DEFAULTS.OPENAI_COMPATIBILITY }), // 兼容性设置
-            },
-            search: {
-                provider: SEARCH_PROVIDER // 搜索提供者名称
-            },
-            tools: Object.fromEntries(
-                allToolNames.map(name => [
-                    name,
-                    getToolConfig(name)
-                ])
-            ),
-            defaults: {
-                stepSleep: STEP_SLEEP // 步骤间延迟
-            }
-        };
-        logger.info('有效配置摘要 (来自环境变量或默认值):', JSON.stringify(configSummary, null, 2));
-    } catch (error) {
-        logger.error("生成配置摘要时出错:", error);
-    }
-} 
+// 步骤间延迟（使用默认值）
+export const STEP_SLEEP = FALLBACK_DEFAULTS.STEP_SLEEP; 

@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from 'uuid'; // 需要安装 uuid: npm install uuid @types/uuid
 import { ServerActionResponse } from '@/types/actions';
-import { addTask } from '@/lib/bullmq/queue-manager'; // Import only addTask
+import { addTask } from '@/lib/bullmq/queue-manager'; // Server Actions 直接调用队列管理器
 import { TaskType } from '@/lib/bullmq/types'; // Import TaskType directly
 import { storeTaskPlaceholder, removeTaskPlaceholder, publishError, checkTaskActive } from '@/lib/deep-research/tracker-store';
 // 假设的研究任务处理函数，请确保路径正确
@@ -16,6 +16,7 @@ interface ResearchStartResponseData {
 // 定义后台任务需要的数据结构 (示例)
 export interface ResearchJobPayload {
     taskId: string;
+    userId: string; // 用户ID（必需：用于获取用户配置的API keys）
     question: string;
     tokenBudget: number;
     // ... 其他 getResponse 需要的参数
@@ -29,7 +30,7 @@ export interface ResearchJobPayload {
 export async function startResearchAction(
     question: string,
     tokenBudget: number = 2000000, // Token 预算，默认 2M
-    useQueue: boolean = false // 是否使用队列，默认为 false
+    useQueue: boolean = true // 默认使用队列服务
 ): Promise<ServerActionResponse<ResearchStartResponseData>> {
     if (!question || typeof question !== 'string' || question.trim().length === 0) {
         return {
@@ -38,8 +39,19 @@ export async function startResearchAction(
         };
     }
 
+    // 获取当前用户
+    const { auth } = await import('@/lib/auth');
+    const session = await auth();
+
+    if (!session?.user?.id) {
+        return {
+            success: false,
+            error: '用户未登录'
+        };
+    }
+
     const taskId = uuidv4(); // 1. 生成唯一 Task ID
-    logger.info(`[Task ${taskId}] 接收到研究请求: "${question}"`);
+    logger.info(`[Task ${taskId}] 用户 ${session.user.id} 接收到研究请求: "${question}"`);
 
     try {
         // 2. Store task placeholder in Redis
@@ -49,6 +61,7 @@ export async function startResearchAction(
         // 3. 触发后台任务 (将实际工作放入队列)
         const jobPayload: ResearchJobPayload = {
             taskId,
+            userId: session.user.id, // 传递用户ID
             question,
             tokenBudget, // 使用前端传入的 token 预算
             // ... 传递其他需要的参数
@@ -57,12 +70,13 @@ export async function startResearchAction(
         // === 根据 useQueue 参数决定执行方式 ===
         if (useQueue) {
             logger.info(`[Task ${taskId}] 添加任务到队列 ${TaskType.DEEP_RESEARCH}`);
-            await addTask<ResearchJobPayload>(TaskType.DEEP_RESEARCH, jobPayload);
-            logger.info(`[Task ${taskId}] 任务已成功添加到队列`);
+            // Server Actions 直接调用队列管理器函数，而不是通过 HTTP API
+            const jobId = await addTask(TaskType.DEEP_RESEARCH, jobPayload);
+            logger.info(`[Task ${taskId}] 任务已成功添加到队列，Job ID: ${jobId}`);
         } else {
             logger.info(`[Task ${taskId}] 直接调用研究任务处理逻辑`);
             // 直接调用，但不阻塞返回。让它在后台运行。
-            processResearchTask(taskId, jobPayload.question, jobPayload.tokenBudget).catch((err: unknown) => {
+            processResearchTask(taskId, jobPayload.userId, jobPayload.question, jobPayload.tokenBudget).catch((err: unknown) => {
                 // Log the error
                 logger.error(`[Task ${taskId}] 直接调用 processResearchTask 失败:`, err);
 

@@ -17,7 +17,7 @@
     "lint": "next lint",
     "start": "next start",
     "create:user": "npx tsx src/scripts/create-test-user.ts",
-    "build:worker": "tsup src/worker/index.ts --format esm --platform=node --tsconfig tsconfig.worker.json --out-dir dist --clean"
+    "build:worker": "tsup src/worker/index.ts --format cjs --platform=node --tsconfig tsconfig.worker.json --out-dir dist --clean"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^0.2.13",

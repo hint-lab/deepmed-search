@@ -1,6 +1,6 @@
 import axios from 'axios';
-import {TokenTracker} from "../utils/token-tracker";
-import {JINA_API_KEY} from "../config";
+import { TokenTracker } from "../utils/token-tracker";
+import { getJinaApiKey } from "../user-context";
 
 const JINA_API_URL = 'https://api.jina.ai/v1/rerank';
 
@@ -33,7 +33,8 @@ export async function rerankDocuments(
   batchSize = 2000
 ): Promise<{ results: Array<{ index: number, relevance_score: number, document: { text: string } }> }> {
   try {
-    if (!JINA_API_KEY) {
+    const jinaApiKey = getJinaApiKey(); // 从用户上下文获取
+    if (!jinaApiKey) {
       console.warn('JINA_API_KEY is not set, skipping rerank');
       return { results: [] };
     }
@@ -54,7 +55,7 @@ export async function rerankDocuments(
     const batchResults = await Promise.all(
       batches.map(async (batchDocuments, batchIndex) => {
         const startIdx = batchIndex * batchSize;
-
+        const taskId = tracker ? (tracker as any).taskId || 'unknown' : 'unknown';
         try {
           const request: JinaRerankRequest = {
             model: 'jina-reranker-v2-base-multilingual',
@@ -69,14 +70,15 @@ export async function rerankDocuments(
             {
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${JINA_API_KEY}`
+                'Authorization': `Bearer ${jinaApiKey}`
               },
               timeout: 30000 // 30 second timeout
             }
           );
 
           // Track token usage from this batch
-          (tracker || new TokenTracker()).trackUsage('rerank', {
+          const tokenTracker = new TokenTracker(taskId);
+          tokenTracker.trackUsage('rerank', {
             promptTokens: response.data.usage.total_tokens,
             completionTokens: 0,
             totalTokens: response.data.usage.total_tokens
@@ -107,7 +109,7 @@ export async function rerankDocuments(
 
     // Flatten and sort all results by relevance score
     const allResults = batchResults.flat().filter(r => r !== null && r !== undefined);
-    
+
     if (allResults.length === 0) {
       console.warn('No documents were successfully reranked');
       return { results: [] };
@@ -123,7 +125,7 @@ export async function rerankDocuments(
     }));
 
     console.log(`Successfully reranked ${finalResults.length}/${documents.length} documents`);
-    return {results: finalResults};
+    return { results: finalResults };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('Error in reranking documents:', {

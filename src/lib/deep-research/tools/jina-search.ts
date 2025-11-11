@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { TokenTracker } from "../utils/token-tracker";
 import { SearchResponse } from '../types';
-import { JINA_API_KEY } from "../config";
+import { getJinaApiKey } from "../user-context";
 
 export async function search(
   query: string,
@@ -12,12 +12,13 @@ export async function search(
   }
 
   try {
+    const jinaApiKey = getJinaApiKey(); // 从用户上下文获取
     const { data } = await axios.get<SearchResponse>(
       `https://s.jina.ai/?q=${encodeURIComponent(query)}`,
       {
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${JINA_API_KEY}`,
+          'Authorization': `Bearer ${jinaApiKey}`,
           'X-Respond-With': 'no-content',
         },
         timeout: 30000,

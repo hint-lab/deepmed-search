@@ -154,7 +154,7 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
             messages: (thisAgent as any).msgWithKnowledge, // Use the assigned value
             numRetries: 2,
         });
-        
+
         // 验证返回的结果
         if (!result || !result.object) {
             console.error("LLM returned empty result");
@@ -165,9 +165,9 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
             });
             return null;
         }
-        
+
         const actionType = result.object.action;
-        
+
         // 严格验证 action 字段
         if (!actionType || typeof actionType !== 'string') {
             console.error("Invalid action type returned by LLM:", {
@@ -176,21 +176,21 @@ export async function determineNextActionHelper(thisAgent: ResearchAgent, curren
             });
             return null;
         }
-        
+
         // 验证 action 类型是否有效
         const validActions = ['search', 'visit', 'answer', 'reflect'];
         if (!validActions.includes(actionType)) {
             console.error(`Unknown action type: ${actionType}. Valid actions: ${validActions.join(', ')}`);
             return null;
         }
-        
+
         const actionPayload = result.object[actionType] || {};
         const stepAction = {
             action: actionType,
             think: result.object.think || '',
             ...actionPayload
         } as StepAction;
-        
+
         console.log("Generated action:", stepAction);
         return stepAction;
     } catch (error) {
@@ -279,7 +279,7 @@ export async function generateFinalAnswerHelper(thisAgent: ResearchAgent, option
 
         // 验证答案有效性
         const validation = validateAnswer(normalizedAnswer);
-        
+
         if (validation.valid) {
             console.log('✅ Answer validation passed');
             return {
@@ -290,12 +290,12 @@ export async function generateFinalAnswerHelper(thisAgent: ResearchAgent, option
                 isFinal: options.isFinal ?? true
             };
         }
-        
+
         // 答案无效，记录详细信息
         console.error('❌ Answer validation failed:', validation.reason);
         console.error('Raw answer payload:', rawAnswerPayload);
         console.error('Normalized answer:', normalizedAnswer);
-        
+
         throw new Error(`Answer validation failed: ${validation.reason}`);
     } catch (error) {
         console.error('Error generating final answer (Helper):', error);
@@ -348,7 +348,8 @@ export async function processFinalAnswerHelper(thisAgent: ResearchAgent, answerA
                         repairMarkdownFootnotesOuter(
                             await repairUnknownChars(
                                 answerAction.answer,
-                                context))
+                                context,
+                                thisAgent.userId)) // 传递 userId
                     ),
                     allURLs)));
         answerAction.answer = repairedAnswer;

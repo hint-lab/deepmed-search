@@ -1,4 +1,4 @@
-import {z} from 'zod';
+import { z } from 'zod';
 import {
   CoreMessage,
   generateObject,
@@ -6,8 +6,8 @@ import {
   NoObjectGeneratedError,
   Schema
 } from "ai";
-import {TokenTracker} from "./token-tracker";
-import {getModel, ToolName, getToolConfig} from "../config";
+import { TokenTracker } from "./token-tracker";
+import { getModel, ToolName, getToolConfig } from "../config";
 import Hjson from 'hjson'; // Import Hjson library
 
 interface GenerateObjectResult<T> {
@@ -26,9 +26,11 @@ interface GenerateOptions<T> {
 
 export class ObjectGeneratorSafe {
   private tokenTracker: TokenTracker;
+  private userId?: string; // 用户ID（用于获取用户配置的API keys）
 
-  constructor(tokenTracker?: TokenTracker) {
-    this.tokenTracker = tokenTracker || new TokenTracker();
+  constructor(tokenTracker?: TokenTracker, userId?: string) {
+    this.tokenTracker = tokenTracker ?? new TokenTracker('unknown');
+    this.userId = userId;
   }
 
   /**
@@ -224,14 +226,14 @@ export class ObjectGeneratorSafe {
   private async handleGenerateObjectError<T>(error: unknown): Promise<GenerateObjectResult<T>> {
     if (NoObjectGeneratedError.isInstance(error)) {
       console.error('Object not generated according to schema, fallback to manual parsing');
-      
+
       const errorText = (error as any).text;
       console.log('=== DeepSeek 原始响应 (前 500 字符) ===');
       console.log(errorText?.substring(0, 500));
       console.log('=== 响应长度:', errorText?.length, '字符 ===');
       console.log('=== 响应结尾 (最后 200 字符) ===');
       console.log(errorText?.substring(Math.max(0, errorText.length - 200)));
-      
+
       try {
         // First try standard JSON parsing
         const partialResponse = JSON.parse(errorText);
@@ -242,7 +244,7 @@ export class ObjectGeneratorSafe {
         };
       } catch (parseError) {
         console.error('JSON 解析失败:', parseError);
-        
+
         // Use Hjson to parse the error response for more lenient parsing
         try {
           const hjsonResponse = Hjson.parse(errorText);

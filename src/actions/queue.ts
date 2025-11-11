@@ -1,12 +1,14 @@
 "use server";
 
 import { Queue, Job } from 'bullmq';
-import { checkQueueHealth, documentConvertProcessQueue, addTask, getJobStatus } from '@/lib/bullmq/queue-manager';
+import { addTask, getJobStatus, checkQueueHealth } from '@/lib/bullmq/queue-manager'; // Server Actions 直接调用队列管理器
 import { QUEUE_NAMES } from '@/lib/bullmq/queue-names';
 import { ServerActionResponse } from '@/types/actions';
+import { TaskType } from '@/lib/bullmq/types';
 
 /**
  * 检查队列健康状态
+ * Server Action - 直接调用队列管理器
  */
 export async function checkQueueHealthAction() {
     return await checkQueueHealth();
@@ -21,24 +23,21 @@ export async function getQueueName() {
 
 /**
  * 添加任务到队列
+ * Server Action - 直接调用队列管理器
  */
 export async function addTaskAction(
-    queue: Queue,
-    data: any
+    taskType: TaskType,
+    payload: any
 ): Promise<ServerActionResponse<{ jobId: string | null }>> {
     try {
-        const job: Job | undefined = await addTask(queue, data);
+        const jobId = await addTask(taskType, payload);
 
-        if (job && job.id) {
-            return {
-                success: true,
-                data: {
-                    jobId: job.id
-                }
-            };
-        } else {
-            throw new Error('任务创建失败，未能获取 Job ID');
-        }
+        return {
+            success: true,
+            data: {
+                jobId: jobId || null
+            }
+        };
     } catch (error: any) {
         console.error('添加任务失败:', error);
         return {
@@ -51,6 +50,7 @@ export async function addTaskAction(
 
 /**
  * 获取任务状态
+ * Server Action - 直接调用队列管理器
  */
 export async function getTaskStatusAction(
     jobId: string

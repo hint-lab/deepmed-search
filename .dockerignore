@@ -76,6 +76,5 @@ temp
 # Prisma migrations (keep schema.prisma)
 prisma/migrations
 
-# Worker files (separate Dockerfile)
-src/worker
+# Note: src/worker is needed for Dockerfile.worker build, so don't ignore it
 

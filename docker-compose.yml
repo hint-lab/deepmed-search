@@ -69,6 +69,7 @@ services:
       - "9091:9091"
     depends_on:
       - minio
+    restart: always
 
   # Redis 服务 - 用于队列或者缓存系统
   redis:
@@ -98,9 +99,17 @@ services:
       NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=512
       BULLMQ_CONCURRENCY: ${BULLMQ_CONCURRENCY:-8}
+      
+      # 队列和数据库连接（必需）
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DATABASE_URL: ${DATABASE_URL}
-    restart: unless-stopped
+      
+      # 加密密钥（必需：用于解密用户配置的 API keys）
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      
+      # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
+      # 用户需在 /settings/llm 和 /settings/search 页面配置
+    restart: always
 
   # Next.js 主应用服务
   app:
@@ -119,17 +128,11 @@ services:
       # NextAuth 配置
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      # OpenAI API
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_API_MODEL: ${OPENAI_API_MODEL:-gpt-4o-mini}
-      OPENAI_API_REASON_MODEL: ${OPENAI_API_REASON_MODEL}
-      # 搜索服务 API
-      TAVILY_API_KEY: ${TAVILY_API_KEY}
-      JINA_API_KEY: ${JINA_API_KEY}
-      # LLM 提供商
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # 加密密钥（用于解密用户配置的 API keys）
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
+      # 用户需在 /settings/llm 和 /settings/search 页面配置
+      # 不再使用系统环境变量配置 API keys
       # 文档解析器配置
       DOCUMENT_PARSER: ${DOCUMENT_PARSER:-markitdown-docker}
       MARKITDOWN_URL: ${MARKITDOWN_URL:-http://markitdown:5000}

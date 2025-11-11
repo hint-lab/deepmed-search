@@ -108,21 +108,14 @@ let defaultProvider: Provider | null = null;
 
 /**
  * 获取默认提供商
+ * 注意：不再使用系统环境变量，要求用户必须配置
  */
 export function getDefaultProvider(): Provider {
-  if (!defaultProvider) {
-    // 优先使用 DeepSeek，其次 OpenAI，最后 Google
-    if (process.env.DEEPSEEK_API_KEY) {
-      defaultProvider = ProviderFactory.getProvider(ProviderType.DeepSeek);
-    } else if (process.env.OPENAI_API_KEY) {
-      defaultProvider = ProviderFactory.getProvider(ProviderType.OpenAI);
-    } else if (process.env.GEMINI_API_KEY) {
-      defaultProvider = ProviderFactory.getProvider(ProviderType.Google);
-    } else {
-      throw new Error('No LLM provider API key found in environment');
-    }
-  }
-  return defaultProvider;
+  // 不再提供系统级默认 provider
+  // 所有用户必须在 /settings/llm 页面配置自己的 API keys
+  throw new Error(
+    '未配置 LLM API Key。请访问 /settings/llm 页面配置您的 API Key'
+  );
 }
 
 /**

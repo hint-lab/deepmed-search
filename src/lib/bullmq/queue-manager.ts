@@ -6,12 +6,29 @@ import { QUEUE_NAMES } from './queue-names';
 
 
 // Redis连接配置
-const connection: ConnectionOptions = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    maxRetriesPerRequest: null
-};
+// 支持 REDIS_URL 或独立的 REDIS_HOST/PORT 配置
+function getRedisConnection(): ConnectionOptions {
+    // 优先使用 REDIS_URL
+    if (process.env.REDIS_URL) {
+        const url = new URL(process.env.REDIS_URL);
+        return {
+            host: url.hostname,
+            port: parseInt(url.port || '6379'),
+            password: url.password || process.env.REDIS_PASSWORD,
+            maxRetriesPerRequest: null
+        };
+    }
+
+    // 回退到独立配置
+    return {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        maxRetriesPerRequest: null
+    };
+}
+
+const connection: ConnectionOptions = getRedisConnection();
 
 
 // 任务选项
@@ -60,7 +77,7 @@ export const researchQueue = getQueue<any, any>(TaskType.DEEP_RESEARCH);
  */
 export async function addTask<TData = any>(type: TaskType, data: TData, name: string = 'process'): Promise<string> {
     const queue = getQueue<TData>(type);
-    const job = await queue.add(name as any, data, jobOptions);
+    const job = await queue.add(name, data as any, jobOptions);
     console.log(`任务 '${name}' 已添加到队列 ${type} (Job ID: ${job.id})`);
     return job.id || '';
 }

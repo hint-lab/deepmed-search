@@ -1,40 +1,35 @@
 import { ResearchJobPayload } from "@/actions/research";
+import { createWorker } from '../queue-manager';
+import { TaskType } from '../types';
+import { Job } from 'bullmq';
+import logger from '@/utils/logger';
+import { processResearchTask } from '@/lib/deep-research';
 
 /**
- * 处理单个深度研究任务
- * @param jobPayload 包含任务详细信息的对象
+ * Research Worker 处理器
+ * 从队列中获取任务并调用实际的研究处理函数
  */
-export async function processResearchTask(jobPayload: ResearchJobPayload): Promise<void> {
-    const { taskId, question } = jobPayload;
-    console.log(`[Task ${taskId}] 开始处理研究任务: "${question}"`);
+async function processResearchJob(job: Job<ResearchJobPayload>): Promise<void> {
+    const { taskId, userId, question, tokenBudget } = job.data;
+    logger.info(`[Research Worker] 开始处理任务 ${taskId} (用户 ${userId}): "${question}"`);
 
     try {
-        // 在这里实现实际的研究逻辑
-        // 例如：
-        // 1. 分解问题
-        // 2. 搜索相关信息 (调用外部 API, 爬虫等)
-        // 3. 分析和综合信息
-        // 4. 生成报告
+        // 调用实际的研究处理函数
+        await processResearchTask(taskId, userId, question, tokenBudget);
 
-        console.log(`[Task ${taskId}] 模拟研究过程...`);
-        // 模拟耗时操作
-        await new Promise(resolve => setTimeout(resolve, 5000)); // 模拟 5 秒处理时间
-
-        // 5. 更新任务状态 (例如，在 Redis 中存储结果或状态)
-        console.log(`[Task ${taskId}] 研究任务处理完成`);
-
-        // 实际应用中，这里可能需要返回结果或更新数据库
-
+        logger.info(`[Research Worker] 任务 ${taskId} 处理完成`);
     } catch (error) {
-        console.error(`[Task ${taskId}] 处理研究任务失败:`, error);
-        // 处理错误，例如更新任务状态为失败
-        // 可以在这里尝试移除 placeholder，虽然 action 中也有处理
-        // import { removeTaskPlaceholder } from '@/lib/deep-research/tracker-store';
-        // removeTaskPlaceholder(taskId).catch(removeErr => {
-        //     console.error(`[Task ${taskId}] 移除 placeholder 失败 (在 worker 错误后):`, removeErr);
-        // });
-
-        // 抛出错误或根据需要处理
-        throw error; // 或者返回一个表示失败的状态
+        logger.error(`[Research Worker] 任务 ${taskId} 处理失败:`, error);
+        throw error;
     }
-} 
+}
+
+// 创建并启动 Research Worker
+const researchWorker = createWorker<ResearchJobPayload, void>(
+    TaskType.DEEP_RESEARCH,
+    processResearchJob
+);
+
+logger.info('[Research Worker] Research Worker 已启动');
+
+export default researchWorker; 

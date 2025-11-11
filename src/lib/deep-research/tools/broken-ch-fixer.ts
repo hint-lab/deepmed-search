@@ -1,13 +1,13 @@
 import { generateText } from "ai";
 import { getModel } from "../config";
-import {TrackerContext} from "../types";
-import {detectBrokenUnicodeViaFileIO} from "../utils/text-tools";
+import { TrackerContext } from "../types";
+import { detectBrokenUnicodeViaFileIO } from "../utils/text-tools";
 
 
 /**
  * Repairs markdown content with � characters by using Gemini to guess the missing text
  */
-export async function repairUnknownChars(mdContent: string, trackers?: TrackerContext): Promise<string> {
+export async function repairUnknownChars(mdContent: string, trackers?: TrackerContext, userId?: string): Promise<string> {
   const { broken, readStr } = await detectBrokenUnicodeViaFileIO(mdContent);
   if (!broken) return readStr;
   console.log("Detected broken unicode in output, attempting to repair...");
@@ -32,7 +32,7 @@ export async function repairUnknownChars(mdContent: string, trackers?: TrackerCo
     if (position === lastPosition) {
       // Move past this character by removing it
       repairedContent = repairedContent.substring(0, position) +
-                         repairedContent.substring(position + 1);
+        repairedContent.substring(position + 1);
       continue;
     }
 
@@ -86,8 +86,8 @@ So what was the original text between these two contexts?`,
       } else {
         // Replace the unknown sequence with the generated text
         repairedContent = repairedContent.substring(0, position) +
-                         replacement +
-                         repairedContent.substring(position + unknownCount);
+          replacement +
+          repairedContent.substring(position + unknownCount);
       }
 
       console.log(`Repair iteration ${iterations}: replaced ${unknownCount} � chars with "${replacement}"`);
