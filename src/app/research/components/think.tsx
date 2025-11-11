@@ -543,7 +543,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                  <div className={cn(
                                      "flex items-center gap-2 px-3 py-2 rounded-lg",
                                      questionEvaluation.needsFreshness 
-                                         ? "bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
+                                         ? "bg-blue-100 dark:bg-blue-900/30 border cyan-300 dark:cyan-700"
                                          : "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
                                  )}>
                                      <span className="text-xl">{questionEvaluation.needsFreshness ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Square className="w-5 h-5 text-gray-400" />}</span>
@@ -758,7 +758,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                 )}
 
                 {tokenState && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border cyan-200 dark:cyan-800">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <BarChart3 className="w-6 h-6" />
@@ -914,7 +914,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                     "before:bg-gradient-to-b before:from-blue-500 before:to-purple-500",
                                     "hover:before:opacity-100 before:opacity-50",
                                     "rounded-r-lg hover:bg-muted/30",
-                                    "border border-transparent hover:border-blue-200 dark:hover:border-blue-800",
+                                    "border border-transparent hover:cyan-200 dark:hover:cyan-800",
                                     isLatest && isConnected && "animate-pulse-soft bg-blue-50/30 dark:bg-blue-900/10"
                                 )}
                             >
@@ -974,7 +974,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                                 </button>
                                                 
                                                 {expandedSteps.has(index) && (
-                                                    <div className="mt-2 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-1">
+                                                    <div className="mt-2 pl-4 border-l-2 cyan-200 dark:cyan-800 space-y-1">
                                                         {step.details.map((detail, detailIndex) => (
                                                             <div
                                                                 key={detailIndex}

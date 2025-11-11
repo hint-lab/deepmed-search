@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useTranslate } from "@/contexts/language-context";
-import { Database, MessageCircle, Search, Cpu, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash, File } from "lucide-react";
+import { Database, MessageCircle, Search, Microscope, FolderOpen, Menu, ChevronDown, Beaker, ListTodo, Upload, Brain, ServerCrash, File } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,7 @@ export default function Header() {
         {
             name: t('research'),
             href: "/research",
-            icon: <Cpu className="h-5 w-5" />
+            icon: <Microscope className="h-5 w-5" />
         },
         // {
         //     name: "开发工具",

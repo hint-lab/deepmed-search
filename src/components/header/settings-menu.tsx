@@ -95,6 +95,15 @@ export function SettingsMenu() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-[180px] lg:w-[200px]">
+                    <DropdownMenuItem onClick={() => router.push('/settings/llm')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>
+                            {currentLanguage === 'zh' && 'API 配置'}
+                            {currentLanguage === 'en' && 'API Config'}
+                            {currentLanguage === 'ja' && 'API 設定'}
+                        </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setTheme('light')}>
                         <Sun className="mr-2 h-4 w-4" />
                         <span>

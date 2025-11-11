@@ -163,12 +163,12 @@
             "subtitle": "立即注册，免费体验完整功能。支持机构批量部署与定制化服务。",
             "register": "免费注册",
             "login": "登录账号",
-            "contact": "企业用户咨询定制方案，请联系 enterprise@deepmed.com"
+            "contact": "企业用户咨询定制方案，请联系我们。 "
         }
     },
     "footer": {
         "copyright": "保留所有权利",
-        "developedBy": "由"
+        "developedBy": "由 {{organization}} 开发"
     },
     "knowledgeBase": {
         "title": "知识库",
@@ -698,5 +698,52 @@
     "header": {
         "language": "语言",
         "simplifiedChinese": "简体中文"
+     },
+    "settings": {
+        "title": "设置",
+        "description": "管理您的账户设置和偏好",
+        "llm": {
+            "title": "LLM 配置",
+            "description": "配置您自己的 LLM API Key，系统将优先使用您的配置进行对话。",
+            "menuItem": "LLM 配置",
+            "menuDescription": "配置 LLM API Key",
+            "basicSettings": "基本设置",
+            "basicSettingsDescription": "选择 LLM 提供商并配置相应的 API Key",
+            "provider": "提供商",
+            "providerRequired": "提供商 *",
+            "selectProvider": "选择提供商",
+            "apiKey": "API Key",
+            "apiKeyRequired": "API Key *",
+            "apiKeyPlaceholder": "输入 API Key",
+            "apiKeyUpdatePlaceholder": "输入新的 API Key 以更新（留空保持不变）",
+            "apiKeyDescription": "API Key 将被加密存储，不会明文显示",
+            "apiKeyConfigured": "已配置",
+            "model": "模型",
+            "selectModel": "选择模型（可选）",
+            "modelDescription": "不选择将使用默认模型",
+            "reasonModel": "推理模型（可选）",
+            "reasonModelPlaceholder": "deepseek-reasoner",
+            "reasonModelDescription": "用于思考模式的模型，留空使用 deepseek-reasoner",
+            "baseUrl": "Base URL（可选）",
+            "baseUrlPlaceholder": "自定义 API 地址",
+            "baseUrlDescription": "自定义 API 地址，留空使用默认地址",
+            "testConnection": "测试连接",
+            "testing": "测试中...",
+            "saveConfig": "保存配置",
+            "saving": "保存中...",
+            "testSuccess": "API Key 验证成功！",
+            "testFailed": "API Key 验证失败",
+            "saveSuccess": "配置保存成功！",
+            "saveFailed": "保存配置失败",
+            "loadFailed": "加载配置失败",
+            "providerRequired": "提供商和API Key是必填项",
+            "apiKeyRequired": "请输入 API Key",
+            "apiKeyRequiredToUpdate": "请输入 API Key 以更新配置",
+            "infoTitle": "配置说明：",
+            "info1": "配置后系统将优先使用您的 API Key 进行对话",
+            "info2": "如果未配置，将使用系统默认配置",
+            "info3": "API Key 会被加密存储，确保安全",
+            "info4": "建议先测试连接再保存配置"
+        }
     }
 }

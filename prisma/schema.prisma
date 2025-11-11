@@ -27,6 +27,8 @@ model User {
   dialogs                 Dialog[] // 用户的对话列表
   messages                Message[] // 用户的消息列表
   systemTokens            SystemToken[] // 用户的系统令牌列表
+  llmConfigs              LLMConfig[] // 用户的 LLM 配置列表
+  searchConfig            SearchConfig? // 用户的搜索配置
   createdAt               DateTime                 @default(now()) // 创建时间
   updatedAt               DateTime                 @updatedAt // 更新时间
 }
@@ -100,6 +102,42 @@ model SystemToken {
   user       User      @relation(fields: [userId], references: [id]) // 用户关联
   createdAt  DateTime  @default(now()) // 创建时间
   lastUsedAt DateTime? // 最后使用时间
+}
+
+/// LLM 配置模型
+/// 存储用户的 LLM 配置，支持多个配置
+model LLMConfig {
+  id             String   @id @default(cuid()) // 配置唯一标识
+  name           String // 配置名称（用户自定义）
+  provider       String // LLM 提供商（deepseek/openai/google）
+  apiKey         String // 加密的 API Key
+  model          String? // 模型名称
+  reasonModel    String? // 推理模型名称（用于 DeepSeek）
+  baseUrl        String? // 自定义 API Base URL
+  isActive       Boolean  @default(false) // 是否为当前激活的配置
+  userId         String // 用户ID
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
+  createdAt      DateTime @default(now()) // 创建时间
+  updatedAt      DateTime @updatedAt // 更新时间
+
+  @@index([userId]) // 用户ID索引
+  @@index([userId, isActive]) // 用户ID和激活状态组合索引
+}
+
+/// 搜索配置模型
+/// 存储用户的搜索 API 配置
+model SearchConfig {
+  id                String   @id @default(cuid()) // 配置唯一标识
+  tavilyApiKey      String? // Tavily API Key（加密）
+  jinaApiKey        String? // Jina API Key（加密）
+  ncbiApiKey        String? // NCBI API Key（加密）
+  searchProvider    String   @default("jina") // 默认搜索提供商（tavily/jina）
+  userId            String   @unique // 用户ID（每个用户只有一个搜索配置）
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
+  createdAt         DateTime @default(now()) // 创建时间
+  updatedAt         DateTime @updatedAt // 更新时间
+
+  @@index([userId]) // 用户ID索引
 }
 
 /// 知识库模型

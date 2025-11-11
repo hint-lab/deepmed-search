@@ -72,7 +72,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
     return (
         <div className={cn(
             "w-full p-4 border-t transition-all duration-300 relative bg-white/90 dark:bg-gray-900/90",
-            isThinkingMode && "border-blue-200 dark:border-blue-800"
+            isThinkingMode && "border-cyan-200 dark:border-cyan-800"
         )}>
             {showThinkingAnimation && (
                 <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
@@ -91,11 +91,11 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             className={cn(
                                 "rounded-md h-12 px-3 transition-all",
                                 isThinkingMode
-                                    ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
+                                    ? "bg-cyan-50 text-cyan-600 border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-900"
                                     : "hover:bg-gray-200 dark:text-gray-400"
                             )}
                         >
-                            <BrainIcon className={cn("w-5 h-5", isThinkingMode ? "text-blue-500" : "text-gray-500")} />
+                            <BrainIcon className={cn("w-5 h-5", isThinkingMode ? "text-cyan-500" : "text-gray-500")} />
                             <span className="ml-2">{t('deepThinking')}</span>
                         </Button>
                         <Button
@@ -106,7 +106,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             className={cn(
                                 "rounded-md h-12 px-3 transition-all",
                                 isUsingKnowledgeBase
-                                    ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
+                                    ? "bg-cyan-50 text-cyan-600 border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-900"
                                     : "hover:bg-gray-200 dark:text-gray-400"
                             )}
                         >
@@ -117,7 +117,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                     <div className="flex-1 relative">
                         {isThinkingMode && (
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center z-10 ">
-                                <Sparkles className="w-4 h-4 text-blue-500" />
+                                <Sparkles className="w-4 h-4 text-cyan-500" />
                             </div>
                         )}
                         <Input
@@ -134,7 +134,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             className={cn(
                                 "h-12 transition-all duration-200",
                                 isThinkingMode
-                                    ? "pl-10 border-blue-200 focus-visible:ring-blue-400 focus-visible:border-blue-400 bg-blue-50/50 text-blue-900 dark:border-blue-800 dark:bg-blue-900/10"
+                                    ? "pl-10 border-cyan-200 focus-visible:ring-cyan-400 focus-visible:border-cyan-400 bg-cyan-50/50 text-cyan-900 dark:border-cyan-800 dark:bg-cyan-900/10"
                                     : "border-gray-200 dark:border-gray-700",
                                 isStreaming ? "bg-gray-100 text-gray-400" : ""
                             )}
@@ -149,12 +149,12 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                         className={cn(
                             "rounded-md h-12 transition-all px-4",
                             isThinkingMode
-                                ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
+                                ? "bg-blue-50 text-blue-600 border-cyan-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-cyan-900"
                                 : ""
                         )}
                     >
                         {isStreaming ? (
-                            <span className="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent rounded-md" role="status" aria-label="loading"></span>
+                            <span className="animate-spin inline-block w-4 h-4 border border-current border-t-transparent rounded-md" role="status" aria-label="loading"></span>
                         ) : (
                             <span>{dialogId ? t('send') : t('createAndSend')}</span>
                         )}

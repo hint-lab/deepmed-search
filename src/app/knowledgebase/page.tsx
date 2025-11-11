@@ -41,7 +41,7 @@ export default function KnowledgeBaseListPage() {
                 <div className="flex justify-between items-start px-[60px] p-[72px]">
                     <div className='flex flex-col space-y-2 pl-2'>
                         <span className="font-inter text-[30px] font-semibold leading-[38px] text-primary">
-                            {t('welcome')}, {session?.user?.name || t('guest')}
+                        👋 {t('welcome')}, {session?.user?.name || t('guest')} !
                         </span>
                         <p className="font-inter text-base font-normal leading-6">
                             {t('description')}

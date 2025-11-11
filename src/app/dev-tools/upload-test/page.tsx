@@ -11,7 +11,7 @@ import { uploadFileAction, DocumentType } from '@/actions/file-upload';
 import { uploadDocumentAction } from '@/actions/document';
 import { getMinioStatusAction, getFileUrlAction } from '@/actions/minio';
 import { getInvisibleKnowledgeBaseAction } from '@/actions/knowledgebase';
-import { FileUploader } from '@/components/file-uploader';
+// import { FileUploader } from '@/components/file-uploader'; // Component not found
 import { MinioServerStatus } from '@/lib/minio';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -387,10 +387,11 @@ export default function UploadTestPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>使用文件上传组件</CardTitle>
-                            <CardDescription>测试FileUploader组件功能</CardDescription>
+                            <CardDescription>测试FileUploader组件功能（组件未实现）</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <FileUploader
+                            <p className="text-muted-foreground">FileUploader 组件尚未实现</p>
+                            {/* <FileUploader
                                 kbId="test-kb"
                                 onSuccess={(data) => {
                                     setResult({
@@ -410,7 +411,7 @@ export default function UploadTestPage() {
                                 }}
                                 buttonText="使用组件上传文件"
                                 className="w-full"
-                            />
+                            /> */}
 
                             {result && result.componentUpload && (
                                 <div className="mt-6">

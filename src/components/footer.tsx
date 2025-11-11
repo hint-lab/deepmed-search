@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Trans } from 'react-i18next';
 import { useTranslate } from '@/contexts/language-context';
 
 export default function Footer() {
@@ -18,15 +19,20 @@ export default function Footer() {
 
                     {/* H!NT Lab Link */}
                     <div className="text-sm text-muted-foreground text-center md:text-right">
-                        {t('developedBy')}{' '}
-                        <Link
-                            href="https://hint-lab.github.io/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-foreground hover:text-primary transition-colors underline decoration-primary/30 hover:decoration-primary"
-                        >
-                            H!NT Lab
-                        </Link>
+                        <Trans
+                            i18nKey="footer.developedBy"
+                            values={{ organization: 'H!NT Lab' }}
+                            components={{
+                                link: (
+                                    <Link
+                                        href="https://hint-lab.github.io/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-foreground hover:text-primary transition-colors underline decoration-primary/30 hover:decoration-primary"
+                                    />
+                                )
+                            }}
+                        />
                     </div>
                 </div>
 

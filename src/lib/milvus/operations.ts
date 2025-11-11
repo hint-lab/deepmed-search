@@ -107,12 +107,8 @@ export async function searchSimilarChunks({
 
         console.log('[Milvus] Search raw results count:', searchResult.results.length);
         if (searchResult.results.length > 0) {
-            console.log('[Milvus] First result sample:', {
-                id: searchResult.results[0]?.id,
-                chunk_id: searchResult.results[0]?.chunk_id,
-                kb_id: searchResult.results[0]?.kb_id,
-                distance: searchResult.results[0]?.distance
-            });
+            console.log('[Milvus] First result sample (full object):', JSON.stringify(searchResult.results[0], null, 2));
+            console.log('[Milvus] First result keys:', Object.keys(searchResult.results[0] || {}));
         }
 
         logger.info('Milvus 搜索结果', { 
@@ -127,8 +123,13 @@ export async function searchSimilarChunks({
         console.log('[Milvus] Extracted chunk_ids:', chunkIds.slice(0, 5), `... (total: ${chunkIds.length})`);
         
         if (chunkIds.length === 0) {
-            console.log('[Milvus] No chunk_ids extracted from search results');
-            return [];
+            console.log('[Milvus] No chunk_ids extracted from search results, fallback to BM25 search');
+            return await searchByBM25({
+                queryText,
+                kbId,
+                resultLimit,
+                bm25Threshold
+            });
         }
 
         // 从 PostgreSQL 获取详细信息
@@ -191,15 +192,35 @@ export async function searchSimilarChunks({
                     console.log('[Milvus] ⚠️ DATA SYNC ISSUE: Milvus has different chunk_ids than PostgreSQL!');
                 }
                 
-                return [];
+                return await searchByBM25({
+                    queryText,
+                    kbId,
+                    resultLimit,
+                    bm25Threshold
+                });
             }
         }
 
         // 创建 chunk_id 到 similarity 的映射
         const similarityMap = new Map<string, number>();
         searchResult.results.forEach((r: any) => {
-            // Milvus 返回的距离，COSINE 距离范围是 [0, 2]，需要转换为相似度 [0, 1]
-            const similarity = 1 - (r.distance || 0) / 2;
+            // Milvus 可能返回 distance 或 score 字段
+            // distance: 距离值，越小越相似（COSINE 距离范围是 [0, 2]）
+            // score: 相似度分数，越大越相似
+            let similarity = 0;
+            
+            if (typeof r.distance === 'number') {
+                // 如果有 distance，转换为相似度 [0, 1]
+                similarity = Math.max(0, Math.min(1, 1 - r.distance / 2));
+            } else if (typeof r.score === 'number') {
+                // 如果有 score，直接使用（假设范围是 [0, 1]）
+                similarity = Math.max(0, Math.min(1, r.score));
+            } else {
+                // 如果都没有，记录警告并使用默认值
+                console.warn('[Milvus] No distance or score field found in result:', Object.keys(r));
+                similarity = 0.5; // 使用中等相似度作为默认值
+            }
+            
             similarityMap.set(r.chunk_id, similarity);
         });
 
@@ -208,13 +229,32 @@ export async function searchSimilarChunks({
             .map(chunk => {
                 const vectorSimilarity = similarityMap.get(chunk.chunk_id) || 0;
                 
-                // 如果有文本查询，计算 BM25（简化版）
+                // 如果有文本查询，计算 BM25（改进版）
                 let bm25Similarity = 0;
                 if (queryText) {
-                    // 简单的文本匹配计算
                     const content = chunk.content_with_weight.toLowerCase();
                     const query = queryText.toLowerCase();
-                    bm25Similarity = content.includes(query) ? 0.5 : 0;
+                    const queryTerms = query.split(/\s+/).filter(t => t.length > 0);
+                    
+                    // 计算匹配的查询词数量和频率
+                    let totalMatches = 0;
+                    let matchedTerms = 0;
+                    
+                    queryTerms.forEach(term => {
+                        const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                        const matches = content.match(regex);
+                        if (matches) {
+                            matchedTerms++;
+                            totalMatches += matches.length;
+                        }
+                    });
+                    
+                    if (matchedTerms > 0) {
+                        // 考虑：匹配词比例 + 出现频率
+                        const termCoverage = matchedTerms / queryTerms.length; // 匹配了多少查询词
+                        const avgFrequency = Math.min(totalMatches / matchedTerms / 5, 1); // 平均出现频率（归一化到最多5次）
+                        bm25Similarity = (termCoverage * 0.7 + avgFrequency * 0.3);
+                    }
                 }
 
                 // 计算综合相似度
@@ -270,23 +310,33 @@ async function searchByBM25({
             take: resultLimit * 5 // 先获取更多候选
         });
 
-        // 简单的文本匹配评分
+        // 改进的文本匹配评分
         const results = chunks
             .map(chunk => {
                 const content = chunk.content_with_weight.toLowerCase();
                 const query = queryText.toLowerCase();
+                const queryTerms = query.split(/\s+/).filter(t => t.length > 0);
                 
-                // 简单的 BM25 近似：包含查询词的次数
-                const queryWords = query.split(/\s+/);
-                let score = 0;
-                queryWords.forEach(word => {
-                    const regex = new RegExp(word, 'gi');
+                // 计算匹配的查询词数量和频率
+                let totalMatches = 0;
+                let matchedTerms = 0;
+                
+                queryTerms.forEach(term => {
+                    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                     const matches = content.match(regex);
-                    score += matches ? matches.length : 0;
+                    if (matches) {
+                        matchedTerms++;
+                        totalMatches += matches.length;
+                    }
                 });
                 
-                // 归一化分数
-                const bm25Similarity = Math.min(score / 10, 1);
+                // 计算 BM25 相似度
+                let bm25Similarity = 0;
+                if (matchedTerms > 0) {
+                    const termCoverage = matchedTerms / queryTerms.length; // 匹配了多少查询词
+                    const avgFrequency = Math.min(totalMatches / matchedTerms / 5, 1); // 平均出现频率
+                    bm25Similarity = (termCoverage * 0.7 + avgFrequency * 0.3);
+                }
 
                 return {
                     id: chunk.id,

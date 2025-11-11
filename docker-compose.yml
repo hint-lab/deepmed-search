@@ -102,7 +102,62 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     restart: unless-stopped
 
-  # MarkItDown 文档转换服务
+  # Next.js 主应用服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deepmed-app
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=2048
+      NEXT_TELEMETRY_DISABLED: 1
+      # 数据库连接
+      DATABASE_URL: ${DATABASE_URL}
+      # NextAuth 配置
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # OpenAI API
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_MODEL: ${OPENAI_API_MODEL:-gpt-4o-mini}
+      OPENAI_API_REASON_MODEL: ${OPENAI_API_REASON_MODEL}
+      # 搜索服务 API
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+      JINA_API_KEY: ${JINA_API_KEY}
+      # LLM 提供商
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # 文档解析器配置
+      DOCUMENT_PARSER: ${DOCUMENT_PARSER:-markitdown-docker}
+      MARKITDOWN_URL: ${MARKITDOWN_URL:-http://markitdown:5000}
+      MINERU_DOCKER_URL: ${MINERU_DOCKER_URL:-http://mineru:8000}
+      MINERU_API_KEY: ${MINERU_API_KEY}
+      MINERU_BASE_URL: ${MINERU_BASE_URL}
+      # MinIO 配置
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      # Redis 配置
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # Milvus 配置
+      MILVUS_ADDRESS: ${MILVUS_ADDRESS:-milvus:19530}
+    depends_on:
+      - postgres
+      - redis
+      - milvus
+      - minio
+      - markitdown
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
   markitdown:
     build:
       context: ./docker/markitdown

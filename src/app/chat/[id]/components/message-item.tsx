@@ -6,7 +6,7 @@ import { useTranslate } from '@/contexts/language-context';
 import { IMessage } from '@/types/message';
 import dayjs from 'dayjs';
 import { MessageType } from '@/constants/chat';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Brain, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
@@ -39,7 +39,8 @@ function ChatMessageItem({
     streamingState = { reasoningContent: '', content: '' }
 }: ChatMessageItemProps) {
     const { t } = useTranslate('chat');
-    const [showReasoning, setShowReasoning] = useState(true);
+    const [showReasoning, setShowReasoning] = useState<boolean>(isStreaming);
+    const userToggleRef = useRef(false);
     const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
     const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
     const [forceUpdate, setForceUpdate] = useState(0); // 强制更新计数器
@@ -72,6 +73,24 @@ function ChatMessageItem({
         setExpandedIndexes(prev =>
             prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
         );
+    };
+
+    useEffect(() => {
+        setShowReasoning(isStreaming);
+        userToggleRef.current = false;
+    }, [message.id, isStreaming]);
+
+    useEffect(() => {
+        if (isStreaming) {
+            setShowReasoning(true);
+        } else if (!userToggleRef.current && message.thinkingContent) {
+            setShowReasoning(false);
+        }
+    }, [isStreaming, message.thinkingContent]);
+
+    const handleToggleReasoning = () => {
+        userToggleRef.current = true;
+        setShowReasoning(prev => !prev);
     };
 
     const renderMessage = (msg: IMessage): React.ReactNode => {
@@ -272,6 +291,49 @@ function ChatMessageItem({
         return '5%'; // default value
     };
 
+    const thinkingMarkdownComponents = {
+        p: ({ children, ...props }: any) => (
+            <p
+                {...props}
+                className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-sky-800 dark:text-sky-200"
+            >
+                {children}
+            </p>
+        ),
+        ul: ({ children, ...props }: any) => (
+            <ul
+                {...props}
+                className="font-mono list-disc pl-5 text-[13px] leading-relaxed text-sky-800 dark:text-sky-200 space-y-1"
+            >
+                {children}
+            </ul>
+        ),
+        ol: ({ children, ...props }: any) => (
+            <ol
+                {...props}
+                className="font-mono list-decimal pl-5 text-[13px] leading-relaxed text-sky-800 dark:text-sky-200 space-y-1"
+            >
+                {children}
+            </ol>
+        ),
+        code: ({ children, ...props }: any) => (
+            <code
+                {...props}
+                className="font-mono text-[12px] px-1 py-0.5 rounded bg-sky-100/80 dark:bg-sky-900/40 text-sky-900 dark:text-sky-200"
+            >
+                {children}
+            </code>
+        ),
+        li: ({ children, ...props }: any) => (
+            <li
+                {...props}
+                className="font-mono text-[13px] leading-relaxed text-sky-800 dark:text-sky-200"
+            >
+                {children}
+            </li>
+        )
+    };
+
     return (
         <div key={messageId} className={cn("flex gap-2 mb-4", isUser ? "justify-end" : "justify-start")}>
             {!isUser && (
@@ -287,7 +349,7 @@ function ChatMessageItem({
                 isUser
                     ? "bg-primary text-primary-foreground border-transparent"
                     : "bg-muted text-card-foreground border-border",
-                isStreaming && !isUser && isThinkingModeRender ? "border-blue-500 border-2" : ""
+                isStreaming && !isUser && isThinkingModeRender ? "border-cyan-500 border-2" : ""
             )}>
                 {isThinkingModeRender ? (
                     <div className="flex flex-col gap-3">
@@ -308,7 +370,7 @@ function ChatMessageItem({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setShowReasoning(!showReasoning)}
+                                            onClick={handleToggleReasoning}
                                         className="h-6 px-2 text-muted-foreground hover:text-foreground"
                                     >
                                         {showReasoning ? (
@@ -319,8 +381,8 @@ function ChatMessageItem({
                                     </Button>
                                 </div>
                                 {showReasoning && (
-                                    <div className="prose prose-sm dark:prose-invert max-w-none bg-muted/50 p-3 rounded-md">
-                                        <ReactMarkdown>
+                                    <div className="rounded-md border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-3 py-2 space-y-2">
+                                        <ReactMarkdown components={thinkingMarkdownComponents}>
                                             {displayReasoningContent}
                                         </ReactMarkdown>
                                     </div>
@@ -418,20 +480,20 @@ function ChatMessageItem({
                                                         <div
                                                             key={i}
                                                             id={`kb-ref-${i + 1}`}
-                                                            className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md hover:border-l-6 border-transparent group-hover:border-blue-400 transition-all cursor-pointer"
+                                                            className="p-2 bg-gray-50 dark:bg-gray-800 rounded-r-md hover:border-l-2 border-transparent group-hover:border-cyan-400 transition-all cursor-pointer"
                                                         >
                                                             <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
                                                                 <span onClick={() => toggleExpand(i)} className="flex-grow cursor-pointer">
                                                                     {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
-                                                                    <span className="ml-2 text-blue-400 whitespace-nowrap">{expanded ? t('collapse') : t('expand')}</span>
+                                                                    <span className="ml-2 text-cyan-400 whitespace-nowrap">{expanded ? t('collapse') : t('expand')}</span>
                                                                 </span>
-                                                                <span className="ml-auto px-2 py-0.5 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
+                                                                <span className="ml-auto px-2 py-0.5 bg-cyan-50 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 rounded-full text-xs whitespace-nowrap">
                                                                     {t('similarity')}: {getSimilarityScore(chunk)}
                                                                 </span>
                                                             </div>
                                                             <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
                                                                 <div
-                                                                    className="h-1 bg-blue-500 rounded-full"
+                                                                    className="h-1 bg-cyan-500 rounded-full"
                                                                     style={{
                                                                         width: getSimilarityWidth(chunk)
                                                                     }}

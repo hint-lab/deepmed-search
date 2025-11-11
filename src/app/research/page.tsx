@@ -174,7 +174,7 @@ export default function ResearchPage() {
 
                 <div className="flex flex-col justify-start items-center py-5 rounded-lg">
                     {isPending && (
-                        <div className="w-full mb-6 p-8 rounded-2xl bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 border border-blue-200 dark:border-blue-800/50 shadow-lg backdrop-blur-sm">
+                        <div className="w-full mb-6 p-8 rounded-2xl bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/20 dark:via-purple-950/20 dark:to-pink-950/20 border cyan-200 dark:cyan-800/50 shadow-lg backdrop-blur-sm">
                             <div className="flex flex-col items-center space-y-6">
                                 {/* 简洁的三点跳动动画 */}
                                 <div className="flex space-x-3">

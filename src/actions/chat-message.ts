@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
-import { ProviderFactory, ProviderType, ChunkResponse, getEmbeddings } from '@/lib/llm-provider';
+import { ChunkResponse, getEmbeddings, createProviderFromUserConfig } from '@/lib/llm-provider';
 import { kbReferenceTool } from '@/lib/tools';
 import { IMessage } from '@/types/message';
 import { MessageType } from '@/constants/chat';
@@ -99,8 +99,8 @@ export const sendChatMessageAction = withAuth(async (
         if (isReason) {
             console.log('思考模式，生成AI思考回复');
 
-            // 使用 LLM Provider 处理思考模式输出
-            const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+            // 使用用户配置的 LLM Provider 处理思考模式输出
+            const provider = await createProviderFromUserConfig(session.user.id);
             const response = await provider.chat({
                 dialogId,
                 input: content,
@@ -138,8 +138,8 @@ export const sendChatMessageAction = withAuth(async (
         const systemPrompt = `
         你可以通过调用 kb_reference 工具来引用知识库片段。每当你需要引用知识库内容时，请调用该工具，并传递文档ID、片段ID和片段内容。
         `;
-        
-        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+
+        const provider = await createProviderFromUserConfig(session.user.id);
         provider.setSystemPrompt(dialogId, systemPrompt);
 
         // 使用 LLM Provider 处理非流式输出
@@ -182,13 +182,16 @@ export async function getChatMessageStream(
     content: string,
     userId: string,
     isReason: boolean = false,
-    isUsingKB: boolean = false,
+    isUsingKB: boolean = false
 ) {
     let assistantMessageId: string | null = null;
     const encoder = new TextEncoder();
     let streamController: ReadableStreamDefaultController<any> | null = null;
 
     function sendEvent(data: any) {
+        if (isCancelled) {
+            return; // 如果已取消，不再发送事件
+        }
         if (streamController) {
             const eventString = `data: ${JSON.stringify(data)}\n\n`;
             streamController.enqueue(encoder.encode(eventString));
@@ -196,6 +199,8 @@ export async function getChatMessageStream(
             console.error("Stream controller not available to send event:", data);
         }
     }
+
+    let isCancelled = false;
 
     const stream = new ReadableStream({
         async start(controller) {
@@ -218,7 +223,7 @@ export async function getChatMessageStream(
                 }
 
                 // 创建用户消息
-                const userMessage = await prisma.message.create({
+                await prisma.message.create({
                     data: {
                         content: content,
                         role: isReason ? MessageType.Reason : MessageType.User,
@@ -246,12 +251,15 @@ export async function getChatMessageStream(
                     let reasoningContent = '';
                     let currentlyProcessingReasoning = true;
 
-                    const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+                    const provider = await createProviderFromUserConfig(userId);
                     await provider.chatStream({
                         dialogId,
                         input: content,
                         isReason: true,
                         onChunk: (chunk: ChunkResponse) => {
+                            if (isCancelled) {
+                                return; // 如果已取消，停止处理 chunk
+                            }
                             if (typeof chunk === 'string') {
                                 if (chunk.startsWith('[REASONING]')) {
                                     const reasoningChunk = chunk.substring('[REASONING]'.length);
@@ -289,6 +297,7 @@ export async function getChatMessageStream(
                     }
 
                     sendEvent({
+                        type: 'done',
                         done: true,
                         messageId: assistantMessageId,
                         contentLength: accumulatedContent.length,
@@ -312,12 +321,17 @@ export async function getChatMessageStream(
                     sendEvent({ type: 'assistant_message_id', id: assistantMessageId });
 
                     let contextChunks = '';
+                    let kbStartTime: number | null = null;
                     if (isUsingKB && dialog.knowledgeBase) {
                         try {
-                            console.log("开始获取知识库内容...");
-                            const queryVector = await getEmbeddings([content]);
-                            console.log("向量嵌入生成完成:", queryVector[0].length);
+                            kbStartTime = Date.now();
+                            console.log("⏱️ [性能] 开始获取知识库内容...");
 
+                            const embeddingStartTime = Date.now();
+                            const queryVector = await getEmbeddings([content]);
+                            console.log(`⏱️ [性能] 向量嵌入生成完成: ${Date.now() - embeddingStartTime}ms, 向量长度:`, queryVector[0].length);
+
+                            const searchStartTime = Date.now();
                             const chunks = await searchSimilarChunks({
                                 queryText: content,
                                 queryVector: queryVector[0],
@@ -329,6 +343,8 @@ export async function getChatMessageStream(
                                 vectorThreshold: 0.2,
                                 minSimilarity: 0.2
                             });
+
+                            console.log(`⏱️ [性能] 知识库搜索完成: ${Date.now() - searchStartTime}ms, 找到 ${chunks.length} 个片段`);
 
                             if (chunks.length === 0) {
                                 console.log("未找到任何相关片段，将告知用户");
@@ -355,8 +371,9 @@ export async function getChatMessageStream(
                                 contextChunks = chunks.map((chunk: ChunkSearchResult) => chunk.content_with_weight).join('\n\n---\n\n');
                             }
 
-                            // 将知识库名称和片段存入消息元数据
+                            // 将知识库名称和片段存入消息元数据（异步进行，不阻塞）
                             if (assistantMessageId) {
+                                const updateStartTime = Date.now();
                                 await prisma.message.update({
                                     where: { id: assistantMessageId },
                                     data: {
@@ -370,19 +387,23 @@ export async function getChatMessageStream(
                                         }
                                     }
                                 });
+                                console.log(`⏱️ [性能] 元数据更新完成: ${Date.now() - updateStartTime}ms`);
                             }
+
+                            console.log(`⏱️ [性能] 知识库检索总耗时: ${Date.now() - kbStartTime}ms`);
                         } catch (kbError) {
                             console.error("获取知识库内容失败:", kbError);
                         }
                     }
 
-                    console.log("设置系统提示和工具...");
+                    const llmStartTime = Date.now();
+                    console.log("⏱️ [性能] 设置系统提示和工具...");
 
                     // 是否找到了相关片段（检查是否使用了知识库）
                     const hasRelevantChunks = contextChunks.trim().length > 0 && contextChunks !== '[NO_CHUNKS_FOUND]';
                     const hasSearchedKB = isUsingKB && dialog.knowledgeBase && contextChunks !== '';
 
-                    const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+                    const provider = await createProviderFromUserConfig(userId);
 
                     // 先设置系统提示
                     if (hasRelevantChunks) {
@@ -412,13 +433,14 @@ ${contextChunks}
                         );
                     }
 
-                    console.log("开始生成回复...");
+                    console.log(`⏱️ [性能] 开始生成回复... (知识库准备耗时: ${Date.now() - llmStartTime}ms)`);
                     let accumulatedContent = '';
-                    let references: ReferenceData[] = [];
+                    const references: ReferenceData[] = [];
+                    let firstChunkTime: number | null = null;
 
                     // 准备工具配置：如果使用了知识库（无论是否找到片段），都提供引用工具
                     const tools = hasSearchedKB ? [kbReferenceTool] : [];
-                    
+
                     if (hasRelevantChunks) {
                         console.log("找到相关片段，使用引用工具");
                     } else if (hasSearchedKB) {
@@ -427,12 +449,21 @@ ${contextChunks}
                         console.log("未使用知识库，不使用引用工具");
                     }
 
+                    const streamStartTime = Date.now();
                     await provider.chatWithToolsStream({
                         dialogId,
                         input: content,
                         tools,
                         onChunk: (chunk: ChunkResponse) => {
-                            // console.log("收到流响应:", typeof chunk === 'string' ? chunk : JSON.stringify(chunk));
+                            if (isCancelled) {
+                                return; // 如果已取消，停止处理 chunk
+                            }
+
+                            // 记录首个 chunk 到达时间
+                            if (!firstChunkTime && typeof chunk === 'string') {
+                                firstChunkTime = Date.now();
+                                console.log(`⏱️ [性能] 收到首个响应 chunk: ${firstChunkTime - streamStartTime}ms (总耗时: ${firstChunkTime - (kbStartTime || streamStartTime)}ms)`);
+                            }
 
                             if (typeof chunk === 'string') {
                                 accumulatedContent += chunk;
@@ -526,6 +557,13 @@ ${contextChunks}
                 if (streamController) {
                     streamController.close();
                 }
+            }
+        },
+        cancel() {
+            console.log('Stream cancelled by client');
+            isCancelled = true;
+            if (streamController) {
+                streamController.close();
             }
         }
     });

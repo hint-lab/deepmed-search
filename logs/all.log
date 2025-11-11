@@ -4,3 +4,4 @@
 2025-05-05 19:48:36:4836 [32minfo[39m: [32m有效配置摘要 (来自环境变量或默认值):[39m
 2025-11-09 12:32:45:3245 [32minfo[39m: [32m[KB Maintenance] Starting vector resync[39m
 2025-11-09 12:33:04:334 [32minfo[39m: [32m[KB Maintenance] Starting vector resync[39m
+2025-11-10 21:51:56:5156 [32minfo[39m: [32m[ProviderFactory] Creating new provider: deepseek[39m

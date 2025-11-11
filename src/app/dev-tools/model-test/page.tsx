@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Send, Pencil, MessagesSquare } from 'lucide-react';
-import { createChatDialogAction, sendChatMessageAction } from '@/actions/chat';
+import { sendChatMessageAction } from '@/actions/chat-message';
+import { createChatDialogAction } from '@/actions/chat-dialog';
 import { toast } from 'sonner';
-import { useUserInfo } from '@/hooks/use-user-info';
+import { useSession } from 'next-auth/react';
 
 export default function ModelTestPage() {
-    const { userInfo } = useUserInfo();
+    const { data: session } = useSession();
+    const userInfo = session?.user;
     const [model, setModel] = useState('gpt-4o-mini');
     const [prompt, setPrompt] = useState('');
     const [temperature, setTemperature] = useState(0.7);

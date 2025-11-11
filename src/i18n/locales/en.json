@@ -163,12 +163,12 @@
             "subtitle": "Register now for free access to all features. Support for institutional batch deployment and customized services.",
             "register": "Free Registration",
             "login": "Login",
-            "contact": "For enterprise customization, please contact enterprise@deepmed.com"
+            "contact": "For enterprise customization, please contact us."
         }
     },
     "footer": {
         "copyright": "All rights reserved",
-        "developedBy": "Developed by"
+        "developedBy": "Developed by <link>{{organization}}</link>"
     },
     "knowledgeBase": {
         "title": "Knowledge Base",
@@ -695,5 +695,52 @@
     "header": {
         "language": "Language",
         "simplifiedChinese": "Simplified Chinese"
+    },
+    "settings": {
+        "title": "Settings",
+        "description": "Manage your account settings and preferences",
+        "llm": {
+            "title": "LLM Configuration",
+            "description": "Configure your own LLM API Key, the system will prioritize your configuration for conversations.",
+            "menuItem": "LLM Config",
+            "menuDescription": "Configure LLM API Key",
+            "basicSettings": "Basic Settings",
+            "basicSettingsDescription": "Select LLM provider and configure the corresponding API Key",
+            "provider": "Provider",
+            "providerRequired": "Provider *",
+            "selectProvider": "Select provider",
+            "apiKey": "API Key",
+            "apiKeyRequired": "API Key *",
+            "apiKeyPlaceholder": "Enter API Key",
+            "apiKeyUpdatePlaceholder": "Enter new API Key to update (leave blank to keep unchanged)",
+            "apiKeyDescription": "API Key will be encrypted and stored, not displayed in plain text",
+            "apiKeyConfigured": "Configured",
+            "model": "Model",
+            "selectModel": "Select model (optional)",
+            "modelDescription": "Default model will be used if not selected",
+            "reasonModel": "Reasoning Model (Optional)",
+            "reasonModelPlaceholder": "deepseek-reasoner",
+            "reasonModelDescription": "Model for thinking mode, leave blank to use deepseek-reasoner",
+            "baseUrl": "Base URL (Optional)",
+            "baseUrlPlaceholder": "Custom API address",
+            "baseUrlDescription": "Custom API address, leave blank to use default",
+            "testConnection": "Test Connection",
+            "testing": "Testing...",
+            "saveConfig": "Save Configuration",
+            "saving": "Saving...",
+            "testSuccess": "API Key validation successful!",
+            "testFailed": "API Key validation failed",
+            "saveSuccess": "Configuration saved successfully!",
+            "saveFailed": "Failed to save configuration",
+            "loadFailed": "Failed to load configuration",
+            "providerRequired": "Provider and API Key are required",
+            "apiKeyRequired": "Please enter API Key",
+            "apiKeyRequiredToUpdate": "Please enter API Key to update configuration",
+            "infoTitle": "Configuration Notes:",
+            "info1": "The system will prioritize your API Key for conversations after configuration",
+            "info2": "If not configured, system default configuration will be used",
+            "info3": "API Key will be encrypted and stored securely",
+            "info4": "It is recommended to test the connection before saving the configuration"
+        }
     }
 }

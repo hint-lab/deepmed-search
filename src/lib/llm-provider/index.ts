@@ -14,6 +14,8 @@ import {
   GoogleConfig,
 } from './types';
 import logger from '@/utils/logger';
+import { prisma } from '@/lib/prisma';
+import { decryptApiKey } from '@/lib/crypto';
 
 /**
  * 提供商工厂
@@ -57,7 +59,7 @@ export class ProviderFactory {
   static getProvider(type: ProviderType): Provider {
     if (!this.providers.has(type)) {
       logger.info(`[ProviderFactory] Creating new provider: ${type}`);
-      
+
       switch (type) {
         case ProviderType.DeepSeek:
           this.providers.set(type, this.createDeepSeek());
@@ -72,7 +74,7 @@ export class ProviderFactory {
           throw new Error(`Unsupported provider type: ${type}`);
       }
     }
-    
+
     return this.providers.get(type)!;
   }
 
@@ -128,6 +130,62 @@ export function getDefaultProvider(): Provider {
  */
 export function setDefaultProvider(provider: Provider): void {
   defaultProvider = provider;
+}
+
+/**
+ * 从用户配置创建 Provider
+ * 使用用户激活的配置，如果没有则使用系统默认配置
+ */
+export async function createProviderFromUserConfig(userId: string): Promise<Provider> {
+  try {
+    // 获取用户激活的配置
+    const activeConfig = await prisma.lLMConfig.findFirst({
+      where: {
+        userId: userId,
+        isActive: true,
+      },
+    });
+
+    // 如果用户有激活的配置，使用它
+    if (activeConfig) {
+      const decryptedApiKey = decryptApiKey(activeConfig.apiKey);
+
+      logger.info(`[ProviderFactory] Using user-configured provider: ${activeConfig.provider} (${activeConfig.name}) for user: ${userId}`);
+
+      switch (activeConfig.provider) {
+        case 'deepseek':
+          return ProviderFactory.createDeepSeek({
+            apiKey: decryptedApiKey,
+            baseUrl: activeConfig.baseUrl || undefined,
+            model: activeConfig.model || undefined,
+            reasonModel: activeConfig.reasonModel || undefined,
+          });
+        case 'openai':
+          return ProviderFactory.createOpenAI({
+            apiKey: decryptedApiKey,
+            baseUrl: activeConfig.baseUrl || undefined,
+            model: activeConfig.model || undefined,
+          });
+        case 'google':
+          return ProviderFactory.createGoogle({
+            apiKey: decryptedApiKey,
+            baseUrl: activeConfig.baseUrl || undefined,
+            model: activeConfig.model || undefined,
+          });
+        default:
+          logger.warn(`[ProviderFactory] Unknown provider: ${activeConfig.provider}, falling back to default`);
+          return getDefaultProvider();
+      }
+    }
+
+    // 如果用户没有配置，使用系统默认配置
+    logger.info(`[ProviderFactory] User ${userId} has no active LLM config, using default provider`);
+    return getDefaultProvider();
+  } catch (error) {
+    logger.error(`[ProviderFactory] Error creating provider for user ${userId}:`, error);
+    // 如果发生错误，返回系统默认配置
+    return getDefaultProvider();
+  }
 }
 
 // 导出所有类型和类

@@ -52,7 +52,7 @@ const LeftPanel = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-8">
-                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-blue-200 dark:border-blue-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-cyan-200 dark:cyan-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute -top-3 -left-3">
                                 <div className="h-6 w-6 rounded-full bg-blue-400/30 flex items-center justify-center">
                                     <div className="h-3 w-3 rounded-full bg-blue-400 animate-pulse" />

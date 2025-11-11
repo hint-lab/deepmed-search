@@ -105,13 +105,26 @@ export class DeepSeekProvider implements Provider {
         maxTokens: this.config.maxTokens,
       });
 
+      // 从文本中提取推理内容和实际内容
+      let reasoningContent = '';
+      let actualContent = text;
+      
+      if (isReason && text.includes('<think>') && text.includes('</think>')) {
+        const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch) {
+          reasoningContent = thinkMatch[1];
+          actualContent = text.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+        }
+      }
+
       const response: ChatResponse = {
-        content: text,
+        content: actualContent,
         metadata: {
           model,
           provider: this.type,
           timestamp: new Date().toISOString(),
           isReason,
+          reasoningContent: reasoningContent || undefined,
           usage: usage ? {
             promptTokens: usage.promptTokens,
             completionTokens: usage.completionTokens,
@@ -122,7 +135,7 @@ export class DeepSeekProvider implements Provider {
 
       history.addMessage({
         role: isReason ? MessageRole.ReasonReply : MessageRole.Assistant,
-        content: text,
+        content: actualContent,
       });
 
       return response;
@@ -159,18 +172,109 @@ export class DeepSeekProvider implements Provider {
       });
 
       let fullContent = '';
+      let reasoningContent = '';
+      let inThinkTag = false;
+      let buffer = '';
+      
       for await (const chunk of textStream) {
         fullContent += chunk;
-        onChunk(chunk);
+        
+        // 如果是推理模式，需要解析 <think> 标签
+        if (isReason) {
+          buffer += chunk;
+          
+          // 检查是否进入 <think> 标签
+          if (buffer.includes('<think>')) {
+            const parts = buffer.split('<think>');
+            if (parts[0]) {
+              // <think> 之前的内容作为普通内容
+              onChunk(parts[0]);
+            }
+            inThinkTag = true;
+            buffer = parts.slice(1).join('<think>');
+            continue;
+          }
+          
+          // 检查是否退出 </think> 标签
+          if (buffer.includes('</think>')) {
+            const parts = buffer.split('</think>');
+            if (inThinkTag && parts[0]) {
+              // </think> 之前的内容作为推理内容
+              reasoningContent += parts[0];
+              onChunk('[REASONING]' + parts[0]);
+            }
+            inThinkTag = false;
+            // 发送转换标记
+            onChunk('[END_REASONING][CONTENT]');
+            buffer = parts.slice(1).join('</think>');
+            
+            // 处理剩余的普通内容
+            if (buffer) {
+              onChunk(buffer);
+              buffer = '';
+            }
+            continue;
+          }
+          
+          // 如果在 <think> 标签内
+          if (inThinkTag) {
+            // 检查缓冲区是否足够大，可以确定不会再匹配到 </think>
+            if (buffer.length > 10) {
+              const safeContent = buffer.slice(0, -10);
+              if (safeContent) {
+                reasoningContent += safeContent;
+                onChunk('[REASONING]' + safeContent);
+              }
+              buffer = buffer.slice(-10);
+            }
+          } else {
+            // 不在标签内，检查缓冲区是否足够大
+            if (buffer.length > 10) {
+              const safeContent = buffer.slice(0, -10);
+              if (safeContent) {
+                onChunk(safeContent);
+              }
+              buffer = buffer.slice(-10);
+            }
+          }
+        } else {
+          // 非推理模式，直接发送
+          onChunk(chunk);
+        }
+      }
+      
+      // 处理剩余的缓冲区内容
+      if (isReason && buffer) {
+        if (inThinkTag) {
+          reasoningContent += buffer;
+          onChunk('[REASONING]' + buffer);
+        } else {
+          onChunk(buffer);
+        }
+      }
+
+      const finalText = await text;
+      
+      // 从最终文本中提取推理内容和实际内容
+      let finalReasoningContent = '';
+      let finalActualContent = finalText;
+      
+      if (isReason && finalText.includes('<think>') && finalText.includes('</think>')) {
+        const thinkMatch = finalText.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch) {
+          finalReasoningContent = thinkMatch[1];
+          finalActualContent = finalText.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+        }
       }
 
       const response: ChatResponse = {
-        content: await text,
+        content: finalActualContent,
         metadata: {
           model,
           provider: this.type,
           timestamp: new Date().toISOString(),
           isReason,
+          reasoningContent: finalReasoningContent || undefined,
           usage: (await usage) ? {
             promptTokens: (await usage).promptTokens,
             completionTokens: (await usage).completionTokens,
