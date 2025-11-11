@@ -48,6 +48,13 @@ All in one flow demo:
 - Automatic vector embedding generation
 - View and delete knowledge base content
 
+### Deep Research
+- **AI-Powered Research**: Autonomous research agent for comprehensive topic exploration
+- **Multi-Step Process**: Automatically generates research questions, searches, analyzes, and synthesizes information
+- **Queue System**: Background task processing with BullMQ and Redis
+- **Real-Time Progress**: Server-Sent Events (SSE) for live status updates
+- **User-Isolated Configuration**: Each user's API keys are securely isolated using AsyncLocalStorage
+
 ## 🛠 Technology Stack
 
 ### Frontend
@@ -65,9 +72,12 @@ All in one flow demo:
 - **Runtime**: Next.js Server Actions
 - **Database**: PostgreSQL (structured data)
 - **ORM**: Prisma
-- **Authentication**: NextAuth.js
+- **Authentication**: NextAuth.js v5
 - **Vector Database**: Milvus (vector storage and retrieval)
 - **AI SDK**: Vercel AI SDK (@ai-sdk/openai)
+- **Queue System**: BullMQ + Redis (background task processing)
+- **Context Isolation**: AsyncLocalStorage (concurrent user task isolation)
+- **Encryption**: User API keys encrypted in database
 
 ### External Services
 - **AI Services**: Vercel AI SDK with OpenAI provider (embeddings and chat)
@@ -194,12 +204,13 @@ docker-compose down -v
 
 #### Service Description
 
-- **PostgreSQL**: Stores structured data (users, documents, knowledge bases, etc.)
+- **PostgreSQL**: Stores structured data (users, documents, knowledge bases, encrypted API keys, etc.)
 - **Milvus**: Professional vector database for high-performance vector retrieval
-- **Redis**: Used for caching and queue system
+- **Redis**: Used for caching and BullMQ queue system (required for Deep Research)
 - **MinIO**: S3-compatible object storage for file storage and Milvus vector persistence
 - **MarkItDown**: Document parser service for multi-format document processing (port 5001)
 - **MinerU**: Document parser service for high-quality PDF processing (port 8000)
+- **Queue Worker**: Background worker for processing Deep Research and document conversion tasks
 
 ### 2. Install Dependencies
 
@@ -216,7 +227,7 @@ yarn install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and configure the following required items:
+Edit `.env.local` and configure the following **infrastructure-related** items:
 
 ```bash
 # Database connection
@@ -226,39 +237,37 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/deepmed"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here"
 
-# OpenAI API (used by Vercel AI SDK for embeddings and chat, required for KB search)
-OPENAI_API_KEY="your-openai-api-key"
-OPENAI_BASE_URL="https://api.openai.com/v1"
-OPENAI_API_MODEL="gpt-4o-mini"  # Chat model
-OPENAI_API_REASON_MODEL="o4-mini"  # Reasoning model (optional)
+# Encryption key for storing user API keys securely
+ENCRYPTION_KEY="your-encryption-key-32-chars-min"
 
-# Web search APIs
-TAVILY_API_KEY="your-tavily-api-key"
-JINA_API_KEY="your-jina-api-key"
+# Redis (for queue system)
+REDIS_URL="redis://localhost:6379"
 
-# Optional: Other LLM APIs
-# DEEPSEEK_API_KEY="your-deepseek-api-key"
-# GEMINI_API_KEY="your-gemini-api-key"
-
-# Document Parser Configuration (choose one)
-# Option 1: MarkItDown Docker (recommended for multi-format documents)
-DOCUMENT_PARSER=markitdown-docker
-MARKITDOWN_URL=http://localhost:5001
-
-# Option 2: MinerU Docker (recommended for high-quality PDF parsing)
-# DOCUMENT_PARSER=mineru-docker
-# MINERU_DOCKER_URL=http://localhost:8000
-
-# Option 3: MinerU Cloud (cloud service, requires API key)
-# DOCUMENT_PARSER=mineru-cloud
-# MINERU_API_KEY="your-mineru-api-key"
-# MINERU_BASE_URL="https://mineru.net/api/v4/extract/task"
 
 # Optional: MinIO file storage
 # MINIO_ENDPOINT="localhost:9000"
 # MINIO_ACCESS_KEY="minioadmin"
 # MINIO_SECRET_KEY="minioadmin"
 ```
+
+> **🔐 User-Configured API Keys**
+> 
+> **LLM API Keys, Search API Keys, and Document Parser settings are now configured per-user in the web interface** (not in `.env` file):
+> 
+> 1. Start the application
+> 2. Login with your account
+> 3. Visit Settings pages:
+>    - **`/settings/llm`** - Configure LLM providers (DeepSeek, OpenAI, Google)
+>    - **`/settings/search`** - Configure search providers (Tavily, Jina, NCBI)
+>    - **`/settings/document`** - Configure document parser (MarkItDown, MinerU, MinerU Cloud)
+> 4. Each user's API keys are encrypted and stored in the database
+> 5. **Concurrent tasks are isolated** using AsyncLocalStorage - multiple users can run tasks simultaneously with their own API keys
+> 
+> This approach provides:
+> - ✅ **Multi-tenant support** - Each user has their own API keys
+> - ✅ **Security** - API keys are encrypted in the database
+> - ✅ **Concurrency safety** - AsyncLocalStorage ensures task isolation
+> - ✅ **Flexibility** - Users can switch providers anytime
 
 ### 4. Initialize Database
 
@@ -305,13 +314,66 @@ yarn dev
 
 Visit http://localhost:3000 to start using the application!
 
-### 7. Login to the System
+### 7. Start Queue Worker (for Deep Research)
+
+To use Deep Research features, start the queue worker in a **separate terminal**:
+
+```bash
+# Build the worker
+npm run build:worker
+# or
+yarn build:worker
+
+# Start the worker (in a new terminal)
+node dist/index.cjs
+```
+
+Or use Docker Compose:
+
+```bash
+# Start queue worker service
+docker-compose up -d queue-worker
+
+# View worker logs
+docker-compose logs -f queue-worker
+```
+
+The queue worker processes background tasks such as:
+- Deep Research tasks
+- Document conversion tasks
+
+### 8. Login to the System
 
 1. Open your browser and visit http://localhost:3000
 2. Click the login button
 3. Use the test account to login:
    - **Email**: `test@example.com`
    - **Password**: `password123`
+
+### 9. Configure Your API Keys
+
+After logging in, configure your personal API keys in the Settings pages:
+
+1. **LLM Configuration** (`/settings/llm`):
+   - Add LLM providers (DeepSeek, OpenAI, Google Gemini)
+   - Configure API keys and base URLs
+   - Set default models
+   - Test and activate configurations
+
+2. **Search Configuration** (`/settings/search`):
+   - Choose search provider (Tavily or Jina)
+   - Configure Tavily API Key (for Tavily search)
+   - Configure Jina API Key (for Jina search and content extraction)
+   - Configure NCBI API Key (optional, for PubMed searches)
+
+3. **Document Parser Configuration** (`/settings/document`):
+   - Choose parser type:
+     - **MarkItDown** (Docker): Multi-format document parsing
+     - **MinerU** (Docker): High-quality PDF parsing with OCR
+     - **MinerU Cloud**: Cloud-based parsing service (requires API key)
+   - Configure MinerU API Key (if using MinerU Cloud)
+
+> 🔒 **Security**: All API keys are encrypted before being stored in the database using the `ENCRYPTION_KEY` from your `.env` file.
 
 ### Service Access Points
 
@@ -436,6 +498,10 @@ yarn lint --fix
 yarn dev              # Start development server
 yarn build            # Build for production
 yarn start            # Start production server
+
+# Queue Worker
+yarn build:worker     # Build queue worker
+yarn worker           # Start queue worker (after build)
 
 # Code Quality
 yarn lint             # Run code linting
@@ -622,6 +688,41 @@ http://localhost:3000
 # 3. Enter question
 # 4. Get structured answer
 ```
+
+### Using Deep Research
+
+```bash
+# 1. Ensure queue worker is running:
+docker-compose up -d queue-worker
+# OR in development:
+node dist/index.cjs
+
+# 2. Visit Deep Research page:
+http://localhost:3000/research
+
+# 3. Enter your research topic/question
+
+# 4. The AI agent will:
+#    - Generate research questions
+#    - Search for relevant information
+#    - Analyze and synthesize findings
+#    - Generate a comprehensive report
+
+# 5. Monitor real-time progress via SSE
+#    - See current step and status
+#    - View intermediate results
+#    - Track token usage
+
+# 6. Download the final report
+```
+
+**Deep Research Features:**
+- **Autonomous Research**: AI agent breaks down complex topics into research questions
+- **Multi-Source Information**: Searches web, knowledge bases, and academic databases
+- **Citation Tracking**: All claims are cited with source links
+- **Real-Time Updates**: Server-Sent Events for live progress monitoring
+- **Background Processing**: Long-running tasks handled by queue worker
+- **User Isolation**: Each user's API keys and configurations are securely isolated
 
 ## 🤝 Contributing
 

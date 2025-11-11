@@ -48,6 +48,13 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - 自动生成向量嵌入
 - 查看和删除知识库内容
 
+### 深度研究（Deep Research）
+- **AI 驱动研究**：自主研究代理进行全面的主题探索
+- **多步骤流程**：自动生成研究问题、搜索、分析和综合信息
+- **队列系统**：使用 BullMQ 和 Redis 进行后台任务处理
+- **实时进度**：通过服务器发送事件（SSE）提供实时状态更新
+- **用户隔离配置**：每个用户的 API Keys 使用 AsyncLocalStorage 安全隔离
+
 ## 🛠 技术栈
 
 ### 前端
@@ -65,9 +72,12 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **运行时**：Next.js Server Actions
 - **数据库**：PostgreSQL（结构化数据）
 - **ORM**：Prisma
-- **认证**：NextAuth.js
+- **认证**：NextAuth.js v5
 - **向量数据库**：Milvus（向量存储与检索）
 - **AI SDK**：Vercel AI SDK (@ai-sdk/openai)
+- **队列系统**：BullMQ + Redis（后台任务处理）
+- **上下文隔离**：AsyncLocalStorage（并发用户任务隔离）
+- **加密**：用户 API Keys 加密存储在数据库
 
 ### 外部服务
 - **AI 服务**：Vercel AI SDK 配合 OpenAI provider（嵌入和对话）
@@ -193,12 +203,13 @@ docker-compose down -v
 
 #### 服务说明
 
-- **PostgreSQL**：存储结构化数据（用户、文档、知识库等）
+- **PostgreSQL**：存储结构化数据（用户、文档、知识库、加密的 API Keys 等）
 - **Milvus**：专业向量数据库，用于高性能向量检索
-- **Redis**：用于缓存和队列系统
+- **Redis**：用于缓存和 BullMQ 队列系统（Deep Research 必需）
 - **MinIO**：S3 兼容的对象存储，用于文件存储和 Milvus 向量持久化
 - **MarkItDown**：文档解析服务，支持多格式文档处理（端口 5001）
 - **MinerU**：文档解析服务，支持高质量 PDF 处理（端口 8000）
+- **Queue Worker**：后台 Worker，处理 Deep Research 和文档转换任务
 
 ### 3. 安装依赖
 
@@ -215,7 +226,7 @@ yarn install
 cp .env.example .env.local
 ```
 
-编辑 `.env.local` 文件，配置以下必需项：
+编辑 `.env.local` 文件，配置以下**基础设施相关**项：
 
 ```bash
 # 数据库连接
@@ -225,39 +236,40 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/deepmed"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here"
 
-# OpenAI API（通过 Vercel AI SDK 使用，用于生成嵌入向量和对话，知识库搜索必需）
+# 加密密钥（用于安全存储用户 API Keys）
+ENCRYPTION_KEY="your-encryption-key-32-chars-min"
+
+# Redis（队列系统）
+REDIS_URL="redis://localhost:6379"
+
+# OpenAI API（通过 Vercel AI SDK 使用，用于向量嵌入，知识库搜索必需）
 OPENAI_API_KEY="your-openai-api-key"
 OPENAI_BASE_URL="https://api.openai.com/v1"
-OPENAI_API_MODEL="gpt-4o-mini"  # 对话模型
-OPENAI_API_REASON_MODEL="o4-mini"  # 推理模型（可选）
-
-# 网页搜索 API
-TAVILY_API_KEY="your-tavily-api-key"
-JINA_API_KEY="your-jina-api-key"
-
-# 可选：其他 LLM API
-# DEEPSEEK_API_KEY="your-deepseek-api-key"
-# GEMINI_API_KEY="your-gemini-api-key"
-
-# 文档解析器配置（选择一种）
-# 选项 1：MarkItDown Docker（推荐，支持多格式文档）
-DOCUMENT_PARSER=markitdown-docker
-MARKITDOWN_URL=http://localhost:5001
-
-# 选项 2：MinerU Docker（推荐，高质量 PDF 解析）
-# DOCUMENT_PARSER=mineru-docker
-# MINERU_DOCKER_URL=http://localhost:8000
-
-# 选项 3：MinerU Cloud（云端服务，需要 API Key）
-# DOCUMENT_PARSER=mineru-cloud
-# MINERU_API_KEY="your-mineru-api-key"
-# MINERU_BASE_URL="https://mineru.net/api/v4/extract/task"
 
 # 可选：MinIO 文件存储
 # MINIO_ENDPOINT="localhost:9000"
 # MINIO_ACCESS_KEY="minioadmin"
 # MINIO_SECRET_KEY="minioadmin"
 ```
+
+> **🔐 用户配置的 API Keys**
+> 
+> **LLM API Keys、搜索 API Keys 和文档解析器设置现在由每个用户在 Web 界面中配置**（不再在 `.env` 文件中配置）：
+> 
+> 1. 启动应用程序
+> 2. 使用您的账号登录
+> 3. 访问设置页面：
+>    - **`/settings/llm`** - 配置 LLM 提供商（DeepSeek、OpenAI、Google）
+>    - **`/settings/search`** - 配置搜索提供商（Tavily、Jina、NCBI）
+>    - **`/settings/document`** - 配置文档解析器（MarkItDown、MinerU、MinerU Cloud）
+> 4. 每个用户的 API Keys 都会加密存储在数据库中
+> 5. **并发任务隔离** - 使用 AsyncLocalStorage 确保多个用户可以同时运行任务，各自使用自己的 API Keys
+> 
+> 这种方式提供了：
+> - ✅ **多租户支持** - 每个用户拥有自己的 API Keys
+> - ✅ **安全性** - API Keys 在数据库中加密存储
+> - ✅ **并发安全** - AsyncLocalStorage 确保任务隔离
+> - ✅ **灵活性** - 用户可以随时切换提供商
 
 ### 5. 初始化数据库
 
@@ -304,13 +316,66 @@ yarn dev
 
 访问 http://localhost:3000 开始使用！
 
-### 7. 登录系统
+### 7. 启动队列 Worker（用于 Deep Research）
+
+要使用 Deep Research 功能，需要在**单独的终端**中启动队列 Worker：
+
+```bash
+# 构建 Worker
+npm run build:worker
+# 或
+yarn build:worker
+
+# 启动 Worker（在新终端中）
+node dist/index.cjs
+```
+
+或使用 Docker Compose：
+
+```bash
+# 启动队列 Worker 服务
+docker-compose up -d queue-worker
+
+# 查看 Worker 日志
+docker-compose logs -f queue-worker
+```
+
+队列 Worker 处理的后台任务包括：
+- Deep Research 任务
+- 文档转换任务
+
+### 8. 登录系统
 
 1. 打开浏览器访问 http://localhost:3000
 2. 点击登录按钮
 3. 使用测试账户登录：
    - **邮箱**：`test@example.com`
    - **密码**：`password123`
+
+### 9. 配置您的 API Keys
+
+登录后，在设置页面配置您的个人 API Keys：
+
+1. **LLM 配置** (`/settings/llm`)：
+   - 添加 LLM 提供商（DeepSeek、OpenAI、Google Gemini）
+   - 配置 API Keys 和基础 URLs
+   - 设置默认模型
+   - 测试和激活配置
+
+2. **搜索配置** (`/settings/search`)：
+   - 选择搜索提供商（Tavily 或 Jina）
+   - 配置 Tavily API Key（用于 Tavily 搜索）
+   - 配置 Jina API Key（用于 Jina 搜索和内容提取）
+   - 配置 NCBI API Key（可选，用于 PubMed 搜索）
+
+3. **文档解析器配置** (`/settings/document`)：
+   - 选择解析器类型：
+     - **MarkItDown**（Docker）：多格式文档解析
+     - **MinerU**（Docker）：高质量 PDF 解析（含 OCR）
+     - **MinerU Cloud**：云端解析服务（需要 API Key）
+   - 配置 MinerU API Key（如使用 MinerU Cloud）
+
+> 🔒 **安全性**：所有 API Keys 在存储到数据库之前都会使用 `.env` 文件中的 `ENCRYPTION_KEY` 进行加密。
 
 ### 服务访问地址
 
@@ -434,6 +499,10 @@ yarn lint --fix
 yarn dev              # 启动开发服务器
 yarn build            # 构建生产版本
 yarn start            # 启动生产服务器
+
+# 队列 Worker
+yarn build:worker     # 构建队列 Worker
+yarn worker           # 启动队列 Worker（构建后）
 
 # 代码质量
 yarn lint             # 运行代码检查
@@ -616,6 +685,41 @@ http://localhost:3000
 # 3. 输入问题
 # 4. 获取结构化答案
 ```
+
+### 使用 Deep Research
+
+```bash
+# 1. 确保队列 Worker 正在运行：
+docker-compose up -d queue-worker
+# 或在开发环境：
+node dist/index.cjs
+
+# 2. 访问 Deep Research 页面：
+http://localhost:3000/research
+
+# 3. 输入您的研究主题/问题
+
+# 4. AI 代理将：
+#    - 生成研究问题
+#    - 搜索相关信息
+#    - 分析和综合发现
+#    - 生成综合报告
+
+# 5. 通过 SSE 监控实时进度
+#    - 查看当前步骤和状态
+#    - 查看中间结果
+#    - 跟踪 token 使用量
+
+# 6. 下载最终报告
+```
+
+**Deep Research 功能特点：**
+- **自主研究**：AI 代理将复杂主题分解为研究问题
+- **多源信息**：搜索网页、知识库和学术数据库
+- **引用跟踪**：所有声明都附带来源链接
+- **实时更新**：服务器发送事件提供实时进度监控
+- **后台处理**：长时间运行的任务由队列 Worker 处理
+- **用户隔离**：每个用户的 API Keys 和配置安全隔离
 
 ## 🤝 贡献指南
 
