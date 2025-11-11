@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { User, Lock, Bot, Settings as SettingsIcon, Search } from 'lucide-react';
+import { User, Lock, Bot, Settings as SettingsIcon, Search, FileText } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 const SETTINGS_NAVIGATION = [
@@ -17,6 +17,12 @@ const SETTINGS_NAVIGATION = [
     href: '/settings/search',
     icon: Search,
     description: '配置搜索 API Key',
+  },
+  {
+    name: '文档解析器',
+    href: '/settings/document',
+    icon: FileText,
+    description: '配置文档解析器',
   },
   // 可以添加更多设置页面
   // {

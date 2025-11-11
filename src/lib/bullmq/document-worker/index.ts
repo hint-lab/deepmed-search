@@ -5,9 +5,15 @@ import { TaskType } from '../types';
 import { Job } from 'bullmq';
 import logger from '@/utils/logger';
 import { getReadableUrl } from '../../minio/operations';
+import { userDocumentContextStorage, UserDocumentContext } from '../../document-parser/user-context';
+import { decryptApiKey } from '@/lib/crypto';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
 // 文档处理函数
 export async function processDocument(data: DocumentProcessJobData): Promise<DocumentProcessJobResult> {
-    const { documentId, options, documentInfo } = data;
+    const { documentId, userId, options, documentInfo } = data;
 
     try {
         if (!documentInfo || !documentInfo.uploadFile) {
@@ -35,7 +41,7 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             maintainFormat: options.maintainFormat,
             prompt: options.prompt || '',
         });
-        
+
         // 转换 DocumentParseResult 到 DocumentProcessJobResult 格式
         return {
             success: result.success,
@@ -74,17 +80,43 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
 export const documentWorker = createWorker<DocumentProcessJobData, DocumentProcessJobResult>(
     TaskType.DOCUMENT_CONVERT_TO_MD,
     async (job: Job<DocumentProcessJobData, DocumentProcessJobResult>) => {
+        const { documentId, userId } = job.data;
+
         try {
-            // 更新进度：开始处理
-            await job.updateProgress(10);
+            // 从数据库加载用户的文档解析器配置（只查询一次）
+            logger.info(`[Document Worker] Loading user config for user ${userId}, document ${documentId}`);
 
-            const result = await processDocument(job.data);
+            const userConfig = await prisma.searchConfig.findUnique({
+                where: { userId },
+            });
 
-            // 更新进度：处理完成
-            await job.updateProgress(100);
+            if (!userConfig) {
+                throw new Error('未找到用户搜索配置。请访问 /settings/search 页面配置文档解析器');
+            }
 
-            return result;
+            // 构建用户文档处理上下文
+            const documentContext: UserDocumentContext = {
+                userId,
+                documentParser: userConfig.documentParser as any,
+                mineruApiKey: userConfig.mineruApiKey ? decryptApiKey(userConfig.mineruApiKey) : undefined,
+            };
+
+            logger.info(`[Document Worker] User ${userId} using parser: ${documentContext.documentParser}`);
+
+            // 使用 AsyncLocalStorage 在隔离的上下文中运行文档处理任务
+            return await userDocumentContextStorage.run(documentContext, async () => {
+                // 更新进度：开始处理
+                await job.updateProgress(10);
+
+                const result = await processDocument(job.data);
+
+                // 更新进度：处理完成
+                await job.updateProgress(100);
+
+                return result;
+            });
         } catch (error) {
+            logger.error(`[Document Worker] Document ${documentId} processing failed:`, error);
             // 更新进度：处理失败
             await job.updateProgress(-1);
             throw error;

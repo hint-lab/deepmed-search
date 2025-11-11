@@ -40,17 +40,17 @@ export interface DocumentParseOptions {
 async function downloadUrlToTemp(url: string): Promise<string> {
   const fileName = path.basename(url.split('?')[0]); // 移除查询参数
   const tempFilePath = path.join(os.tmpdir(), `deepmed-${Date.now()}-${fileName}`);
-  
+
   logger.info('[Document Parser] 下载文件', { url, tempFilePath });
-  
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`下载失败: ${response.status} ${response.statusText}`);
   }
-  
+
   const buffer = await response.arrayBuffer();
   await fs.writeFile(tempFilePath, Buffer.from(buffer));
-  
+
   return tempFilePath;
 }
 
@@ -60,17 +60,17 @@ async function downloadUrlToTemp(url: string): Promise<string> {
 async function convertWithDockerMarkItDown(filePathOrUrl: string): Promise<DocumentParseResult> {
   const startTime = Date.now();
   let tempFilePath: string | null = null;
-  
+
   try {
     const markitdownUrl = process.env.MARKITDOWN_URL || 'http://localhost:5001';
-    
+
     // 如果是 URL，先下载到临时文件
     const isUrl = filePathOrUrl.startsWith('http://') || filePathOrUrl.startsWith('https://');
     const filePath = isUrl ? await downloadUrlToTemp(filePathOrUrl) : filePathOrUrl;
     if (isUrl) {
       tempFilePath = filePath;
     }
-    
+
     logger.info('[Document Parser] 使用 Docker MarkItDown', {
       originalPath: filePathOrUrl,
       filePath,
@@ -94,7 +94,7 @@ async function convertWithDockerMarkItDown(filePathOrUrl: string): Promise<Docum
     });
 
     const result = response.data;
-    
+
     if (!result.success) {
       throw new Error(result.error || 'MarkItDown 转换失败');
     }
@@ -152,9 +152,9 @@ async function convertWithDockerMarkItDown(filePathOrUrl: string): Promise<Docum
         await fs.unlink(tempFilePath);
         logger.info('[Document Parser] 已清理临时文件', { tempFilePath });
       } catch (err) {
-        logger.warn('[Document Parser] 清理临时文件失败', { 
-          tempFilePath, 
-          error: err instanceof Error ? err.message : '未知错误' 
+        logger.warn('[Document Parser] 清理临时文件失败', {
+          tempFilePath,
+          error: err instanceof Error ? err.message : '未知错误'
         });
       }
     }
@@ -166,10 +166,10 @@ async function convertWithDockerMarkItDown(filePathOrUrl: string): Promise<Docum
  */
 async function convertWithDockerMinerU(filePath: string, fileName?: string): Promise<DocumentParseResult> {
   const startTime = Date.now();
-  
+
   try {
     const mineruUrl = process.env.MINERU_DOCKER_URL || 'http://localhost:8000';
-    
+
     logger.info('[Document Parser] 使用 Docker MinerU', {
       filePath,
       fileName,
@@ -193,7 +193,7 @@ async function convertWithDockerMinerU(filePath: string, fileName?: string): Pro
     }
 
     const result = await response.json();
-    
+
     if (result.code !== 'success') {
       throw new Error(result.message || 'MinerU Docker 转换失败');
     }
@@ -245,7 +245,7 @@ async function convertWithMinerUCloud(
   options: DocumentParseOptions
 ): Promise<DocumentParseResult> {
   const startTime = Date.now();
-  
+
   try {
     logger.info('[Document Parser] 使用 MinerU', {
       fileUrl,
@@ -307,10 +307,13 @@ export async function parseDocument(
   filePathOrUrl: string,
   options: DocumentParseOptions = {}
 ): Promise<DocumentParseResult> {
-  // 从环境变量或选项中获取解析器类型
-  const parserType: ParserType = 
-    options.parserType || 
-    (process.env.DOCUMENT_PARSER as ParserType) || 
+  // 优先从用户上下文获取解析器类型，然后是选项，最后是环境变量
+  const { getDocumentParser, hasUserDocumentContext } = require('./user-context');
+
+  const parserType: ParserType =
+    options.parserType ||
+    (hasUserDocumentContext() ? getDocumentParser() : undefined) ||
+    (process.env.DOCUMENT_PARSER as ParserType) ||
     'markitdown-docker';
 
   logger.info('[Document Parser] 开始解析文档', {
@@ -324,11 +327,11 @@ export async function parseDocument(
       case 'markitdown-docker':
         // Docker MarkItDown（通过 HTTP API）
         return await convertWithDockerMarkItDown(filePathOrUrl);
-      
+
       case 'mineru-docker':
         // Docker MinerU（通过 HTTP API，支持本地文件）
         return await convertWithDockerMinerU(filePathOrUrl, options.fileName);
-      
+
       case 'mineru-cloud':
         // MinerU Cloud（云端服务，需要公网 URL）
         if (!filePathOrUrl.startsWith('http://') && !filePathOrUrl.startsWith('https://')) {
@@ -339,7 +342,7 @@ export async function parseDocument(
           };
         }
         return await convertWithMinerUCloud(filePathOrUrl, options);
-      
+
       default:
         return {
           success: false,
@@ -349,7 +352,7 @@ export async function parseDocument(
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : '未知错误';
-    
+
     logger.error('[Document Parser] 解析失败', {
       filePathOrUrl,
       parserType,
@@ -382,18 +385,18 @@ export async function checkParserAvailability(parserType: ParserType): Promise<b
         const response = await fetch(`${url}/health`);
         return response.ok;
       }
-      
+
       case 'mineru-docker': {
         const url = process.env.MINERU_DOCKER_URL || 'http://localhost:8000';
         const response = await fetch(`${url}/health`);
         return response.ok;
       }
-      
+
       case 'mineru-cloud': {
         const apiKey = process.env.MINERU_API_KEY;
         return !!apiKey;
       }
-      
+
       default:
         return false;
     }

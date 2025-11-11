@@ -29,7 +29,7 @@ export class MinerUClient {
   async createTask(options: MinerUTaskOptions): Promise<MinerUTaskResponse> {
     try {
       const url = `${this.config.baseUrl}/v4/extract/task`;
-      
+
       logger.info('[MinerU] 创建任务', {
         url,
         fileUrl: options.fileUrl,
@@ -70,7 +70,7 @@ export class MinerUClient {
       }
 
       const data = await response.json();
-      
+
       logger.info('[MinerU] API 响应', {
         success: data.success,
         hasData: !!data.data,
@@ -78,7 +78,7 @@ export class MinerUClient {
         error: data.error,
         data: data,
       });
-      
+
       if (!data.success || !data.data?.task_id) {
         const errorMsg = data.error || data.message || 'Failed to create task';
         logger.error('[MinerU] 任务创建失败（响应数据）', {
@@ -107,7 +107,7 @@ export class MinerUClient {
   async getTaskStatus(taskId: string): Promise<MinerUTaskStatusResponse> {
     try {
       const url = `${this.config.baseUrl}/v4/extract/task/${taskId}`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -230,7 +230,7 @@ export class MinerUClient {
       };
     } catch (error) {
       // 清理临时目录
-      await fs.remove(extractDir).catch(() => {});
+      await fs.remove(extractDir).catch(() => { });
       throw error;
     }
   }
@@ -295,10 +295,22 @@ export async function processDocumentWithMinerU(
       filePathOrUrl,
     });
 
-    // 检查 MinerU 配置
-    const apiKey = process.env.MINERU_API_KEY;
-    if (!apiKey) {
-      const errorMsg = 'MINERU_API_KEY 未配置，无法使用 MinerU 处理文档';
+    // 从用户上下文获取 MinerU API Key
+    const { getMineruApiKey, hasUserDocumentContext } = require('../document-parser/user-context');
+
+    let apiKey: string;
+    try {
+      if (hasUserDocumentContext()) {
+        apiKey = getMineruApiKey();
+      } else {
+        // 回退到环境变量（用于非队列任务）
+        apiKey = process.env.MINERU_API_KEY || '';
+        if (!apiKey) {
+          throw new Error('MINERU_API_KEY 未配置');
+        }
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'MinerU API Key 未配置';
       logger.warn('[MinerU] ' + errorMsg);
       return {
         success: false,
@@ -386,7 +398,7 @@ export async function processDocumentWithMinerU(
     const { pages, extracted } = await client.extractMarkdownFromZip(zipPath);
 
     // 清理临时文件
-    await fs.remove(tempDir).catch(() => {});
+    await fs.remove(tempDir).catch(() => { });
 
     const processingTime = Date.now() - startTime;
 

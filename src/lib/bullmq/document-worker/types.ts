@@ -32,6 +32,7 @@ export interface DocumentProcessJobResult extends ProcessJobResult {
 
 export interface DocumentProcessJobData {
     documentId: string;
+    userId: string; // 用户ID（必需：用于获取用户配置的文档解析器和 API keys）
     documentInfo: {
         name: string;
         uploadFile: {

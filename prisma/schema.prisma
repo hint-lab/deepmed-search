@@ -6,6 +6,7 @@
 
 generator client {
   provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -131,7 +132,9 @@ model SearchConfig {
   tavilyApiKey      String? // Tavily API Key（加密）
   jinaApiKey        String? // Jina API Key（加密）
   ncbiApiKey        String? // NCBI API Key（加密）
+  mineruApiKey      String? // MinerU API Key（加密）
   searchProvider    String   @default("jina") // 默认搜索提供商（tavily/jina）
+  documentParser    String   @default("markitdown-docker") // 文档解析器（markitdown-docker/mineru-docker/mineru-cloud）
   userId            String   @unique // 用户ID（每个用户只有一个搜索配置）
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
   createdAt         DateTime @default(now()) // 创建时间

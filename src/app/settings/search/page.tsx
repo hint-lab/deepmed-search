@@ -84,6 +84,7 @@ export default function SearchSettingsPage() {
         const reloadResult = await getUserSearchConfig();
         if (reloadResult.success && reloadResult.data) {
           const config = reloadResult.data as SearchConfig;
+          setSearchProvider(config.searchProvider);
           setHasTavilyApiKey(config.hasTavilyApiKey);
           setHasJinaApiKey(config.hasJinaApiKey);
           setHasNcbiApiKey(config.hasNcbiApiKey);
@@ -111,23 +112,24 @@ export default function SearchSettingsPage() {
       <div>
         <h1 className="text-2xl font-bold">搜索配置</h1>
         <p className="text-muted-foreground mt-2">
-          配置搜索相关的 API Key，包括 Tavily、Jina 和 NCBI。
+          配置 Web 搜索和 Deep Research 使用的搜索引擎及 API Key。
         </p>
       </div>
 
+      {/* 搜索引擎配置 */}
       <Card>
         <CardHeader>
-          <CardTitle>搜索提供商</CardTitle>
+          <CardTitle>搜索引擎</CardTitle>
           <CardDescription>
             选择默认的搜索引擎提供商
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="searchProvider">默认搜索提供商</Label>
+            <Label htmlFor="searchProvider">默认搜索引擎</Label>
             <Select value={searchProvider} onValueChange={(v) => setSearchProvider(v as any)}>
               <SelectTrigger>
-                <SelectValue placeholder="选择搜索提供商" />
+                <SelectValue placeholder="选择搜索引擎" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="tavily">Tavily</SelectItem>
@@ -135,7 +137,7 @@ export default function SearchSettingsPage() {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Web 搜索功能使用的默认搜索引擎
+              Deep Research 和 Web 搜索功能使用的默认搜索引擎
             </p>
           </div>
         </CardContent>
@@ -246,10 +248,10 @@ export default function SearchSettingsPage() {
             <div className="text-sm text-blue-900 dark:text-blue-100 space-y-2">
               <p className="font-medium">配置说明：</p>
               <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                <li>配置后系统将优先使用您的 API Key 进行搜索</li>
-                <li>如果未配置，将使用系统默认配置</li>
-                <li>API Key 会被加密存储，确保安全</li>
-                <li>可以只配置您需要使用的服务的 API Key</li>
+                <li>Jina API Key 是 Deep Research（深度研究）功能的必需配置</li>
+                <li>Tavily 可作为备选搜索引擎使用</li>
+                <li>NCBI API Key 用于 PubMed 文献搜索，可选配置</li>
+                <li>所有 API Key 会被加密存储在数据库中</li>
               </ul>
             </div>
           </div>

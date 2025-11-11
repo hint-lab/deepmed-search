@@ -7,7 +7,7 @@ import { withAuth } from '@/lib/auth-utils';
 import { Session } from 'next-auth';
 import { encryptApiKey, decryptApiKey } from '@/lib/crypto';
 import { LLMConfig, UserLLMConfigList, CreateLLMConfigParams, UpdateLLMConfigParams } from '@/types/user';
-import { SearchConfig as ISearchConfig, UpdateSearchConfigParams } from '@/types/search';
+import { SearchConfig as ISearchConfig, UpdateSearchConfigParams, DocumentParser } from '@/types/search';
 import { ProviderFactory, ProviderType } from '@/lib/llm-provider';
 
 /**
@@ -481,7 +481,8 @@ export const getUserSearchConfig = withAuth(async (session: Session) => {
             config = await prisma.searchConfig.create({
                 data: {
                     userId: session.user.id,
-                    searchProvider: 'tavily',
+                    searchProvider: 'jina',
+                    documentParser: 'markitdown-docker',
                 },
             });
         }
@@ -489,9 +490,11 @@ export const getUserSearchConfig = withAuth(async (session: Session) => {
         const result: ISearchConfig = {
             id: config.id,
             searchProvider: config.searchProvider as 'tavily' | 'jina',
+            documentParser: config.documentParser as DocumentParser,
             hasTavilyApiKey: !!config.tavilyApiKey,
             hasJinaApiKey: !!config.jinaApiKey,
             hasNcbiApiKey: !!config.ncbiApiKey,
+            hasMineruApiKey: !!config.mineruApiKey,
             createdAt: config.createdAt,
             updatedAt: config.updatedAt,
         };
@@ -524,8 +527,14 @@ export const updateUserSearchConfig = withAuth(async (session: Session, params: 
         if (params.ncbiApiKey !== undefined) {
             updateData.ncbiApiKey = params.ncbiApiKey ? encryptApiKey(params.ncbiApiKey) : null;
         }
+        if (params.mineruApiKey !== undefined) {
+            updateData.mineruApiKey = params.mineruApiKey ? encryptApiKey(params.mineruApiKey) : null;
+        }
         if (params.searchProvider !== undefined) {
             updateData.searchProvider = params.searchProvider;
+        }
+        if (params.documentParser !== undefined) {
+            updateData.documentParser = params.documentParser;
         }
 
         // 查找或创建配置
