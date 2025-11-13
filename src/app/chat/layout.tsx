@@ -15,10 +15,10 @@ function ChatLayoutContent({ children }: { children: React.ReactNode }) {
         <ChatProvider>
             {/* Sidebar is positioned absolutely by itself */}
             <ChatSidebar />
-            {/* Content wrapper: Apply margin-left based on sidebar state */}
+            {/* Content wrapper: 使用绝对定位，避免 flex 布局的复杂性 */}
             <div className={cn(
-                "relative flex-1 flex top-14 pb-12 h-full flex-col transition-all duration-300 ease-in-out",
-                isCollapsed ? "ml-12" : "ml-80" // Dynamic margin
+                "absolute top-14 bottom-0 right-0 transition-all duration-300 ease-in-out",
+                isCollapsed ? "left-12" : "left-80" // Dynamic left position based on sidebar
             )}>
                 {children}
             </div>
@@ -33,8 +33,8 @@ export default function ChatLayout({
 }) {
     return (
         <ProtectedRoute>
-            {/* Main container is relative, full height */}
-            <main className="relative flex w-full h-screen overflow-hidden">
+            {/* Main container: 使用相对定位作为绝对定位的参照 */}
+            <div className="fixed w-full h-screen">
                 {/* Providers wrap the content that needs context */}
                 <SidebarProvider>
                     <ChatDialogProvider>
@@ -44,7 +44,7 @@ export default function ChatLayout({
                         </KnowledgeBaseProvider>
                     </ChatDialogProvider>
                 </SidebarProvider>
-            </main>
+            </div>
         </ProtectedRoute>
     )
 }
