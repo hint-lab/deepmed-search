@@ -124,7 +124,7 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
     };
 
     return (
-        <div className="flex-1 space-y-4 overflow-y-auto py-4 px-6">
+        <div className="flex-1 min-h-0 space-y-4 overflow-y-auto py-4 px-6">
             {isLoading ? (
                 <MessagesSkeleton />
             ) : (

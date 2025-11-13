@@ -17,7 +17,7 @@ function ChatLayoutContent({ children }: { children: React.ReactNode }) {
             <ChatSidebar />
             {/* Content wrapper: Apply margin-left based on sidebar state */}
             <div className={cn(
-                "relative flex-1 overflow-hidden transition-all duration-300 ease-in-out",
+                "relative flex-1 flex top-14 pb-12 h-full flex-col transition-all duration-300 ease-in-out",
                 isCollapsed ? "ml-12" : "ml-80" // Dynamic margin
             )}>
                 {children}

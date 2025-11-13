@@ -71,7 +71,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
 
     return (
         <div className={cn(
-            "w-full p-4 border-t transition-all duration-300 relative bg-white/90 dark:bg-gray-900/90",
+            "w-full p-4 border-t transition-all duration-300 relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm",
             isThinkingMode && "border-cyan-200 dark:border-cyan-800"
         )}>
             {showThinkingAnimation && (
@@ -107,7 +107,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                             className={cn(
                                 "rounded-md h-12 px-3 transition-all",
                                 isUsingKnowledgeBase
-                                    ? "bg-cyan-50 text-cyan-600 border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-900"
+                                    ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900"
                                     : "hover:bg-gray-200 dark:text-gray-400"
                             )}
                         >

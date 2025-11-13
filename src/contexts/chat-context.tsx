@@ -216,6 +216,8 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                     // 先保存当前内容，再清空
                                     const finalContent = prev.currentContent;
                                     const finalReasoning = prev.currentReasoning;
+                                    const finalKbChunks = prev.kbChunks;
+                                    const finalIsUsingKb = prev.isUsingKbForCurrentMessage;
                                     
                                     return {
                                         isStreaming: false,
@@ -223,13 +225,23 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                         currentReasoning: '',
                                         currentMessageId: null,
                                         currentIsReasoning: false,
+                                        kbChunks: [],
+                                        isUsingKbForCurrentMessage: false,
                                         messages: prev.messages.map(msg =>
                                             msg.id === prev.currentMessageId
                                                 ? {
                                                     ...msg,
                                                     content: finalContent,
                                                     thinkingContent: finalReasoning,
-                                                    isThinking: finalReasoning.length > 0
+                                                    isThinking: finalReasoning.length > 0,
+                                                    metadata: {
+                                                        ...msg.metadata,
+                                                        // 保存知识库片段到消息的 metadata 中
+                                                        ...(finalKbChunks.length > 0 && {
+                                                            kbChunks: finalKbChunks,
+                                                            kbName: msg.metadata?.kbName || ''
+                                                        })
+                                                    }
                                                 }
                                                 : msg
                                         )
@@ -237,10 +249,25 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                 });
                                 router.refresh();
                             } else if (data.type === 'kb_chunks') {
-                                updateState(prev => ({
-                                    kbChunks: data.chunks,
-                                    isUsingKbForCurrentMessage: true
-                                }));
+                                updateState(prev => {
+                                    // 同时更新消息的 metadata 和 state
+                                    return {
+                                        kbChunks: data.chunks,
+                                        isUsingKbForCurrentMessage: true,
+                                        messages: prev.messages.map(msg =>
+                                            msg.id === prev.currentMessageId
+                                                ? {
+                                                    ...msg,
+                                                    metadata: {
+                                                        ...msg.metadata,
+                                                        kbChunks: data.chunks,
+                                                        kbName: msg.metadata?.kbName || ''
+                                                    }
+                                                }
+                                                : msg
+                                        )
+                                    };
+                                });
                             } else if (data.type === 'reference') {
                                 // 处理引用数据
                                 updateState(prev => {

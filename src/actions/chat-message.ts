@@ -524,6 +524,12 @@ ${contextChunks}
                             console.log(`⏱️ [性能] 知识库检索总耗时: ${Date.now() - kbStartTime}ms`);
                         } catch (kbError) {
                             console.error("获取知识库内容失败:", kbError);
+                            // 搜索失败时，设置标记表示已尝试搜索但失败
+                            contextChunks = '[KB_SEARCH_FAILED]';
+                            sendEvent({
+                                type: 'kb_chunks',
+                                chunks: []
+                            });
                         }
                     }
 
@@ -531,8 +537,9 @@ ${contextChunks}
                     console.log("⏱️ [性能] 设置系统提示和工具...");
 
                     // 是否找到了相关片段（检查是否使用了知识库）
-                    const hasRelevantChunks = contextChunks.trim().length > 0 && contextChunks !== '[NO_CHUNKS_FOUND]';
-                    const hasSearchedKB = isUsingKB && dialog.knowledgeBase && contextChunks !== '';
+                    const hasRelevantChunks = contextChunks.trim().length > 0 && contextChunks !== '[NO_CHUNKS_FOUND]' && contextChunks !== '[KB_SEARCH_FAILED]';
+                    const hasSearchedKB = isUsingKB && dialog.knowledgeBase && contextChunks !== '' && contextChunks !== '[KB_SEARCH_FAILED]';
+                    const kbSearchFailed = isUsingKB && dialog.knowledgeBase && contextChunks === '[KB_SEARCH_FAILED]';
 
                     const provider = await createProviderFromUserConfig(userId);
 
@@ -556,6 +563,14 @@ ${contextChunks}
 示例：引用片段1内容时→先调用kb_reference(reference_id=1)→然后写"根据指南[1]，..."
 
 只基于知识库内容回答，超出范围说不知道。`
+                        );
+                    } else if (kbSearchFailed && dialog.knowledgeBase) {
+                        // 知识库搜索失败（可能是连接问题或系统错误）
+                        provider.setSystemPrompt(
+                            dialogId,
+                            `你是DeepMed团队开发的一个专业的医学AI助手。
+
+注意：系统在尝试从知识库"${dialog.knowledgeBase.name}"中搜索相关内容时遇到了技术问题，无法访问知识库。请告诉用户知识库暂时无法访问，但你可以基于你的医学知识尽力回答用户的问题。`
                         );
                     } else if (hasSearchedKB && dialog.knowledgeBase) {
                         // 搜索了知识库但没有找到相关内容

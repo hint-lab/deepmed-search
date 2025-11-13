@@ -9,9 +9,11 @@ interface ChatPageProps {
 export default async function ChatPage(props: ChatPageProps) {
     const { id } = await props.params;
     return (
-        <div className="flex flex-col h-full pt-14">
+        <div className="flex flex-col h-full w-full min-h-0">
             <ChatMessages dialogId={id} />
-            <ChatInputArea dialogId={id} />
+            <div className="flex-shrink-0 w-full">
+                <ChatInputArea dialogId={id} />
+            </div>
         </div>
     );
 }

@@ -1,17 +1,12 @@
 import { cn } from "@/lib/utils"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeRaw from 'rehype-raw'
-import rehypeKatex from 'rehype-katex'
-import 'katex/dist/katex.min.css'
+import { Markdown } from "@/components/markdown"
 
 interface IProps {
     loading?: boolean
     content: string
     reference?: any // 保留以保持向后兼容，但不再使用
     className?: string
-    components?: React.ComponentProps<typeof ReactMarkdown>['components']
+    components?: React.ComponentProps<typeof Markdown>['components']
 }
 
 const MarkdownContent = ({
@@ -22,24 +17,12 @@ const MarkdownContent = ({
     components,
 }: IProps) => {
     return (
-        <div className={cn(
-            "prose prose-sm max-w-none dark:prose-invert",
-            // 表格边框样式
-            "[&_table]:border [&_table]:border-border [&_table]:border-solid [&_table]:border-[1px]",
-            "[&_th]:border [&_th]:border-border [&_th]:border-solid [&_th]:border-[1px]",
-            "[&_td]:border [&_td]:border-border [&_td]:border-solid [&_td]:border-[1px]",
-            "[&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2",
-            "[&_table]:border-collapse [&_th]:bg-muted/50",
-            loading && "opacity-50",
-            className
-        )}>
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeRaw, rehypeKatex]}
+        <div className={cn(loading && "opacity-50")}>
+            <Markdown
+                content={content}
+                className={className}
                 components={components}
-            >
-                {content}
-            </ReactMarkdown>
+            />
         </div>
     )
 }

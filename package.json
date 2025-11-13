@@ -78,6 +78,7 @@
     "katex": "^0.16.25",
     "lodash": "^4.17.21",
     "lucide-react": "^0.487.0",
+    "mermaid": "^11.12.1",
     "minio": "^8.0.5",
     "next": "^15.2.4",
     "next-auth": "^5.0.0-beta.25",

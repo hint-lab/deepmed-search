@@ -76,6 +76,11 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
   - 行内公式：`$...$` 或 `\(...\)`，例如 `$\leqslant 0.01\%$`
   - 块级公式：`$$...$$` 或 `\[...\]`
   - 基于 KaTeX 渲染，性能优异
+- **流程图支持**：
+  - 支持 Mermaid 流程图、序列图、甘特图等多种图表
+  - 使用代码块语法：`` ```mermaid ... ``` ``
+  - 支持流程图、时序图、类图、状态图、甘特图等
+  - 自动渲染和错误处理
 - **其他 Markdown 特性**：
   - 代码块高亮
   - 列表、引用、链接等标准 Markdown 语法
@@ -100,6 +105,7 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
   - `rehype-raw` - HTML 原始内容渲染
   - `rehype-katex` - KaTeX 数学公式渲染
   - `katex` - 数学公式渲染引擎
+  - `mermaid` - 流程图和图表渲染引擎
 
 ### 后端
 - **运行时**：Next.js Server Actions

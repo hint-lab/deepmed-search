@@ -76,6 +76,11 @@ All in one flow demo:
   - Inline formulas: `$...$` or `\(...\)`, e.g., `$\leqslant 0.01\%$`
   - Block formulas: `$$...$$` or `\[...\]`
   - Rendered with KaTeX for excellent performance
+- **Diagram Support**:
+  - Supports Mermaid flowcharts, sequence diagrams, Gantt charts, and more
+  - Use code block syntax: `` ```mermaid ... ``` ``
+  - Supports flowcharts, sequence diagrams, class diagrams, state diagrams, Gantt charts, etc.
+  - Automatic rendering and error handling
 - **Other Markdown Features**:
   - Code block highlighting
   - Lists, quotes, links, and other standard Markdown syntax
@@ -100,6 +105,7 @@ All in one flow demo:
   - `rehype-raw` - Raw HTML content rendering
   - `rehype-katex` - KaTeX math formula rendering
   - `katex` - Math formula rendering engine
+  - `mermaid` - Diagram and flowchart rendering engine
 
 ### Backend
 - **Runtime**: Next.js Server Actions

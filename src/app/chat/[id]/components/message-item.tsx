@@ -7,7 +7,7 @@ import { IMessage } from '@/types/message';
 import dayjs from 'dayjs';
 import { MessageType } from '@/constants/chat';
 import { useEffect, useRef, useState } from 'react';
-import { Markdown } from '@/components/markdown';
+import MarkdownContent from '@/components/extensions/markdown-content';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Brain, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
@@ -237,7 +237,7 @@ function ChatMessageItem({
         };
 
         return (
-            <Markdown
+            <MarkdownContent
                 content={content}
                 components={{
                         p: ({ children, ...props }) => (
@@ -266,8 +266,10 @@ function ChatMessageItem({
                                 // 获取引用编号
                                 const refId = parseInt(currentMatch[1]);
 
-                                // 尝试查找引用
-                const reference = getReferenceById(msg, refId);
+                                // 优先查找知识库片段（kbChunks），如果没有则查找引用（references）
+                                const kbChunks = msg.metadata?.kbChunks || [];
+                                const kbChunk = kbChunks[refId - 1]; // 引用编号从1开始，数组索引从0开始
+                                const reference = getReferenceById(msg, refId);
 
                                 // 添加引用链接
                                 parts.push(
@@ -279,8 +281,14 @@ function ChatMessageItem({
                                                 e.preventDefault();
                                                 e.stopPropagation();
 
-                                if (reference) {
+                                // 优先显示知识库片段，如果没有则显示引用
+                                if (kbChunk) {
+                                    setSelectedKbChunk(kbChunk);
+                                } else if (reference) {
                                     setSelectedReference(reference);
+                                } else if (kbChunks.length > 0) {
+                                    // 如果引用编号超出范围，显示第一个片段
+                                    setSelectedKbChunk(kbChunks[0]);
                                 } else if (msg.metadata?.references && msg.metadata.references.length > 0) {
                                     setSelectedReference(msg.metadata.references[0]);
                                 }
@@ -452,7 +460,7 @@ function ChatMessageItem({
                                 </div>
                                 {showReasoning && (
                                     <div className="rounded-md border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-3 py-2 space-y-2">
-                                        <Markdown 
+                                        <MarkdownContent 
                                             content={displayReasoningContent}
                                             components={thinkingMarkdownComponents}
                                         />
@@ -469,7 +477,7 @@ function ChatMessageItem({
                                     <h3 className="text-sm font-medium text-muted-foreground">{t('finalAnswer')}</h3>
                                 </div>
                                 {displayFinalContent ? (
-                                    <Markdown
+                                    <MarkdownContent
                                         content={typeof displayFinalContent === 'string' ? displayFinalContent : ''}
                                         className={cn(isStreaming && "animate-blinking-cursor")}
                                     />
@@ -500,11 +508,24 @@ function ChatMessageItem({
                         )}
 
                         {/* 知识库片段信息 - 在思考模式下也显示在尾部 */}
-                        {((currentKbChunks && isUsingKb) || message.metadata?.kbChunks !== undefined) && !isUser && (
+                        {((currentKbChunks && isUsingKb) || (message.metadata?.kbChunks && Array.isArray(message.metadata.kbChunks) && message.metadata.kbChunks.length > 0)) && !isUser && (
                             <div className="mt-3">
                                 {(() => {
                                     const kbChunksToShow = currentKbChunks || message.metadata?.kbChunks || [];
                                     const kbName = message.metadata?.kbName || '';
+                                    
+                                    // 调试信息（开发环境）
+                                    if (process.env.NODE_ENV === 'development') {
+                                        console.log('[ChatMessageItem] KB Chunks Debug:', {
+                                            hasCurrentKbChunks: !!currentKbChunks,
+                                            currentKbChunksLength: currentKbChunks?.length || 0,
+                                            hasMetadataKbChunks: !!message.metadata?.kbChunks,
+                                            metadataKbChunksLength: message.metadata?.kbChunks?.length || 0,
+                                            isUsingKb,
+                                            kbChunksToShowLength: kbChunksToShow.length,
+                                            kbName
+                                        });
+                                    }
                                     
                                     // 只有在流式传输结束后（!isStreaming）或者明确有 metadata.kbChunks 时才判断是否显示"未找到"
                                     const shouldShowNoChunks = kbChunksToShow.length === 0 && 
@@ -569,10 +590,11 @@ function ChatMessageItem({
                                                                     </div>
                                                                     {/* 内容预览区域 - 默认折叠显示两行 */}
                                                                     <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                                                                        <div 
-                                                                            className={`${expanded ? '' : 'line-clamp-2'} whitespace-pre-wrap`}
-                                                                        >
-                                                                            {chunkContent}
+                                                                        <div className={expanded ? '' : 'line-clamp-2'}>
+                                                                            <MarkdownContent
+                                                                                content={chunkContent}
+                                                                                className="text-xs"
+                                                                            />
                                                                         </div>
                                                                         <div className="flex gap-2 mt-2">
                                                                             <button
@@ -615,11 +637,24 @@ function ChatMessageItem({
                 ) : (
                     <div className="flex flex-col gap-1">
                         {/* 知识库片段信息 - 在AI回答之前显示 */}
-                        {((currentKbChunks && isUsingKb) || message.metadata?.kbChunks !== undefined) && !isUser && (
+                        {((currentKbChunks && isUsingKb) || (message.metadata?.kbChunks && Array.isArray(message.metadata.kbChunks) && message.metadata.kbChunks.length > 0)) && !isUser && (
                             <div className="mb-3">
                                 {(() => {
                                     const kbChunksToShow = currentKbChunks || message.metadata?.kbChunks || [];
                                     const kbName = message.metadata?.kbName || '';
+                                    
+                                    // 调试信息（开发环境）
+                                    if (process.env.NODE_ENV === 'development') {
+                                        console.log('[ChatMessageItem] KB Chunks Debug (non-thinking):', {
+                                            hasCurrentKbChunks: !!currentKbChunks,
+                                            currentKbChunksLength: currentKbChunks?.length || 0,
+                                            hasMetadataKbChunks: !!message.metadata?.kbChunks,
+                                            metadataKbChunksLength: message.metadata?.kbChunks?.length || 0,
+                                            isUsingKb,
+                                            kbChunksToShowLength: kbChunksToShow.length,
+                                            kbName
+                                        });
+                                    }
                                     
                                     // 只有在流式传输结束后（!isStreaming）或者明确有 metadata.kbChunks 时才判断是否显示"未找到"
                                     const shouldShowNoChunks = kbChunksToShow.length === 0 && 
@@ -684,10 +719,11 @@ function ChatMessageItem({
                                                                     </div>
                                                                     {/* 内容预览区域 - 默认折叠显示两行 */}
                                                                     <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                                                                        <div 
-                                                                            className={`${expanded ? '' : 'line-clamp-2'} whitespace-pre-wrap`}
-                                                                        >
-                                                                            {chunkContent}
+                                                                        <div className={expanded ? '' : 'line-clamp-2'}>
+                                                                            <MarkdownContent
+                                                                                content={chunkContent}
+                                                                                className="text-xs"
+                                                                            />
                                                                         </div>
                                                                         <div className="flex gap-2 mt-2">
                                                                             <button
@@ -741,7 +777,7 @@ function ChatMessageItem({
                         {message.role === 'reason' && (
                             <div className="flex items-center gap-1.5">
                                 <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
-                                <Markdown
+                                <MarkdownContent
                                     content={typeof displayFinalContent === 'string' ? displayFinalContent : ''}
                                     className={cn(isStreaming && !isUser && "animate-blinking-cursor")}
                                 />
@@ -753,7 +789,7 @@ function ChatMessageItem({
                                 {message.metadata?.references ?
                                     renderMessage(message)
                                     : (
-                                        <Markdown
+                                        <MarkdownContent
                                             content={typeof displayFinalContent === 'string' ? displayFinalContent : ''}
                                             className={cn(isStreaming && !isUser && "animate-blinking-cursor")}
                                         />
@@ -852,7 +888,7 @@ function ChatMessageItem({
                             </div>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md overflow-wrap-anywhere">
-                            <Markdown
+                            <MarkdownContent
                                 content={selectedKbChunk.content_with_weight || selectedKbChunk.content || t('noContent')}
                             />
                         </div>
@@ -945,7 +981,7 @@ function ChatMessageItem({
                             </div>
 
                             <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
-                                <Markdown
+                                <MarkdownContent
                                     content={selectedReference.content || t('noContent')}
                                 />
                             </div>
@@ -1014,7 +1050,7 @@ function renderWithReferences(answer: string) {
     const replaced = answer.replace(/\[(\d+)\]/g, (match, p1) => {
         return `<a href="#kb-ref-${p1}" class="text-blue-500 underline">[${p1}]</a>`;
     });
-    return <Markdown
+    return <MarkdownContent
         content={replaced}
         components={{
             a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
