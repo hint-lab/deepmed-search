@@ -1,4 +1,6 @@
 import logger from '@/utils/logger';
+import { JinaSegmenter } from './jina-segmenter';
+import { LLMSegmenter } from './llm-segmenter';
 
 /**
  * 文档分割选项
@@ -25,9 +27,22 @@ export interface DocumentSplitterOptions {
     preserveFormat?: boolean;
 
     /**
-     * 分块模式：llm_segmentation（大模型智能分段）或 rule_segmentation（基于规则）
+     * 分块模式：
+     * - rule_segmentation: 基于规则的分块
+     * - llm_segmentation: 使用用户配置的 LLM 进行智能分块
+     * - jina_segmentation: 使用 Jina AI API 进行智能分块
      */
-    parserMode?: 'llm_segmentation' | 'rule_segmentation';
+    parserMode?: 'llm_segmentation' | 'rule_segmentation' | 'jina_segmentation';
+
+    /**
+     * 用户ID（智能分块时必需）
+     */
+    userId?: string;
+
+    /**
+     * 解析器配置（JSON格式，可能包含自定义 prompt 等）
+     */
+    parserConfig?: any;
 }
 
 /**
@@ -91,15 +106,25 @@ export interface DocumentChunk {
 export class DocumentSplitter {
     private options: Required<DocumentSplitterOptions>;
 
+    private userId?: string;
+    private parserConfig?: any;
+
     constructor(options: DocumentSplitterOptions = {}) {
+        // 智能分块时，自动忽略 overlapSize
+        const isSmartSegmentation = options.parserMode === 'llm_segmentation' || options.parserMode === 'jina_segmentation';
+        const effectiveOverlapSize = isSmartSegmentation ? 0 : (options.overlapSize || 200);
+
         this.options = {
             // 增大默认分块大小到2000字符，减少分块数量
             maxChunkSize: options.maxChunkSize || 2000,
-            overlapSize: options.overlapSize || 200,
+            overlapSize: effectiveOverlapSize,
             splitByParagraph: options.splitByParagraph !== undefined ? options.splitByParagraph : true,
             preserveFormat: options.preserveFormat !== undefined ? options.preserveFormat : false,
             parserMode: options.parserMode || 'rule_segmentation',
         };
+
+        this.userId = options.userId;
+        this.parserConfig = options.parserConfig;
     }
 
     /**
@@ -200,7 +225,87 @@ export class DocumentSplitter {
      * @param metadata 文档元数据
      * @returns 文档块数组
      */
-    public splitDocument(
+    public async splitDocument(
+        content: string,
+        metadata: {
+            documentId: string;
+            documentName: string;
+            [key: string]: any;
+        }
+    ): Promise<DocumentChunk[]> {
+        // 添加保护：如果内容为空，直接返回空数组
+        if (!content || content.trim() === '') {
+            return [];
+        }
+
+        // 根据 parserMode 选择分块方式
+        if (this.options.parserMode === 'jina_segmentation') {
+            return this.splitWithJina(content, metadata);
+        }
+
+        if (this.options.parserMode === 'llm_segmentation') {
+            return this.splitWithLLM(content, metadata);
+        }
+
+        // 默认使用规则分块
+        return this.splitWithRule(content, metadata);
+    }
+
+    /**
+     * 使用 Jina API 进行智能分块
+     */
+    private async splitWithJina(
+        content: string,
+        metadata: {
+            documentId: string;
+            documentName: string;
+            [key: string]: any;
+        }
+    ): Promise<DocumentChunk[]> {
+        if (!this.userId) {
+            throw new Error('使用 Jina 分块需要提供 userId');
+        }
+
+        const jinaMaxChunkLength = this.parserConfig?.jina_max_chunk_length || 500;
+        const segmenter = new JinaSegmenter({
+            userId: this.userId,
+            maxChunkLength: jinaMaxChunkLength,
+            metadata,
+        });
+
+        return await segmenter.segment(content);
+    }
+
+    /**
+     * 使用 LLM 进行智能分块
+     */
+    private async splitWithLLM(
+        content: string,
+        metadata: {
+            documentId: string;
+            documentName: string;
+            [key: string]: any;
+        }
+    ): Promise<DocumentChunk[]> {
+        if (!this.userId) {
+            throw new Error('使用 LLM 分块需要提供 userId');
+        }
+
+        const customPrompt = this.parserConfig?.llm_chunk_prompt;
+        const segmenter = new LLMSegmenter({
+            userId: this.userId,
+            maxChunkSize: this.options.maxChunkSize,
+            customPrompt,
+            metadata,
+        });
+
+        return await segmenter.segment(content);
+    }
+
+    /**
+     * 使用规则进行分块（原有逻辑）
+     */
+    private splitWithRule(
         content: string,
         metadata: {
             documentId: string;
@@ -211,11 +316,6 @@ export class DocumentSplitter {
         const chunks: DocumentChunk[] = [];
         let chunkIndex = 0;
         let startIndex = 0;
-
-        // 添加保护：如果内容为空，直接返回空数组
-        if (!content || content.trim() === '') {
-            return chunks;
-        }
 
         while (startIndex < content.length) {
             // 1. 确定理想的结束位置
@@ -335,6 +435,28 @@ export class DocumentSplitter {
         }
 
         return chunks;
+    }
+
+    /**
+     * 同步版本的 splitDocument（保持向后兼容）
+     * @deprecated 请使用异步版本的 splitDocument
+     */
+    public splitDocumentSync(
+        content: string,
+        metadata: {
+            documentId: string;
+            documentName: string;
+            [key: string]: any;
+        }
+    ): DocumentChunk[] {
+        // 如果使用智能分块，抛出错误提示使用异步版本
+        if (this.options.parserMode === 'jina_segmentation' || this.options.parserMode === 'llm_segmentation') {
+            throw new Error(
+                `使用 ${this.options.parserMode} 模式需要调用异步版本的 splitDocument 方法`
+            );
+        }
+
+        return this.splitWithRule(content, metadata);
     }
 
     /**

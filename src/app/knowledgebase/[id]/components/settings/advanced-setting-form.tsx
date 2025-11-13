@@ -23,6 +23,8 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import ChunkMethodCard from './chunk-method-card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 
 
@@ -62,8 +64,8 @@ export default function AdvancedSettingForm() {
   // 监听 parser_id 变化，自动调整 overlap
   const watchedParserId = form.watch('parser_id');
   useEffect(() => {
-    if (watchedParserId === 'llm_segmentation') {
-      // 大模型分段：自动设置 overlap 为 0
+    if (watchedParserId === 'llm_segmentation' || watchedParserId === 'jina_segmentation') {
+      // 智能分块（LLM/Jina）：自动设置 overlap 为 0
       form.setValue('overlap_size', 0);
     }
   }, [watchedParserId, form]);
@@ -193,6 +195,15 @@ export default function AdvancedSettingForm() {
               </FormItem>
             )}
           />
+        )}
+
+        {form.watch('parser_id') === 'jina_segmentation' && (
+          <Alert className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+              使用 Jina 分块需要先在 <a href="/settings/search" className="underline font-medium">搜索设置</a> 页面配置 Jina API Key 和分块参数。
+            </AlertDescription>
+          </Alert>
         )}
 
         <FormField

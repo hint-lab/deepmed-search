@@ -243,7 +243,33 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                 }));
                             } else if (data.type === 'reference') {
                                 // 处理引用数据
-                                updateState(prev => ({
+                                updateState(prev => {
+                                    const currentMessage = prev.messages.find(msg => msg.id === prev.currentMessageId);
+                                    const kbChunks = currentMessage?.metadata?.kbChunks || prev.kbChunks || [];
+
+                                    const matchedChunk = data.chunk_id
+                                        ? kbChunks?.find((chunk: any) => chunk.chunkId === data.chunk_id || chunk.chunk_id === data.chunk_id)
+                                        : (data.content
+                                            ? kbChunks?.find((chunk: any) =>
+                                                typeof chunk.content === 'string' &&
+                                                chunk.content?.includes(data.content.slice(0, Math.min(50, data.content.length)))
+                                            )
+                                            : undefined);
+
+                                    const docId = data.doc_id ?? matchedChunk?.docId ?? matchedChunk?.doc_id ?? '';
+                                    const docName = data.doc_name ?? matchedChunk?.docName ?? matchedChunk?.doc_name ?? '';
+                                    const chunkId = data.chunk_id ?? matchedChunk?.chunkId ?? matchedChunk?.chunk_id ?? null;
+                                    const content = data.content ?? matchedChunk?.content ?? matchedChunk?.content_with_weight ?? '';
+
+                                    const newReference = {
+                                        reference_id: data.ref_id,
+                                        doc_id: docId,
+                                        doc_name: docName,
+                                        content,
+                                        chunk_id: chunkId,
+                                    };
+
+                                    return {
                                     messages: prev.messages.map(msg =>
                                         msg.id === prev.currentMessageId
                                             ? {
@@ -252,18 +278,14 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                                     ...msg.metadata,
                                                     references: [
                                                         ...(msg.metadata?.references || []),
-                                                        {
-                                                            ref_id: data.ref_id,
-                                                            doc_id: data.doc_id,
-                                                            doc_name: data.doc_name,
-                                                            content: data.content
-                                                        }
+                                                            newReference
                                                     ]
                                                 }
                                             }
                                             : msg
                                     )
-                                }));
+                                    };
+                                });
                             }
                         } catch (e) {
                             console.error('解析流数据失败:', e);

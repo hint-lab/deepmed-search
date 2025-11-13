@@ -117,6 +117,7 @@
         "documentTable": "Liste des documents",
         "llmSegmentation": "Segmentation LLM",
         "ruleSegmentation": "Segmentation basée sur des règles",
+        "jinaSegmentation": "Segmentation Jina",
         "table": {
             "documentName": "Nom du document",
             "documentUploadDate": "Date de téléchargement",

@@ -140,6 +140,7 @@ model SearchConfig {
   embeddingModel      String   @default("text-embedding-3-small") // 嵌入模型名称
   embeddingBaseUrl    String? // 嵌入服务 Base URL（可选，用于自定义端点）
   embeddingDimension  Int      @default(1536) // 嵌入向量维度
+  jinaChunkMaxLength  Int      @default(500) // Jina 分块的最大长度（字符数）
   userId              String   @unique // 用户ID（每个用户只有一个搜索配置）
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
   createdAt           DateTime @default(now()) // 创建时间
@@ -216,7 +217,7 @@ enum FileUploadStatus {
 model Document {
   id                String                   @id @default(cuid()) // 文档唯一标识
   name              String // 文档名称 
-  content_url       String? // 文档内容在对象存储中的URL
+  markdown_url      String? // Markdown 内容在对象存储中的URL
   file_url          String? // 文件在对象存储中的URL
   size              Int // 文档大小（字节）
   type              String // 文档类型（如 pdf, docx 等）
@@ -237,7 +238,6 @@ model Document {
   knowledgeBaseId   String // 知识库ID
   parser_id         String? // 解析器ID
   parser_config     Json // 解析器配置
-  markdown_content  String?                  @db.Text // Markdown格式内容
   summary           String?                  @db.Text // 文档摘要
   metadata          Json? // 元数据
   processing_error  String?                  @db.Text // 处理错误信息

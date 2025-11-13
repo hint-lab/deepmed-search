@@ -495,6 +495,7 @@ export const getUserSearchConfig = withAuth(async (session: Session) => {
             embeddingModel: config.embeddingModel,
             embeddingBaseUrl: config.embeddingBaseUrl || undefined,
             embeddingDimension: config.embeddingDimension,
+            jinaChunkMaxLength: config.jinaChunkMaxLength || undefined,
             hasTavilyApiKey: !!config.tavilyApiKey,
             hasJinaApiKey: !!config.jinaApiKey,
             hasNcbiApiKey: !!config.ncbiApiKey,
@@ -555,6 +556,9 @@ export const updateUserSearchConfig = withAuth(async (session: Session, params: 
         }
         if (params.embeddingDimension !== undefined) {
             updateData.embeddingDimension = params.embeddingDimension;
+        }
+        if (params.jinaChunkMaxLength !== undefined) {
+            updateData.jinaChunkMaxLength = params.jinaChunkMaxLength;
         }
 
         // 查找或创建配置

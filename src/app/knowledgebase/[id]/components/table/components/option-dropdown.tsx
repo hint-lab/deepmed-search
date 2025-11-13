@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IDocument } from '@/types/document';
 import { useTranslate } from '@/contexts/language-context';
-import { Wrench, Pencil, MoreHorizontal, Trash2, CopyCheck } from 'lucide-react';
+import { Pencil, MoreHorizontal, Trash2, CopyCheck } from 'lucide-react';
 import { RenameDocumentButton } from './rename-document-dialog';
 import { useState, useCallback } from 'react';
 import { useDeleteDocument } from '@/hooks/use-document';
@@ -18,14 +18,12 @@ import { toast } from 'sonner';
 
 interface DocumentOptionsProps {
     document: IDocument;
-    setCurrentRecord: (record: IDocument) => void;
     onRefresh: () => void;
     removeDocumentLocally: (documentId: string) => void;
 }
 
 export function DocumentOptionDropdownButton({
     document,
-    setCurrentRecord,
     onRefresh,
     removeDocumentLocally
 }: DocumentOptionsProps) {
@@ -83,14 +81,6 @@ export function DocumentOptionDropdownButton({
                             <CopyCheck className="h-4 w-4" />{t('copyId')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            onClick={() => {
-                                setCurrentRecord(document);
-                            }}
-                            disabled={isProcessing}
-                        >
-                            <Wrench className="h-4 w-4" />{t('changeChunkMethod')}
-                        </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={handleRenameClick}
                             disabled={isProcessing}

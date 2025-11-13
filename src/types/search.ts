@@ -15,6 +15,7 @@ export interface SearchConfig {
     embeddingModel: string;
     embeddingBaseUrl?: string;
     embeddingDimension: number;
+    jinaChunkMaxLength?: number; // Jina 分块的最大长度
     hasTavilyApiKey: boolean;
     hasJinaApiKey: boolean;
     hasNcbiApiKey: boolean;
@@ -36,5 +37,6 @@ export interface UpdateSearchConfigParams {
     embeddingModel?: string;
     embeddingBaseUrl?: string;
     embeddingDimension?: number;
+    jinaChunkMaxLength?: number; // Jina 分块的最大长度
 }
 

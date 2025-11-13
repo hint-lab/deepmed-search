@@ -8,7 +8,7 @@ import { IUploadFile } from './upload-file';
 export interface IDocument {
     id: string;
     name: string;
-    content_url?: string;
+    markdown_url?: string;
     file_url?: string;
     size: number;
     type: string;
@@ -29,7 +29,6 @@ export interface IDocument {
     knowledgeBaseId: string;
     parser_id?: string;
     parser_config: any;
-    markdown_content?: string;
     summary?: string;
     metadata?: any;
     processing_error?: string;
@@ -49,7 +48,6 @@ export interface CreateIDocumentParams {
     knowledgeBaseId: string;
     parser_id?: string;
     parser_config: any;
-    markdown_content?: string;
     summary?: string;
     metadata?: any;
     uploadFileId?: string;

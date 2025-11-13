@@ -327,6 +327,9 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
                     path: ['pmid'],
                     equals: pmid,
                 },
+            },
+            select: {
+                id: true
             }
         });
         if (existingDoc) {
@@ -355,7 +358,7 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
         // finalStatus = initialStatus; // Keep track for KB update - REMOVED redundant assignment
 
         // 4. Upload markdown content to MinIO
-        let contentUrl: string | null = null;
+        let markdownUrl: string | null = null;
         if (markdownContent && !fetchError) {
             try {
                 const { uploadFileStream, getFileUrl } = await import('@/lib/minio/operations');
@@ -377,11 +380,11 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
                     }
                 });
 
-                contentUrl = await getFileUrl('deepmed', objectName);
-                logger.info(`[Collect KB] Markdown content uploaded to MinIO: ${contentUrl}`);
+                markdownUrl = await getFileUrl('deepmed', objectName);
+                logger.info(`[Collect KB] Markdown content uploaded to MinIO: ${markdownUrl}`);
             } catch (error) {
                 logger.error(`[Collect KB] Failed to upload markdown to MinIO:`, error);
-                // 如果上传失败，仍然创建文档，但 content_url 为空
+                // 如果上传失败，仍然创建文档，但 markdown_url 为空
             }
         }
 
@@ -397,7 +400,7 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
                 progress_msg: initialProgressMsg,
                 knowledgeBaseId: knowledgeBaseId,
                 created_by: userId,
-                content_url: contentUrl, // 存储 markdown 的 URL（不再存储 markdown_content）
+                markdown_url: markdownUrl, // 存储 markdown 的 URL（不再存储 markdown_content）
                 size: byteSize,
                 token_num: 0, // Will be updated after successful processing
                 chunk_num: 0, // Will be updated after successful processing

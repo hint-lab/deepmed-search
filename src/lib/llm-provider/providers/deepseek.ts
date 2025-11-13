@@ -42,7 +42,7 @@ export class DeepSeekProvider implements Provider {
 
     this.historyMap = new Map();
 
-    logger.info('[DeepSeek] Provider initialized', {
+    logger.debug('[DeepSeek] Provider initialized', {
       model: this.model,
       reasonModel: this.reasonModel,
     });
@@ -99,7 +99,7 @@ export class DeepSeekProvider implements Provider {
 
       const model = isReason ? this.reasonModel : this.model;
 
-      logger.info('[DeepSeek] Chat model selection', {
+      logger.debug('[DeepSeek] Chat model selection', {
         isReason,
         selectedModel: model,
         reasonModel: this.reasonModel,
@@ -174,7 +174,7 @@ export class DeepSeekProvider implements Provider {
 
       const model = isReason ? this.reasonModel : this.model;
 
-      logger.info('[DeepSeek] ChatStream model selection', {
+      logger.debug('[DeepSeek] ChatStream model selection', {
         isReason,
         selectedModel: model,
         reasonModel: this.reasonModel,
@@ -215,15 +215,15 @@ export class DeepSeekProvider implements Provider {
             if (delta) {
               // 只在第一次从 reasoning 转换到 text 时发送转换消息
               if (isReason && hasReasoningStarted && !hasTransitionedToContent) {
-                logger.info('[DeepSeek] Sending transition from reasoning to content');
-                onChunk('[END_REASONING][CONTENT]');
+                logger.debug('[DeepSeek] Sending transition from reasoning to content');
+            onChunk('[END_REASONING][CONTENT]');
                 hasTransitionedToContent = true;
               }
               accumulatedContent += delta;
               onChunk(delta);
             }
             break;
-          }
+            }
           case 'tool-call-streaming-start':
           case 'tool-call':
           case 'tool-call-delta':
@@ -253,7 +253,7 @@ export class DeepSeekProvider implements Provider {
       // 如果流结束时还有 reasoning 但没有转换到 content，发送转换消息
       if (isReason && hasReasoningStarted && !hasTransitionedToContent && accumulatedContent.length === 0) {
         onChunk('[END_REASONING][CONTENT]');
-      }
+        }
 
       if (isReason && reasoning) {
         try {
@@ -322,6 +322,7 @@ export class DeepSeekProvider implements Provider {
   async chatWithTools(options: ChatOptions): Promise<ChatResponse> {
     const { dialogId, input, isReason = false, tools = [] } = options;
     const history = this.getHistoryManager(dialogId);
+    const model = isReason ? this.reasonModel : this.model;
 
     history.addMessage({
       role: isReason ? MessageRole.Reason : MessageRole.User,
@@ -332,8 +333,6 @@ export class DeepSeekProvider implements Provider {
       const messages = isReason
         ? filterReasonMessages(history.getMessages())
         : filterNonReasonMessages(history.getMessages());
-
-      const model = isReason ? this.reasonModel : this.model;
       const aiTools = convertToolsToAISDK(tools);
 
       const { text, toolCalls, usage } = await generateText({
@@ -372,6 +371,13 @@ export class DeepSeekProvider implements Provider {
 
       return response;
     } catch (error) {
+      console.error('[DeepSeek] Chat with tools error:', error);
+      console.error('[DeepSeek] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        dialogId,
+        model
+      });
       logger.error('[DeepSeek] Chat with tools error:', error);
       throw error;
     }
@@ -396,24 +402,90 @@ export class DeepSeekProvider implements Provider {
         : filterNonReasonMessages(history.getMessages());
 
       const model = isReason ? this.reasonModel : this.model;
+
+      logger.debug('[DeepSeek] ChatWithToolsStream model selection', {
+        isReason,
+        selectedModel: model,
+        reasonModel: this.reasonModel,
+        normalModel: this.model,
+        dialogId,
+        toolsCount: tools?.length || 0
+      });
+
       const aiTools = convertToolsToAISDK(tools);
 
-      const { textStream, text, toolCalls, usage } = await streamText({
+      console.log('[DeepSeek] Calling streamText API...', {
+        model,
+        messageCount: messages.length,
+        hasTools: aiTools && Object.keys(aiTools).length > 0
+      });
+
+      const { fullStream, text, toolCalls, usage } = await streamText({
         model: this.provider(model),
         messages: convertToCoreMessages(messages),
         tools: aiTools,
         temperature: isReason ? undefined : this.config.temperature,
         maxTokens: this.config.maxTokens,
-        maxSteps: 5,
+        maxSteps: 10, // 增加到10步，允许更多工具调用
       });
 
-      for await (const chunk of textStream) {
-        onChunk(chunk);
+      console.log('[DeepSeek] streamText API called successfully, starting to read fullStream...');
+
+      let chunkCount = 0;
+      let textChunkCount = 0;
+      let toolCallCount = 0;
+
+      for await (const part of fullStream) {
+        chunkCount++;
+
+        if (part.type === 'text-delta') {
+          textChunkCount++;
+          if (textChunkCount === 1) {
+            console.log('[DeepSeek] First text chunk received from stream');
+          }
+          onChunk(part.textDelta);
+        } else if (part.type === 'tool-call') {
+          toolCallCount++;
+          console.log('[DeepSeek] Tool call:', part.toolName, part.args);
+          onChunk({
+            type: 'function_call',
+            name: part.toolName,
+            arguments: part.args
+          });
+        } else if (part.type === 'tool-result') {
+          console.log('[DeepSeek] Tool result:', part.toolName, part.result);
+          onChunk({
+            type: 'function_result',
+            name: part.toolName,
+            content: JSON.stringify(part.result)
+          });
+        } else {
+          console.log('[DeepSeek] Unhandled part type:', part.type, part);
+        }
       }
+
+      console.log(`[DeepSeek] Stream completed, received ${chunkCount} total parts (${textChunkCount} text, ${toolCallCount} tool calls)`);
 
       const finalText = await text;
       const finalToolCalls = await toolCalls;
       const finalUsage = await usage;
+
+      console.log('[DeepSeek] Final text length:', finalText?.length || 0);
+      console.log('[DeepSeek] Final tool calls count:', finalToolCalls?.length || 0);
+      console.log('[DeepSeek] Final text content:', finalText);
+
+      // 如果流中没有文本 delta 但最终有文本，说明文本是在工具调用后生成的
+      if (textChunkCount === 0 && finalText && finalText.length > 0) {
+        console.log('[DeepSeek] Warning: No text chunks in stream but final text exists. Sending final text via onChunk...');
+        console.log('[DeepSeek] Final text preview:', finalText.substring(0, 200));
+        // 发送最终文本
+        onChunk(finalText);
+      } else if (textChunkCount > 0 && finalText && finalText.length > 0) {
+        // 检查流中的文本总长度和最终文本是否一致
+        console.log('[DeepSeek] Text chunks were sent during stream. Final text may include text after tool calls.');
+        // 如果最终文本比已发送的更长，发送剩余部分
+        // 注意：这里需要更精确的逻辑，暂时只记录
+      }
 
       const response: ChatResponse = {
         content: finalText,

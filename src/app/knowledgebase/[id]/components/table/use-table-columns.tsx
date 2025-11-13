@@ -24,14 +24,12 @@ import { DocumentProcessingBadge } from './components/processing-badge';
 import { DocumentSwitch } from './components/document-switch';
 
 export type UseTableColumnsType = {
-  setCurrentRecord: (record: IDocument) => void;
   onRefresh: () => void;
   removeDocumentLocally: (documentId: string) => void;
   updateDocumentEnabledLocally: (documentId: string, newEnabled: boolean) => void;
 };
 
 export function useTableColumns({
-  setCurrentRecord,
   onRefresh,
   removeDocumentLocally,
   updateDocumentEnabledLocally,
@@ -241,7 +239,6 @@ export function useTableColumns({
           <div className="flex items-center gap-2">
             <DocumentOptionDropdownButton
               document={document}
-              setCurrentRecord={setCurrentRecord}
               onRefresh={refreshData}
               removeDocumentLocally={removeDocumentLocally}
             />

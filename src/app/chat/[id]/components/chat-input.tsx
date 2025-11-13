@@ -94,6 +94,7 @@ export function ChatInputArea({ dialogId }: ChatInputProps) {
                                     ? "bg-cyan-50 text-cyan-600 border-cyan-200 hover:bg-cyan-100 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-900"
                                     : "hover:bg-gray-200 dark:text-gray-400"
                             )}
+                            title={isThinkingMode ? t('deepThinkingEnabled', '深度思考模式：使用 deepseek-reasoner 模型') : t('deepThinkingDisabled', '普通模式：使用 deepseek-chat 模型')}
                         >
                             <BrainIcon className={cn("w-5 h-5", isThinkingMode ? "text-cyan-500" : "text-gray-500")} />
                             <span className="ml-2">{t('deepThinking')}</span>

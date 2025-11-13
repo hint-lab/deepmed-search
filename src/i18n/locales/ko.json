@@ -117,6 +117,7 @@
         "documentTable": "문서 목록",
         "llmSegmentation": "LLM 세분화",
         "ruleSegmentation": "규칙 기반 세분화",
+        "jinaSegmentation": "Jina 세분화",
         "table": {
             "documentName": "문서 이름",
             "documentUploadDate": "업로드 날짜",

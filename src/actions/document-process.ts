@@ -9,6 +9,7 @@ import { ServerActionResponse } from '@/types/actions';
 import { processDocument } from '@/lib/bullmq/document-worker';
 import { uploadFileStream, getFileUrl } from '@/lib/minio/operations';
 import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
+import type { ChunkIndexJobData } from '@/lib/bullmq/chunk-worker/types';
 import { IDocumentProcessingStatus } from '@/types/enums';
 import { userDocumentContextStorage, UserDocumentContext } from '@/lib/document-parser/user-context';
 import { decryptApiKey } from '@/lib/crypto';
@@ -268,8 +269,20 @@ export async function convertDocumentAction(
                 error: result.error || '处理文档失败'
             };
         }
-        // 提取Markdown内容
-        let markdown_content = result.data?.pages?.map((page: { content: string }) => page.content).join('\n\n') || '';
+
+        // 从 result.data.extracted 获取 markdown 内容（processDocument 已经设置）
+        let markdown_content = result.data?.extracted || '';
+
+        // 检查 markdown 内容是否为空
+        if (!markdown_content || markdown_content.trim() === '') {
+            const errorMsg = `文档 ${documentId} 转换后的 markdown 内容为空，无法继续处理`;
+            logger.error(`[convertDocumentAction] ${errorMsg}`);
+            await reportDocumentError(documentId, errorMsg);
+            return {
+                success: false,
+                error: errorMsg
+            };
+        }
 
         // 使用 LLM 清理 PDF 提取的多余换行（可通过环境变量控制）
         const enableTextCleaning = process.env.ENABLE_TEXT_CLEANING !== 'false'; // 默认启用
@@ -294,7 +307,7 @@ export async function convertDocumentAction(
                     markdown_content = cleanResult.cleanedText;
                     logger.info('文档文本清理完成', {
                         documentId,
-                        originalLength: result.data?.pages?.map((p: { content: string }) => p.content).join('\n\n').length,
+                        originalLength: result.data?.extracted?.length || 0,
                         cleanedLength: markdown_content.length
                     });
 
@@ -316,42 +329,52 @@ export async function convertDocumentAction(
             logger.info('文本清理功能已禁用', { documentId });
         }
 
-        // 将完整结果保存为字符串
-        const rawData = result.data ? JSON.stringify(result.data) : '{}';
-
         // 将Markdown内容上传到MinIO，获取URL
-        let content_url = null;
-        // 如果markdown_content不为空，则上传到MinIO
-        console.log('markdown_content', markdown_content ? `${markdown_content.substring(0, 20)}...` : '(empty)');
-        if (markdown_content) {
-            try {
-                // 创建一个 Readable 流
-                const { Readable } = require('stream');
-                const buffer = Buffer.from(markdown_content, 'utf8');
-                const stream = new Readable();
-                stream.push(buffer);
-                stream.push(null);
+        let markdown_url: string | null = null;
+        try {
+            // 创建一个 Readable 流
+            const { Readable } = require('stream');
+            const buffer = Buffer.from(markdown_content, 'utf8');
+            const stream = new Readable();
+            stream.push(buffer);
+            stream.push(null);
 
-                const objectName = `documents/${documentId}/markdown`;
-                await uploadFileStream({
-                    bucketName: 'deepmed',
-                    objectName,
-                    stream,
-                    size: buffer.length,
-                    metaData: {
-                        'content-type': 'text/markdown; charset=utf-8'
-                    }
-                });
+            const objectName = `documents/${documentId}/markdown.md`;
+            await uploadFileStream({
+                bucketName: 'deepmed',
+                objectName,
+                stream,
+                size: buffer.length,
+                metaData: {
+                    'content-type': 'text/markdown; charset=utf-8'
+                }
+            });
 
-                // 获取文件 URL
-                content_url = await getFileUrl('deepmed', objectName);
-                console.log('Markdown内容已上传至MinIO:', content_url);
+            // 获取文件 URL
+            markdown_url = await getFileUrl('deepmed', objectName);
+            logger.info('Markdown内容已上传至MinIO:', { documentId, markdown_url, contentLength: markdown_content.length });
 
-                // 推送进度到 Redis
-                await updateDocumentProgress(documentId, 58, '内容已上传');
-            } catch (error) {
-                console.error('上传Markdown内容到MinIO失败:', error);
-            }
+            // 推送进度到 Redis
+            await updateDocumentProgress(documentId, 58, '内容已上传');
+        } catch (error) {
+            const errorMsg = `上传Markdown内容到MinIO失败: ${error instanceof Error ? error.message : '未知错误'}`;
+            logger.error(`[convertDocumentAction] ${errorMsg}`, { documentId, error });
+            await reportDocumentError(documentId, errorMsg);
+            return {
+                success: false,
+                error: errorMsg
+            };
+        }
+
+        // 确保 markdown_url 已设置
+        if (!markdown_url) {
+            const errorMsg = `文档 ${documentId} 的 markdown_url 未设置，无法继续处理`;
+            logger.error(`[convertDocumentAction] ${errorMsg}`);
+            await reportDocumentError(documentId, errorMsg);
+            return {
+                success: false,
+                error: errorMsg
+            };
         }
 
         // 更新文档处理状态
@@ -369,7 +392,7 @@ export async function convertDocumentAction(
             await prisma.document.update({
                 where: { id: documentId },
                 data: {
-                    // markdown_content 不再存储在数据库，而是存储在 MinIO，URL 存储在 content_url
+                    // markdown_content 不再存储在数据库，而是存储在 MinIO，URL 存储在 markdown_url
                     chunk_num: 0,
                     token_num: result.metadata?.inputTokens || 0,
                     processing_status: IDocumentProcessingStatus.CONVERTED, // 转换完成，可以开始索引
@@ -377,8 +400,8 @@ export async function convertDocumentAction(
                     progress_msg: '转换完成',
                     process_duation: Math.floor((Date.now() - startTime) / 1000),
                     process_begin_at: new Date(startTime),
-                    file_url: result.metadata?.fileUrl || '',
-                    content_url: content_url || '', // 存储 markdown 的 URL
+                    file_url: result.metadata?.fileUrl || null,
+                    markdown_url: markdown_url, // 存储 markdown 的 URL（必须设置）
                     metadata: {
                         processingTime: Date.now() - startTime,
                         completionTime: result.metadata?.completionTime || 0,
@@ -411,7 +434,7 @@ export async function convertDocumentAction(
                     inputTokens: result.metadata?.inputTokens,
                     outputTokens: result.metadata?.outputTokens,
                     fileUrl: result.metadata?.fileUrl,
-                    contentUrl: content_url || '',
+                    markdownUrl: markdown_url || '',
                 },
                 cleanedMarkdown: markdown_content // 添加清理后的文本，供分块使用
             }
@@ -479,8 +502,8 @@ export async function splitDocumentAction(
             const progress = 50 + Math.floor((i / pages.length) * 10); // 50% → 60%
             await updateDocumentProgress(documentId, progress, `正在分块第 ${i + 1}/${pages.length} 页...`);
 
-            // 分割页面内容
-            const chunks = splitter.splitDocument(page.content, {
+            // 分割页面内容（使用异步版本）
+            const chunks = await splitter.splitDocument(page.content, {
                 documentId,
                 documentName: options.documentName,
                 pageNumber: page.pageNumber,
@@ -706,8 +729,19 @@ export async function processDocumentAction(
         // 获取文档信息
         const document = await prisma.document.findUnique({
             where: { id: documentId },
-            include: {
-                uploadFile: true,
+            select: {
+                id: true,
+                name: true,
+                created_by: true,
+                knowledgeBaseId: true,
+                processing_status: true,
+                progress: true,
+                uploadFile: {
+                    select: {
+                        id: true,
+                        location: true
+                    }
+                },
                 knowledgeBase: {
                     select: {
                         id: true,
@@ -734,14 +768,58 @@ export async function processDocumentAction(
             };
         }
 
+        // 如果文档状态是 CONVERTED，直接添加索引任务，而不是重新转换
+        if (document.processing_status === IDocumentProcessingStatus.CONVERTED) {
+            if (!document.knowledgeBaseId) {
+                return {
+                    success: false,
+                    error: '文档未关联知识库'
+                };
+            }
+
+            // 添加索引任务到队列
+            const { addTask } = await import('@/lib/bullmq/queue-manager');
+            const { TaskType } = await import('@/lib/bullmq/types');
+
+            const kbLanguage = normalizeLanguage(document.knowledgeBase?.language);
+
+            const chunkIndexJobData: ChunkIndexJobData = {
+                documentId,
+                kbId: document.knowledgeBaseId,
+                userId: document.created_by,
+                options: {
+                    model: options.model,
+                    maintainFormat: options.maintainFormat,
+                    prompt: options.prompt,
+                    documentName: document.name,
+                    maxChunkSize: document.knowledgeBase?.chunk_size || 2000,
+                    overlapSize: document.knowledgeBase?.overlap_size || 200,
+                    splitByParagraph: document.knowledgeBase?.split_by === 'paragraph' || document.knowledgeBase?.split_by === 'page',
+                    language: kbLanguage,
+                }
+            };
+
+            const jobId = await addTask(
+                TaskType.CHUNK_VECTOR_INDEX,
+                chunkIndexJobData,
+                `chunk-index-${documentId}`
+            );
+
+            logger.info('索引任务已添加到队列', { documentId, jobId });
+
+            return {
+                success: true,
+                data: { success: true, jobId }
+            };
+        }
+
         // 只在文档未处理或失败时才重置状态
-        // 如果文档已完成（SUCCESSED）或已转换（CONVERTED），保持当前状态或记录重新处理日志
+        // 如果文档已完成（SUCCESSED），保持当前状态或记录重新处理日志
         const shouldResetStatus = !document.processing_status ||
             document.processing_status === IDocumentProcessingStatus.UNPROCESSED ||
             document.processing_status === IDocumentProcessingStatus.FAILED;
 
-        const isReprocessing = document.processing_status === IDocumentProcessingStatus.SUCCESSED ||
-            document.processing_status === IDocumentProcessingStatus.CONVERTED;
+        const isReprocessing = document.processing_status === IDocumentProcessingStatus.SUCCESSED;
 
         // 更新文档状态
         await prisma.document.update({

@@ -371,7 +371,9 @@ export async function getKnowledgeGraphAction(knowledgeBaseId: string) {
             where: {
                 knowledgeBaseId,
             },
-            include: {
+            select: {
+                id: true,
+                name: true,
                 tags: true,
             },
         });

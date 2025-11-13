@@ -51,7 +51,9 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
         currentContent,
         currentReasoning,
         isLoading,
-        loadMessages
+        loadMessages,
+        kbChunks,
+        isUsingKbForCurrentMessage
     } = useChatContext();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -115,6 +117,8 @@ export default function ChatMessages({ dialogId }: ChatMessagesProps) {
                         }
                         : undefined
                 }
+                currentKbChunks={isStreaming && message.id === currentMessageId ? kbChunks : undefined}
+                isUsingKb={isStreaming && message.id === currentMessageId ? isUsingKbForCurrentMessage : undefined}
             />
         ));
     };

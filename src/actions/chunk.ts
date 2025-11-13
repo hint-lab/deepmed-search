@@ -14,7 +14,7 @@ import { getEmbedding } from '@/lib/llm-provider';
  */
 export async function getDocumentChunksAction(documentId: string): Promise<ServerActionResponse<any>> {
     try {
-        // 获取文档信息（content_url 存储 markdown 的 URL）
+        // 获取文档信息（markdown_url 存储 markdown 的 URL）
         const document = await prisma.document.findUnique({
             where: { id: documentId },
             select: {
@@ -22,7 +22,7 @@ export async function getDocumentChunksAction(documentId: string): Promise<Serve
                 name: true,
                 type: true,
                 file_url: true,
-                content_url: true, // markdown 的 URL（存储在 MinIO）
+                markdown_url: true, // markdown 的 URL（存储在 MinIO）
                 processing_status: true,
                 progress: true,
                 progress_msg: true,

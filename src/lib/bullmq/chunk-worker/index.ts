@@ -33,9 +33,11 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
             select: {
                 id: true,
                 name: true,
-                content_url: true, // 改为读取 content_url（存储 markdown URL）
+                markdown_url: true, // 改为读取 markdown_url（存储 markdown URL）
                 knowledgeBaseId: true,
                 processing_status: true,
+                parser_id: true, // 文档自己的 parser_id（创建时从知识库复制）
+                parser_config: true, // 文档自己的 parser_config（创建时从知识库复制）
                 knowledgeBase: {
                     select: {
                         parser_id: true,
@@ -70,13 +72,13 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
         }
 
         // 从 MinIO 读取 markdown 内容
-        if (!document.content_url) {
-            throw new Error(`文档 ${documentId} 的 content_url 为空，无法读取 markdown 内容`);
+        if (!document.markdown_url) {
+            throw new Error(`文档 ${documentId} 的 markdown_url 为空，无法读取 markdown 内容`);
         }
 
         let markdownContent: string;
         try {
-            markdownContent = await readTextFromUrl(document.content_url);
+            markdownContent = await readTextFromUrl(document.markdown_url);
             logger.info(`[Chunk Worker] 成功从 MinIO 读取 markdown 内容，长度: ${markdownContent.length}`);
         } catch (error) {
             logger.error(`[Chunk Worker] 从 MinIO 读取 markdown 内容失败:`, error);
@@ -101,16 +103,66 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
             language: normalizedLanguage,
         });
 
-        // 获取知识库的分块模式
-        const parserMode = (document.knowledgeBase?.parser_id as 'llm_segmentation' | 'rule_segmentation') || languageDefaults.parserMode;
-        const parserConfig = document.knowledgeBase?.parser_config as any;
+        // 获取分块模式：优先使用文档自己的配置（创建时从知识库复制），如果为空则使用知识库的配置
+        const documentParserId = document.parser_id as 'llm_segmentation' | 'rule_segmentation' | 'jina_segmentation' | null | undefined | string;
+        const kbParserId = document.knowledgeBase?.parser_id as 'llm_segmentation' | 'rule_segmentation' | 'jina_segmentation' | null | undefined | string;
+        // 处理空字符串的情况：如果 parser_id 是空字符串，视为 null
+        const effectiveDocumentParserId = (documentParserId && documentParserId.trim() !== '')
+            ? (documentParserId as 'llm_segmentation' | 'rule_segmentation' | 'jina_segmentation')
+            : null;
+        const effectiveKbParserId = (kbParserId && kbParserId.trim() !== '')
+            ? (kbParserId as 'llm_segmentation' | 'rule_segmentation' | 'jina_segmentation')
+            : null;
+        const parserMode = effectiveDocumentParserId || effectiveKbParserId || languageDefaults.parserMode;
+
+        // 优先使用文档的 parser_config，如果为空则使用知识库的配置
+        const documentParserConfig = document.parser_config as any;
+        const kbParserConfig = document.knowledgeBase?.parser_config as any;
+        const parserConfig = (documentParserConfig && Object.keys(documentParserConfig).length > 0)
+            ? documentParserConfig
+            : (kbParserConfig && Object.keys(kbParserConfig).length > 0 ? kbParserConfig : {});
         const llmChunkPrompt = parserConfig?.llm_chunk_prompt;
+
+        // 检查智能分块所需的配置
+        if (parserMode === 'jina_segmentation') {
+            const searchConfig = await prisma.searchConfig.findUnique({
+                where: { userId },
+                select: { jinaApiKey: true, jinaChunkMaxLength: true },
+            });
+            if (!searchConfig || !searchConfig.jinaApiKey) {
+                throw new Error(
+                    '未配置 Jina API Key。请访问 /settings/search 页面配置您的 Jina API Key'
+                );
+            }
+            // 如果 parserConfig 中没有 jina_max_chunk_length，使用 SearchConfig 中的值
+            if (!parserConfig.jina_max_chunk_length && searchConfig.jinaChunkMaxLength) {
+                parserConfig.jina_max_chunk_length = searchConfig.jinaChunkMaxLength;
+            }
+        }
+
+        if (parserMode === 'llm_segmentation') {
+            const llmConfig = await prisma.lLMConfig.findFirst({
+                where: {
+                    userId: userId,
+                    isActive: true,
+                },
+            });
+            if (!llmConfig) {
+                throw new Error(
+                    '未配置 LLM API Key。请访问 /settings/llm 页面配置您的 LLM API Key'
+                );
+            }
+        }
 
         logger.info(`[Chunk Worker] 使用分块模式: ${parserMode}`, {
             documentId,
             parserMode,
+            source: effectiveDocumentParserId ? 'document' : (effectiveKbParserId ? 'knowledgeBase' : 'default'),
+            documentParserId: documentParserId,
+            kbParserId: kbParserId,
             language: normalizedLanguage,
-            hasCustomPrompt: !!llmChunkPrompt
+            hasCustomPrompt: !!llmChunkPrompt,
+            userId: userId,
         });
 
         const maxChunkSize =
@@ -137,6 +189,8 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
             splitByParagraph,
             preserveFormat: options.maintainFormat,
             parserMode: parserMode,
+            userId: userId, // 传递 userId 用于智能分块
+            parserConfig: parserConfig, // 传递 parserConfig
         });
 
         // 将markdown内容作为单页处理
@@ -149,16 +203,14 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
             const progress = 50 + Math.floor((i / pages.length) * 10);
             await updateDocumentProgress(documentId, progress, `正在分块第 ${i + 1}/${pages.length} 页...`);
 
-            // 优先使用知识库配置的自定义 prompt，否则使用传入的 prompt
-            const finalPrompt = llmChunkPrompt || options.prompt;
-
-            const chunks = splitter.splitDocument(page.content, {
+            // 使用异步版本的 splitDocument（支持智能分块）
+            const chunks = await splitter.splitDocument(page.content, {
                 documentId,
                 documentName: options.documentName,
                 pageNumber: page.pageNumber,
                 model: options.model,
                 maintainFormat: options.maintainFormat,
-                prompt: finalPrompt
+                prompt: llmChunkPrompt || options.prompt,
             });
 
             const reindexedChunks = chunks.map((chunk, localIndex) => ({

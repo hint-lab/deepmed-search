@@ -18,7 +18,7 @@ interface ChatDialogContextType {
     refreshChatDialogs: () => Promise<void>;
     createChatDialog: (params: { name: string; description?: string; knowledgeBaseId?: string; userId: string }) => Promise<IDialog | null>;
     updateChatDialog: (id: string, data: { name?: string; description?: string }) => Promise<boolean>;
-    deleteChatDialog: (id: string) => Promise<{ success: boolean; error?: string }>;
+    deleteChatDialog: (id: string) => Promise<{ success: boolean; error?: string; wasCurrentDialog?: boolean }>;
     isCreating: boolean;
     isUpdating: boolean;
     isDeleting: boolean;
@@ -67,17 +67,22 @@ export function ChatDialogProvider({ children }: { children: ReactNode }) {
         try {
             const result = await deleteChatDialogAction(id);
             if (result.success) {
+                const wasCurrentDialog = currentChatDialog?.id === id;
+                
                 // 更新本地状态
                 setChatDialogs(prev => {
                     const newDialogs = prev.filter(dialog => dialog.id !== id);
                     if (newDialogs.length === 0) {
                         setCurrentChatDialog(undefined);
-                    } else if (currentChatDialog?.id === id) {
-                        setCurrentChatDialog(newDialogs[0]);
+                    } else if (wasCurrentDialog) {
+                        // 如果删除的是当前对话框，不自动切换到其他对话框
+                        // 让调用方决定导航行为
+                        setCurrentChatDialog(undefined);
                     }
                     return newDialogs;
                 });
-                return { success: true };
+                
+                return { success: true, wasCurrentDialog };
             }
             return {
                 success: false,

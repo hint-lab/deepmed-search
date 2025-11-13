@@ -9,6 +9,7 @@ import { MessageType } from '@/constants/chat';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { Brain, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactDOM from 'react-dom';
 import { ReactElement, ReactNode } from 'react';
@@ -20,30 +21,43 @@ interface ChatMessageItemProps {
     streamingState?: {
         reasoningContent: string;
         content: string;
-    }
+    },
+    currentKbChunks?: any[],
+    isUsingKb?: boolean
 }
 
 // 定义引用相关的接口
 interface Reference {
     reference_id: number;
     doc_id: string;
+    docId?: string;
     doc_name: string;
+    docName?: string;
     content: string;
     type?: string;
+    chunk_id?: string | null;
+    chunkId?: string | null;
+    chunk_content?: string | null;
 }
 
 function ChatMessageItem({
     message,
     isStreaming,
     isThinking,
-    streamingState = { reasoningContent: '', content: '' }
+    streamingState = { reasoningContent: '', content: '' },
+    currentKbChunks,
+    isUsingKb
 }: ChatMessageItemProps) {
     const { t } = useTranslate('chat');
     const [showReasoning, setShowReasoning] = useState<boolean>(isStreaming);
     const userToggleRef = useRef(false);
     const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
     const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
+    const [selectedKbChunk, setSelectedKbChunk] = useState<any | null>(null);
     const [forceUpdate, setForceUpdate] = useState(0); // 强制更新计数器
+    const [referenceDocInfo, setReferenceDocInfo] = useState<{ fileUrl?: string | null; markdownUrl?: string | null; type?: string | null }>({ fileUrl: null, markdownUrl: null, type: null });
+    const [isReferenceDocLoading, setIsReferenceDocLoading] = useState(false);
+    const [referenceDocError, setReferenceDocError] = useState<string | null>(null);
 
     const normalizedRole =
         message.role === MessageType.User || message.role === 'reason'
@@ -89,9 +103,79 @@ function ChatMessageItem({
         }
     }, [isStreaming, message.thinkingContent]);
 
+    useEffect(() => {
+        const docId = selectedReference?.doc_id || (selectedReference as any)?.docId;
+        if (!docId) {
+            setReferenceDocInfo({ fileUrl: null, markdownUrl: null, type: null });
+            setReferenceDocError(null);
+            return;
+        }
+
+        let cancelled = false;
+        const fetchDocInfo = async () => {
+            try {
+                setIsReferenceDocLoading(true);
+                setReferenceDocError(null);
+                const res = await fetch(`/api/document/${docId}`);
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || `加载文档信息失败 (status ${res.status})`);
+                }
+                const data = await res.json();
+                if (!cancelled) {
+                    setReferenceDocInfo({
+                        fileUrl: data.file_url || null,
+                        markdownUrl: data.markdown_url || null,
+                        type: data.type || null
+                    });
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    console.error('[Chat] 加载参考文档信息失败:', err);
+                    setReferenceDocError(err instanceof Error ? err.message : '加载文档信息失败');
+                    setReferenceDocInfo({ fileUrl: null, markdownUrl: null, type: null });
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsReferenceDocLoading(false);
+                }
+            }
+        };
+
+        fetchDocInfo();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedReference?.doc_id]);
+
     const handleToggleReasoning = () => {
         userToggleRef.current = true;
         setShowReasoning(prev => !prev);
+    };
+
+    const sanitizeReference = (ref: any): Reference => ({
+        reference_id: ref.reference_id ?? ref.ref_id ?? 0,
+        doc_id: ref.doc_id || ref.docId || '',
+        doc_name: ref.doc_name || ref.docName || t('unknownDocument', '未知文档'),
+        content: ref.content || ref.chunk_content || '',
+        type: ref.type,
+        chunk_id: ref.chunk_id ?? ref.chunkId ?? null,
+        chunk_content: ref.chunk_content ?? ref.content ?? ''
+    });
+
+    const getReferenceById = (msg: IMessage, refNum: number): Reference | undefined => {
+        if (!msg.metadata?.references) return undefined;
+        const refs = msg.metadata.references;
+        const directMatch = refs.find((r: any) =>
+            r.reference_id === refNum ||
+            (r as any).ref_id === refNum
+        );
+        if (directMatch) return sanitizeReference(directMatch);
+        if (refNum > 0 && refNum <= refs.length) {
+            return sanitizeReference(refs[refNum - 1]);
+        }
+        return undefined;
     };
 
     const renderMessage = (msg: IMessage): React.ReactNode => {
@@ -121,14 +205,7 @@ function ChatMessageItem({
                 const refNum = parseInt(match[1]);
 
                 // 尝试查找对应的引用
-                let reference = msg.metadata?.references?.find(
-                    (r: Reference) => r.reference_id === refNum
-                );
-
-                // 如果找不到，尝试使用索引
-                if (!reference && refNum > 0 && msg.metadata?.references && refNum <= msg.metadata.references.length) {
-                    reference = msg.metadata.references[refNum - 1];
-                }
+                const reference = getReferenceById(msg, refNum);
 
                 // 如果找到引用，返回可点击的链接
                 return (
@@ -142,11 +219,10 @@ function ChatMessageItem({
 
                                 if (reference) {
                                     setSelectedReference(reference);
-                                    setForceUpdate(prev => prev + 1);
                                 } else if (msg.metadata?.references && msg.metadata.references.length > 0) {
                                     setSelectedReference(msg.metadata.references[0]);
-                                    setForceUpdate(prev => prev + 1);
                                 }
+                                setForceUpdate(prev => prev + 1);
                             }}
                         >
                             <span className="h-2 w-2 rounded-full bg-blue-500 mr-1"></span>
@@ -191,14 +267,7 @@ function ChatMessageItem({
                                 const refId = parseInt(currentMatch[1]);
 
                                 // 尝试查找引用
-                                let reference = msg.metadata?.references?.find(
-                                    (r: Reference) => r.reference_id === refId
-                                );
-
-                                // 如果找不到，尝试使用索引
-                                if (!reference && refId > 0 && msg.metadata?.references && refId <= msg.metadata.references.length) {
-                                    reference = msg.metadata.references[refId - 1];
-                                }
+                const reference = getReferenceById(msg, refId);
 
                                 // 添加引用链接
                                 parts.push(
@@ -210,13 +279,12 @@ function ChatMessageItem({
                                                 e.preventDefault();
                                                 e.stopPropagation();
 
-                                                if (reference) {
-                                                    setSelectedReference(reference);
-                                                    setForceUpdate(prev => prev + 1);
-                                                } else if (msg.metadata?.references && msg.metadata.references.length > 0) {
-                                                    setSelectedReference(msg.metadata.references[0]);
-                                                    setForceUpdate(prev => prev + 1);
-                                                }
+                                if (reference) {
+                                    setSelectedReference(reference);
+                                } else if (msg.metadata?.references && msg.metadata.references.length > 0) {
+                                    setSelectedReference(msg.metadata.references[0]);
+                                }
+                                setForceUpdate(prev => prev + 1);
                                             }}
                                         >
                                             <span className="h-2 w-2 rounded-full bg-blue-500 mr-1"></span>
@@ -436,9 +504,235 @@ function ChatMessageItem({
                                 )}
                             </div>
                         )}
+
+                        {/* 知识库片段信息 - 在思考模式下也显示在尾部 */}
+                        {((currentKbChunks && isUsingKb) || message.metadata?.kbChunks !== undefined) && !isUser && (
+                            <div className="mt-3">
+                                {(() => {
+                                    const kbChunksToShow = currentKbChunks || message.metadata?.kbChunks || [];
+                                    const kbName = message.metadata?.kbName || '';
+                                    
+                                    // 只有在流式传输结束后（!isStreaming）或者明确有 metadata.kbChunks 时才判断是否显示"未找到"
+                                    const shouldShowNoChunks = kbChunksToShow.length === 0 && 
+                                        !isStreaming && 
+                                        (message.metadata?.kbChunks !== undefined) &&
+                                        kbName;
+                                    
+                                    if (shouldShowNoChunks) {
+                                        return (
+                                            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                                                <div className="flex items-center gap-2">
+                                                    <svg className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-amber-800 dark:text-amber-300">
+                                                        {t('noChunks')} - {t('source')}：{kbName}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    if (kbChunksToShow.length > 0) {
+                                        return (
+                                            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-md p-3">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <span className="font-medium text-blue-800 dark:text-blue-300">
+                                                        {t('source')}：{kbName}（找到 {kbChunksToShow.length} 个相关片段）
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {kbChunksToShow
+                                                        .slice()
+                                                        .sort((a, b) => getSortKey(a) - getSortKey(b))
+                                                        .slice(0, 3)
+                                                        .map((chunk, i) => {
+                                                            const expanded = expandedIndexes.includes(i);
+                                                            const chunkContent = chunk.content_with_weight || chunk.content || '';
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    className="p-2 bg-white dark:bg-gray-800 rounded border border-blue-100 dark:border-blue-900/50"
+                                                                >
+                                                                    <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center justify-between">
+                                                                        <span className="truncate flex-1">
+                                                                            {chunk.doc_name ? decodeURIComponent(chunk.doc_name.split("?X-Amz-Algorithm")[0]) : (chunk.docName ? decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0]) : '')}
+                                                                        </span>
+                                                                        <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
+                                                                            {t('similarity')}: {getSimilarityScore(chunk)}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
+                                                                        <div
+                                                                            className="h-1 bg-blue-500 rounded-full"
+                                                                            style={{
+                                                                                width: getSimilarityWidth(chunk)
+                                                                            }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    {/* 内容预览区域 - 默认折叠显示两行 */}
+                                                                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                                                        <div 
+                                                                            className={`${expanded ? '' : 'line-clamp-2'} whitespace-pre-wrap`}
+                                                                        >
+                                                                            {chunkContent}
+                                                                        </div>
+                                                                        <div className="flex gap-2 mt-2">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    toggleExpand(i);
+                                                                                }}
+                                                                                className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                                                            >
+                                                                                {expanded ? t('collapse', '收起') : t('expand', '展开')}
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setSelectedKbChunk(chunk);
+                                                                                }}
+                                                                                className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                                                            >
+                                                                                {t('viewDetails', '查看详情')}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    {kbChunksToShow.length > 3 && (
+                                                        <div className="text-xs text-blue-600 dark:text-blue-400 text-center">
+                                                            还有 {kbChunksToShow.length - 3} 个相关片段...
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-1">
+                        {/* 知识库片段信息 - 在AI回答之前显示 */}
+                        {((currentKbChunks && isUsingKb) || message.metadata?.kbChunks !== undefined) && !isUser && (
+                            <div className="mb-3">
+                                {(() => {
+                                    const kbChunksToShow = currentKbChunks || message.metadata?.kbChunks || [];
+                                    const kbName = message.metadata?.kbName || '';
+                                    
+                                    // 只有在流式传输结束后（!isStreaming）或者明确有 metadata.kbChunks 时才判断是否显示"未找到"
+                                    const shouldShowNoChunks = kbChunksToShow.length === 0 && 
+                                        !isStreaming && 
+                                        (message.metadata?.kbChunks !== undefined) &&
+                                        kbName;
+                                    
+                                    if (shouldShowNoChunks) {
+                                        return (
+                                            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                                                <div className="flex items-center gap-2">
+                                                    <svg className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-amber-800 dark:text-amber-300">
+                                                        {t('noChunks')} - {t('source')}：{kbName}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    if (kbChunksToShow.length > 0) {
+                                        return (
+                                            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-md p-3">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <span className="font-medium text-blue-800 dark:text-blue-300">
+                                                        {t('source')}：{kbName}（找到 {kbChunksToShow.length} 个相关片段）
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {kbChunksToShow
+                                                        .slice()
+                                                        .sort((a, b) => getSortKey(a) - getSortKey(b))
+                                                        .slice(0, 3)
+                                                        .map((chunk, i) => {
+                                                            const expanded = expandedIndexes.includes(i);
+                                                            const chunkContent = chunk.content_with_weight || chunk.content || '';
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    className="p-2 bg-white dark:bg-gray-800 rounded border border-blue-100 dark:border-blue-900/50"
+                                                                >
+                                                                    <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center justify-between">
+                                                                        <span className="truncate flex-1">
+                                                                            {chunk.doc_name ? decodeURIComponent(chunk.doc_name.split("?X-Amz-Algorithm")[0]) : (chunk.docName ? decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0]) : '')}
+                                                                        </span>
+                                                                        <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs whitespace-nowrap">
+                                                                            {t('similarity')}: {getSimilarityScore(chunk)}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
+                                                                        <div
+                                                                            className="h-1 bg-blue-500 rounded-full"
+                                                                            style={{
+                                                                                width: getSimilarityWidth(chunk)
+                                                                            }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    {/* 内容预览区域 - 默认折叠显示两行 */}
+                                                                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                                                                        <div 
+                                                                            className={`${expanded ? '' : 'line-clamp-2'} whitespace-pre-wrap`}
+                                                                        >
+                                                                            {chunkContent}
+                                                                        </div>
+                                                                        <div className="flex gap-2 mt-2">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    toggleExpand(i);
+                                                                                }}
+                                                                                className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                                                            >
+                                                                                {expanded ? t('collapse', '收起') : t('expand', '展开')}
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setSelectedKbChunk(chunk);
+                                                                                }}
+                                                                                className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                                                                            >
+                                                                                {t('viewDetails', '查看详情')}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    {kbChunksToShow.length > 3 && (
+                                                        <div className="text-xs text-blue-600 dark:text-blue-400 text-center">
+                                                            还有 {kbChunksToShow.length - 3} 个相关片段...
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                        )}
+                        
                         {/* AI 正在回答但内容为空时，显示动画特效（类似 OpenAI/Grok） */}
                         {isStreaming && !isUser && (!displayFinalContent || displayFinalContent.trim() === '') && message.role !== 'reason' && (
                             <div className="flex items-center py-1">
@@ -482,90 +776,51 @@ function ChatMessageItem({
                                 </div>
                             </>
                         )}
-                        {message.metadata?.kbChunks !== undefined && (
-                            <div className="mt-2 text-xs text-gray-500">
-                                {message.metadata.kbChunks.length === 0 ? (
-                                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md">
-                                        <div className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span className="text-amber-800 dark:text-amber-300">
-                                                {t('noChunks')} - {t('source')}：{message.metadata.kbName || ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <details className="group">
-                                        <summary className="cursor-pointer font-medium transition-colors hover:text-blue-500">
-                                            {t('source')}：{message.metadata.kbName}（{message.metadata.kbChunks.length} {t('chunks')}）
-                                        </summary>
-                                        <div className="flex justify-between items-center text-xs text-gray-400 mt-1 mb-2 px-1">
-                                            <span>{t('sortedBySimilarity')}</span>
-                                            <span>{t('similarityRange')}</span>
-                                        </div>
-                                        <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
-                                            {message.metadata.kbChunks
-                                                .slice()
-                                                .sort((a, b) => getSortKey(a) - getSortKey(b))
-                                                .map((chunk, i) => {
-                                                    const expanded = expandedIndexes.includes(i);
-                                                    return (
-                                                        <div
-                                                            key={i}
-                                                            id={`kb-ref-${i + 1}`}
-                                                            className="p-2 bg-gray-50 dark:bg-gray-800 rounded-r-md hover:border-l-2 border-transparent group-hover:border-cyan-400 transition-all cursor-pointer"
-                                                        >
-                                                            <div className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-200 flex items-center">
-                                                                <span onClick={() => toggleExpand(i)} className="flex-grow cursor-pointer">
-                                                                    {decodeURIComponent(chunk.docName.split("?X-Amz-Algorithm")[0])}
-                                                                    <span className="ml-2 text-cyan-400 whitespace-nowrap">{expanded ? t('collapse') : t('expand')}</span>
-                                                                </span>
-                                                                <span className="ml-auto px-2 py-0.5 bg-cyan-50 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 rounded-full text-xs whitespace-nowrap">
-                                                                    {t('similarity')}: {getSimilarityScore(chunk)}
-                                                                </span>
-                                                            </div>
-                                                            <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-2">
-                                                                <div
-                                                                    className="h-1 bg-cyan-500 rounded-full"
-                                                                    style={{
-                                                                        width: getSimilarityWidth(chunk)
-                                                                    }}
-                                                                ></div>
-                                                            </div>
-                                                            <div
-                                                                className={`text-xs text-gray-600 dark:text-gray-300 ${expanded ? '' : 'line-clamp-3'}`}
-                                                                onClick={(e) => {
-                                                                    // 仅当点击的不是链接时才展开/折叠
-                                                                    if ((e.target as HTMLElement).tagName !== 'A') {
-                                                                        toggleExpand(i);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <ReactMarkdown
-                                                                    components={{
-                                                                        a: ({ node, ...props }) => (
-                                                                            <a
-                                                                                {...props}
-                                                                                className="text-blue-600 underline break-all"
-                                                                                target="_blank"
-                                                                                rel="noopener noreferrer"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation(); // 阻止冒泡，防止触发外层div的点击事件
-                                                                                }}
-                                                                            />
-                                                                        ),
-                                                                    }}
-                                                                >
-                                                                    {typeof chunk.content === 'string' ? chunk.content : ''}
-                                                                </ReactMarkdown>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                    </div>
-                                </details>
-                                )}
+                        
+                        {/* 参考文档列表 - 显示所有引用 */}
+                        {!isUser && message.metadata?.references && message.metadata.references.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                        {t('references', '参考文档')} ({message.metadata.references.length})
+                                    </h4>
+                                </div>
+                                <div className="space-y-2">
+                                    {message.metadata.references.map((ref: Reference, index: number) => {
+                                        const sanitized = sanitizeReference(ref);
+                                        const referenceId = sanitized.reference_id || index + 1;
+                                        const docName = sanitized.doc_name || t('unknownDocument', '未知文档');
+                                        const previewContent = sanitized.content || t('noContent', '暂无内容');
+                                        return (
+                                            <div 
+                                                key={`${referenceId}-${index}`}
+                                                className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors cursor-pointer"
+                                                onClick={() => {
+                                                    setSelectedReference(sanitized);
+                                                    setForceUpdate(prev => prev + 1);
+                                                }}
+                                            >
+                                                <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+                                                    {referenceId}
+                                                </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                                        {docName}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                                                        {previewContent}
+                                                    </div>
+                                                </div>
+                                                <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -577,6 +832,87 @@ function ChatMessageItem({
                         U
                     </AvatarFallback>
                 </Avatar>
+            )}
+
+            {/* 知识库片段详情弹窗 */}
+            {selectedKbChunk && ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    onClick={() => setSelectedKbChunk(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
+                                {t('chunkDetails', '片段详情')}
+                            </h3>
+                            <button
+                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() => setSelectedKbChunk(null)}
+                                aria-label={t('close')}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="mb-2 text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                            <div>
+                                <strong>{t('sourceLabel')}:</strong> {selectedKbChunk.doc_name ? decodeURIComponent(selectedKbChunk.doc_name.split("?X-Amz-Algorithm")[0]) : (selectedKbChunk.docName ? decodeURIComponent(selectedKbChunk.docName.split("?X-Amz-Algorithm")[0]) : t('unknownDocument', '未知文档'))}
+                            </div>
+                            <div>
+                                <strong>{t('similarity')}:</strong> {selectedKbChunk.similarity ? (selectedKbChunk.similarity * 100).toFixed(1) : '0.0'}%
+                            </div>
+                        </div>
+                        <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md overflow-wrap-anywhere">
+                            <ReactMarkdown>
+                                {selectedKbChunk.content_with_weight || selectedKbChunk.content || t('noContent')}
+                            </ReactMarkdown>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 pt-2 mt-4 border-t">
+                            {(selectedKbChunk.doc_id || selectedKbChunk.docId) && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                        const docId = selectedKbChunk.doc_id || selectedKbChunk.docId;
+                                        try {
+                                            const response = await fetch(`/api/document/${docId}`);
+                                            const docInfo = await response.json();
+                                            if (docInfo.file_url) {
+                                                window.open(docInfo.file_url, '_blank');
+                                            } else {
+                                                alert(t('noFileUrl', '文档原文不可用'));
+                                            }
+                                        } catch (error) {
+                                            console.error('Failed to fetch document info:', error);
+                                            alert(t('loadDocumentError', '加载文档信息失败'));
+                                        }
+                                    }}
+                                    className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300"
+                                >
+                                    {t('openOriginal', '打开原文')}
+                                </Button>
+                            )}
+                            {(selectedKbChunk.chunk_id || selectedKbChunk.chunkId) && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    asChild
+                                >
+                                    <Link href={`/chunks/${selectedKbChunk.chunk_id || selectedKbChunk.chunkId}`} target="_blank">
+                                        {t('viewChunkDetail', '查看分块详情')}
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
             {/* 引用详情弹窗 - 使用创建DOM元素的方式 */}
@@ -604,15 +940,82 @@ function ChatMessageItem({
                                 </svg>
                             </button>
                         </div>
-                        {selectedReference.doc_name && (
-                            <div className="mb-2 text-sm text-gray-600 dark:text-gray-300">
-                                <strong>{t('sourceLabel')}:</strong> {selectedReference.doc_name}
+                        <div className="space-y-3">
+                            <div className="grid gap-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div>
+                                    <strong className="mr-2">{t('sourceLabel')}:</strong>
+                                    {selectedReference.doc_name || t('unknownDocument', '未知文档')}
+                                </div>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                    {selectedReference.doc_id && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            ID: {selectedReference.doc_id}
+                                        </span>
+                                    )}
+                                    {selectedReference.chunk_id && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            Chunk: {selectedReference.chunk_id}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                        )}
-                        <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
-                            <ReactMarkdown>
-                                {selectedReference.content || t('noContent')}
-                            </ReactMarkdown>
+
+                            <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
+                                <ReactMarkdown>
+                                    {selectedReference.content || t('noContent')}
+                                </ReactMarkdown>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {isReferenceDocLoading && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                        {t('loadingDocument', '正在加载文档信息...')}
+                                    </span>
+                                )}
+                                {referenceDocError && (
+                                    <span className="text-xs text-red-500">
+                                        {referenceDocError}
+                                    </span>
+                                )}
+                                {!isReferenceDocLoading && !referenceDocError && (
+                                    <>
+                                        {referenceDocInfo.fileUrl && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                asChild
+                                                className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-300"
+                                            >
+                                                <a href={referenceDocInfo.fileUrl} target="_blank" rel="noopener noreferrer">
+                                                    {t('openOriginal', '打开原文')}
+                                                </a>
+                                            </Button>
+                                        )}
+                                        {selectedReference.chunk_id && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                asChild
+                                            >
+                                                <Link href={`/chunks/${selectedReference.chunk_id}`} target="_blank">
+                                                    {t('viewChunkDetail', '查看分块详情')}
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {referenceDocInfo.markdownUrl && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                asChild
+                                            >
+                                                <a href={referenceDocInfo.markdownUrl} target="_blank" rel="noopener noreferrer">
+                                                    {t('viewMarkdown', '查看 Markdown')}
+                                                </a>
+                                            </Button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>,

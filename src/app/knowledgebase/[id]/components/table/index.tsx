@@ -15,7 +15,6 @@ import * as React from 'react';
 import { useEffect, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 
 
-import { ChunkMethodDialog } from '@/components/chunk-method-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -28,7 +27,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFetchDocumentList } from '@/hooks/use-document';
 import { IDocument } from '@/types/document';
-import { getExtension } from '@/utils/document-util';
 import { useTableColumns } from './use-table-columns';
 import { useTranslate } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
@@ -45,8 +43,6 @@ export interface KnowledgeBaseTableRef {
 
 const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableProps>(
   ({ kbId }, ref) => {
-    const [showChangeParserModal, setShowChangeParserModal] = useState(false);
-    const [currentRecord, setCurrentRecord] = useState<IDocument | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const {
       documents,
@@ -72,7 +68,6 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
     }, []);
 
     const columns = useTableColumns({
-      setCurrentRecord,
       onRefresh: handleRefresh,
       removeDocumentLocally: removeDocumentLocally,
       updateDocumentEnabledLocally: updateDocumentEnabledLocally
@@ -263,18 +258,6 @@ const KnowledgeBaseTable = forwardRef<KnowledgeBaseTableRef, KnowledgeBaseTableP
             </Button>
           </div>
         </div>
-        {showChangeParserModal && currentRecord && (
-          <ChunkMethodDialog
-            documentId={currentRecord.id}
-            parserId={currentRecord.parser_id || ''}
-            parserConfig={currentRecord.parser_config}
-            documentExtension={getExtension(currentRecord.name)}
-            onOk={() => { }}
-            visible={showChangeParserModal}
-            hideModal={() => setShowChangeParserModal(false)}
-            loading={false}
-          />
-        )}
       </div>
     );
   }

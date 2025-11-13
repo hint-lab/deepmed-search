@@ -178,39 +178,59 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
                 const duration = Math.floor((Date.now() - startTime) / 1000);
 
                 // 将 markdown 内容上传到 MinIO
-                let contentUrl: string | null = null;
+                let markdownUrl: string | null = null;
                 const markdownContent = result.data.extracted || '';
 
-                if (markdownContent) {
-                    try {
-                        const buffer = Buffer.from(markdownContent, 'utf8');
-                        const stream = new Readable();
-                        stream.push(buffer);
-                        stream.push(null);
-
-                        const objectName = `documents/${documentId}/markdown.md`;
-                        await uploadFileStream({
-                            bucketName: 'deepmed',
-                            objectName,
-                            stream,
-                            size: buffer.length,
-                            metaData: {
-                                'content-type': 'text/markdown; charset=utf-8'
-                            }
-                        });
-
-                        contentUrl = await getFileUrl('deepmed', objectName);
-                        logger.info(`[Document Worker] Markdown 内容已上传至 MinIO: ${contentUrl}`);
-                    } catch (error) {
-                        logger.error(`[Document Worker] 上传 Markdown 内容到 MinIO 失败:`, error);
-                        throw error;
-                    }
+                // 检查 markdown 内容是否为空
+                if (!markdownContent || markdownContent.trim() === '') {
+                    const errorMsg = `文档 ${documentId} 转换后的 markdown 内容为空，无法继续处理`;
+                    logger.error(`[Document Worker] ${errorMsg}`);
+                    await reportDocumentError(documentId, errorMsg);
+                    throw new Error(errorMsg);
                 }
 
-                // 保存转换结果（markdown URL 存储在 content_url）
+                try {
+                    const buffer = Buffer.from(markdownContent, 'utf8');
+                    const stream = new Readable();
+                    stream.push(buffer);
+                    stream.push(null);
+
+                    const objectName = `documents/${documentId}/markdown.md`;
+                    await uploadFileStream({
+                        bucketName: 'deepmed',
+                        objectName,
+                        stream,
+                        size: buffer.length,
+                        metaData: {
+                            'content-type': 'text/markdown; charset=utf-8'
+                        }
+                    });
+
+                    markdownUrl = await getFileUrl('deepmed', objectName);
+                    logger.info(`[Document Worker] Markdown 内容已上传至 MinIO: ${markdownUrl}`, {
+                        documentId,
+                        markdownUrl,
+                        contentLength: markdownContent.length
+                    });
+                } catch (error) {
+                    const errorMsg = `上传 Markdown 内容到 MinIO 失败: ${error instanceof Error ? error.message : '未知错误'}`;
+                    logger.error(`[Document Worker] ${errorMsg}`, { documentId, error });
+                    await reportDocumentError(documentId, errorMsg);
+                    throw error;
+                }
+
+                // 确保 markdown_url 已设置
+                if (!markdownUrl) {
+                    const errorMsg = `文档 ${documentId} 的 markdown_url 未设置，无法继续处理`;
+                    logger.error(`[Document Worker] ${errorMsg}`);
+                    await reportDocumentError(documentId, errorMsg);
+                    throw new Error(errorMsg);
+                }
+
+                // 保存转换结果（markdown URL 存储在 markdown_url）
                 // 如果 file_url 还没有设置，则从 metadata 中获取并保存
                 const updateData: any = {
-                    content_url: contentUrl, // 存储 markdown 的 URL
+                    markdown_url: markdownUrl, // 存储 markdown 的 URL（必须设置）
                     processing_status: IDocumentProcessingStatus.CONVERTED, // 转换完成，可以开始索引
                     progress: 50,
                     progress_msg: '转换完成，等待分块索引',

@@ -117,6 +117,7 @@
         "documentTable": "قائمة المستندات",
         "llmSegmentation": "تجزئة بواسطة النموذج الكبير",
         "ruleSegmentation": "تجزئة حسب القواعد",
+        "jinaSegmentation": "تجزئة Jina",
         "table": {
             "documentName": "اسم المستند",
             "documentUploadDate": "تاريخ الرفع",

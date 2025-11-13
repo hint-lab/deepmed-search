@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { getDocumentListAction, changeDocumentParserAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction } from '@/actions/document';
+import { getDocumentListAction, renameDocumentAction, deleteDocumentAction, setDocumentMetaAction } from '@/actions/document';
 import { IDocumentMetaRequestBody } from '@/types/document';
 
 /**
@@ -91,47 +91,6 @@ export function useFetchDocumentList(kbId: string) {
         refreshData,
         removeDocumentLocally,
         updateDocumentEnabledLocally,
-    };
-}
-
-/**
- * 修改文档解析器的 hook
- * @param documentId 文档 ID
- * @returns 修改解析器模态框状态、加载状态和相关操作方法
- */
-export function useChangeDocumentParser(documentId: string) {
-    const [changeParserLoading, setChangeParserLoading] = useState(false);
-    const [changeParserVisible, setChangeParserVisible] = useState(false);
-
-    const showChangeParserModal = useCallback(() => {
-        setChangeParserVisible(true);
-    }, []);
-
-    const hideChangeParserModal = useCallback(() => {
-        setChangeParserVisible(false);
-    }, []);
-
-    const onChangeParserOk = useCallback(async (config: any) => {
-        if (!documentId) return;
-        setChangeParserLoading(true);
-        try {
-            const result = await changeDocumentParserAction(documentId, config.parserId, config.parserConfig);
-            if (result.success) {
-                hideChangeParserModal();
-                return result;
-            }
-            return result;
-        } finally {
-            setChangeParserLoading(false);
-        }
-    }, [documentId, hideChangeParserModal]);
-
-    return {
-        changeParserLoading,
-        onChangeParserOk,
-        changeParserVisible,
-        hideChangeParserModal,
-        showChangeParserModal,
     };
 }
 

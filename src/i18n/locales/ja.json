@@ -117,6 +117,7 @@
         "documentTable": "ドキュメント一覧",
         "llmSegmentation": "LLM セグメンテーション",
         "ruleSegmentation": "ルールベースセグメンテーション",
+        "jinaSegmentation": "Jina セグメンテーション",
         "table": {
             "documentName": "ドキュメント名",
             "documentUploadDate": "アップロード日",

@@ -41,6 +41,36 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
                 take: pageSize,
                 orderBy: {
                     create_date: 'desc'
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    markdown_url: true,
+                    file_url: true,
+                    size: true,
+                    type: true,
+                    source_type: true,
+                    processing_status: true,
+                    thumbnail: true,
+                    chunk_num: true,
+                    token_num: true,
+                    progress: true,
+                    progress_msg: true,
+                    process_begin_at: true,
+                    process_duation: true,
+                    create_date: true,
+                    create_time: true,
+                    update_date: true,
+                    update_time: true,
+                    created_by: true,
+                    knowledgeBaseId: true,
+                    parser_id: true,
+                    parser_config: true,
+                    summary: true,
+                    metadata: true,
+                    processing_error: true,
+                    enabled: true,
+                    uploadFileId: true
                 }
             })
         ]);
@@ -52,7 +82,7 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
                 items: docs.map(doc => ({
                     id: doc.id,
                     name: doc.name,
-                    content_url: doc.content_url,
+                    markdown_url: doc.markdown_url,
                     file_url: doc.file_url,
                     size: doc.size,
                     type: doc.type,
@@ -73,8 +103,6 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
                     knowledgeBaseId: doc.knowledgeBaseId,
                     parser_id: doc.parser_id,
                     parser_config: doc.parser_config,
-                    // markdown_content 不再存储在数据库，而是存储在 MinIO，URL 存储在 content_url
-                    markdown_content: undefined, // 已迁移到 MinIO，不再返回
                     summary: doc.summary,
                     metadata: doc.metadata,
                     processing_error: doc.processing_error,
@@ -204,7 +232,12 @@ export async function deleteDocumentAction(documentId: string): Promise<ServerAc
     try {
         // 获取文档信息
         const document = await prisma.document.findUnique({
-            where: { id: documentId }
+            where: { id: documentId },
+            select: {
+                id: true,
+                knowledgeBaseId: true,
+                uploadFileId: true
+            }
         });
 
 
@@ -303,7 +336,7 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                     data: {
                         name: file.name,
                         file_url: fileUrl, // 原始文件的 URL（用于下载/查看）
-                        content_url: null, // 转换后的 markdown 内容 URL（转换完成后设置）
+                        markdown_url: null, // 转换后的 markdown 内容 URL（转换完成后设置）
                         knowledgeBaseId: kbId,
                         size: file.size,
                         type: file.type,
@@ -320,7 +353,7 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
                         update_date: new Date(),
                         update_time: BigInt(Date.now()),
                         created_by: knowledgeBase.created_by,
-                        parser_id: knowledgeBase.parser_id || '',
+                        parser_id: knowledgeBase.parser_id || null, // 如果为空则保存为 null，而不是空字符串
                         parser_config: knowledgeBase.parser_config || {},
                         uploadFileId: uploadFile.id
                     }

@@ -17,7 +17,9 @@ interface ReferenceData {
     doc_id: string;
     doc_name: string;
     content: string;
-    // 添加其他你可能需要的属性
+    chunk_id?: string | null;
+    chunk_content?: string | null;
+    doc_url?: string | null;
 }
 
 
@@ -247,11 +249,123 @@ export async function getChatMessageStream(
 
                     sendEvent({ type: 'assistant_message_id', id: assistantMessageId });
 
+                    // 在思考模式下也支持知识库检索
+                    let contextChunks = '';
+                    let kbStartTime: number | null = null;
+                    if (isUsingKB && dialog.knowledgeBase) {
+                        try {
+                            kbStartTime = Date.now();
+                            console.log("⏱️ [性能] [思考模式] 开始获取知识库内容...");
+
+                            const embeddingStartTime = Date.now();
+                            const queryVector = await getEmbeddings([content], undefined, userId);
+                            console.log(`⏱️ [性能] [思考模式] 向量嵌入生成完成: ${Date.now() - embeddingStartTime}ms, 向量长度:`, queryVector[0].length);
+
+                            const searchStartTime = Date.now();
+                            const chunks = await searchSimilarChunks({
+                                queryText: content,
+                                queryVector: queryVector[0],
+                                kbId: dialog.knowledgeBase.id,
+                                resultLimit: 5,
+                                bm25Weight: 0.5,
+                                vectorWeight: 0.5,
+                                bm25Threshold: 0.2,
+                                vectorThreshold: 0.2,
+                                minSimilarity: 0.2
+                            });
+
+                            console.log(`⏱️ [性能] [思考模式] 知识库搜索完成: ${Date.now() - searchStartTime}ms, 找到 ${chunks.length} 个片段`);
+
+                            if (chunks.length === 0) {
+                                console.log("[思考模式] 未找到任何相关片段，将告知用户");
+                                sendEvent({
+                                    type: 'kb_chunks',
+                                    chunks: []
+                                });
+                                contextChunks = '[NO_CHUNKS_FOUND]';
+                            } else {
+                                console.log(`[思考模式] 找到 ${chunks.length} 个相关片段:`,
+                                    chunks.map(c => ({ id: c.chunk_id, similarity: c.similarity })));
+
+                                sendEvent({
+                                    type: 'kb_chunks',
+                                    chunks: chunks.map((chunk: ChunkSearchResult) => ({
+                                        content: chunk.content_with_weight,
+                                        doc_name: chunk.doc_name,
+                                        doc_id: chunk.doc_id,
+                                        chunk_id: chunk.chunk_id,
+                                        similarity: chunk.similarity
+                                    }))
+                                });
+
+                                contextChunks = chunks.map((chunk: ChunkSearchResult, index) => {
+                                    const refId = index + 1;
+                                    return `[片段${refId}] 文档：${chunk.doc_name} (doc_id: ${chunk.doc_id}, chunk_id: ${chunk.chunk_id})\n${chunk.content_with_weight}`;
+                                }).join('\n\n---\n\n');
+                            }
+
+                            if (assistantMessageId) {
+                                const updateStartTime = Date.now();
+                                await prisma.message.update({
+                                    where: { id: assistantMessageId },
+                                    data: {
+                                        metadata: {
+                                            kbName: dialog.knowledgeBase.name,
+                                            kbChunks: chunks.map((chunk: ChunkSearchResult) => ({
+                                                content: chunk.content_with_weight,
+                                                docName: chunk.doc_name,
+                                                docId: chunk.doc_id,
+                                                chunkId: chunk.chunk_id,
+                                                similarity: chunk.similarity
+                                            }))
+                                        }
+                                    }
+                                });
+                                console.log(`⏱️ [性能] [思考模式] 元数据更新完成: ${Date.now() - updateStartTime}ms`);
+                            }
+
+                            console.log(`⏱️ [性能] [思考模式] 知识库检索总耗时: ${Date.now() - kbStartTime}ms`);
+                        } catch (kbError) {
+                            console.error("[思考模式] 获取知识库内容失败:", kbError);
+                        }
+                    }
+
                     let accumulatedContent = '';
                     let reasoningContent = '';
                     let currentlyProcessingReasoning = true;
 
                     const provider = await createProviderFromUserConfig(userId);
+
+                    // 如果使用了知识库，设置系统提示
+                    const hasRelevantChunks = contextChunks.trim().length > 0 && contextChunks !== '[NO_CHUNKS_FOUND]';
+                    const hasSearchedKB = isUsingKB && dialog.knowledgeBase && contextChunks !== '';
+
+                    if (hasRelevantChunks) {
+                        const chunkCount = contextChunks.split('\n\n---\n\n').length;
+                        provider.setSystemPrompt(
+                            dialogId,
+                            `你是DeepMed专业医学AI助手。请基于以下知识库内容进行深度思考并回答问题。
+
+知识库内容（${chunkCount}个片段）：
+${contextChunks}
+
+**要求**：
+1. 深度思考时充分利用知识库内容
+2. 在回答中引用相关片段时使用[1]、[2]等标记
+3. 只基于知识库内容回答，超出范围说不知道`
+                        );
+                    } else if (hasSearchedKB && dialog.knowledgeBase) {
+                        provider.setSystemPrompt(
+                            dialogId,
+                            `你是DeepMed团队开发的一个专业的医学AI助手。
+
+注意：针对用户的问题，我已经在知识库"${dialog.knowledgeBase.name}"中搜索过了，但没有找到相关内容。请诚实地告诉用户你没有在知识库中找到相关信息，不要编造答案。`
+                        );
+                    }
+
+                    const modelInfo = 'reasonModel' in provider ? (provider as any).reasonModel : ('model' in provider ? (provider as any).model : 'unknown');
+                    console.log(`[Chat] Starting thinking mode chat, isReason: true, isUsingKB: ${isUsingKB}, provider: ${provider.constructor.name}, model: ${modelInfo}`);
+
                     await provider.chatStream({
                         dialogId,
                         input: content,
@@ -286,12 +400,20 @@ export async function getChatMessageStream(
                     });
 
                     if (assistantMessageId) {
+                        // 获取现有的元数据，以便合并
+                        const existingMessage = await prisma.message.findUnique({
+                            where: { id: assistantMessageId },
+                            select: { metadata: true }
+                        });
+                        const existingMetadata = (existingMessage?.metadata as any) || {};
+
                         await prisma.message.update({
                             where: { id: assistantMessageId },
                             data: {
                                 content: accumulatedContent,
                                 thinkingContent: reasoningContent,
                                 isThinking: true,
+                                metadata: existingMetadata
                             },
                         });
                     }
@@ -365,11 +487,17 @@ export async function getChatMessageStream(
                                     chunks: chunks.map((chunk: ChunkSearchResult) => ({
                                         content: chunk.content_with_weight,
                                         doc_name: chunk.doc_name,
+                                        doc_id: chunk.doc_id,
+                                        chunk_id: chunk.chunk_id,
                                         similarity: chunk.similarity
                                     }))
                                 });
 
-                                contextChunks = chunks.map((chunk: ChunkSearchResult) => chunk.content_with_weight).join('\n\n---\n\n');
+                                // 为每个片段添加编号和文档信息，方便模型调用工具
+                                contextChunks = chunks.map((chunk: ChunkSearchResult, index) => {
+                                    const refId = index + 1;
+                                    return `[片段${refId}] 文档：${chunk.doc_name} (doc_id: ${chunk.doc_id}, chunk_id: ${chunk.chunk_id})\n${chunk.content_with_weight}`;
+                                }).join('\n\n---\n\n');
                             }
 
                             // 将知识库名称和片段存入消息元数据（异步进行，不阻塞）
@@ -383,6 +511,8 @@ export async function getChatMessageStream(
                                             kbChunks: chunks.map((chunk: ChunkSearchResult) => ({
                                                 content: chunk.content_with_weight,
                                                 docName: chunk.doc_name,
+                                                docId: chunk.doc_id,
+                                                chunkId: chunk.chunk_id,
                                                 similarity: chunk.similarity
                                             }))
                                         }
@@ -408,15 +538,24 @@ export async function getChatMessageStream(
 
                     // 先设置系统提示
                     if (hasRelevantChunks) {
+                        // 为每个片段生成引用编号
+                        const chunkCount = contextChunks.split('\n\n---\n\n').length;
+
                         provider.setSystemPrompt(
                             dialogId,
-                            `你是DeepMed团队开发的一个专业的医学AI助手。请基于以下知识库内容回答问题。
+                            `你是DeepMed专业医学AI助手。基于以下知识库回答问题，并使用kb_reference工具标记每个引用。
                             
+知识库内容（${chunkCount}个片段）：
 ${contextChunks}
 
-当你引用知识库内容时，请在句子后标注来源，例如[1]、[2]等。引用时使用kb_reference工具标记引用的内容。
+**强制规则**：
+1. 每引用一个片段，立即调用：kb_reference(doc_id="从片段中获取", doc_name="从片段中获取", content="引用原文", reference_id=片段编号)
+2. 在回答中添加引用标记如[1]、[2]
+3. 不调用kb_reference的引用无效，用户看不到来源
 
-如果问题超出了以上知识范围，请诚实地表明你不知道，不要编造答案。只回答基于以上知识库内容的问题。`
+示例：引用片段1内容时→先调用kb_reference(reference_id=1)→然后写"根据指南[1]，..."
+
+只基于知识库内容回答，超出范围说不知道。`
                         );
                     } else if (hasSearchedKB && dialog.knowledgeBase) {
                         // 搜索了知识库但没有找到相关内容
@@ -451,9 +590,14 @@ ${contextChunks}
                     }
 
                     const streamStartTime = Date.now();
+                    const modelInfo = 'model' in provider ? (provider as any).model : 'unknown';
+                    console.log(`[Chat] Starting normal mode chat, isReason: false, provider: ${provider.constructor.name}, model: ${modelInfo}`);
+
+                    try {
                     await provider.chatWithToolsStream({
                         dialogId,
                         input: content,
+                            isReason: false,
                         tools,
                         onChunk: (chunk: ChunkResponse) => {
                             if (isCancelled) {
@@ -470,22 +614,32 @@ ${contextChunks}
                                 accumulatedContent += chunk;
                                 sendEvent({ type: 'content', chunk });
                             } else if (chunk.type === 'function_call') {
-                                console.log("工具调用:", chunk.name, chunk.arguments);
+                                    console.log("✅ [工具调用]", chunk.name, "参数:", JSON.stringify(chunk.arguments, null, 2));
                                 sendEvent({ type: 'tool_call_start', tool: chunk.name, args: chunk.arguments });
                             } else if (chunk.type === 'function_result') {
-                                console.log("工具结果:", chunk.content);
+                                    console.log("✅ [工具结果]", chunk.content);
                                 try {
                                     const refData = JSON.parse(chunk.content);
                                     if (refData.type === 'reference') {
-                                        references.push(refData as ReferenceData);
+                                            const referenceItem: ReferenceData = {
+                                                type: 'reference',
+                                                reference_id: refData.reference_id ?? refData.ref_id ?? (references.length + 1),
+                                                doc_id: refData.doc_id ?? refData.docId ?? '',
+                                                doc_name: refData.doc_name ?? refData.docName ?? '',
+                                                content: refData.content ?? '',
+                                                chunk_id: refData.chunk_id ?? refData.chunkId ?? null,
+                                                chunk_content: refData.chunk_content ?? refData.content ?? ''
+                                            };
+                                            references.push(referenceItem);
 
                                         // 发送引用事件通知前端
                                         sendEvent({
                                             type: 'reference',
-                                            ref_id: refData.reference_id,
-                                            doc_id: refData.doc_id,
-                                            doc_name: refData.doc_name,
-                                            content: refData.content
+                                                ref_id: referenceItem.reference_id,
+                                                doc_id: referenceItem.doc_id,
+                                                doc_name: referenceItem.doc_name,
+                                                chunk_id: referenceItem.chunk_id,
+                                                content: referenceItem.content
                                         });
 
                                         // 在文本中添加引用标记
@@ -506,6 +660,25 @@ ${contextChunks}
                     });
 
                     console.log("流式回复完成, 内容长度:", accumulatedContent.length);
+                        console.log("引用数量:", references.length);
+                        if (references.length === 0) {
+                            console.warn("⚠️ 警告：模型没有调用kb_reference工具标记引用！");
+                        } else {
+                            console.log("✅ 成功收集到", references.length, "个引用");
+                        }
+                    } catch (streamError) {
+                        console.error('[Chat] Error in chatWithToolsStream:', streamError);
+                        console.error('[Chat] Stream error details:', {
+                            message: streamError instanceof Error ? streamError.message : 'Unknown error',
+                            stack: streamError instanceof Error ? streamError.stack : undefined,
+                            dialogId,
+                            provider: provider.constructor.name,
+                            model: modelInfo
+                        });
+
+                        // 重新抛出错误让外层 catch 处理
+                        throw streamError;
+                    }
 
                     if (assistantMessageId) {
                         // 获取现有的元数据，以便合并

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DeleteConfirmationDialog } from "@/components/extensions/delete-confirmation-dialog";
@@ -26,6 +26,7 @@ interface ChatSidebarItemProps {
 export function ChatSidebarItem({ dialog, isActive = false }: ChatSidebarItemProps) {
     const { t } = useTranslate('chat');
     const router = useRouter();
+    const pathname = usePathname();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
     const { deleteChatDialog, isDeleting } = useChatDialogContext();
     const onDelete = async (dialogId: string): Promise<void> => {
@@ -34,7 +35,9 @@ export function ChatSidebarItem({ dialog, isActive = false }: ChatSidebarItemPro
             setShowDeleteAlert(false);
             if (result.success) {
                 toast.success(t('deleteSuccess'));
-                if (isActive) {
+                // 如果删除的是当前对话框，或者当前路由匹配该对话框，导航到聊天列表页
+                const isCurrentRoute = pathname === `/chat/${dialogId}`;
+                if (isActive || result.wasCurrentDialog || isCurrentRoute) {
                     router.push('/chat');
                 }
             } else {

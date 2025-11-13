@@ -13,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslate } from '@/contexts/language-context';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 const PUBLIC_MINIO_URL =
     process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL ||
@@ -79,17 +81,17 @@ export default function ChunksPage() {
         fetchChunks();
     }, [id, t]);
 
-    // 从 content_url 读取 markdown 内容
+    // 从 markdown_url 读取 markdown 内容
     useEffect(() => {
         const fetchMarkdown = async () => {
-            if (!document?.content_url) {
+            if (!document?.markdown_url) {
                 setMarkdownContent(null);
                 return;
             }
 
             setLoadingMarkdown(true);
             try {
-                const response = await fetch(document.content_url);
+                const response = await fetch(document.markdown_url);
                 if (response.ok) {
                     const text = await response.text();
                     setMarkdownContent(text);
@@ -106,7 +108,7 @@ export default function ChunksPage() {
         };
 
         fetchMarkdown();
-    }, [document?.content_url]);
+    }, [document?.markdown_url]);
 
     const handleAvailabilityChange = (chunkId: string, currentAvailability: number) => {
         const newAvailable = currentAvailability === 1 ? 0 : 1;
@@ -187,8 +189,8 @@ export default function ChunksPage() {
             );
         }
 
-        // 2. 如果没有 file_url，但有 content_url（markdown URL），显示 Markdown（作为后备）
-        if (document.content_url) {
+        // 2. 如果没有 file_url，但有 markdown_url（markdown URL），显示 Markdown（作为后备）
+        if (document.markdown_url) {
             if (loadingMarkdown) {
                 return (
                     <div className="w-full h-full flex items-center justify-center">
@@ -198,8 +200,13 @@ export default function ChunksPage() {
             }
             if (markdownContent) {
                 return (
-                    <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify">
-                        <ReactMarkdown>{markdownContent}</ReactMarkdown>
+                    <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify [&_table]:border [&_table]:border-border [&_table]:border-solid [&_table]:border-[1px] [&_th]:border [&_th]:border-border [&_th]:border-solid [&_th]:border-[1px] [&_td]:border [&_td]:border-border [&_td]:border-solid [&_td]:border-[1px] [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2 [&_table]:border-collapse [&_th]:bg-muted/50">
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw]}
+                        >
+                            {markdownContent}
+                        </ReactMarkdown>
                     </div>
                 );
             }
@@ -211,7 +218,7 @@ export default function ChunksPage() {
                 <p className="text-center text-gray-500 mb-2">{t('noPreview')}</p>
                 <p className="text-xs text-gray-400">
                     file_url: {document.file_url || 'null'} | 
-                    content_url: {document.content_url || 'null'}
+                    markdown_url: {document.markdown_url || 'null'}
                 </p>
             </div>
         );
@@ -265,9 +272,14 @@ export default function ChunksPage() {
                                     />
                                 </div>
                                 <CardContent className="p-3">
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                                        {chunk.content_with_weight}
-                                    </p>
+                                    <div className="prose prose-sm max-w-none dark:prose-invert text-sm [&_table]:border [&_table]:border-border [&_table]:border-solid [&_table]:border-[1px] [&_th]:border [&_th]:border-border [&_th]:border-solid [&_th]:border-[1px] [&_td]:border [&_td]:border-border [&_td]:border-solid [&_td]:border-[1px] [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2 [&_table]:border-collapse [&_th]:bg-muted/50">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            rehypePlugins={[rehypeRaw]}
+                                        >
+                                            {chunk.content_with_weight}
+                                        </ReactMarkdown>
+                                    </div>
                                 </CardContent>
                             </Card>
                         )) : (

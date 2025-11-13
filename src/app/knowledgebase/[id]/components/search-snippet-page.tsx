@@ -159,18 +159,18 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
                 </header>
 
                 <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder={t('snippetSearch.placeholder')}
-                                className="pl-10"
-                                autoFocus
-                            />
-                        </div>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={t('snippetSearch.placeholder')}
+                            className="pl-10"
+                            autoFocus
+                        />
+                    </div>
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
@@ -180,23 +180,23 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
                             >
                                 <SlidersHorizontal className="h-4 w-4" />
                             </Button>
-                            <Button
-                                onClick={handleSearch}
-                                disabled={loading}
-                                className="md:w-auto"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        {t('snippetSearch.searching')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <Search className="mr-2 h-4 w-4" />
-                                        {t('snippetSearch.search')}
-                                    </>
-                                )}
-                            </Button>
+                    <Button
+                        onClick={handleSearch}
+                        disabled={loading}
+                        className="md:w-auto"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {t('snippetSearch.searching')}
+                            </>
+                        ) : (
+                            <>
+                                <Search className="mr-2 h-4 w-4" />
+                                {t('snippetSearch.search')}
+                            </>
+                        )}
+                    </Button>
                         </div>
                     </div>
 

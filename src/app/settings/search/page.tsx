@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Check, AlertCircle, Save } from 'lucide-react';
 import { getUserSearchConfig, updateUserSearchConfig } from '@/actions/user';
-import { SearchConfig, UpdateSearchConfigParams } from '@/types/search';
+import { SearchConfig, UpdateSearchConfigParams, EmbeddingProvider } from '@/types/search';
 
 export default function SearchSettingsPage() {
   const { data: session } = useSession();
@@ -28,6 +28,7 @@ export default function SearchSettingsPage() {
   const [tavilyApiKey, setTavilyApiKey] = useState('');
   const [jinaApiKey, setJinaApiKey] = useState('');
   const [ncbiApiKey, setNcbiApiKey] = useState('');
+  const [jinaChunkMaxLength, setJinaChunkMaxLength] = useState(500);
   
   // 嵌入服务配置状态
   const [embeddingProvider, setEmbeddingProvider] = useState<EmbeddingProvider>('openai');
@@ -54,6 +55,7 @@ export default function SearchSettingsPage() {
           setEmbeddingModel(config.embeddingModel);
           setEmbeddingBaseUrl(config.embeddingBaseUrl || '');
           setEmbeddingDimension(config.embeddingDimension);
+          setJinaChunkMaxLength(config.jinaChunkMaxLength || 500);
           setHasTavilyApiKey(config.hasTavilyApiKey);
           setHasJinaApiKey(config.hasJinaApiKey);
           setHasNcbiApiKey(config.hasNcbiApiKey);
@@ -81,6 +83,7 @@ export default function SearchSettingsPage() {
         embeddingProvider,
         embeddingModel,
         embeddingDimension,
+        jinaChunkMaxLength,
       };
 
       // 只在用户输入了新值时更新
@@ -219,7 +222,23 @@ export default function SearchSettingsPage() {
               用于 Jina 搜索和 Reader 服务。获取 API Key: <a href="https://jina.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://jina.ai</a>
             </p>
             <p className="text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-md px-3 py-2 mt-2">
-              ⚠️ 注意：Deep Research（深度研究）功能需要 Jina API Key 才能正常工作
+              ⚠️ 注意：Deep Research（深度研究）功能和 Jina 分块功能需要 Jina API Key 才能正常工作
+            </p>
+          </div>
+
+          {/* Jina 分块参数 */}
+          <div className="space-y-2">
+            <Label htmlFor="jinaChunkMaxLength">Jina 分块最大长度</Label>
+            <Input
+              id="jinaChunkMaxLength"
+              type="number"
+              min="100"
+              max="2000"
+              value={jinaChunkMaxLength}
+              onChange={(e) => setJinaChunkMaxLength(parseInt(e.target.value) || 500)}
+            />
+            <p className="text-xs text-muted-foreground">
+              使用 Jina 分块时，每个块的最大字符数（默认 500）。建议范围：300-1000
             </p>
           </div>
 
