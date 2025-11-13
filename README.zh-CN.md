@@ -61,6 +61,26 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **实时进度**：通过服务器发送事件（SSE）提供实时状态更新
 - **用户隔离配置**：每个用户的 API Keys 使用 AsyncLocalStorage 安全隔离
 
+### 富文本 Markdown 渲染
+- **统一组件**：提供 `Markdown` 组件，封装所有 Markdown 渲染功能，使用简单
+- **表格支持**：
+  - 支持 GitHub Flavored Markdown (GFM) 表格语法
+  - 支持 HTML 表格渲染
+  - 自动添加边框样式，清晰展示表格结构
+- **图片支持**：
+  - 支持 Markdown 图片语法 `![alt](url)`
+  - 支持 HTML `<img>` 标签
+  - 自动适配暗色模式
+- **数学公式支持**：
+  - 支持 LaTeX 数学公式语法
+  - 行内公式：`$...$` 或 `\(...\)`，例如 `$\leqslant 0.01\%$`
+  - 块级公式：`$$...$$` 或 `\[...\]`
+  - 基于 KaTeX 渲染，性能优异
+- **其他 Markdown 特性**：
+  - 代码块高亮
+  - 列表、引用、链接等标准 Markdown 语法
+  - 自动适配主题（亮色/暗色模式）
+
 ## 🛠 技术栈
 
 ### 前端
@@ -73,6 +93,13 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **国际化**：react-i18next、i18next
 - **表单**：React Hook Form、Zod
 - **文件上传**：react-dropzone
+- **Markdown 渲染**：
+  - `react-markdown` - Markdown 解析和渲染
+  - `remark-gfm` - GitHub Flavored Markdown 支持（表格等）
+  - `remark-math` - 数学公式解析
+  - `rehype-raw` - HTML 原始内容渲染
+  - `rehype-katex` - KaTeX 数学公式渲染
+  - `katex` - 数学公式渲染引擎
 
 ### 后端
 - **运行时**：Next.js Server Actions

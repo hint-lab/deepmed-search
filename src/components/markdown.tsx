@@ -1,26 +1,24 @@
-import { cn } from "@/lib/utils"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeRaw from 'rehype-raw'
-import rehypeKatex from 'rehype-katex'
-import 'katex/dist/katex.min.css'
+'use client';
 
-interface IProps {
-    loading?: boolean
-    content: string
-    reference?: any // 保留以保持向后兼容，但不再使用
-    className?: string
-    components?: React.ComponentProps<typeof ReactMarkdown>['components']
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
+import { cn } from '@/lib/utils';
+import 'katex/dist/katex.min.css';
+
+interface MarkdownProps {
+    content: string;
+    className?: string;
+    components?: React.ComponentProps<typeof ReactMarkdown>['components'];
 }
 
-const MarkdownContent = ({
-    loading,
-    content,
-    reference,
-    className,
-    components,
-}: IProps) => {
+/**
+ * 通用的 Markdown 渲染组件
+ * 已包含表格、图片和数学公式支持，以及表格边框样式
+ */
+export function Markdown({ content, className, components }: MarkdownProps) {
     return (
         <div className={cn(
             "prose prose-sm max-w-none dark:prose-invert",
@@ -30,7 +28,6 @@ const MarkdownContent = ({
             "[&_td]:border [&_td]:border-border [&_td]:border-solid [&_td]:border-[1px]",
             "[&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2",
             "[&_table]:border-collapse [&_th]:bg-muted/50",
-            loading && "opacity-50",
             className
         )}>
             <ReactMarkdown
@@ -41,7 +38,6 @@ const MarkdownContent = ({
                 {content}
             </ReactMarkdown>
         </div>
-    )
+    );
 }
 
-export default MarkdownContent

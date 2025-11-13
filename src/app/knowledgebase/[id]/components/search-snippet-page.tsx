@@ -19,6 +19,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
+import { Markdown } from '@/components/markdown';
 
 interface SnippetResult {
     id: string;
@@ -328,11 +329,11 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
                                             查看片段
                                         </Button>
                                     </div>
-                                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                                        <span className="line-clamp-6 break-words whitespace-pre-wrap">
-                                            {highlightContent(result.content, terms)}
-                                        </span>
-                                    </p>
+                                    <div className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                                        <div className="line-clamp-6 break-words">
+                                            <Markdown content={result.content} />
+                                        </div>
+                                    </div>
                                 </div>
                             ))
                         )}
@@ -377,9 +378,9 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
                         {selectedSnippet && (
                             <div className="space-y-4 py-2">
                                 <div className="rounded-lg border bg-muted/30 p-4">
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                                        {highlightContent(selectedSnippet.content, terms)}
-                                    </p>
+                                    <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
+                                        <Markdown content={selectedSnippet.content} />
+                                    </div>
                                 </div>
                                 <div className="flex justify-end pt-2 pb-2">
                                     <Button

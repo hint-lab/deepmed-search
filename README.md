@@ -61,6 +61,26 @@ All in one flow demo:
 - **Real-Time Progress**: Server-Sent Events (SSE) for live status updates
 - **User-Isolated Configuration**: Each user's API keys are securely isolated using AsyncLocalStorage
 
+### Rich Markdown Rendering
+- **Unified Component**: Provides `Markdown` component that encapsulates all Markdown rendering functionality, easy to use
+- **Table Support**:
+  - Supports GitHub Flavored Markdown (GFM) table syntax
+  - Supports HTML table rendering
+  - Automatically adds border styles for clear table structure display
+- **Image Support**:
+  - Supports Markdown image syntax `![alt](url)`
+  - Supports HTML `<img>` tags
+  - Automatically adapts to dark mode
+- **Math Formula Support**:
+  - Supports LaTeX math formula syntax
+  - Inline formulas: `$...$` or `\(...\)`, e.g., `$\leqslant 0.01\%$`
+  - Block formulas: `$$...$$` or `\[...\]`
+  - Rendered with KaTeX for excellent performance
+- **Other Markdown Features**:
+  - Code block highlighting
+  - Lists, quotes, links, and other standard Markdown syntax
+  - Automatic theme adaptation (light/dark mode)
+
 ## 🛠 Technology Stack
 
 ### Frontend
@@ -73,6 +93,13 @@ All in one flow demo:
 - **Internationalization**: react-i18next, i18next
 - **Forms**: React Hook Form, Zod
 - **File Upload**: react-dropzone
+- **Markdown Rendering**:
+  - `react-markdown` - Markdown parsing and rendering
+  - `remark-gfm` - GitHub Flavored Markdown support (tables, etc.)
+  - `remark-math` - Math formula parsing
+  - `rehype-raw` - Raw HTML content rendering
+  - `rehype-katex` - KaTeX math formula rendering
+  - `katex` - Math formula rendering engine
 
 ### Backend
 - **Runtime**: Next.js Server Actions

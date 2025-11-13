@@ -21,6 +21,7 @@ import {
     DialogFooter,
     DialogClose,
 } from "@/components/ui/dialog";
+import { Markdown } from '@/components/markdown';
 
 // Updated helper function to extract filename and remove query parameters
 const getDisplayFilename = (source: string | undefined): string => {
@@ -83,9 +84,9 @@ const KbChunkItem = ({ id, text, score, source, metadata, onClick, ...rest }: Kb
                     分数: {typeof score === 'number' ? score.toFixed(3) : 'N/A'}
                 </Badge>
             </div>
-            <p className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
-                {text}
-            </p>
+            <div className="text-sm text-foreground/90 line-clamp-3 leading-relaxed">
+                <Markdown content={text} />
+            </div>
         </button>
     );
 };
@@ -369,9 +370,9 @@ export default function KbSearchResultsPage() {
                     {/* Scrollable content area */}
                     <div className="flex-grow overflow-y-auto pr-4 -mr-4 py-4 text-sm">
                         {selectedChunk?.text ? (
-                            <p className="whitespace-pre-wrap leading-relaxed">
-                                {selectedChunk.text}
-                            </p>
+                            <div className="leading-relaxed">
+                                <Markdown content={selectedChunk.text} />
+                            </div>
                         ) : (
                             <p className="text-muted-foreground">无法加载内容。</p>
                         )}

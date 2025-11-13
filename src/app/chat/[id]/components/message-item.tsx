@@ -7,7 +7,7 @@ import { IMessage } from '@/types/message';
 import dayjs from 'dayjs';
 import { MessageType } from '@/constants/chat';
 import { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { Markdown } from '@/components/markdown';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Brain, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
@@ -237,9 +237,9 @@ function ChatMessageItem({
         };
 
         return (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown
-                    components={{
+            <Markdown
+                content={content}
+                components={{
                         p: ({ children, ...props }) => (
                             <p {...props}>{children}</p>
                         ),
@@ -304,10 +304,7 @@ function ChatMessageItem({
                             return <>{parts}</>;
                         }
                     }}
-                >
-                    {content}
-                </ReactMarkdown>
-            </div>
+            />
         );
     };
 
@@ -455,9 +452,10 @@ function ChatMessageItem({
                                 </div>
                                 {showReasoning && (
                                     <div className="rounded-md border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-3 py-2 space-y-2">
-                                        <ReactMarkdown components={thinkingMarkdownComponents}>
-                                            {displayReasoningContent}
-                                        </ReactMarkdown>
+                                        <Markdown 
+                                            content={displayReasoningContent}
+                                            components={thinkingMarkdownComponents}
+                                        />
                                     </div>
                                 )}
                             </div>
@@ -471,14 +469,10 @@ function ChatMessageItem({
                                     <h3 className="text-sm font-medium text-muted-foreground">{t('finalAnswer')}</h3>
                                 </div>
                                 {displayFinalContent ? (
-                                    <div className={cn(
-                                        "prose prose-sm dark:prose-invert max-w-none",
-                                        isStreaming && "animate-blinking-cursor"
-                                    )}>
-                                        <ReactMarkdown>
-                                            {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
-                                        </ReactMarkdown>
-                                    </div>
+                                    <Markdown
+                                        content={typeof displayFinalContent === 'string' ? displayFinalContent : ''}
+                                        className={cn(isStreaming && "animate-blinking-cursor")}
+                                    />
                                 ) : (
                                     // 如果内容为空但正在流式传输且有思考内容，显示加载动画
                                     isStreaming && displayReasoningContent && (
@@ -747,33 +741,23 @@ function ChatMessageItem({
                         {message.role === 'reason' && (
                             <div className="flex items-center gap-1.5">
                                 <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
-                                <div className={cn(
-                                    "prose prose-sm dark:prose-invert max-w-none",
-                                    isStreaming && !isUser && "animate-blinking-cursor"
-                                )}>
-                                    <ReactMarkdown>
-                                        {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
-                                    </ReactMarkdown>
-                                </div>
+                                <Markdown
+                                    content={typeof displayFinalContent === 'string' ? displayFinalContent : ''}
+                                    className={cn(isStreaming && !isUser && "animate-blinking-cursor")}
+                                />
                             </div>
                         )}
 
                         {message.role !== 'reason' && displayFinalContent && displayFinalContent.trim() !== '' && (
                             <>
-                                <div
-                                    className={cn(
-                                        "prose prose-sm dark:prose-invert max-w-none",
-                                        isStreaming && !isUser && "animate-blinking-cursor"
+                                {message.metadata?.references ?
+                                    renderMessage(message)
+                                    : (
+                                        <Markdown
+                                            content={typeof displayFinalContent === 'string' ? displayFinalContent : ''}
+                                            className={cn(isStreaming && !isUser && "animate-blinking-cursor")}
+                                        />
                                     )}
-                                >
-                                    {message.metadata?.references ?
-                                        renderMessage(message)
-                                        : (
-                                            <ReactMarkdown>
-                                                {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
-                                            </ReactMarkdown>
-                                        )}
-                                </div>
                             </>
                         )}
                         
@@ -867,10 +851,10 @@ function ChatMessageItem({
                                 <strong>{t('similarity')}:</strong> {selectedKbChunk.similarity ? (selectedKbChunk.similarity * 100).toFixed(1) : '0.0'}%
                             </div>
                         </div>
-                        <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md overflow-wrap-anywhere">
-                            <ReactMarkdown>
-                                {selectedKbChunk.content_with_weight || selectedKbChunk.content || t('noContent')}
-                            </ReactMarkdown>
+                        <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md overflow-wrap-anywhere">
+                            <Markdown
+                                content={selectedKbChunk.content_with_weight || selectedKbChunk.content || t('noContent')}
+                            />
                         </div>
 
                         <div className="flex flex-wrap gap-2 pt-2 mt-4 border-t">
@@ -960,10 +944,10 @@ function ChatMessageItem({
                                 </div>
                             </div>
 
-                            <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
-                                <ReactMarkdown>
-                                    {selectedReference.content || t('noContent')}
-                                </ReactMarkdown>
+                            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-md">
+                                <Markdown
+                                    content={selectedReference.content || t('noContent')}
+                                />
                             </div>
 
                             <div className="flex flex-wrap gap-2 pt-2">
@@ -1030,11 +1014,10 @@ function renderWithReferences(answer: string) {
     const replaced = answer.replace(/\[(\d+)\]/g, (match, p1) => {
         return `<a href="#kb-ref-${p1}" class="text-blue-500 underline">[${p1}]</a>`;
     });
-    return <ReactMarkdown
-        // @ts-ignore children属性可以是string类型
-        children={replaced}
+    return <Markdown
+        content={replaced}
         components={{
-            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
+            a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />
         }}
     />;
 }

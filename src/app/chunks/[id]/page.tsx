@@ -12,9 +12,7 @@ import { getDocumentChunksAction, toggleChunkAvailabilityAction } from '@/action
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslate } from '@/contexts/language-context';
 import { toast } from 'sonner';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import { Markdown } from '@/components/markdown';
 
 const PUBLIC_MINIO_URL =
     process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL ||
@@ -200,13 +198,8 @@ export default function ChunksPage() {
             }
             if (markdownContent) {
                 return (
-                    <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify [&_table]:border [&_table]:border-border [&_table]:border-solid [&_table]:border-[1px] [&_th]:border [&_th]:border-border [&_th]:border-solid [&_th]:border-[1px] [&_td]:border [&_td]:border-border [&_td]:border-solid [&_td]:border-[1px] [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2 [&_table]:border-collapse [&_th]:bg-muted/50">
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeRaw]}
-                        >
-                            {markdownContent}
-                        </ReactMarkdown>
+                    <div className="w-full h-full p-4 overflow-auto text-justify">
+                        <Markdown content={markdownContent} />
                     </div>
                 );
             }
@@ -272,14 +265,10 @@ export default function ChunksPage() {
                                     />
                                 </div>
                                 <CardContent className="p-3">
-                                    <div className="prose prose-sm max-w-none dark:prose-invert text-sm [&_table]:border [&_table]:border-border [&_table]:border-solid [&_table]:border-[1px] [&_th]:border [&_th]:border-border [&_th]:border-solid [&_th]:border-[1px] [&_td]:border [&_td]:border-border [&_td]:border-solid [&_td]:border-[1px] [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-2 [&_table]:border-collapse [&_th]:bg-muted/50">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                            rehypePlugins={[rehypeRaw]}
-                                        >
-                                            {chunk.content_with_weight}
-                                        </ReactMarkdown>
-                                    </div>
+                                    <Markdown
+                                        content={chunk.content_with_weight}
+                                        className="text-sm"
+                                    />
                                 </CardContent>
                             </Card>
                         )) : (
