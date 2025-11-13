@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2, FileText, ArrowRight, Info } from 'lucide-react';
 import {
-    processDocumentDirectlyAction,
+    processDocumentAction,
     convertDocumentAction,
     splitDocumentAction,
     indexDocumentChunksAction,
@@ -188,36 +188,23 @@ export default function DocumentTestPage() {
                 throw new Error(kbIdResponse.error || '获取知识库 ID 失败');
             }
 
-            const response = await processDocumentDirectlyAction(documentId, kbIdResponse.kbId, {
+            // 使用队列模式处理文档
+            const response = await processDocumentAction(documentId, {
                 model,
                 maintainFormat,
                 prompt
             });
 
-            if (response.success && response.data && response.data.converted) {
-                const convertedData = response.data.converted.data;
-                const convertedMetadata = response.data.converted.metadata;
-
-                const processedResult = {
+            if (response.success && response.data) {
+                // 队列模式只返回 jobId，处理是异步的
+                const jobId = response.data.jobId;
+                toast.success(`文档已添加到处理队列，任务ID: ${jobId || '未知'}`);
+                setResult({
                     success: true,
-                    data: {
-                        pages: convertedData?.pages || [],
-                        pageCount: convertedData?.pageCount || 0,
-                    },
-                    metadata: {
-                        processingTime: convertedMetadata?.processingTime || 0,
-                        documentId: convertedMetadata?.documentId || documentId,
-                        completionTime: convertedMetadata?.completionTime || 0,
-                        fileName: convertedMetadata?.fileName || '未知',
-                        inputTokens: convertedMetadata?.inputTokens || 0,
-                        outputTokens: convertedMetadata?.outputTokens || 0,
-                        pageCount: convertedMetadata?.pageCount || 0,
-                        wordCount: 0
-                    }
-                };
-                setResult(processedResult);
-                setFullProgress(100);
-                toast.success('文档处理完成');
+                    jobId: jobId,
+                    message: '文档已添加到处理队列，请等待处理完成'
+                });
+                setFullProgress(0); // 队列模式无法立即获取进度
             } else {
                 const errorMsg = response.error || '处理文档失败，但未返回明确错误信息。';
                 setError(errorMsg);
@@ -498,11 +485,10 @@ export default function DocumentTestPage() {
                             disabled={convertProcessing || currentStep !== 'convert'}
                             className="w-full"
                         >
+                            <Loader2 className="mr-2 h-4 w-4" />
                             {convertProcessing ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    转换中... {convertProgress}%
-                                </>
+                                    <span className="animate-spin">
+                                    转换中... {convertProgress}% </span>
                             ) : (
                                 '开始转换'
                             )}

@@ -100,7 +100,7 @@ docker-compose up -d mineru
 
 # 2. 配置
 echo "DOCUMENT_PARSER=mineru-docker" >> .env.local
-echo "MINERU_DOCKER_URL=http://localhost:8000" >> .env.local
+echo "MINERU_URL=http://localhost:8000" >> .env.local
 
 # 3. 启动应用
 yarn dev

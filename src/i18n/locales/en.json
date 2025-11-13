@@ -236,10 +236,11 @@
             "documentProcessingStatus": {
                 "title": "Processing Status",
                 "converting": "Converting",
+                "converted": "Converted (Ready for Indexing)",
+                "indexing": "Indexing",
                 "successed": "Processed Successfully",
                 "failed": "Processing Failed",
-                "error": "Error",
-                "indexing": "Indexing"
+                "error": "Error"
             },
             "documentEnable": "Enable",
             "viewDetails": "View Details",
@@ -259,7 +260,16 @@
             "pageNumber": "Page {current}",
             "nextPage": "Next",
             "deleteDocSuccess": "Document deleted successfully",
-            "deleteDocError": "Failed to delete document"
+            "deleteDocError": "Failed to delete document",
+            "fileStatus": {
+                "title": "File Status",
+                "processing": "Processing",
+                "error": "Error",
+                "success": "Success",
+                "pending": "Pending",
+                "toggleSuccess": "File status updated successfully",
+                "toggleError": "Failed to update file status"
+            }
         },
         "snippetSearch": {
             "title": "Search Knowledge Snippets",
@@ -356,19 +366,14 @@
         "processingError": "Processing Error",
         "changeChunkMethod": "Change Chunk Method",
         "rename": "Rename",
-        "fileStatus": {
-            "title": "File Status",
-            "processing": "Processing",
-            "error": "Error",
-            "success": "Success",
-            "pending": "Pending"
-        },
         "options": {
             "title": "Actions",
             "delete": "Delete",
             "changeChunkMethod": "Change Chunk Method",
             "rename": "Rename",
-            "copyId": "Copy ID"
+            "copyId": "Copy ID",
+            "deleteDocSuccess": "Document deleted successfully",
+            "deleteDocError": "Failed to delete document"
         },
         "docParser": {
             "methodTitle": "Configuration",

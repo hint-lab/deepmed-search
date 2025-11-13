@@ -179,7 +179,7 @@ export default function ResearchPage() {
                                 {/* 简洁的三点跳动动画 */}
                                 <div className="flex space-x-3">
                                     <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce"></div>
-                                    <div className="w-4 h-4 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                    <div className="w-4 h-4 bg-cyan-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
                                     <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                                 </div>
                                 

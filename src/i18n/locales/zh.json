@@ -236,10 +236,10 @@
             "documentProcessingStatus": {
                 "title": "处理状态",
                 "converting": "转换中",
+                "converted": "转换完成（等待索引）",
+                "indexing": "索引中",
                 "successed": "处理成功",
-                "failed": "处理失败",
-                "error": "错误",
-                "indexing": "索引中"
+                "failed": "处理失败"
             },
             "documentEnable": "启用",
             "viewDetails": "查看详情",
@@ -259,7 +259,16 @@
             "pageNumber": "第 {current} 页",
             "nextPage": "下一页",
             "deleteDocSuccess": "文档已成功删除",
-            "deleteDocError": "删除文档失败"
+            "deleteDocError": "删除文档失败",
+            "fileStatus": {
+                "title": "文件状态",
+                "processing": "处理中",
+                "error": "错误",
+                "success": "成功",
+                "pending": "待处理",
+                "toggleSuccess": "文件状态更新成功",
+                "toggleError": "更新文件状态失败"
+            }
         },
         "snippetSearch": {
             "title": "片段搜索",
@@ -356,19 +365,14 @@
         "processingError": "处理错误",
         "changeChunkMethod": "更改分块方法",
         "rename": "重命名",
-        "fileStatus": {
-            "title": "文件状态",
-            "processing": "处理中",
-            "error": "错误",
-            "success": "成功",
-            "pending": "待处理"
-        },
         "options": {
             "title": "操作",
             "delete": "删除",
             "changeChunkMethod": "更改分块方法",
             "rename": "重命名",
-            "copyId": "复制 ID"
+            "copyId": "复制 ID",
+            "deleteDocSuccess": "文档已成功删除",
+            "deleteDocError": "删除文档失败"
         },
         "docParser": {
             "methodTitle": "配置",

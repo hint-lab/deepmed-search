@@ -328,7 +328,8 @@ export async function getChatMessageStream(
                             console.log("⏱️ [性能] 开始获取知识库内容...");
 
                             const embeddingStartTime = Date.now();
-                            const queryVector = await getEmbeddings([content]);
+                            // 传递 userId 以使用用户配置的 embedding 服务
+                            const queryVector = await getEmbeddings([content], undefined, userId);
                             console.log(`⏱️ [性能] 向量嵌入生成完成: ${Date.now() - embeddingStartTime}ms, 向量长度:`, queryVector[0].length);
 
                             const searchStartTime = Date.now();

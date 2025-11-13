@@ -293,11 +293,16 @@ export async function uploadDocumentAction(kbId: string, files: File[]): Promise
 
                 const uploadFile = uploadResult.data;
 
+                // 生成原始文件的 URL
+                const { getFileUrl } = await import('@/lib/minio/operations');
+                const fileUrl = await getFileUrl(uploadFile.bucketName, uploadFile.objectName);
+
                 // 创建文档记录
                 const document = await prisma.document.create({
                     data: {
                         name: file.name,
-                        content_url: uploadFile.location,
+                        file_url: fileUrl, // 原始文件的 URL（用于下载/查看）
+                        content_url: null, // 转换后的 markdown 内容 URL（转换完成后设置）
                         knowledgeBaseId: kbId,
                         size: file.size,
                         type: file.type,

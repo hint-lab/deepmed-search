@@ -14,9 +14,28 @@ import { getEmbedding } from '@/lib/llm-provider';
  */
 export async function getDocumentChunksAction(documentId: string): Promise<ServerActionResponse<any>> {
     try {
-        // 获取文档信息
+        // 获取文档信息（包括 markdown_content 用于预览）
         const document = await prisma.document.findUnique({
-            where: { id: documentId }
+            where: { id: documentId },
+            select: {
+                id: true,
+                name: true,
+                type: true,
+                file_url: true,
+                content_url: true,
+                markdown_content: true, // 确保返回 markdown_content
+                processing_status: true,
+                progress: true,
+                progress_msg: true,
+                chunk_num: true,
+                token_num: true,
+                create_date: true,
+                update_date: true,
+                created_by: true,
+                knowledgeBaseId: true,
+                enabled: true,
+                uploadFileId: true,
+            }
         });
 
         if (!document) {
@@ -104,7 +123,7 @@ export async function toggleChunkAvailabilityAction(chunkId: string, available: 
             error: error instanceof Error ? error.message : '更新失败'
         };
     }
-} 
+}
 
 /**
  * 在知识库中搜索分块内容（使用 BM25 + 向量混合搜索）
@@ -115,7 +134,8 @@ export async function toggleChunkAvailabilityAction(chunkId: string, available: 
 export async function searchKnowledgeBaseSnippetsAction(
     kbId: string,
     keyword: string,
-    limit: number = 20
+    limit: number = 20,
+    userId?: string // 添加 userId 参数
 ): Promise<ServerActionResponse<any>> {
     try {
         const trimmedKeyword = keyword?.trim();
@@ -126,7 +146,7 @@ export async function searchKnowledgeBaseSnippetsAction(
             };
         }
 
-        logger.info('[searchKnowledgeBaseSnippetsAction] Starting search', { kbId, keyword: trimmedKeyword, limit });
+        logger.info('[searchKnowledgeBaseSnippetsAction] Starting search', { kbId, keyword: trimmedKeyword, limit, userId: userId || '(system)' });
 
         // 先检查知识库中是否有可用的chunks
         const availableChunksCount = await prisma.chunk.count({
@@ -198,9 +218,9 @@ export async function searchKnowledgeBaseSnippetsAction(
         };
 
         try {
-            // 1. 生成查询向量（用于向量搜索）
+            // 1. 生成查询向量（用于向量搜索），传递 userId 以使用用户配置
             console.log('[searchKnowledgeBaseSnippetsAction] Generating embedding...');
-            const queryEmbedding = await getEmbedding(trimmedKeyword, 'text-embedding-3-small');
+            const queryEmbedding = await getEmbedding(trimmedKeyword, 'text-embedding-3-small', userId);
             console.log('[searchKnowledgeBaseSnippetsAction] Embedding generated, vector length:', queryEmbedding.length);
 
             // 2. 使用混合搜索（BM25 + 向量搜索）
@@ -210,7 +230,7 @@ export async function searchKnowledgeBaseSnippetsAction(
                 vectorLength: queryEmbedding.length,
                 resultLimit: limit * 2
             });
-            
+
             chunks = await searchSimilarChunks({
                 queryText: trimmedKeyword,
                 queryVector: queryEmbedding,
@@ -245,7 +265,7 @@ export async function searchKnowledgeBaseSnippetsAction(
             .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
             .slice(0, limit);
 
-        logger.info('[searchKnowledgeBaseSnippetsAction] Returning results', { 
+        logger.info('[searchKnowledgeBaseSnippetsAction] Returning results', {
             resultCount: sortedChunks.length,
             topSimilarity: sortedChunks[0]?.similarity || 0
         });

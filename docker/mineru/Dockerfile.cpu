@@ -35,8 +35,8 @@ RUN pip install --no-cache-dir -U 'mineru[core]'
 # 下载模型配置（使用 ModelScope 国内源）
 RUN mineru-models-download -s modelscope -m all
 
-# 安装 Flask 用于 API 服务
-RUN pip install --no-cache-dir flask werkzeug requests
+# 安装 FastAPI + Uvicorn + MinIO 用于 API 服务
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]" python-multipart minio
 
 # 复制 API 服务脚本
 COPY api_server.py /app/
@@ -49,6 +49,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # 设置环境变量并启动服务
-ENV MINERU_MODEL_SOURCE=local
+ENV MINERU_MODEL_SOURCE=local \
+    APP_ENV=production \
+    UVICORN_WORKERS=1
 CMD ["python", "api_server.py"]
 

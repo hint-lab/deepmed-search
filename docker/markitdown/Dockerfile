@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     # 其他依赖
     libmagic1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 配置 pip 国内镜像源（阿里云）
@@ -36,10 +37,17 @@ COPY api_server.py /app/
 # 暴露端口
 EXPOSE 5000
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
+# 设置环境变量
+ENV APP_ENV=production \
+    PORT=5000 \
+    HOST=0.0.0.0 \
+    UVICORN_WORKERS=1 \
+    UVICORN_LOG_LEVEL=info
 
-# 启动服务
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# 启动服务（使用 uvicorn 作为生产服务器）
 CMD ["python", "api_server.py"]
 

@@ -21,19 +21,25 @@ export interface ChunkIndexerOptions {
      * 批处理大小
      */
     batchSize?: number;
+
+    /**
+     * 用户ID（用于获取用户配置的 OpenAI API URL）
+     */
+    userId?: string;
 }
 
 /**
  * 文档块索引器类
  */
 export class ChunkIndexer {
-    private options: Partial<ChunkIndexerOptions> & { embeddingModel: string; batchSize: number; kbId?: string };
+    private options: Partial<ChunkIndexerOptions> & { embeddingModel: string; batchSize: number; kbId?: string; userId?: string };
 
     constructor(options: ChunkIndexerOptions = {}) {
         this.options = {
             embeddingModel: options.embeddingModel || 'text-embedding-3-small',
             batchSize: options.batchSize || 10,
-            kbId: options.kbId
+            kbId: options.kbId,
+            userId: options.userId
         };
 
         if (!this.options.kbId) {
@@ -83,9 +89,9 @@ export class ChunkIndexer {
                     batchSize: batch.length,
                 });
 
-                // 获取嵌入向量
+                // 获取嵌入向量（传递 userId 以使用用户配置的 OpenAI URL）
                 const contents = batch.map(chunk => chunk.content);
-                const vectors = await getEmbeddings(contents, this.options.embeddingModel);
+                const vectors = await getEmbeddings(contents, this.options.embeddingModel, this.options.userId);
 
                 // Store embeddings from the first batch
                 if (i === 0) {

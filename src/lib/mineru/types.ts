@@ -16,6 +16,7 @@ export interface MinerUTaskOptions {
   model?: string;
   maintainFormat?: boolean;
   prompt?: string;
+  language?: string;
   [key: string]: any;
 }
 

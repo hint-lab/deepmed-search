@@ -1,6 +1,7 @@
 // 搜索配置类型定义
 
 export type DocumentParser = 'markitdown-docker' | 'mineru-docker' | 'mineru-cloud';
+export type EmbeddingProvider = 'openai' | 'volcengine';
 
 export interface SearchConfig {
     id: string;
@@ -10,10 +11,15 @@ export interface SearchConfig {
     mineruApiKey?: string;
     searchProvider: 'tavily' | 'jina';
     documentParser: DocumentParser;
+    embeddingProvider: EmbeddingProvider;
+    embeddingModel: string;
+    embeddingBaseUrl?: string;
+    embeddingDimension: number;
     hasTavilyApiKey: boolean;
     hasJinaApiKey: boolean;
     hasNcbiApiKey: boolean;
     hasMineruApiKey: boolean;
+    hasEmbeddingApiKey: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -25,5 +31,10 @@ export interface UpdateSearchConfigParams {
     mineruApiKey?: string;
     searchProvider?: 'tavily' | 'jina';
     documentParser?: DocumentParser;
+    embeddingProvider?: EmbeddingProvider;
+    embeddingApiKey?: string;
+    embeddingModel?: string;
+    embeddingBaseUrl?: string;
+    embeddingDimension?: number;
 }
 

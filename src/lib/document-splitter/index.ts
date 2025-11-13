@@ -23,6 +23,11 @@ export interface DocumentSplitterOptions {
      * 是否保留原始格式
      */
     preserveFormat?: boolean;
+
+    /**
+     * 分块模式：llm_segmentation（大模型智能分段）或 rule_segmentation（基于规则）
+     */
+    parserMode?: 'llm_segmentation' | 'rule_segmentation';
 }
 
 /**
@@ -93,7 +98,100 @@ export class DocumentSplitter {
             overlapSize: options.overlapSize || 200,
             splitByParagraph: options.splitByParagraph !== undefined ? options.splitByParagraph : true,
             preserveFormat: options.preserveFormat !== undefined ? options.preserveFormat : false,
+            parserMode: options.parserMode || 'rule_segmentation',
         };
+    }
+
+    /**
+     * 检测位置是否在 Markdown 表格内
+     * 表格格式示例：
+     * | Header 1 | Header 2 |
+     * |----------|----------|
+     * | Cell 1   | Cell 2   |
+     */
+    private isInsideTable(content: string, position: number): boolean {
+        // 向前查找最近的表格开始标记
+        const beforeContent = content.substring(Math.max(0, position - 1000), position);
+        const afterContent = content.substring(position, Math.min(content.length, position + 1000));
+
+        // 检查是否在表格行中（包含 | 分隔符的行）
+        const beforeLines = beforeContent.split('\n');
+        const afterLines = afterContent.split('\n');
+
+        // 如果前后都有表格标记，说明可能在表格内
+        const hasTableBefore = beforeLines.some(line => line.trim().startsWith('|') && line.includes('|'));
+        const hasTableAfter = afterLines.some(line => line.trim().startsWith('|') && line.includes('|'));
+
+        return hasTableBefore && hasTableAfter;
+    }
+
+    /**
+     * 检测位置是否在链接内
+     * Markdown 链接格式：[文本](URL) 或 <URL>
+     */
+    private isInsideLink(content: string, position: number): boolean {
+        const beforeContent = content.substring(Math.max(0, position - 200), position);
+        const afterContent = content.substring(position, Math.min(content.length, position + 200));
+
+        // 检查 Markdown 链接格式 [text](url)
+        const unclosedBracket = beforeContent.lastIndexOf('[');
+        const closedBracket = beforeContent.lastIndexOf(']');
+        if (unclosedBracket > closedBracket) {
+            const hasClosingParens = afterContent.includes(')');
+            if (hasClosingParens) return true;
+        }
+
+        // 检查 HTML 链接格式 <a href="url">
+        const unclosedTag = beforeContent.lastIndexOf('<a ');
+        const closedTag = beforeContent.lastIndexOf('</a>');
+        if (unclosedTag > closedTag) {
+            const hasClosingTag = afterContent.includes('</a>');
+            if (hasClosingTag) return true;
+        }
+
+        // 检查简单 URL 格式 <URL>
+        const unclosedAngle = beforeContent.lastIndexOf('<');
+        const closedAngle = beforeContent.lastIndexOf('>');
+        if (unclosedAngle > closedAngle) {
+            const hasClosingAngle = afterContent.includes('>');
+            const isUrl = beforeContent.substring(unclosedAngle).match(/^<https?:\/\//);
+            if (hasClosingAngle && isUrl) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 在大模型模式下，查找安全的分割点（避开表格和链接）
+     */
+    private findSafeSplitPoint(content: string, idealPosition: number, searchRange: number = 500): number {
+        // 如果不是大模型模式，直接返回原位置
+        if (this.options.parserMode !== 'llm_segmentation') {
+            return idealPosition;
+        }
+
+        // 如果当前位置安全，直接使用
+        if (!this.isInsideTable(content, idealPosition) && !this.isInsideLink(content, idealPosition)) {
+            return idealPosition;
+        }
+
+        // 向后搜索安全位置
+        for (let offset = 0; offset < searchRange; offset += 10) {
+            const testPos = idealPosition + offset;
+            if (testPos >= content.length) break;
+
+            if (!this.isInsideTable(content, testPos) && !this.isInsideLink(content, testPos)) {
+                // 找到安全位置后，再找最近的段落边界
+                const nextParagraph = content.indexOf('\n\n', testPos);
+                if (nextParagraph !== -1 && nextParagraph < testPos + 200) {
+                    return nextParagraph + 2;
+                }
+                return testPos;
+            }
+        }
+
+        // 如果向后找不到，返回原位置（最后的保险）
+        return idealPosition;
     }
 
     /**
@@ -128,6 +226,11 @@ export class DocumentSplitter {
             if (endIndex < content.length) {
                 let bestSplitPoint = -1;
 
+                // 如果是大模型模式，先确保理想位置是安全的（不在表格或链接内）
+                if (this.options.parserMode === 'llm_segmentation') {
+                    idealEndIndex = this.findSafeSplitPoint(content, idealEndIndex);
+                }
+
                 // 优先段落边界 ('\n\n')，在理想点附近查找
                 // 扩大搜索范围，允许更大的分块
                 const paragraphSearchStart = Math.max(startIndex, idealEndIndex - 300); // 向前回溯更多开始查找
@@ -140,7 +243,7 @@ export class DocumentSplitter {
                 // 如果没找到段落，尝试句子边界（但不包括单个换行符）
                 if (bestSplitPoint === -1) {
                     // 移除单个换行符'\n'，避免在表格和列表中过度分割
-                    const sentenceEndings = ['\n\n']; 
+                    const sentenceEndings = ['\n\n'];
                     const sentenceSearchStart = Math.max(startIndex, idealEndIndex - 300); // 扩大句子回溯范围
                     let bestSentenceEnd = -1;
 

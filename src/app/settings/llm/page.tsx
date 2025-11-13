@@ -476,7 +476,7 @@ export default function LLMSettingsPage() {
 
             {/* 模型选择 */}
             <div className="space-y-2">
-              <Label htmlFor="model">模型（可选）</Label>
+              <Label htmlFor="model">模型（可选，用于普通对话）</Label>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger>
                   <SelectValue placeholder="选择模型" />
@@ -489,18 +489,29 @@ export default function LLMSettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {provider === 'deepseek' && (
+                <p className="text-xs text-muted-foreground">
+                  用于普通对话的模型，推荐使用 deepseek-chat。思考模式使用下面的"推理模型"。
+                </p>
+              )}
             </div>
 
             {/* DeepSeek 推理模型 */}
             {provider === 'deepseek' && (
               <div className="space-y-2">
-                <Label htmlFor="reasonModel">推理模型（可选）</Label>
-                <Input
-                  id="reasonModel"
-                  placeholder="deepseek-reasoner"
-                  value={reasonModel}
-                  onChange={(e) => setReasonModel(e.target.value)}
-                />
+                <Label htmlFor="reasonModel">推理模型（可选，用于思考模式）</Label>
+                <Select value={reasonModel} onValueChange={setReasonModel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="deepseek-reasoner（默认）" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="deepseek-reasoner">deepseek-reasoner（推荐）</SelectItem>
+                    <SelectItem value="deepseek-chat">deepseek-chat</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  用于思考模式的模型，留空将使用 deepseek-reasoner。普通对话使用上面的"模型"字段。
+                </p>
               </div>
             )}
 

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, Globe, Database, FileText, Loader2, ChevronDown, FlaskConical, Check } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSendQuestion } from "@/hooks/use-search"
 import MarkdownContent from "@/components/extensions/markdown-content"
 import { useTranslate } from '@/contexts/language-context'; // Import only useTranslate
@@ -24,6 +24,8 @@ import {
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context'
 import { SearchSuggestions } from '@/components/search-suggestions' 
 import { Slider } from "@/components/ui/slider"
+import { useSession } from 'next-auth/react'
+import { getUserSearchConfig, getUserLLMConfigs } from '@/actions/user'
 
 type SearchType = 'web' | 'llm' | 'kb' | 'pubmed';
 type LlmModelType = 'gemini' | 'gpt' | 'deepseek'; // Define LLM model types
@@ -54,6 +56,12 @@ interface SearchInputFormProps {
     bm25Weight: number;
     vectorWeight: number;
     onKbModeWeightChange: (type: string, value: number) => void;
+    availableSearchEngines: SearchEngineType[];
+    availableLLMModels: LlmModelType[];
+    selectedSearchEngine: SearchEngineType | null;
+    selectedLLMModel: LlmModelType | null;
+    isSubmitting: boolean;
+    isPending: boolean;
 }
 
 const SearchInputForm: React.FC<SearchInputFormProps> = ({
@@ -74,10 +82,37 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
     onKbModeChange,
     bm25Weight,
     vectorWeight,
-    onKbModeWeightChange
+    onKbModeWeightChange,
+    availableSearchEngines = [],
+    availableLLMModels = [],
+    selectedSearchEngine,
+    selectedLLMModel,
+    isSubmitting,
+    isPending
 }) => {
+    // 获取显示名称的辅助函数
+    const getEngineDisplayName = (engine: SearchEngineType) => {
+        return engine === 'tavily' ? 'Tavily AI' : engine === 'jina' ? 'Jina Search' : 'DuckDuckGo';
+    };
+
+    const getModelDisplayName = (model: LlmModelType) => {
+        return model === 'gemini' ? 'Gemini' : model === 'gpt' ? 'GPT' : 'DeepSeek';
+    };
+
+    // 处理表单提交（按 Enter 键时使用默认配置）
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSearchStrEmpty || disableInteractions) return;
+        
+        if (searchType === 'web' && selectedSearchEngine) {
+            onWebEngineSelect(selectedSearchEngine);
+        } else if (searchType === 'llm' && selectedLLMModel) {
+            onLLMSelect(selectedLLMModel);
+        }
+    };
+
     return (
-        <form onSubmit={(e) => e.preventDefault()} className="mt-6">
+        <form onSubmit={handleFormSubmit} className="mt-6">
             <div className="flex items-center focus-within:ring-2 focus-within:ring-primary/30 focus-within:ring-offset-2 focus-within:ring-offset-background rounded-lg transition-all duration-150">
                 <div className="relative flex-grow">
                     <Input
@@ -95,7 +130,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         <DropdownMenuTrigger asChild>
                             <Button
                                 type="button"
-                                disabled={disableInteractions || isSearchStrEmpty}
+                                disabled={disableInteractions || isSearchStrEmpty || availableSearchEngines.length === 0}
                                 className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isSubmittingWebOrLLM ? (
@@ -103,6 +138,9 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                                 ) : (
                                     <>
                                         <Search className="h-5 w-5 mr-1" />
+                                        {selectedSearchEngine ? (
+                                            <span className="mr-1 text-sm">{getEngineDisplayName(selectedSearchEngine)}</span>
+                                        ) : null}
                                         <ChevronDown className="h-4 w-4 ml-1" />
                                     </>
                                 )}
@@ -111,15 +149,21 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>{t('selectSearchEngine', '选择搜索引擎')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => onWebEngineSelect('tavily')}>
-                                Tavily AI
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onWebEngineSelect('jina')}>
-                                Jina Search
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onWebEngineSelect('duckduckgo')}>
-                                DuckDuckGo
-                            </DropdownMenuItem>
+                            {availableSearchEngines.map((engine) => (
+                                <DropdownMenuItem 
+                                    key={engine} 
+                                    onSelect={() => onWebEngineSelect(engine)}
+                                    className={selectedSearchEngine === engine ? 'bg-accent' : ''}
+                                >
+                                    {selectedSearchEngine === engine && <Check className="mr-2 h-4 w-4" />}
+                                    {getEngineDisplayName(engine)}
+                                </DropdownMenuItem>
+                            ))}
+                            {availableSearchEngines.length === 0 && (
+                                <DropdownMenuItem disabled>
+                                    请先配置搜索引擎 API Key
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : searchType === 'llm' ? (
@@ -127,7 +171,7 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         <DropdownMenuTrigger asChild>
                             <Button
                                 type="button"
-                                disabled={disableInteractions || isSearchStrEmpty}
+                                disabled={disableInteractions || isSearchStrEmpty || availableLLMModels.length === 0}
                                 className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-600 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isSubmittingWebOrLLM ? (
@@ -135,6 +179,9 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                                 ) : (
                                     <>
                                         <Search className="h-5 w-5 mr-1" />
+                                        {selectedLLMModel ? (
+                                            <span className="mr-1 text-sm">{getModelDisplayName(selectedLLMModel)}</span>
+                                        ) : null}
                                         <ChevronDown className="h-4 w-4 ml-1" />
                                     </>
                                 )}
@@ -143,15 +190,21 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>{t('selectLlmModel', '选择 LLM 模型')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => onLLMSelect('gemini')}>
-                                Gemini
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onLLMSelect('gpt')}>
-                                GPT
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onLLMSelect('deepseek')}>
-                                DeepSeek
-                            </DropdownMenuItem>
+                            {availableLLMModels.map((model) => (
+                                <DropdownMenuItem 
+                                    key={model} 
+                                    onSelect={() => onLLMSelect(model)}
+                                    className={selectedLLMModel === model ? 'bg-accent' : ''}
+                                >
+                                    {selectedLLMModel === model && <Check className="mr-2 h-4 w-4" />}
+                                    {getModelDisplayName(model)}
+                                </DropdownMenuItem>
+                            ))}
+                            {availableLLMModels.length === 0 && (
+                                <DropdownMenuItem disabled>
+                                    请先配置 LLM API Key
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : ( // searchType === 'kb'
@@ -245,7 +298,15 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
 export default function SearchPage() {
     const { t } = useTranslate('search')
     const router = useRouter();
+    const { data: session } = useSession();
     const [searchType, setSearchType] = useState<SearchType>('llm');
+    
+    // 用户配置状态
+    const [availableSearchEngines, setAvailableSearchEngines] = useState<SearchEngineType[]>([]);
+    const [availableLLMModels, setAvailableLLMModels] = useState<LlmModelType[]>([]);
+    const [selectedSearchEngine, setSelectedSearchEngine] = useState<SearchEngineType | null>(null);
+    const [selectedLLMModel, setSelectedLLMModel] = useState<LlmModelType | null>(null);
+    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
 
     const {
         handleSearchStrChange,
@@ -260,6 +321,79 @@ export default function SearchPage() {
         isLoading: isKbListLoading,
     } = useKnowledgeBaseContext();
 
+    // 加载用户配置
+    useEffect(() => {
+        const loadUserConfig = async () => {
+            if (!session?.user?.id) {
+                setIsLoadingConfig(false);
+                return;
+            }
+
+            try {
+                // 加载搜索配置
+                const searchConfigResult = await getUserSearchConfig();
+                if (searchConfigResult.success && searchConfigResult.data) {
+                    const engines: SearchEngineType[] = [];
+                    if (searchConfigResult.data.hasTavilyApiKey) {
+                        engines.push('tavily');
+                    }
+                    if (searchConfigResult.data.hasJinaApiKey) {
+                        engines.push('jina');
+                    }
+                    // DuckDuckGo 不需要 API Key，始终可用
+                    engines.push('duckduckgo');
+                    
+                    setAvailableSearchEngines(engines);
+                    // 设置默认搜索引擎（用户配置的）
+                    const defaultEngine = searchConfigResult.data.searchProvider as SearchEngineType;
+                    setSelectedSearchEngine(defaultEngine);
+                }
+
+                // 加载 LLM 配置
+                const llmConfigResult = await getUserLLMConfigs();
+                if (llmConfigResult.success && llmConfigResult.data) {
+                    const models: LlmModelType[] = [];
+                    const configs = llmConfigResult.data.configs;
+                    
+                    // 检查用户配置了哪些提供商
+                    const providers = new Set(configs.map(c => c.provider));
+                    if (providers.has('google')) {
+                        models.push('gemini');
+                    }
+                    if (providers.has('openai')) {
+                        models.push('gpt');
+                    }
+                    if (providers.has('deepseek')) {
+                        models.push('deepseek');
+                    }
+                    
+                    setAvailableLLMModels(models);
+                    
+                    // 设置默认模型（使用激活的配置）
+                    if (llmConfigResult.data.activeConfig) {
+                        const provider = llmConfigResult.data.activeConfig.provider;
+                        if (provider === 'google') {
+                            setSelectedLLMModel('gemini');
+                        } else if (provider === 'openai') {
+                            setSelectedLLMModel('gpt');
+                        } else if (provider === 'deepseek') {
+                            setSelectedLLMModel('deepseek');
+                        }
+                    } else if (models.length > 0) {
+                        // 如果没有激活的配置，使用第一个可用的模型
+                        setSelectedLLMModel(models[0]);
+                    }
+                }
+            } catch (error) {
+                console.error('加载用户配置失败:', error);
+            } finally {
+                setIsLoadingConfig(false);
+            }
+        };
+
+        loadUserConfig();
+    }, [session]);
+
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         handleSearchStrChange(event);
     }
@@ -269,6 +403,8 @@ export default function SearchPage() {
     // --- Event Handlers (LLM, Web, KB, PubMed) --- 
     const handleLLMSelect = (model: LlmModelType) => {
         if (isSearchStrEmpty || isSubmitting || isPending) return;
+        // 更新选中的模型
+        setSelectedLLMModel(model);
         setIsSubmitting(true);
         try {
             const encodedQuery = encodeURIComponent(searchStr);
@@ -282,6 +418,8 @@ export default function SearchPage() {
 
     const handleWebEngineSelect = (engine: SearchEngineType) => {
         if (isSearchStrEmpty || isSubmitting || isPending) return;
+        // 更新选中的搜索引擎
+        setSelectedSearchEngine(engine);
         setIsSubmitting(true);
         try {
             const encodedQuery = encodeURIComponent(searchStr);
@@ -400,6 +538,12 @@ export default function SearchPage() {
                                 bm25Weight={bm25Weight}
                                 vectorWeight={vectorWeight}
                                 onKbModeWeightChange={onKbModeWeightChange}
+                                availableSearchEngines={availableSearchEngines}
+                                availableLLMModels={availableLLMModels}
+                                selectedSearchEngine={selectedSearchEngine}
+                                selectedLLMModel={selectedLLMModel}
+                                isSubmitting={isSubmitting}
+                                isPending={isPending}
                             />
                         )}
                         {/* Render PubMed form only for its tab */}

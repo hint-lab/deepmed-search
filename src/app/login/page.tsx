@@ -214,7 +214,7 @@ const Login = () => {
                         <div className="flex flex-col gap-4">
                             <Button
                                 variant="outline"
-                                className="w-full relative h-11 hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-all"
+                                className="w-full relative h-11 hover:bg-cyan-50/50 dark:hover:bg-cyan-900/20 transition-all"
                                 onClick={handleGoogleSignIn}
                                 disabled={loading}
                             >

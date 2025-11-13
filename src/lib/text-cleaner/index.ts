@@ -1,5 +1,5 @@
 import logger from '@/utils/logger';
-import { getDefaultProvider, ProviderFactory, ProviderType } from '@/lib/llm-provider';
+import { createProviderFromUserConfig } from '@/lib/llm-provider';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -9,9 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 export async function cleanTextWithLLM(
   text: string,
   options: {
-    providerType?: ProviderType;
     model?: string;
-  } = {}
+    userId: string; // 用户ID（必需：使用用户配置的 LLM）
+  }
 ): Promise<{ success: boolean; cleanedText?: string; error?: string }> {
   const startTime = Date.now();
 
@@ -25,9 +25,18 @@ export async function cleanTextWithLLM(
     }
 
     // 获取 LLM Provider
-    const provider = options.providerType 
-      ? ProviderFactory.getProvider(options.providerType)
-      : getDefaultProvider();
+    // 注意：必须提供 userId，所有 API Key 都必须由用户配置
+    if (!options.userId) {
+      throw new Error('必须提供 userId 参数。所有 LLM API Key 必须由用户在 /settings/llm 页面配置');
+    }
+
+    let provider;
+    try {
+      // 使用用户配置的 Provider
+      provider = await createProviderFromUserConfig(options.userId);
+    } catch (error) {
+      throw new Error(`未配置 LLM API Key。请访问 /settings/llm 页面配置您的 API Key。错误: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
 
     logger.info('[Text Cleaner] 开始清理文本', {
       textLength: text.length,
@@ -62,11 +71,36 @@ export async function cleanTextWithLLM(
     // 设置系统提示词
     provider.setSystemPrompt(dialogId, systemPrompt);
 
-    // 调用 provider 进行文本清理
-    const response = await provider.chat({
+    // 设置超时时间（默认 2 分钟，长文本可能需要更长时间，但最多不超过 5 分钟）
+    // 计算方式：至少2分钟，每100字符增加1秒，但最多5分钟
+    const calculatedTimeout = Math.max(120000, Math.ceil(text.length / 100) * 1000);
+    const timeoutMs = Math.min(calculatedTimeout, 300000); // 最多5分钟
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`文本清理超时（${timeoutMs}ms）。文本长度: ${text.length} 字符`));
+      }, timeoutMs);
+    });
+
+    logger.info('[Text Cleaner] 调用 LLM API', {
+      dialogId,
+      timeoutMs,
+      estimatedTimeout: `${Math.round(timeoutMs / 1000)}秒`,
+    });
+
+    // 调用 provider 进行文本清理（带超时保护）
+    const chatPromise = provider.chat({
       dialogId,
       input: `请清理以下文本中的多余换行：\n\n${text}`,
     });
+
+    let response;
+    try {
+      response = await Promise.race([chatPromise, timeoutPromise]);
+    } catch (error) {
+      // 超时或错误时也要清理临时对话历史
+      provider.clearHistory(dialogId);
+      throw error;
+    }
 
     const cleanedText = response.content || text;
     const processingTime = Date.now() - startTime;
@@ -111,16 +145,16 @@ export async function cleanTextWithLLM(
 export async function cleanLongText(
   text: string,
   options: {
-    providerType?: ProviderType;
     model?: string;
     maxChunkSize?: number;
-  } = {}
+    userId: string; // 用户ID（必需：使用用户配置的 LLM）
+  }
 ): Promise<{ success: boolean; cleanedText?: string; error?: string }> {
   const maxChunkSize = options.maxChunkSize || 8000; // 约8000字符一块
 
   // 如果文本不长，直接处理
   if (text.length <= maxChunkSize) {
-    return cleanTextWithLLM(text, options);
+    return cleanTextWithLLM(text, { model: options.model, userId: options.userId });
   }
 
   logger.info('[Text Cleaner] 文本较长，分批处理', {
@@ -154,16 +188,45 @@ export async function cleanLongText(
 
     // 逐块清理
     const cleanedChunks: string[] = [];
+    const chunkStartTime = Date.now();
     for (let i = 0; i < chunks.length; i++) {
+      const chunkStart = Date.now();
       logger.info('[Text Cleaner] 处理块', {
         index: i + 1,
         total: chunks.length,
+        chunkLength: chunks[i].length,
+        elapsedTime: Date.now() - chunkStartTime,
       });
 
-      const result = await cleanTextWithLLM(chunks[i], options);
-      if (result.success && result.cleanedText) {
-        cleanedChunks.push(result.cleanedText);
-      } else {
+      try {
+        const result = await cleanTextWithLLM(chunks[i], { model: options.model, userId: options.userId });
+        const chunkTime = Date.now() - chunkStart;
+        if (result.success && result.cleanedText) {
+          cleanedChunks.push(result.cleanedText);
+          logger.info('[Text Cleaner] 块处理完成', {
+            index: i + 1,
+            total: chunks.length,
+            chunkTime,
+            success: true,
+          });
+        } else {
+          // 如果某块清理失败，使用原文本
+          cleanedChunks.push(chunks[i]);
+          logger.warn('[Text Cleaner] 块处理失败，使用原文本', {
+            index: i + 1,
+            total: chunks.length,
+            error: result.error,
+          });
+        }
+      } catch (error) {
+        const chunkTime = Date.now() - chunkStart;
+        const errorMsg = error instanceof Error ? error.message : '未知错误';
+        logger.error('[Text Cleaner] 块处理异常', {
+          index: i + 1,
+          total: chunks.length,
+          chunkTime,
+          error: errorMsg,
+        });
         // 如果某块清理失败，使用原文本
         cleanedChunks.push(chunks[i]);
       }

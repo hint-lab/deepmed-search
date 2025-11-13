@@ -54,7 +54,7 @@ curl http://localhost:8000/health
 
 # 3. 配置环境变量（添加到 .env.local）
 DOCUMENT_PARSER=mineru-docker
-MINERU_DOCKER_URL=http://localhost:8000
+MINERU_URL=http://localhost:8000
 
 # 4. 重启应用
 yarn dev
@@ -137,7 +137,7 @@ MARKITDOWN_URL=http://localhost:5001
 MARKITDOWN_PORT=5001
 
 # MinerU Docker 配置（本地自托管）
-MINERU_DOCKER_URL=http://localhost:8000
+MINERU_URL=http://localhost:8000
 MINERU_DOCKER_PORT=8000
 
 # MinerU Cloud 配置（云端服务）
@@ -269,7 +269,7 @@ DOCUMENT_PARSER=markitdown-docker
 ```env
 # 使用 MinerU Docker（CPU 版本）
 DOCUMENT_PARSER=mineru-docker
-MINERU_DOCKER_URL=http://localhost:8000
+MINERU_URL=http://localhost:8000
 
 # 或者使用 GPU 版本（需要修改 docker-compose.yml）
 # 参考：docker/mineru/README.md

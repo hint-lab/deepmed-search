@@ -45,7 +45,13 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 ### 知识库管理
 - 创建和管理多个知识库
 - 上传和处理文档（PDF、DOCX、TXT 等）
-- 自动生成向量嵌入
+- **异步队列处理**：所有文档通过 BullMQ 队列系统异步处理（不阻塞请求）
+- **实时进度追踪**：美观的环形进度条，通过 Server-Sent Events (SSE) 实时更新
+  - 可视化进度环显示百分比（0-100%）
+  - 流畅的动画和脉冲效果
+  - 实时状态更新（转换中 → 索引中 → 已完成）
+- **自动向量嵌入**：自动分块和向量嵌入生成
+- **队列监控**：内置 BullMQ Board 监控面板，可监控队列状态和任务详情
 - 查看和删除知识库内容
 
 ### 深度研究（Deep Research）
@@ -84,9 +90,10 @@ DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，
 - **搜索服务**：Tavily、Jina、DuckDuckGo
 - **LLM 提供商**：OpenAI、DeepSeek、Google Vertex AI
 - **文档处理**：支持三种解析器类型：
-  - **MarkItDown Docker**：多格式文档解析（PDF、DOCX、PPT、图片等）
-  - **MinerU Docker**：高质量 PDF 解析（自托管）
-  - **MinerU Cloud**：云端 PDF 解析服务
+  - **MarkItDown Docker**：多格式文档解析（PDF、DOCX、PPT、图片等）- 基于 FastAPI 的服务
+  - **MinerU Docker**：高质量 PDF 解析（自托管）- **GPU 加速**，处理速度更快（推荐 RTX 3060+）
+  - **MinerU Cloud**：云端 PDF 解析服务（需要用户配置 API Key）
+- **图片存储**：自动提取图片并存储到 MinIO，更新 Markdown 链接
 - **文件存储**：MinIO（可选）
 - **缓存**：Redis（可选）
 
@@ -351,9 +358,11 @@ yarn dev
 
 访问 http://localhost:3000 开始使用！
 
-### 7. 启动队列 Worker（用于 Deep Research）
+### 7. 启动队列 Worker（必需）
 
-要使用 Deep Research 功能，需要在**单独的终端**中启动队列 Worker：
+> ⚠️ **重要提示**：队列 Worker 是**必需的**，用于文档处理和 Deep Research 功能。所有文档处理任务都通过队列系统异步处理。
+
+在**单独的终端**中启动队列 Worker：
 
 ```bash
 # 构建 Worker
@@ -375,9 +384,12 @@ docker-compose up -d queue-worker
 docker-compose logs -f queue-worker
 ```
 
-队列 Worker 处理的后台任务包括：
-- Deep Research 任务
-- 文档转换任务
+队列 Worker 处理所有后台任务：
+- **文档转换任务**：PDF/DOCX 转 Markdown（异步处理，不阻塞请求）
+- **文档索引任务**：文档分块和向量嵌入
+- **Deep Research 任务**：多步骤研究工作流
+
+> 📊 **队列监控**：访问 BullMQ Board 监控面板 http://localhost:8003/admin/queues 可以实时监控队列状态、查看任务详情、重试失败任务、追踪性能指标。
 
 ### 8. 登录系统
 
@@ -391,26 +403,30 @@ docker-compose logs -f queue-worker
 
 登录后，在设置页面配置您的个人 API Keys：
 
+> ⚠️ **重要提示**：所有 API Keys 必须由用户在设置页面配置。系统不再使用环境变量来配置 API Keys（系统服务如 Redis、PostgreSQL 等除外）。
+
 1. **LLM 配置** (`/settings/llm`)：
    - 添加 LLM 提供商（DeepSeek、OpenAI、Google Gemini）
-   - 配置 API Keys 和基础 URLs
+   - 配置 API Keys 和基础 URLs（**必需**）
    - 设置默认模型
+   - 配置嵌入提供商和 API Key（**必需**，用于文档索引）
    - 测试和激活配置
 
 2. **搜索配置** (`/settings/search`)：
    - 选择搜索提供商（Tavily 或 Jina）
-   - 配置 Tavily API Key（用于 Tavily 搜索）
-   - 配置 Jina API Key（用于 Jina 搜索和内容提取）
+   - 配置 Tavily API Key（**必需**，用于 Tavily 搜索）
+   - 配置 Jina API Key（**必需**，用于 Jina 搜索和内容提取）
    - 配置 NCBI API Key（可选，用于 PubMed 搜索）
+   - 配置嵌入 API Key（**必需**，用于文档向量索引）
 
 3. **文档解析器配置** (`/settings/document`)：
    - 选择解析器类型：
-     - **MarkItDown**（Docker）：多格式文档解析
-     - **MinerU**（Docker）：高质量 PDF 解析（含 OCR）
-     - **MinerU Cloud**：云端解析服务（需要 API Key）
-   - 配置 MinerU API Key（如使用 MinerU Cloud）
+     - **MarkItDown**（Docker）：多格式文档解析（无需 API Key）
+     - **MinerU**（Docker）：高质量 PDF 解析，支持 GPU 加速（无需 API Key）
+     - **MinerU Cloud**：云端解析服务（**需要 API Key**）
+   - 配置 MinerU API Key（仅在使用 MinerU Cloud 时需要）
 
-> 🔒 **安全性**：所有 API Keys 在存储到数据库之前都会使用 `.env` 文件中的 `ENCRYPTION_KEY` 进行加密。
+> 🔒 **安全性**：所有 API Keys 在存储到数据库之前都会使用 `.env` 文件中的 `ENCRYPTION_KEY` 进行加密。每个用户的 API Keys 相互隔离，永不共享。
 
 ### 服务访问地址
 
@@ -421,6 +437,8 @@ docker-compose logs -f queue-worker
 | **Milvus** | `localhost:19530` | 向量数据库端口 |
 | **Milvus 健康检查** | http://localhost:9091 | - |
 | **Redis** | `localhost:6379` | 无密码 |
+| **RedisInsight** | http://localhost:8002 | Redis GUI 管理工具 |
+| **BullMQ Board** | http://localhost:8003/admin/queues | BullMQ 队列监控面板<br/>功能：查看队列、任务详情、重试失败任务、性能指标 |
 | **MinIO API** | http://localhost:9000 | 用户: `minioadmin`<br/>密码: `minioadmin` |
 | **MinIO 控制台** | http://localhost:9001 | 用户: `minioadmin`<br/>密码: `minioadmin` |
 | **MarkItDown** | http://localhost:5001 | 文档解析 API |
@@ -755,6 +773,34 @@ http://localhost:3000/research
 - **实时更新**：服务器发送事件提供实时进度监控
 - **后台处理**：长时间运行的任务由队列 Worker 处理
 - **用户隔离**：每个用户的 API Keys 和配置安全隔离
+
+### 队列监控（BullMQ Board）
+
+系统内置了基于 BullMQ Board 的队列监控面板：
+
+**访问地址**：http://localhost:8003/admin/queues
+
+**功能特性**：
+- 📊 **实时队列状态**：查看活跃、等待、已完成和失败的任务，支持实时更新
+- 🔍 **任务详情**：查看任务数据、日志和执行历史
+- 🔄 **任务管理**：重试失败任务、清理已完成任务、暂停/恢复队列
+- 📈 **性能指标**：追踪处理时间、吞吐量和成功率
+- 🎯 **队列健康**：监控队列健康状态、Worker 状态和 Redis 连接
+- 🔔 **任务搜索**：按 ID、状态或数据内容搜索任务
+- 📋 **任务历史**：查看完整的任务生命周期和重试记录
+
+**可用队列**：
+- `document-to-markdown`：文档转换任务（PDF/DOCX → Markdown）
+- `deep-research`：深度研究工作流任务
+- `chunk-vector-index`：向量嵌入和索引任务
+
+**使用技巧**：
+- 监控面板每 5 秒自动刷新，实时更新
+- 点击队列名称可查看该队列中的所有任务
+- 点击任务 ID 可查看详细信息，包括输入数据、日志和重试历史
+- 使用"重试"按钮可手动重试失败的任务
+- 使用"清理"功能可删除已完成或失败的任务
+- 监控队列指标以识别性能瓶颈或问题
 
 ## 🤝 贡献指南
 

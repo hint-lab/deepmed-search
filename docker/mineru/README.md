@@ -138,7 +138,7 @@ GET http://localhost:8000/info
 MINERU_DOCKER_PORT=8000
 
 # MinerU Docker URL（应用中使用）
-MINERU_DOCKER_URL=http://localhost:8000
+MINERU_URL=http://localhost:8000
 ```
 
 ### Docker Compose 配置
@@ -218,7 +218,7 @@ curl http://localhost:8000/info
 ```env
 # .env.local
 DOCUMENT_PARSER=mineru-docker
-MINERU_DOCKER_URL=http://localhost:8000
+MINERU_URL=http://localhost:8000
 ```
 
 然后上传文档会自动使用 MinerU Docker 处理。

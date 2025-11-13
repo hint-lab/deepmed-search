@@ -95,17 +95,33 @@ services:
     depends_on:
       - redis
       - postgres
+      - markitdown
+      - mineru
+      - milvus
     environment:
       NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=512
       BULLMQ_CONCURRENCY: ${BULLMQ_CONCURRENCY:-8}
       
       # 队列和数据库连接（必需）
+      # 注意：在 Docker 容器内使用服务名 postgres 而不是 localhost
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      DATABASE_URL: ${DATABASE_URL}
+      # 数据库连接：在容器内必须使用 postgres 服务名而不是 localhost
+      # 从环境变量提取数据库凭证，但使用 postgres 作为主机名
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-deepmed}
       
       # 加密密钥（必需：用于解密用户配置的 API keys）
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      
+      # Milvus 向量数据库连接
+      MILVUS_ADDRESS: ${MILVUS_ADDRESS:-milvus:19530}
+      
+      # 文档解析器服务端点配置（容器内使用服务名）
+      # 注意：实际使用的解析器由用户在 /settings/document 页面配置
+      MARKITDOWN_URL: http://markitdown:5000
+      MINERU_URL: http://mineru:8000
+      MINERU_API_KEY: ${MINERU_API_KEY:-}
+      MINERU_BASE_URL: ${MINERU_BASE_URL:-}
       
       # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
       # 用户需在 /settings/llm 和 /settings/search 页面配置
@@ -131,14 +147,11 @@ services:
       # 加密密钥（用于解密用户配置的 API keys）
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
-      # 用户需在 /settings/llm 和 /settings/search 页面配置
-      # 不再使用系统环境变量配置 API keys
-      # 文档解析器配置
-      DOCUMENT_PARSER: ${DOCUMENT_PARSER:-markitdown-docker}
+      # 以下是解析器服务的端点配置，非解析器选择
       MARKITDOWN_URL: ${MARKITDOWN_URL:-http://markitdown:5000}
-      MINERU_DOCKER_URL: ${MINERU_DOCKER_URL:-http://mineru:8000}
-      MINERU_API_KEY: ${MINERU_API_KEY}
-      MINERU_BASE_URL: ${MINERU_BASE_URL}
+      MINERU_URL: ${MINERU_URL:-http://mineru:8000}
+      MINERU_API_KEY: ${MINERU_API_KEY:-}
+      MINERU_BASE_URL: ${MINERU_BASE_URL:-}
       # MinIO 配置
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
@@ -171,8 +184,20 @@ services:
       - "${MARKITDOWN_PORT:-5001}:5000"
     environment:
       PORT: 5000
+      APP_ENV: production
+      UVICORN_WORKERS: 1
+      UVICORN_LOG_LEVEL: info
+      # MinIO 配置（用于图片上传）
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_SECURE: ${MINIO_USE_SSL:-false}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-deepmed}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+    depends_on:
+      - minio
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -186,8 +211,41 @@ services:
       - "8001:3000"
     environment:
       MILVUS_URL: milvus:19530
+      # Attu 默认连接配置
+      HOST_URL: http://milvus:19530
     depends_on:
-      - milvus
+      milvus:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # RedisInsight - Redis GUI 管理工具（用于查看 BullMQ 队列）
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: deepmed-redisinsight
+    ports:
+      - "${REDISINSIGHT_PORT:-8002}:8001"
+    volumes:
+      - redisinsight-data:/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # BullMQ Board - BullMQ 队列监控界面
+  bull-board:
+    build:
+      context: ./docker/bull-board
+      dockerfile: Dockerfile
+    container_name: deepmed-bull-board
+    ports:
+      - "${BULL_BOARD_PORT:-8003}:3000"
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      PORT: 3000
+    depends_on:
+      - redis
     restart: unless-stopped
   # MinerU 文档转换服务（开源自托管版本）
   # 基于官方 vLLM 镜像，支持 GPU 加速
@@ -196,7 +254,8 @@ services:
     build:
       context: ./docker/mineru
       # 使用 Dockerfile（GPU 版本，推荐）或 Dockerfile.cpu（CPU 版本）
-      dockerfile: Dockerfile.cpu
+      # dockerfile: Dockerfile.cpu
+      dockerfile: Dockerfile
     container_name: deepmed-mineru
     restart: always
     ports:
@@ -204,6 +263,18 @@ services:
     environment:
       PORT: 8000
       MINERU_MODEL_SOURCE: local
+      # MinerU 后端模式：pipeline (推荐/稳定), vlm-vllm-engine, magic-pdf 等
+      # 注意：vlm-vllm-engine 可能存在兼容性问题，推荐使用 pipeline
+      MINERU_BACKEND: ${MINERU_BACKEND:-pipeline}
+      # MinIO 配置（用于图片上传）
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_SECURE: ${MINIO_USE_SSL:-false}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-deepmed}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+    depends_on:
+      - minio
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -219,9 +290,16 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [gpu]
-
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 volumes:
   postgres-data:
   minio-data:
   redis-data:
   milvus-data:
+  redisinsight-data:

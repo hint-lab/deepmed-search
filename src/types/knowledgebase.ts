@@ -73,4 +73,6 @@ export interface UpdateIKnowledgeAdvanceParams {
     nickname?: string;
     language?: string;
     operator_permission?: number;
+    parser_config?: any;
+    parser_id?: string;
 } 

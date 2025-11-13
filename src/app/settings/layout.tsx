@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { User, Lock, Bot, Settings as SettingsIcon, Search, FileText } from 'lucide-react';
+import { User, Lock, Bot, Settings as SettingsIcon, Search, FileText, Layers } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 const SETTINGS_NAVIGATION = [
@@ -16,7 +16,13 @@ const SETTINGS_NAVIGATION = [
     name: '搜索配置',
     href: '/settings/search',
     icon: Search,
-    description: '配置搜索 API Key',
+    description: '配置搜索引擎 API',
+  },
+  {
+    name: '嵌入服务',
+    href: '/settings/embedding',
+    icon: Layers,
+    description: '配置向量嵌入服务',
   },
   {
     name: '文档解析器',

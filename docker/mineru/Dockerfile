@@ -35,8 +35,8 @@ RUN python3 -m pip install -U 'mineru[core]' --break-system-packages && \
 # 下载 MinerU 模型（使用 ModelScope 国内源）
 RUN /bin/bash -c "mineru-models-download -s modelscope -m all"
 
-# 安装 Flask 用于 API 服务
-RUN python3 -m pip install flask werkzeug requests --break-system-packages && \
+# 安装 FastAPI + Uvicorn + MinIO 用于 API 服务
+RUN python3 -m pip install fastapi "uvicorn[standard]" python-multipart minio --break-system-packages && \
     python3 -m pip cache purge
 
 # 设置工作目录
@@ -53,5 +53,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # 设置环境变量并启动服务
-ENV MINERU_MODEL_SOURCE=local
+ENV MINERU_MODEL_SOURCE=local \
+    APP_ENV=production \
+    UVICORN_WORKERS=1 \
+    PYTHONUNBUFFERED=1
+# 使用单 worker 确保模型只加载一次并常驻内存
+# 如需并发，建议运行多个容器实例而非多 worker
 ENTRYPOINT ["python3", "api_server.py"]

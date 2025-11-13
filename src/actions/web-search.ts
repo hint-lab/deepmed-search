@@ -5,6 +5,8 @@ import { searchTavily } from '@/lib/web-search/tavily';
 import { searchDuckDuckGo } from '@/lib/web-search/duckduckgo';
 import { searchJina } from '@/lib/web-search/jina'; // Import Jina lib function
 import { StandardSearchResult } from '@/lib/web-search/common'; // Import the standard interface
+import { getSearchApiKey } from '@/lib/search/config'; // Import user config helper
+import { auth } from '@/lib/auth'; // Import auth helper
 
 // Define supported search engine types
 export type SearchEngineType = 'tavily' | 'duckduckgo' | 'jina';

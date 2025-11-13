@@ -1,8 +1,9 @@
 // 文档处理状态枚举
 export enum IDocumentProcessingStatus {
     UNPROCESSED = 'UNPROCESSED',
-    INDEXING = 'INDEXING',
     CONVERTING = 'CONVERTING',
+    CONVERTED = 'CONVERTED',
+    INDEXING = 'INDEXING',
     SUCCESSED = 'SUCCESSED',
     FAILED = 'FAILED'
 }

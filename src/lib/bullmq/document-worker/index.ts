@@ -1,4 +1,4 @@
-import { createWorker } from '../queue-manager';
+import { createWorker, addTask } from '../queue-manager';
 import { DocumentProcessJobData, DocumentProcessJobResult } from './types';
 import { parseDocument } from '../../document-parser';
 import { TaskType } from '../types';
@@ -8,6 +8,14 @@ import { getReadableUrl } from '../../minio/operations';
 import { userDocumentContextStorage, UserDocumentContext } from '../../document-parser/user-context';
 import { decryptApiKey } from '@/lib/crypto';
 import { PrismaClient } from '@prisma/client';
+import { IDocumentProcessingStatus } from '@/types/enums';
+import {
+    updateDocumentProgress,
+    updateDocumentStatus,
+    reportDocumentError,
+    reportDocumentComplete
+} from '@/lib/document-tracker';
+import { ChunkIndexJobData } from '../chunk-worker/types';
 
 const prisma = new PrismaClient();
 
@@ -35,11 +43,13 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             fileUrl
         });
 
-        // 使用统一的文档解析器（根据 DOCUMENT_PARSER 环境变量自动选择）
+        // 使用统一的文档解析器（从用户配置中获取）
         const result = await parseDocument(fileUrl, {
             fileName: documentInfo.name || filePath.split('/').pop() || 'document',
             maintainFormat: options.maintainFormat,
             prompt: options.prompt || '',
+            documentId: documentId, // 传递 documentId 用于图片上传
+            language: options.language,
         });
 
         // 转换 DocumentParseResult 到 DocumentProcessJobResult 格式
@@ -83,6 +93,9 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
         const { documentId, userId } = job.data;
 
         try {
+            // 推送进度：开始加载配置
+            await updateDocumentProgress(documentId, 5, '加载用户配置...');
+
             // 从数据库加载用户的文档解析器配置（只查询一次）
             logger.info(`[Document Worker] Loading user config for user ${userId}, document ${documentId}`);
 
@@ -91,7 +104,9 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
             });
 
             if (!userConfig) {
-                throw new Error('未找到用户搜索配置。请访问 /settings/search 页面配置文档解析器');
+                const errorMsg = '未找到用户搜索配置。请访问 /settings/document 页面配置文档解析器';
+                await reportDocumentError(documentId, errorMsg);
+                throw new Error(errorMsg);
             }
 
             // 构建用户文档处理上下文
@@ -101,22 +116,152 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
                 mineruApiKey: userConfig.mineruApiKey ? decryptApiKey(userConfig.mineruApiKey) : undefined,
             };
 
-            logger.info(`[Document Worker] User ${userId} using parser: ${documentContext.documentParser}`);
+            logger.info(`[Document Worker] 📄 User ${userId.substring(0, 8)}... using parser: ${documentContext.documentParser}`);
+
+            // 推送进度：开始处理文档
+            await updateDocumentProgress(documentId, 10, '开始处理文档...');
+            await updateDocumentStatus(documentId, IDocumentProcessingStatus.CONVERTING, '正在转换文档');
+
+            // 更新数据库状态为转换中
+            await prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    processing_status: IDocumentProcessingStatus.CONVERTING,
+                    progress: 10,
+                    progress_msg: '正在转换文档',
+                }
+            });
 
             // 使用 AsyncLocalStorage 在隔离的上下文中运行文档处理任务
-            return await userDocumentContextStorage.run(documentContext, async () => {
+            const result = await userDocumentContextStorage.run(documentContext, async () => {
                 // 更新进度：开始处理
                 await job.updateProgress(10);
 
-                const result = await processDocument(job.data);
+                // 推送进度：正在解析
+                await updateDocumentProgress(documentId, 30, '正在解析文档内容...');
 
-                // 更新进度：处理完成
-                await job.updateProgress(100);
+                const processResult = await processDocument(job.data);
 
-                return result;
+                // 推送进度：解析完成
+                await updateDocumentProgress(documentId, 40, '文档解析完成');
+
+                // 更新进度：转换阶段完成
+                await job.updateProgress(50);
+
+                return processResult;
             });
+
+            // 转换完成，保存转换结果到数据库
+            if (result.success && result.data) {
+                const doc = await prisma.document.findUnique({
+                    where: { id: documentId },
+                    select: {
+                        process_begin_at: true,
+                        knowledgeBaseId: true,
+                        name: true
+                    }
+                });
+
+                if (!doc || !doc.knowledgeBaseId) {
+                    throw new Error(`文档 ${documentId} 缺少知识库ID`);
+                }
+
+                // 获取知识库配置
+                const knowledgeBase = await prisma.knowledgeBase.findUnique({
+                    where: { id: doc.knowledgeBaseId },
+                    select: {
+                        chunk_size: true,
+                        overlap_size: true,
+                        split_by: true,
+                    }
+                });
+
+                const startTime = doc?.process_begin_at?.getTime() || Date.now();
+                const duration = Math.floor((Date.now() - startTime) / 1000);
+
+                // 保存转换结果（markdown内容）
+                // 如果 file_url 还没有设置，则从 metadata 中获取并保存
+                const updateData: any = {
+                    markdown_content: result.data.extracted || '',
+                    processing_status: IDocumentProcessingStatus.CONVERTED, // 转换完成，可以开始索引
+                    progress: 50,
+                    progress_msg: '转换完成，等待分块索引',
+                    process_duation: duration,
+                };
+
+                // 如果 file_url 为空且 metadata 中有 fileUrl，则设置它（处理旧数据）
+                if (result.metadata?.fileUrl) {
+                    const currentDoc = await prisma.document.findUnique({
+                        where: { id: documentId },
+                        select: { file_url: true }
+                    });
+                    if (!currentDoc?.file_url) {
+                        updateData.file_url = result.metadata.fileUrl;
+                        logger.info(`[Document Worker] 文档 ${documentId} 补充设置 file_url: ${result.metadata.fileUrl}`);
+                    }
+                }
+
+                await prisma.document.update({
+                    where: { id: documentId },
+                    data: updateData
+                });
+
+                await updateDocumentStatus(documentId, IDocumentProcessingStatus.CONVERTED, '转换完成，等待分块索引');
+                await updateDocumentProgress(documentId, 50, '转换完成，等待分块索引', {
+                    converted: true,
+                });
+                logger.info(`[Document Worker] 文档 ${documentId} 转换完成，已保存内容，准备添加到分块索引队列`);
+
+                // 将分块索引任务添加到队列
+                const chunkIndexJobData: ChunkIndexJobData = {
+                    documentId,
+                    kbId: doc.knowledgeBaseId,
+                    userId,
+                    options: {
+                        model: job.data.options.model,
+                        maintainFormat: job.data.options.maintainFormat,
+                        prompt: job.data.options.prompt,
+                        documentName: doc.name,
+                        maxChunkSize: knowledgeBase?.chunk_size || 2000,
+                        overlapSize: knowledgeBase?.overlap_size || 200,
+                        splitByParagraph: knowledgeBase?.split_by === 'paragraph' || knowledgeBase?.split_by === 'page',
+                        language: job.data.options.language,
+                    }
+                };
+
+                const chunkJobId = await addTask(
+                    TaskType.CHUNK_VECTOR_INDEX,
+                    chunkIndexJobData,
+                    `chunk-index-${documentId}`
+                );
+
+                logger.info(`[Document Worker] 文档 ${documentId} 的分块索引任务已添加到队列 (Job ID: ${chunkJobId})`);
+
+                // 推送转换完成状态（使用 progress metadata 表示）
+                await updateDocumentProgress(documentId, 50, '转换完成，等待分块索引', {
+                    converted: true,
+                    chunkJobId,
+                });
+            } else {
+                // 转换失败
+                await prisma.document.update({
+                    where: { id: documentId },
+                    data: {
+                        processing_status: IDocumentProcessingStatus.FAILED,
+                        progress: 0,
+                        progress_msg: result.error || '转换失败',
+                    }
+                });
+            }
+
+            return result;
         } catch (error) {
             logger.error(`[Document Worker] Document ${documentId} processing failed:`, error);
+
+            // 推送错误状态到 Redis
+            const errorMsg = error instanceof Error ? error.message : '文档处理失败';
+            await reportDocumentError(documentId, errorMsg);
+
             // 更新进度：处理失败
             await job.updateProgress(-1);
             throw error;

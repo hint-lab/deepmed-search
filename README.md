@@ -45,7 +45,13 @@ All in one flow demo:
 ### Knowledge Base Management
 - Create and manage multiple knowledge bases
 - Upload and process documents (PDF, DOCX, TXT, etc.)
-- Automatic vector embedding generation
+- **Asynchronous Queue Processing**: All documents are processed asynchronously using BullMQ queue system (no blocking requests)
+- **Real-Time Progress Tracking**: Beautiful circular progress indicators with live updates via Server-Sent Events (SSE)
+  - Visual progress ring showing percentage (0-100%)
+  - Smooth animations and pulse effects
+  - Real-time status updates (Converting → Indexing → Completed)
+- **Automatic Vector Embedding**: Automatic chunk splitting and vector embedding generation
+- **Queue Monitoring**: Built-in BullMQ Board dashboard for monitoring queue status and job details
 - View and delete knowledge base content
 
 ### Deep Research
@@ -84,9 +90,10 @@ All in one flow demo:
 - **Search Services**: Tavily, Jina, DuckDuckGo
 - **LLM Providers**: OpenAI, DeepSeek, Google Vertex AI
 - **Document Processing**: Supports three parser types:
-  - **MarkItDown Docker**: Multi-format document parsing (PDF, DOCX, PPT, images, etc.)
-  - **MinerU Docker**: High-quality PDF parsing (self-hosted)
-  - **MinerU Cloud**: Cloud-based PDF parsing service
+  - **MarkItDown Docker**: Multi-format document parsing (PDF, DOCX, PPT, images, etc.) - FastAPI-based service
+  - **MinerU Docker**: High-quality PDF parsing (self-hosted) - **GPU-accelerated** for faster processing (RTX 3060+ recommended)
+  - **MinerU Cloud**: Cloud-based PDF parsing service (requires user API key)
+- **Image Storage**: Automatic image extraction and storage in MinIO with updated Markdown links
 - **File Storage**: MinIO (optional)
 - **Cache**: Redis (optional)
 
@@ -348,9 +355,11 @@ yarn dev
 
 Visit http://localhost:3000 to start using the application!
 
-### 7. Start Queue Worker (for Deep Research)
+### 7. Start Queue Worker (Required)
 
-To use Deep Research features, start the queue worker in a **separate terminal**:
+> ⚠️ **Important**: The queue worker is **required** for document processing and Deep Research features. All document processing tasks are handled asynchronously through the queue system.
+
+Start the queue worker in a **separate terminal**:
 
 ```bash
 # Build the worker
@@ -372,9 +381,12 @@ docker-compose up -d queue-worker
 docker-compose logs -f queue-worker
 ```
 
-The queue worker processes background tasks such as:
-- Deep Research tasks
-- Document conversion tasks
+The queue worker processes all background tasks:
+- **Document conversion tasks**: PDF/DOCX to Markdown conversion (asynchronous, non-blocking)
+- **Document indexing tasks**: Chunk splitting and vector embedding
+- **Deep Research tasks**: Multi-step research workflows
+
+> 📊 **Queue Monitoring**: Access the BullMQ Board dashboard at http://localhost:8003/admin/queues to monitor queue status, view job details, retry failed jobs, and track performance metrics in real-time.
 
 ### 8. Login to the System
 
@@ -388,26 +400,30 @@ The queue worker processes background tasks such as:
 
 After logging in, configure your personal API keys in the Settings pages:
 
+> ⚠️ **Important**: All API keys must be configured by users in the settings pages. The system no longer uses environment variables for API keys (except for system services like Redis, PostgreSQL, etc.).
+
 1. **LLM Configuration** (`/settings/llm`):
    - Add LLM providers (DeepSeek, OpenAI, Google Gemini)
-   - Configure API keys and base URLs
+   - Configure API keys and base URLs (**Required**)
    - Set default models
+   - Configure embedding provider and API key (**Required** for document indexing)
    - Test and activate configurations
 
 2. **Search Configuration** (`/settings/search`):
    - Choose search provider (Tavily or Jina)
-   - Configure Tavily API Key (for Tavily search)
-   - Configure Jina API Key (for Jina search and content extraction)
+   - Configure Tavily API Key (**Required** for Tavily search)
+   - Configure Jina API Key (**Required** for Jina search and content extraction)
    - Configure NCBI API Key (optional, for PubMed searches)
+   - Configure Embedding API Key (**Required** for document vector indexing)
 
 3. **Document Parser Configuration** (`/settings/document`):
    - Choose parser type:
-     - **MarkItDown** (Docker): Multi-format document parsing
-     - **MinerU** (Docker): High-quality PDF parsing with OCR
-     - **MinerU Cloud**: Cloud-based parsing service (requires API key)
-   - Configure MinerU API Key (if using MinerU Cloud)
+     - **MarkItDown** (Docker): Multi-format document parsing (no API key needed)
+     - **MinerU** (Docker): High-quality PDF parsing with GPU acceleration (no API key needed)
+     - **MinerU Cloud**: Cloud-based parsing service (**Requires API key**)
+   - Configure MinerU API Key (only if using MinerU Cloud)
 
-> 🔒 **Security**: All API keys are encrypted before being stored in the database using the `ENCRYPTION_KEY` from your `.env` file.
+> 🔒 **Security**: All API keys are encrypted before being stored in the database using the `ENCRYPTION_KEY` from your `.env` file. Each user's API keys are isolated and never shared.
 
 ### Service Access Points
 
@@ -416,8 +432,10 @@ After logging in, configure your personal API keys in the Settings pages:
 | **Application** | http://localhost:3000 | See test account above |
 | **PostgreSQL** | `localhost:5432` | User: `postgres`<br/>Password: `postgres`<br/>Database: `deepmed` |
 | **Milvus** | `localhost:19530` | gRPC endpoint for vector operations |
-| **Attu (Milvus UI)** | http://localhost:8000 | Milvus administration interface |
+| **Attu (Milvus UI)** | http://localhost:8001 | Milvus administration interface |
 | **Redis** | `localhost:6379` | No password |
+| **RedisInsight** | http://localhost:8002 | Redis GUI management tool |
+| **BullMQ Board** | http://localhost:8003/admin/queues | BullMQ queue monitoring dashboard<br/>Features: View queues, job details, retry failed jobs, performance metrics |
 | **MinIO API** | http://localhost:9000 | User: `minioadmin`<br/>Password: `minioadmin` |
 | **MinIO Console** | http://localhost:9001 | User: `minioadmin`<br/>Password: `minioadmin` |
 | **MarkItDown** | http://localhost:5001 | Document parser API |
@@ -757,6 +775,34 @@ http://localhost:3000/research
 - **Real-Time Updates**: Server-Sent Events for live progress monitoring
 - **Background Processing**: Long-running tasks handled by queue worker
 - **User Isolation**: Each user's API keys and configurations are securely isolated
+
+### Queue Monitoring with BullMQ Board
+
+The system includes a built-in queue monitoring dashboard powered by BullMQ Board:
+
+**Access**: http://localhost:8003/admin/queues
+
+**Features**:
+- 📊 **Real-Time Queue Status**: View active, waiting, completed, and failed jobs with live updates
+- 🔍 **Job Details**: Inspect job data, logs, and execution history
+- 🔄 **Job Management**: Retry failed jobs, clean completed jobs, pause/resume queues
+- 📈 **Performance Metrics**: Track processing times, throughput, and success rates
+- 🎯 **Queue Health**: Monitor queue health, worker status, and Redis connection
+- 🔔 **Job Search**: Search jobs by ID, status, or data content
+- 📋 **Job History**: View complete job lifecycle and retry attempts
+
+**Available Queues**:
+- `document-to-markdown`: Document conversion tasks (PDF/DOCX → Markdown)
+- `deep-research`: Deep research workflow tasks
+- `chunk-vector-index`: Vector embedding and indexing tasks
+
+**Usage Tips**:
+- The dashboard auto-refreshes every 5 seconds for real-time updates
+- Click on a queue name to view all jobs in that queue
+- Click on a job ID to see detailed information including input data, logs, and retry history
+- Use the "Retry" button to manually retry failed jobs
+- Use "Clean" to remove completed or failed jobs from the queue
+- Monitor queue metrics to identify bottlenecks or performance issues
 
 ## 🤝 Contributing
 

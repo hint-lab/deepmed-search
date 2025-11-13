@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
+import { mapToMineruLanguage, normalizeLanguage } from '@/constants/language';
 
 /**
  * MinerU API 客户端
@@ -34,6 +35,7 @@ export class MinerUClient {
         url,
         fileUrl: options.fileUrl,
         fileName: options.fileName,
+        language: options.language,
       });
 
       // 检查文件 URL 是否为本地地址
@@ -44,20 +46,25 @@ export class MinerUClient {
         });
       }
 
+      const { fileUrl, fileName, model, maintainFormat, prompt, language, ...restOptions } = options;
+      const normalizedLanguage = language ? normalizeLanguage(language) : undefined;
+      const payload = {
+        file_url: fileUrl,
+        file_name: fileName,
+        model: model || 'default',
+        maintain_format: maintainFormat ?? true,
+        prompt,
+        lang: mapToMineruLanguage(language),
+        ...restOptions,
+      };
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.config.apiKey}`,
         },
-        body: JSON.stringify({
-          file_url: options.fileUrl,
-          file_name: options.fileName,
-          model: options.model || 'default',
-          maintain_format: options.maintainFormat ?? true,
-          prompt: options.prompt,
-          ...options,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -77,6 +84,7 @@ export class MinerUClient {
         hasTaskId: !!data.data?.task_id,
         error: data.error,
         data: data,
+        language: normalizedLanguage,
       });
 
       if (!data.success || !data.data?.task_id) {

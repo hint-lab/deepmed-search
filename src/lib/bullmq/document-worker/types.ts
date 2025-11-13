@@ -43,5 +43,6 @@ export interface DocumentProcessJobData {
         model: string;
         maintainFormat: boolean;
         prompt?: string;
+        language?: string;
     }
 }

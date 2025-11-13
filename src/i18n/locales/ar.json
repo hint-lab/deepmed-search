@@ -140,10 +140,11 @@
             "documentProcessingStatus": {
                 "title": "حالة المعالجة",
                 "converting": "جاري التحويل",
+                "converted": "اكتمل التحويل (في انتظار الفهرسة)",
+                "indexing": "جاري الفهرسة",
                 "successed": "تمت المعالجة بنجاح",
                 "failed": "فشلت المعالجة",
-                "error": "خطأ",
-                "indexing": "جاري الفهرسة"
+                "error": "خطأ"
             },
             "documentEnable": "تفعيل",
             "viewDetails": "عرض التفاصيل",
@@ -163,7 +164,16 @@
             "pageNumber": "صفحة {current}",
             "nextPage": "التالي",
             "deleteDocSuccess": "تم حذف المستند بنجاح",
-            "deleteDocError": "فشل حذف المستند"
+            "deleteDocError": "فشل حذف المستند",
+            "fileStatus": {
+                "title": "حالة الملف",
+                "processing": "قيد المعالجة",
+                "error": "خطأ",
+                "success": "نجاح",
+                "pending": "قيد الانتظار",
+                "toggleSuccess": "تم تحديث حالة الملف بنجاح",
+                "toggleError": "فشل تحديث حالة الملف"
+            }
         },
         "settings": {
             "title": "الإعدادات",
@@ -245,19 +255,14 @@
         "processingError": "خطأ في المعالجة",
         "changeChunkMethod": "تغيير طريقة التقسيم",
         "rename": "إعادة تسمية",
-        "fileStatus": {
-            "title": "حالة الملف",
-            "processing": "قيد المعالجة",
-            "error": "خطأ",
-            "success": "نجاح",
-            "pending": "قيد الانتظار"
-        },
         "options": {
             "title": "الإجراءات",
             "delete": "حذف",
             "changeChunkMethod": "تغيير طريقة التقسيم",
             "rename": "إعادة تسمية",
-            "copyId": "نسخ المعرف"
+            "copyId": "نسخ المعرف",
+            "deleteDocSuccess": "تم حذف المستند بنجاح",
+            "deleteDocError": "فشل حذف المستند"
         },
         "docParser": {
             "methodTitle": "التكوين",

@@ -140,10 +140,11 @@
             "documentProcessingStatus": {
                 "title": "처리 상태",
                 "converting": "변환 중",
+                "converted": "변환 완료 (인덱싱 대기 중)",
+                "indexing": "인덱싱 중",
                 "successed": "성공적으로 처리됨",
                 "failed": "처리 실패",
-                "error": "오류",
-                "indexing": "인덱싱 중"
+                "error": "오류"
             },
             "documentEnable": "활성화",
             "viewDetails": "세부 정보 보기",
@@ -163,7 +164,16 @@
             "pageNumber": "페이지 {current}",
             "nextPage": "다음",
             "deleteDocSuccess": "문서가 성공적으로 삭제되었습니다",
-            "deleteDocError": "문서 삭제 실패"
+            "deleteDocError": "문서 삭제 실패",
+            "fileStatus": {
+                "title": "파일 상태",
+                "processing": "처리 중",
+                "error": "오류",
+                "success": "성공",
+                "pending": "대기 중",
+                "toggleSuccess": "파일 상태가 성공적으로 업데이트되었습니다",
+                "toggleError": "파일 상태 업데이트 실패"
+            }
         },
         "snippetSearch": {
             "title": "스니펫 검색",
@@ -260,19 +270,14 @@
         "processingError": "처리 오류",
         "changeChunkMethod": "청크 방법 변경",
         "rename": "이름 변경",
-        "fileStatus": {
-            "title": "파일 상태",
-            "processing": "처리 중",
-            "error": "오류",
-            "success": "성공",
-            "pending": "대기 중"
-        },
         "options": {
             "title": "작업",
             "delete": "삭제",
             "changeChunkMethod": "청크 방법 변경",
             "rename": "이름 변경",
-            "copyId": "ID 복사"
+            "copyId": "ID 복사",
+            "deleteDocSuccess": "문서가 성공적으로 삭제되었습니다",
+            "deleteDocError": "문서 삭제 실패"
         },
         "docParser": {
             "methodTitle": "구성",

@@ -25,7 +25,7 @@ export class DeepSeekProvider implements Provider {
   readonly type = ProviderType.DeepSeek;
   readonly model: string;
   readonly reasonModel: string;
-  
+
   private config: DeepSeekConfig;
   private provider: ReturnType<typeof createDeepSeek>;
   private historyMap: Map<string, MessageHistory>;
@@ -34,14 +34,14 @@ export class DeepSeekProvider implements Provider {
     this.config = config;
     this.model = config.model || 'deepseek-chat';
     this.reasonModel = config.reasonModel || 'deepseek-reasoner';
-    
+
     this.provider = createDeepSeek({
       apiKey: config.apiKey,
       baseURL: config.baseUrl,
     });
-    
+
     this.historyMap = new Map();
-    
+
     logger.info('[DeepSeek] Provider initialized', {
       model: this.model,
       reasonModel: this.reasonModel,
@@ -98,6 +98,15 @@ export class DeepSeekProvider implements Provider {
         : filterNonReasonMessages(history.getMessages());
 
       const model = isReason ? this.reasonModel : this.model;
+
+      logger.info('[DeepSeek] Chat model selection', {
+        isReason,
+        selectedModel: model,
+        reasonModel: this.reasonModel,
+        normalModel: this.model,
+        dialogId
+      });
+
       const { text, usage } = await generateText({
         model: this.provider(model),
         messages: convertToCoreMessages(messages),
@@ -108,12 +117,12 @@ export class DeepSeekProvider implements Provider {
       // 从文本中提取推理内容和实际内容
       let reasoningContent = '';
       let actualContent = text;
-      
+
       if (isReason && text.includes('<think>') && text.includes('</think>')) {
-        const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
+        const thinkMatch = text.match(/<think>([\s\S]*?)<\/redacted_reasoning>/);
         if (thinkMatch) {
           reasoningContent = thinkMatch[1];
-          actualContent = text.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+          actualContent = text.replace(/<think>[\s\S]*?<\/redacted_reasoning>/, '').trim();
         }
       }
 
@@ -164,6 +173,15 @@ export class DeepSeekProvider implements Provider {
         : filterNonReasonMessages(history.getMessages());
 
       const model = isReason ? this.reasonModel : this.model;
+
+      logger.info('[DeepSeek] ChatStream model selection', {
+        isReason,
+        selectedModel: model,
+        reasonModel: this.reasonModel,
+        normalModel: this.model,
+        dialogId
+      });
+
       const { textStream, text, usage } = await streamText({
         model: this.provider(model),
         messages: convertToCoreMessages(messages),
@@ -175,14 +193,14 @@ export class DeepSeekProvider implements Provider {
       let reasoningContent = '';
       let inThinkTag = false;
       let buffer = '';
-      
+
       for await (const chunk of textStream) {
         fullContent += chunk;
-        
+
         // 如果是推理模式，需要解析 <think> 标签
         if (isReason) {
           buffer += chunk;
-          
+
           // 检查是否进入 <think> 标签
           if (buffer.includes('<think>')) {
             const parts = buffer.split('<think>');
@@ -194,7 +212,7 @@ export class DeepSeekProvider implements Provider {
             buffer = parts.slice(1).join('<think>');
             continue;
           }
-          
+
           // 检查是否退出 </think> 标签
           if (buffer.includes('</think>')) {
             const parts = buffer.split('</think>');
@@ -206,16 +224,26 @@ export class DeepSeekProvider implements Provider {
             inThinkTag = false;
             // 发送转换标记
             onChunk('[END_REASONING][CONTENT]');
-            buffer = parts.slice(1).join('</think>');
-            
-            // 处理剩余的普通内容
-            if (buffer) {
+            // 标签后的内容作为实际回复
+            const contentAfterTag = parts.slice(1).join('</think>');
+            buffer = contentAfterTag;
+
+            // 处理标签后的普通内容（实际回复）
+            if (buffer && buffer.trim()) {
+              logger.info('[DeepSeek] Sending content after reasoning tag', {
+                contentLength: buffer.length,
+                contentPreview: buffer.substring(0, 100)
+              });
               onChunk(buffer);
               buffer = '';
+            } else {
+              // 如果标签后没有内容，清空buffer，等待后续chunk
+              logger.info('[DeepSeek] No content immediately after reasoning tag, waiting for more chunks');
+              buffer = '';
             }
-            continue;
+            // 注意：这里不continue，让后续chunk继续处理
           }
-          
+
           // 如果在 <think> 标签内
           if (inThinkTag) {
             // 检查缓冲区是否足够大，可以确定不会再匹配到 </think>
@@ -242,7 +270,7 @@ export class DeepSeekProvider implements Provider {
           onChunk(chunk);
         }
       }
-      
+
       // 处理剩余的缓冲区内容
       if (isReason && buffer) {
         if (inThinkTag) {
@@ -254,17 +282,30 @@ export class DeepSeekProvider implements Provider {
       }
 
       const finalText = await text;
-      
+
       // 从最终文本中提取推理内容和实际内容
       let finalReasoningContent = '';
       let finalActualContent = finalText;
-      
+
       if (isReason && finalText.includes('<think>') && finalText.includes('</think>')) {
-        const thinkMatch = finalText.match(/<think>([\s\S]*?)<\/think>/);
+        const thinkMatch = finalText.match(/<think>([\s\S]*?)<\/redacted_reasoning>/);
         if (thinkMatch) {
           finalReasoningContent = thinkMatch[1];
-          finalActualContent = finalText.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+          // 移除整个标签（包括开始和结束标签）及其内容
+          finalActualContent = finalText.replace(/<think>[\s\S]*?<\/redacted_reasoning>/, '').trim();
         }
+        logger.info('[DeepSeek] Extracted reasoning content', {
+          reasoningLength: finalReasoningContent.length,
+          actualContentLength: finalActualContent.length,
+          finalTextLength: finalText.length,
+          hasActualContent: finalActualContent.length > 0
+        });
+      } else if (isReason) {
+        // 如果没有找到标签，记录警告
+        logger.warn('[DeepSeek] No reasoning tags found in response', {
+          finalTextLength: finalText.length,
+          finalTextPreview: finalText.substring(0, 200)
+        });
       }
 
       const response: ChatResponse = {

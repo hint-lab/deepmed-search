@@ -46,7 +46,7 @@ const KbSearchInputSchema = z.object({
  */
 export async function performKbSearchAction(
     query: string,
-    options?: KbSearchOptions
+    options?: KbSearchOptions & { userId?: string } // 添加 userId 参数
 ): Promise<{ success: boolean; data?: ChunkResult[]; error?: string }> {
     try {
         // Validate input, including kbId and mode
@@ -58,15 +58,16 @@ export async function performKbSearchAction(
         }
 
         const { query: validatedQuery, topK, kbId, mode } = validation.data;
+        const userId = options?.userId;
 
-        console.log(`[KB Action] Performing search for query: "${validatedQuery}" in KB ID: ${kbId} with topK: ${topK} and mode: ${mode}`);
+        console.log(`[KB Action] Performing search for query: "${validatedQuery}" in KB ID: ${kbId} with topK: ${topK}, mode: ${mode}, userId: ${userId || '(system)'}`);
 
-        // 1. Generate embedding for the single query string using getEmbedding
+        // 1. Generate embedding for the single query string using getEmbedding，传递 userId
         console.log("[KB Action] Generating embedding for query...");
         let queryEmbedding: number[] = [];
         if (mode !== 'bm25') {
             // 只有向量/混合检索时才生成 embedding
-            queryEmbedding = await getEmbedding(validatedQuery, 'text-embedding-3-small');
+            queryEmbedding = await getEmbedding(validatedQuery, 'text-embedding-3-small', userId);
         }
         console.log("[KB Action] Embedding generated.");
 

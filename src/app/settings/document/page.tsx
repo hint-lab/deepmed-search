@@ -223,7 +223,7 @@ export default function DocumentSettingsPage() {
             <div className="text-sm text-blue-900 dark:text-blue-100 space-y-2">
               <p className="font-medium">配置说明：</p>
               <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                <li>MarkItDown 和 MinerU（Docker）无需配置，开箱即用</li>
+                <li>MarkItDown 和 MinerU 无需配置，开箱即用</li>
                 <li>MinerU Cloud 需要从 mineru.net 获取 API Key</li>
                 <li>API Key 会被加密存储在数据库中</li>
                 <li>更换解析器后，新上传的文档将使用新的解析器处理</li>

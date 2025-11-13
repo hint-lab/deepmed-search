@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 // Import the KB search action and result type
 import { performKbSearchAction, ChunkResult } from '@/actions/kb-search';
 import { Loader2, AlertTriangle, ArrowLeft, FileText, DatabaseZap, Search, X } from 'lucide-react'; // Added FileText, DatabaseZap, Search, X
@@ -130,6 +131,7 @@ export default function KbSearchResultsPage() {
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams(); // Get search params
+    const { data: session } = useSession();
     const [allResults, setAllResults] = useState<ChunkResult[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -200,13 +202,14 @@ export default function KbSearchResultsPage() {
         const fetchKbResults = async () => {
             console.log(`[KB Page] Calling Action for query: "${decodedQuery}" in KB ID: ${kbId}`);
             try {
-                // Pass kbId to the action
+                // Pass kbId and userId to the action
                 const response = await performKbSearchAction(decodedQuery, {
                     topK: 20,
                     kbId: kbId,
                     mode: kbSearchMode,
                     bm25Weight: bm25Weight,
                     vectorWeight: vectorWeight,
+                    userId: session?.user?.id, // 传递当前用户的 userId 以使用用户配置的 embedding 服务
                 });
 
                 if (response.success && response.data) {
@@ -227,8 +230,8 @@ export default function KbSearchResultsPage() {
         };
 
         fetchKbResults();
-        // Add kbId to dependency array - fetch again if kbId changes (though unlikely on this page)
-    }, [encodedQuery, kbId, setCurrentKnowledgeBaseId, kbSearchMode, bm25Weight, vectorWeight]);
+        // Add kbId and session to dependency array - fetch again if kbId or user changes
+    }, [encodedQuery, kbId, setCurrentKnowledgeBaseId, kbSearchMode, bm25Weight, vectorWeight, session?.user?.id]);
 
     // --- Client-side Pagination Logic ---
     const { currentResults, totalPages } = useMemo(() => {

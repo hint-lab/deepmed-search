@@ -1,19 +1,73 @@
 import { Badge } from '@/components/ui/badge';
-import { Play, RotateCw, CircleCheck, AlertTriangle } from 'lucide-react';
+import { Play, RotateCw, CircleCheck, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslate } from '@/contexts/language-context';
 import { IDocumentProcessingStatus } from '@/types/enums';
 import { IDocument } from '@/types/document';
 import { useState, useEffect, useRef } from 'react';
-import { processDocumentDirectlyAction, updateDocumentProcessingStatusAction, getDocumentStatusAction } from '@/actions/document-process';
+import { processDocumentAction, updateDocumentProcessingStatusAction, getDocumentStatusAction } from '@/actions/document-process';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useDocumentProgress } from '@/hooks/use-document-progress';
+
+// 环形进度条组件 - 增强动画效果
+const CircularProgress = ({ progress, size = 16 }: { progress: number; size?: number }) => {
+    const radius = (size - 3) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (progress / 100) * circumference;
+
+    return (
+        <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+            {/* 外层脉冲动画 - 呼吸效果 */}
+            <div 
+                className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping" 
+                style={{ 
+                    animationDuration: '1.5s',
+                    animationIterationCount: 'infinite',
+                    width: size + 4,
+                    height: size + 4,
+                    margin: -2
+                }} 
+            />
+            
+            <svg className="transform -rotate-90 relative z-10" width={size} height={size}>
+                {/* 背景圆环 - 带脉冲 */}
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="none"
+                    opacity="0.3"
+                    className="animate-pulse"
+                    style={{ animationDuration: '2s' }}
+                />
+                {/* 进度圆环 - 增强视觉效果 */}
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    className="transition-all duration-500 ease-out animate-pulse"
+                    style={{
+                        filter: 'drop-shadow(0 0 3px currentColor)',
+                        animationDuration: '1.5s'
+                    }}
+                />
+            </svg>
+        </div>
+    );
+};
 
 interface DocumentProcessingBadgeProps {
     document: IDocument;
     onRefresh?: () => void;
 }
-
-const POLLING_INTERVAL = 5000; // 缩短轮询间隔到5秒，更快检测状态变化
 
 export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcessingBadgeProps) {
     const { t } = useTranslate('knowledgeBase.table');
@@ -21,83 +75,94 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
         document.processing_status || IDocumentProcessingStatus.UNPROCESSED
     );
     const [currentProgressMsg, setCurrentProgressMsg] = useState<string | null | undefined>(document.progress_msg);
-    const isPollingActive = useRef(false);
-    const intervalId = useRef<NodeJS.Timeout | null>(null);
     const previousStatusRef = useRef<IDocumentProcessingStatus>(document.processing_status || IDocumentProcessingStatus.UNPROCESSED);
+    
+    // 使用 SSE 实时进度（仅在处理中时）
+    const isProcessing = status === IDocumentProcessingStatus.CONVERTING || 
+                         status === IDocumentProcessingStatus.INDEXING ||
+                         status === IDocumentProcessingStatus.CONVERTED; // CONVERTED 状态也需要监听，因为可能即将开始索引
+    const progressState = useDocumentProgress(isProcessing ? document.id : null);
+    
+    // 使用 SSE 进度（所有进度都通过 SSE 推送）
+    const currentProgress = progressState.progress || document.progress || 0;
 
-    const fetchAndUpdateStatus = async () => {
-        try {
-            const result = await getDocumentStatusAction(document.id);
-            if (result.success && result.data) {
-                const newStatus = result.data.processing_status;
-                const oldStatus = previousStatusRef.current; // 使用 ref 保存的状态，避免闭包问题
-                setCurrentProgressMsg(result.data.progress_msg);
-
-                if (newStatus !== oldStatus) { // 只有状态实际变化时才更新
-                    setStatus(newStatus);
-                    previousStatusRef.current = newStatus; // 更新 ref
-
-                    const isNowFinal = newStatus === IDocumentProcessingStatus.SUCCESSED || newStatus === IDocumentProcessingStatus.FAILED;
-                    const wasPreviouslyFinal = oldStatus === IDocumentProcessingStatus.SUCCESSED || oldStatus === IDocumentProcessingStatus.FAILED;
-
-                    if (isNowFinal) {
-                        stopPolling();
-                        // 只有当状态从非最终变为最终时才刷新和显示toast
-                        if (!wasPreviouslyFinal) {
-                            console.log(`[Polling] Document ${document.id} changed from ${oldStatus} to final state ${newStatus}. Refreshing table.`);
-                            
-                            // 显示处理完成的toast通知
-                            if (newStatus === IDocumentProcessingStatus.SUCCESSED) {
-                                toast.success(t('processingCompleted'), {
-                                    description: `${document.name} ${t('documentProcessingStatus.successed')}`
-                                });
-                            } else if (newStatus === IDocumentProcessingStatus.FAILED) {
-                                toast.error(t('documentProcessingStatus.failed'), {
-                                    description: result.data.progress_msg || `${document.name} 处理失败`
-                                });
-                            }
-                            
-                            onRefresh?.();
-                        }
-                    } else if (newStatus === IDocumentProcessingStatus.CONVERTING || newStatus === IDocumentProcessingStatus.INDEXING) {
-                        // 保持轮询激活状态 (无需操作)
+    // 监听 SSE 进度更新
+    useEffect(() => {
+        if (!isProcessing) return;
+        
+        // 更新进度消息
+        if (progressState.progressMsg) {
+            setCurrentProgressMsg(progressState.progressMsg);
+        }
+        
+        // 更新状态（从 SSE 接收）
+        if (progressState.status && progressState.status !== status) {
+            console.log('[ProcessingBadge] 状态更新', {
+                documentId: document.id,
+                oldStatus: status,
+                newStatus: progressState.status
+            });
+            setStatus(progressState.status as IDocumentProcessingStatus);
+            previousStatusRef.current = progressState.status as IDocumentProcessingStatus;
+        }
+        
+        // 处理完成 - 检查完成事件或进度达到100%
+        const isComplete = progressState.isComplete || 
+                          (progressState.progress >= 100 && 
+                           (previousStatusRef.current === IDocumentProcessingStatus.CONVERTING || 
+                            previousStatusRef.current === IDocumentProcessingStatus.INDEXING ||
+                            previousStatusRef.current === IDocumentProcessingStatus.CONVERTED));
+        
+        if (isComplete) {
+            const wasProcessing = previousStatusRef.current === IDocumentProcessingStatus.CONVERTING || 
+                                 previousStatusRef.current === IDocumentProcessingStatus.INDEXING;
+            
+            if (wasProcessing) {
+                if (progressState.error) {
+                    setStatus(IDocumentProcessingStatus.FAILED);
+                    previousStatusRef.current = IDocumentProcessingStatus.FAILED;
+                    setCurrentProgressMsg(progressState.error);
+                    
+                    toast.error(t('documentProcessingStatus.failed'), {
+                        description: progressState.error
+                    });
+                } else {
+                    // 转换完成，document-worker 会自动添加索引任务到队列
+                    // 前端只需要等待索引完成即可（通过 SSE 监听进度）
+                    if (previousStatusRef.current === IDocumentProcessingStatus.CONVERTING && progressState.metadata?.converted) {
+                        // 转换完成，状态应该已经是 CONVERTED，等待索引开始
+                        setCurrentProgressMsg('转换完成，等待分块索引...');
+                        setStatus(IDocumentProcessingStatus.CONVERTED);
+                        previousStatusRef.current = IDocumentProcessingStatus.CONVERTED;
+                        toast.info('转换完成，等待索引', {
+                            description: `${document.name}`
+                        });
+                    } else if (previousStatusRef.current === IDocumentProcessingStatus.CONVERTED && progressState.status === IDocumentProcessingStatus.INDEXING) {
+                        // 从 CONVERTED 转换到 INDEXING
+                        setCurrentProgressMsg('开始索引...');
+                        setStatus(IDocumentProcessingStatus.INDEXING);
+                        previousStatusRef.current = IDocumentProcessingStatus.INDEXING;
                     } else {
-                        stopPolling(); // 其他未知状态也停止轮询
+                        // 完全处理完成
+                        setStatus(IDocumentProcessingStatus.SUCCESSED);
+                        previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
+                        setCurrentProgressMsg('处理完成');
+                        
+                        toast.success(t('processingCompleted'), {
+                            description: `${document.name} ${t('documentProcessingStatus.successed')}`
+                        });
                     }
-                } else if (newStatus !== IDocumentProcessingStatus.CONVERTING && newStatus !== IDocumentProcessingStatus.INDEXING) {
-                    // 如果状态没变，但已经不是处理中状态，也停止轮询
-                    stopPolling();
                 }
-            } else {
-                console.error(`[Polling] 获取文档 ${document.id} 状态失败:`, result.error);
-                stopPolling();
+                
+                onRefresh?.();
             }
-        } catch (error) {
-            console.error(`[Polling] 轮询文档 ${document.id} 状态时出错:`, error);
-            stopPolling();
         }
-    };
-
-    const startPolling = () => {
-        if (isPollingActive.current) return;
-        isPollingActive.current = true;
-        fetchAndUpdateStatus();
-        intervalId.current = setInterval(fetchAndUpdateStatus, POLLING_INTERVAL);
-        console.log(`Polling started for document ${document.id}`);
-    };
-
-    const stopPolling = () => {
-        if (intervalId.current) {
-            clearInterval(intervalId.current);
-            intervalId.current = null;
-        }
-        isPollingActive.current = false;
-        console.log(`Polling stopped for document ${document.id}`);
-    };
+    }, [progressState, isProcessing, document.name, onRefresh, t]);
 
     const handleClick = async () => {
         if (status === IDocumentProcessingStatus.CONVERTING ||
-            status === IDocumentProcessingStatus.INDEXING) {
+            status === IDocumentProcessingStatus.INDEXING ||
+            status === IDocumentProcessingStatus.CONVERTED) {
             toast.info(t('processingWait'));
             return;
         }
@@ -115,15 +180,15 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
                 { progress: 0, progressMsg: t('processingStart') }
             );
 
-            const result = await processDocumentDirectlyAction(
+            // 使用队列模式处理文档
+            const result = await processDocumentAction(
                 document.id,
-                document.knowledgeBaseId,
                 { model: 'gpt-4o-mini', maintainFormat: true }
             );
 
             if (result.success) {
                 toast.success(t('processingTaskStarted'));
-                startPolling();
+                // SSE 会自动开始接收进度更新
             } else {
                 setStatus(IDocumentProcessingStatus.FAILED);
                 setCurrentProgressMsg(result.error || t('processingStartFailed'));
@@ -149,26 +214,19 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
         }
     };
 
-    useEffect(() => {
-        if (status === IDocumentProcessingStatus.CONVERTING || status === IDocumentProcessingStatus.INDEXING) {
-            startPolling();
-        }
-        return () => {
-            stopPolling();
-        };
-    }, [status]);
+    // SSE 会自动处理进度订阅，不再需要轮询
 
     useEffect(() => {
         const initialDocStatus = document.processing_status || IDocumentProcessingStatus.UNPROCESSED;
         setStatus(initialDocStatus);
         previousStatusRef.current = initialDocStatus; // 同步更新 ref
         setCurrentProgressMsg(document.progress_msg);
-        if (initialDocStatus === IDocumentProcessingStatus.CONVERTING || initialDocStatus === IDocumentProcessingStatus.INDEXING) {
-            startPolling();
-        } else {
-            stopPolling();
-        }
     }, [document.processing_status, document.progress_msg]);
+
+    // showProgress 基于合并后的 currentProgress（已在上面定义）
+    const showProgress = (status === IDocumentProcessingStatus.CONVERTING || 
+                          status === IDocumentProcessingStatus.INDEXING) && 
+                         currentProgress > 0;
 
     const badgeConfig = {
         [IDocumentProcessingStatus.SUCCESSED]: {
@@ -178,19 +236,52 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
             icon: <CircleCheck className="h-3 w-3" />,
             tooltip: t('documentProcessingStatus.successed')
         },
+        [IDocumentProcessingStatus.CONVERTED]: {
+            variant: 'secondary' as const,
+            className: 'text-xs flex items-center gap-1.5 bg-yellow-500/10 text-yellow-600 border border-yellow-500/20',
+            content: (
+                <span className="flex items-center gap-1.5">
+                    {t('documentProcessingStatus.converted')}
+                </span>
+            ),
+            icon: <CircleCheck className="h-3 w-3" />,
+            tooltip: t('documentProcessingStatus.converted')
+        },
         [IDocumentProcessingStatus.CONVERTING]: {
             variant: 'secondary' as const,
-            className: 'text-xs flex items-center gap-1 bg-blue-500/10 text-blue-600',
-            content: t('documentProcessingStatus.converting'),
-            icon: <RotateCw className="h-3 w-3 animate-spin" />,
-            tooltip: currentProgressMsg || t('documentProcessingStatus.converting')
+            className: 'text-xs flex items-center gap-1.5 bg-blue-500/10 text-blue-600 border border-blue-500/20 animate-pulse',
+            content: showProgress ? (
+                <span className="flex items-center gap-1.5">
+                    <span className="animate-pulse">{t('documentProcessingStatus.converting')}</span>
+                    <span className="font-bold text-blue-700 dark:text-blue-400 animate-pulse">{Math.round(currentProgress)}%</span>
+                </span>
+            ) : (
+                <span className="animate-pulse">{t('documentProcessingStatus.converting')}</span>
+            ),
+            icon: showProgress ? (
+                <CircularProgress progress={currentProgress} size={14} />
+            ) : (
+                <RotateCw className="h-3 w-3 animate-spin" />
+            ),
+            tooltip: currentProgressMsg || `${t('documentProcessingStatus.converting')} ${Math.round(currentProgress)}%`
         },
         [IDocumentProcessingStatus.INDEXING]: {
             variant: 'secondary' as const,
-            className: 'text-xs flex items-center gap-1 bg-blue-500/10 text-blue-600',
-            content: t('documentProcessingStatus.indexing'),
-            icon: <RotateCw className="h-3 w-3 animate-spin" />,
-            tooltip: currentProgressMsg || t('documentProcessingStatus.indexing')
+            className: 'text-xs flex items-center gap-1.5 bg-blue-500/10 text-blue-600 border border-blue-500/20 animate-pulse',
+            content: showProgress ? (
+                <span className="flex items-center gap-1.5">
+                    <span className="animate-pulse">{t('documentProcessingStatus.indexing')}</span>
+                    <span className="font-bold text-blue-700 dark:text-blue-400 animate-pulse">{Math.round(currentProgress)}%</span>
+                </span>
+            ) : (
+                <span className="animate-pulse">{t('documentProcessingStatus.indexing')}</span>
+            ),
+            icon: showProgress ? (
+                <CircularProgress progress={currentProgress} size={14} />
+            ) : (
+                <RotateCw className="h-3 w-3 animate-spin" />
+            ),
+            tooltip: currentProgressMsg || `${t('documentProcessingStatus.indexing')} ${Math.round(currentProgress)}%`
         },
         [IDocumentProcessingStatus.FAILED]: {
             variant: 'destructive' as const,

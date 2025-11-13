@@ -37,6 +37,7 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
     const { data: session } = useSession();
     const { createChatDialog } = useChatDialogContext();
     const abortControllerRef = useRef<AbortController | null>(null);
+    const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
     const [state, setState] = useState<ChatState>({
         messages: [],
@@ -129,164 +130,192 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
             );
 
             const reader = stream.getReader();
+            readerRef.current = reader;
             const decoder = new TextDecoder();
 
-            while (true) {
-                // 检查是否被中止
-                if (abortControllerRef.current?.signal.aborted) {
-                    reader.cancel();
-                    break;
-                }
-                
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.type === 'assistant_message_id') {
-                            updateState(prev => ({
-                                currentMessageId: data.id,
-                                messages: prev.messages.map(msg =>
-                                    msg.id === prev.currentMessageId
-                                        ? {
-                                            ...msg,
-                                            id: data.id,
-                                            role: prev.currentIsReasoning ? MessageType.ReasonReply : MessageType.Assistant,
-                                            isThinking: prev.currentIsReasoning || msg.isThinking
-                                        }
-                                        : msg
-                                )
-                            }));
-                        } else if (data.type === 'reasoning') {
-                            const chunk = typeof data.chunk === 'string' ? data.chunk : '';
-                            updateState(prev => {
-                                const nextReasoning = prev.currentReasoning + chunk;
-                                return {
-                                    currentReasoning: nextReasoning,
-                                    isStreaming: true,
-                                    messages: prev.messages.map(msg =>
-                                        msg.id === prev.currentMessageId
-                                            ? {
-                                                ...msg,
-                                                thinkingContent: nextReasoning,
-                                                isThinking: true,
-                                                role: MessageType.ReasonReply
-                                            }
-                                            : msg
-                                    )
-                                };
-                            });
-                        } else if (data.type === 'transition') {
-                            const message = typeof data.message === 'string' ? data.message : '';
-                            updateState(prev => {
-                                const separator = prev.currentReasoning.length > 0 && message ? '\n' : '';
-                                const nextReasoning = prev.currentReasoning + (message ? `${separator}${message}` : '');
-                                return {
-                                    currentReasoning: nextReasoning,
-                                    isStreaming: true,
-                                    messages: prev.messages.map(msg =>
-                                        msg.id === prev.currentMessageId
-                                            ? {
-                                                ...msg,
-                                                thinkingContent: nextReasoning,
-                                                isThinking: true,
-                                                role: MessageType.ReasonReply
-                                            }
-                                            : msg
-                                    )
-                                };
-                            });
-                        } else if (data.type === 'content') {
-                            updateState(prev => ({
-                                currentContent: prev.currentContent + data.chunk,
-                                isStreaming: true,
-                                messages: prev.messages.map(msg =>
-                                    msg.id === prev.currentMessageId
-                                        ? {
-                                            ...msg,
-                                            content: prev.currentContent + data.chunk,
-                                            thinkingContent: prev.currentReasoning,
-                                            isThinking: prev.currentReasoning.length > 0,
-                                            role: prev.currentIsReasoning ? MessageType.ReasonReply : msg.role
-                                        }
-                                        : msg
-                                )
-                            }));
-                        } else if (data.type === 'done' || data.done) {
-                            updateState(prev => {
-                                // 先保存当前内容，再清空
-                                const finalContent = prev.currentContent;
-                                const finalReasoning = prev.currentReasoning;
-                                
-                                return {
-                                    isStreaming: false,
-                                    currentContent: '',
-                                    currentReasoning: '',
-                                    currentMessageId: null,
-                                    currentIsReasoning: false,
-                                    messages: prev.messages.map(msg =>
-                                        msg.id === prev.currentMessageId
-                                            ? {
-                                                ...msg,
-                                                content: finalContent,
-                                                thinkingContent: finalReasoning,
-                                                isThinking: finalReasoning.length > 0
-                                            }
-                                            : msg
-                                    )
-                                };
-                            });
-                            router.refresh();
-                        } else if (data.type === 'kb_chunks') {
-                            updateState(prev => ({
-                                kbChunks: data.chunks,
-                                isUsingKbForCurrentMessage: true
-                            }));
-                        } else if (data.type === 'reference') {
-                            // 处理引用数据
-                            updateState(prev => ({
-                                messages: prev.messages.map(msg =>
-                                    msg.id === prev.currentMessageId
-                                        ? {
-                                            ...msg,
-                                            metadata: {
-                                                ...msg.metadata,
-                                                references: [
-                                                    ...(msg.metadata?.references || []),
-                                                    {
-                                                        ref_id: data.ref_id,
-                                                        doc_id: data.doc_id,
-                                                        doc_name: data.doc_name,
-                                                        content: data.content
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                        : msg
-                                )
-                            }));
-                        }
-                    } catch (e) {
-                        console.error('解析流数据失败:', e);
+            try {
+                while (true) {
+                    // 检查是否被中止
+                    if (abortControllerRef.current?.signal.aborted) {
+                        await reader.cancel();
+                        break;
                     }
+                    
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // 再次检查是否被中止
+                    if (abortControllerRef.current?.signal.aborted) {
+                        await reader.cancel();
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.type === 'assistant_message_id') {
+                                updateState(prev => ({
+                                    currentMessageId: data.id,
+                                    messages: prev.messages.map(msg =>
+                                        msg.id === prev.currentMessageId
+                                            ? {
+                                                ...msg,
+                                                id: data.id,
+                                                role: prev.currentIsReasoning ? MessageType.ReasonReply : MessageType.Assistant,
+                                                isThinking: prev.currentIsReasoning || msg.isThinking
+                                            }
+                                            : msg
+                                    )
+                                }));
+                            } else if (data.type === 'reasoning') {
+                                const chunk = typeof data.chunk === 'string' ? data.chunk : '';
+                                updateState(prev => {
+                                    const nextReasoning = prev.currentReasoning + chunk;
+                                    return {
+                                        currentReasoning: nextReasoning,
+                                        isStreaming: true,
+                                        messages: prev.messages.map(msg =>
+                                            msg.id === prev.currentMessageId
+                                                ? {
+                                                    ...msg,
+                                                    thinkingContent: nextReasoning,
+                                                    isThinking: true,
+                                                    role: MessageType.ReasonReply
+                                                }
+                                                : msg
+                                        )
+                                    };
+                                });
+                            } else if (data.type === 'transition') {
+                                const message = typeof data.message === 'string' ? data.message : '';
+                                updateState(prev => {
+                                    const separator = prev.currentReasoning.length > 0 && message ? '\n' : '';
+                                    const nextReasoning = prev.currentReasoning + (message ? `${separator}${message}` : '');
+                                    return {
+                                        currentReasoning: nextReasoning,
+                                        isStreaming: true,
+                                        messages: prev.messages.map(msg =>
+                                            msg.id === prev.currentMessageId
+                                                ? {
+                                                    ...msg,
+                                                    thinkingContent: nextReasoning,
+                                                    isThinking: true,
+                                                    role: MessageType.ReasonReply
+                                                }
+                                                : msg
+                                        )
+                                    };
+                                });
+                            } else if (data.type === 'content') {
+                                updateState(prev => ({
+                                    currentContent: prev.currentContent + data.chunk,
+                                    isStreaming: true,
+                                    messages: prev.messages.map(msg =>
+                                        msg.id === prev.currentMessageId
+                                            ? {
+                                                ...msg,
+                                                content: prev.currentContent + data.chunk,
+                                                thinkingContent: prev.currentReasoning,
+                                                isThinking: prev.currentReasoning.length > 0,
+                                                role: prev.currentIsReasoning ? MessageType.ReasonReply : msg.role
+                                            }
+                                            : msg
+                                    )
+                                }));
+                            } else if (data.type === 'done' || data.done) {
+                                updateState(prev => {
+                                    // 先保存当前内容，再清空
+                                    const finalContent = prev.currentContent;
+                                    const finalReasoning = prev.currentReasoning;
+                                    
+                                    return {
+                                        isStreaming: false,
+                                        currentContent: '',
+                                        currentReasoning: '',
+                                        currentMessageId: null,
+                                        currentIsReasoning: false,
+                                        messages: prev.messages.map(msg =>
+                                            msg.id === prev.currentMessageId
+                                                ? {
+                                                    ...msg,
+                                                    content: finalContent,
+                                                    thinkingContent: finalReasoning,
+                                                    isThinking: finalReasoning.length > 0
+                                                }
+                                                : msg
+                                        )
+                                    };
+                                });
+                                router.refresh();
+                            } else if (data.type === 'kb_chunks') {
+                                updateState(prev => ({
+                                    kbChunks: data.chunks,
+                                    isUsingKbForCurrentMessage: true
+                                }));
+                            } else if (data.type === 'reference') {
+                                // 处理引用数据
+                                updateState(prev => ({
+                                    messages: prev.messages.map(msg =>
+                                        msg.id === prev.currentMessageId
+                                            ? {
+                                                ...msg,
+                                                metadata: {
+                                                    ...msg.metadata,
+                                                    references: [
+                                                        ...(msg.metadata?.references || []),
+                                                        {
+                                                            ref_id: data.ref_id,
+                                                            doc_id: data.doc_id,
+                                                            doc_name: data.doc_name,
+                                                            content: data.content
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                            : msg
+                                    )
+                                }));
+                            }
+                        } catch (e) {
+                            console.error('解析流数据失败:', e);
+                        }
+                    }
+                }
+            } finally {
+                // 确保清理 reader
+                if (readerRef.current) {
+                    try {
+                        await readerRef.current.cancel();
+                    } catch (e) {
+                        // 忽略取消时的错误
+                    }
+                    readerRef.current = null;
                 }
             }
         } catch (error) {
-            updateState(prev => ({
-                error: error instanceof Error ? error.message : '流式处理失败',
-                isStreaming: false,
-                currentContent: '',
-                currentReasoning: '',
-                currentMessageId: null,
-                currentIsReasoning: false,
-                messages: prev.messages.filter(msg => msg.id !== prev.currentMessageId)
-            }));
+            // 如果是取消错误，不显示错误信息
+            if (abortControllerRef.current?.signal.aborted) {
+                console.log('Stream cancelled by user');
+            } else {
+                updateState(prev => ({
+                    error: error instanceof Error ? error.message : '流式处理失败',
+                    isStreaming: false,
+                    currentContent: '',
+                    currentReasoning: '',
+                    currentMessageId: null,
+                    currentIsReasoning: false,
+                    messages: prev.messages.filter(msg => msg.id !== prev.currentMessageId)
+                }));
+            }
+        } finally {
+            // 确保清理引用
+            readerRef.current = null;
+            abortControllerRef.current = null;
         }
     }, [updateState, router, loadMessages]);
 
@@ -345,12 +374,7 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
     }, [session, state.isStreaming, createChatDialog, router, t, startStream, updateState]);
 
     const stopStream = useCallback(() => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
-        
-        // 保存当前已接收的内容并清理状态
+        // 立即更新状态，让UI能立即响应
         updateState(prev => {
             const finalContent = prev.currentContent;
             const finalReasoning = prev.currentReasoning;
@@ -373,6 +397,20 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                 )
             };
         });
+
+        // 取消流式读取
+        if (readerRef.current) {
+            readerRef.current.cancel().catch(() => {
+                // 忽略取消时的错误
+            });
+            readerRef.current = null;
+        }
+
+        // 中止请求
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
     }, [updateState]);
 
 

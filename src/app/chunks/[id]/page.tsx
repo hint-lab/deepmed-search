@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import {
     Card, CardContent, CardHeader, CardTitle
@@ -13,6 +13,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslate } from '@/contexts/language-context';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+
+const PUBLIC_MINIO_URL =
+    process.env.NEXT_PUBLIC_MINIO_PUBLIC_URL ||
+    process.env.NEXT_PUBLIC_MINIO_URL ||
+    'http://localhost:9000';
+
+function toPublicMinioUrl(url?: string | null): string | undefined {
+    if (!url) {
+        return undefined;
+    }
+
+    if (!PUBLIC_MINIO_URL) {
+        return url;
+    }
+
+    try {
+        const original = new URL(url);
+        const target = new URL(PUBLIC_MINIO_URL);
+
+        original.protocol = target.protocol;
+        original.host = target.host; // includes hostname + port
+
+        return original.toString();
+    } catch (error) {
+        console.warn('[Chunks Preview] Failed to map MinIO URL', {
+            url,
+            PUBLIC_MINIO_URL,
+            error,
+        });
+        return url;
+    }
+}
 
 export default function ChunksPage() {
     const { id } = useParams();
@@ -66,45 +98,83 @@ export default function ChunksPage() {
         });
     };
 
+    const fileUrl = useMemo(() => {
+        const url = toPublicMinioUrl(document?.file_url);
+        console.log('[ChunksPage] file_url processing:', {
+            original: document?.file_url,
+            processed: url,
+            documentType: document?.type
+        });
+        return url;
+    }, [document?.file_url, document?.type]);
+
     const renderPreview = () => {
         // Check if document exists first
         if (!document) {
-            return <p className="text-center text-gray-500 p-10">{t('noDocumentData')}</p>; // Added case for no document
+            return <p className="text-center text-gray-500 p-10">{t('noDocumentData')}</p>;
         }
 
-        // 1. Check for Markdown first
-        if (document.type === 'text/markdown' || document.name.endsWith('.md') || document.name.endsWith('.markdown')) {
-            // Use markdown_content for preview
-            if (document.markdown_content) {
+        // 1. 优先显示原始文件（如果有 file_url）
+        if (fileUrl) {
+            // PDF 文件使用 iframe 预览
+            if (document.type === 'application/pdf') {
                 return (
-                    <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify">
-                        <ReactMarkdown>{document.markdown_content}</ReactMarkdown>
+                    <iframe
+                        src={fileUrl}
+                        className="w-full h-full border-0"
+                        title={document.name}
+                    />
+                );
+            }
+            
+            // 图片文件直接显示
+            if (document.type?.startsWith('image/')) {
+                return (
+                    <div className="w-full h-full flex items-center justify-center p-4">
+                        <img 
+                            src={fileUrl} 
+                            alt={document.name}
+                            className="max-w-full max-h-full object-contain"
+                        />
                     </div>
                 );
-            } else {
-                // Handle case where it's markdown type but content is missing
-                return <p className="text-center text-gray-500 p-10">{t('markdownContentMissing')}</p>;
             }
-        }
-
-        // 2. Check for PDF with a valid file_url
-        if (document.type === 'application/pdf' && document.file_url) {
+            
+            // 其他文件类型，提供下载链接
             return (
-                <iframe
-                    src={document.file_url}
-                    className="w-full h-full border-0"
-                    title={document.name}
-                />
+                <div className="w-full h-full flex flex-col items-center justify-center p-10">
+                    <p className="text-center text-gray-500 mb-4">{t('previewNotSupported')}</p>
+                    <a 
+                        href={fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                    >
+                        {t('downloadFile') || '下载文件'}
+                    </a>
+                </div>
             );
         }
 
-        // 3. Handle cases where file_url exists but type is not supported for preview
-        if (document.file_url) {
-            return <p className="text-center text-gray-500 p-10">{t('previewNotSupported')}</p>;
+        // 2. 如果没有 file_url，但有 markdown_content，显示 Markdown（作为后备）
+        if (document.markdown_content) {
+            return (
+                <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify">
+                    <ReactMarkdown>{document.markdown_content}</ReactMarkdown>
+                </div>
+            );
         }
 
-        // 4. Fallback: No specific preview available (e.g., no file_url and not markdown)
-        return <p className="text-center text-gray-500 p-10">{t('noPreview')}</p>;
+        // 3. Fallback: No specific preview available
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center p-10">
+                <p className="text-center text-gray-500 mb-2">{t('noPreview')}</p>
+                <p className="text-xs text-gray-400">
+                    file_url: {document.file_url || 'null'} | 
+                    markdown_content: {document.markdown_content ? 'exists' : 'null'}
+                </p>
+            </div>
+        );
     };
 
     if (loading) {

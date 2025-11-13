@@ -140,10 +140,11 @@
             "documentProcessingStatus": {
                 "title": "処理状態",
                 "converting": "変換中",
+                "converted": "変換完了（インデックス待ち）",
+                "indexing": "インデックス中",
                 "successed": "処理成功",
                 "failed": "処理失敗",
-                "error": "エラー",
-                "indexing": "インデックス作成中"
+                "error": "エラー"
             },
             "documentEnable": "有効",
             "viewDetails": "詳細を見る",
@@ -163,7 +164,16 @@
             "pageNumber": "ページ {current}",
             "nextPage": "次へ",
             "deleteDocSuccess": "ドキュメントが正常に削除されました",
-            "deleteDocError": "ドキュメントの削除に失敗しました"
+            "deleteDocError": "ドキュメントの削除に失敗しました",
+            "fileStatus": {
+                "title": "ファイル状態",
+                "processing": "処理中",
+                "error": "エラー",
+                "success": "成功",
+                "pending": "保留中",
+                "toggleSuccess": "ファイル状態が正常に更新されました",
+                "toggleError": "ファイル状態の更新に失敗しました"
+            }
         },
         "snippetSearch": {
             "title": "スニペット検索",
@@ -260,19 +270,14 @@
         "processingError": "処理エラー",
         "changeChunkMethod": "チャンク方法を変更",
         "rename": "名前変更",
-        "fileStatus": {
-            "title": "ファイル状態",
-            "processing": "処理中",
-            "error": "エラー",
-            "success": "成功",
-            "pending": "保留中"
-        },
         "options": {
             "title": "操作",
             "delete": "削除",
             "changeChunkMethod": "チャンク方法を変更",
             "rename": "名前変更",
-            "copyId": "IDをコピー"
+            "copyId": "IDをコピー",
+            "deleteDocSuccess": "ドキュメントが正常に削除されました",
+            "deleteDocError": "ドキュメントの削除に失敗しました"
         },
         "docParser": {
             "methodTitle": "設定",

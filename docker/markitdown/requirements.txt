@@ -1,5 +1,6 @@
 markitdown[all]
-flask
-werkzeug
+fastapi
+uvicorn[standard]
+python-multipart
 requests
-
+minio

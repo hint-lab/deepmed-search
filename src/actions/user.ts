@@ -491,10 +491,15 @@ export const getUserSearchConfig = withAuth(async (session: Session) => {
             id: config.id,
             searchProvider: config.searchProvider as 'tavily' | 'jina',
             documentParser: config.documentParser as DocumentParser,
+            embeddingProvider: config.embeddingProvider as 'openai' | 'volcengine',
+            embeddingModel: config.embeddingModel,
+            embeddingBaseUrl: config.embeddingBaseUrl || undefined,
+            embeddingDimension: config.embeddingDimension,
             hasTavilyApiKey: !!config.tavilyApiKey,
             hasJinaApiKey: !!config.jinaApiKey,
             hasNcbiApiKey: !!config.ncbiApiKey,
             hasMineruApiKey: !!config.mineruApiKey,
+            hasEmbeddingApiKey: !!config.embeddingApiKey,
             createdAt: config.createdAt,
             updatedAt: config.updatedAt,
         };
@@ -530,11 +535,26 @@ export const updateUserSearchConfig = withAuth(async (session: Session, params: 
         if (params.mineruApiKey !== undefined) {
             updateData.mineruApiKey = params.mineruApiKey ? encryptApiKey(params.mineruApiKey) : null;
         }
+        if (params.embeddingApiKey !== undefined) {
+            updateData.embeddingApiKey = params.embeddingApiKey ? encryptApiKey(params.embeddingApiKey) : null;
+        }
         if (params.searchProvider !== undefined) {
             updateData.searchProvider = params.searchProvider;
         }
         if (params.documentParser !== undefined) {
             updateData.documentParser = params.documentParser;
+        }
+        if (params.embeddingProvider !== undefined) {
+            updateData.embeddingProvider = params.embeddingProvider;
+        }
+        if (params.embeddingModel !== undefined) {
+            updateData.embeddingModel = params.embeddingModel;
+        }
+        if (params.embeddingBaseUrl !== undefined) {
+            updateData.embeddingBaseUrl = params.embeddingBaseUrl || null;
+        }
+        if (params.embeddingDimension !== undefined) {
+            updateData.embeddingDimension = params.embeddingDimension;
         }
 
         // 查找或创建配置

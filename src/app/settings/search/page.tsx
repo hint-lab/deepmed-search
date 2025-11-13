@@ -29,10 +29,18 @@ export default function SearchSettingsPage() {
   const [jinaApiKey, setJinaApiKey] = useState('');
   const [ncbiApiKey, setNcbiApiKey] = useState('');
   
+  // 嵌入服务配置状态
+  const [embeddingProvider, setEmbeddingProvider] = useState<EmbeddingProvider>('openai');
+  const [embeddingApiKey, setEmbeddingApiKey] = useState('');
+  const [embeddingModel, setEmbeddingModel] = useState('text-embedding-3-small');
+  const [embeddingBaseUrl, setEmbeddingBaseUrl] = useState('');
+  const [embeddingDimension, setEmbeddingDimension] = useState(1536);
+  
   // 配置状态标识
   const [hasTavilyApiKey, setHasTavilyApiKey] = useState(false);
   const [hasJinaApiKey, setHasJinaApiKey] = useState(false);
   const [hasNcbiApiKey, setHasNcbiApiKey] = useState(false);
+  const [hasEmbeddingApiKey, setHasEmbeddingApiKey] = useState(false);
 
   // 加载配置
   useEffect(() => {
@@ -42,9 +50,14 @@ export default function SearchSettingsPage() {
         if (result.success && result.data) {
           const config = result.data as SearchConfig;
           setSearchProvider(config.searchProvider);
+          setEmbeddingProvider(config.embeddingProvider);
+          setEmbeddingModel(config.embeddingModel);
+          setEmbeddingBaseUrl(config.embeddingBaseUrl || '');
+          setEmbeddingDimension(config.embeddingDimension);
           setHasTavilyApiKey(config.hasTavilyApiKey);
           setHasJinaApiKey(config.hasJinaApiKey);
           setHasNcbiApiKey(config.hasNcbiApiKey);
+          setHasEmbeddingApiKey(config.hasEmbeddingApiKey);
         }
       } catch (error) {
         console.error('加载配置失败:', error);
@@ -65,12 +78,17 @@ export default function SearchSettingsPage() {
     try {
       const params: UpdateSearchConfigParams = {
         searchProvider,
+        embeddingProvider,
+        embeddingModel,
+        embeddingDimension,
       };
 
       // 只在用户输入了新值时更新
       if (tavilyApiKey) params.tavilyApiKey = tavilyApiKey;
       if (jinaApiKey) params.jinaApiKey = jinaApiKey;
       if (ncbiApiKey) params.ncbiApiKey = ncbiApiKey;
+      if (embeddingApiKey) params.embeddingApiKey = embeddingApiKey;
+      if (embeddingBaseUrl) params.embeddingBaseUrl = embeddingBaseUrl;
 
       const result = await updateUserSearchConfig(params);
       if (result.success) {
@@ -79,15 +97,22 @@ export default function SearchSettingsPage() {
         setTavilyApiKey('');
         setJinaApiKey('');
         setNcbiApiKey('');
+        setEmbeddingApiKey('');
+        setEmbeddingBaseUrl('');
         
         // 重新加载以更新状态
         const reloadResult = await getUserSearchConfig();
         if (reloadResult.success && reloadResult.data) {
           const config = reloadResult.data as SearchConfig;
           setSearchProvider(config.searchProvider);
+          setEmbeddingProvider(config.embeddingProvider);
+          setEmbeddingModel(config.embeddingModel);
+          setEmbeddingBaseUrl(config.embeddingBaseUrl || '');
+          setEmbeddingDimension(config.embeddingDimension);
           setHasTavilyApiKey(config.hasTavilyApiKey);
           setHasJinaApiKey(config.hasJinaApiKey);
           setHasNcbiApiKey(config.hasNcbiApiKey);
+          setHasEmbeddingApiKey(config.hasEmbeddingApiKey);
         }
       } else {
         toast.error(result.error || '保存失败');
@@ -221,6 +246,100 @@ export default function SearchSettingsPage() {
             </p>
           </div>
 
+          {/* 嵌入服务配置 */}
+          <div className="space-y-2 pt-4 border-t">
+            <h3 className="text-sm font-medium">嵌入服务配置</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              配置用于生成文档向量嵌入的服务（用于知识库搜索）
+            </p>
+
+            {/* 嵌入服务提供商 */}
+            <div className="space-y-2">
+              <Label htmlFor="embeddingProvider">嵌入服务提供商</Label>
+              <Select value={embeddingProvider} onValueChange={(v) => setEmbeddingProvider(v as EmbeddingProvider)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择嵌入服务" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI 兼容</SelectItem>
+                  <SelectItem value="volcengine">火山引擎</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 嵌入服务 API Key */}
+            <div className="space-y-2">
+              <Label htmlFor="embeddingApiKey" className="flex items-center gap-2">
+                嵌入服务 API Key
+                {hasEmbeddingApiKey && (
+                  <span className="text-sm text-green-600">
+                    <Check className="inline h-3 w-3" /> 已配置
+                  </span>
+                )}
+              </Label>
+              <Input
+                id="embeddingApiKey"
+                type="password"
+                placeholder={hasEmbeddingApiKey ? "留空保持不变" : "输入嵌入服务 API Key"}
+                value={embeddingApiKey}
+                onChange={(e) => setEmbeddingApiKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {embeddingProvider === 'volcengine' 
+                  ? '火山引擎 ARK API Key，用于生成文档向量嵌入'
+                  : 'OpenAI 或兼容服务的 API Key，用于生成文档向量嵌入'}
+              </p>
+            </div>
+
+            {/* 嵌入模型 */}
+            <div className="space-y-2">
+              <Label htmlFor="embeddingModel">嵌入模型</Label>
+              <Input
+                id="embeddingModel"
+                type="text"
+                placeholder="text-embedding-3-small"
+                value={embeddingModel}
+                onChange={(e) => setEmbeddingModel(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {embeddingProvider === 'volcengine' 
+                  ? '火山引擎模型 ID（例如：ep-xxx）'
+                  : 'OpenAI 嵌入模型名称（例如：text-embedding-3-small）'}
+              </p>
+            </div>
+
+            {/* 嵌入服务 Base URL (可选) */}
+            <div className="space-y-2">
+              <Label htmlFor="embeddingBaseUrl">Base URL (可选)</Label>
+              <Input
+                id="embeddingBaseUrl"
+                type="text"
+                placeholder={embeddingProvider === 'volcengine' ? 'https://ark.cn-beijing.volces.com/api/v3' : 'https://api.openai.com/v1'}
+                value={embeddingBaseUrl}
+                onChange={(e) => setEmbeddingBaseUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                自定义 API 端点，留空使用默认值
+              </p>
+            </div>
+
+            {/* 向量维度 */}
+            <div className="space-y-2">
+              <Label htmlFor="embeddingDimension">向量维度</Label>
+              <Input
+                id="embeddingDimension"
+                type="number"
+                min="1"
+                max="4096"
+                value={embeddingDimension}
+                onChange={(e) => setEmbeddingDimension(parseInt(e.target.value) || 1536)}
+              />
+              <p className="text-xs text-muted-foreground">
+                嵌入向量的维度（text-embedding-3-small 为 1536，text-embedding-3-large 为 3072）
+              </p>
+            </div>
+          </div>
+
           {/* 保存按钮 */}
           <div className="pt-4">
             <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
@@ -251,6 +370,7 @@ export default function SearchSettingsPage() {
                 <li>Jina API Key 是 Deep Research（深度研究）功能的必需配置</li>
                 <li>Tavily 可作为备选搜索引擎使用</li>
                 <li>NCBI API Key 用于 PubMed 文献搜索，可选配置</li>
+                <li>嵌入服务用于生成文档向量，支持 OpenAI 兼容服务和火山引擎</li>
                 <li>所有 API Key 会被加密存储在数据库中</li>
               </ul>
             </div>

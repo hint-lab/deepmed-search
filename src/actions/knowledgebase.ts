@@ -103,7 +103,7 @@ export const createKnowledgeBaseAction = withAuth(async (session, params: { name
                 created_at: new Date(),
                 updated_at: new Date(),
                 created_by: session.user.id,
-                separators: defaultSeparators ,
+                separators: defaultSeparators,
                 split_by: "page"
             },
         });
@@ -153,6 +153,12 @@ export const updateKnowledgeBaseAction = withAuth(async (
             // 如果 schema 中 separator 是 String[]，这样可能可以
             // 如果是 Json 类型，可能需要 updateData.separator = separator as any 或 JSON.stringify(separator)
             updateData.separators = advanceParams.separators; // 假设 schema 中字段名为 separator
+        }
+        if (advanceParams.parser_config !== undefined) {
+            updateData.parser_config = advanceParams.parser_config;
+        }
+        if (advanceParams.parser_id !== undefined) {
+            updateData.parser_id = advanceParams.parser_id;
         }
     }
     // 添加 updated_at （虽然 Prisma 会自动处理，但显式设置可以）

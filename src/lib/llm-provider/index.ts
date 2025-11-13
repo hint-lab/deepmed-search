@@ -2,9 +2,9 @@ import { DeepSeekProvider } from './providers/deepseek';
 import { OpenAIProvider } from './providers/openai';
 import { GoogleProvider } from './providers/google';
 import {
-  getDeepSeekConfigFromEnv,
-  getOpenAIConfigFromEnv,
-  getGoogleConfigFromEnv,
+  DEFAULT_DEEPSEEK_CONFIG,
+  DEFAULT_OPENAI_CONFIG,
+  DEFAULT_GOOGLE_CONFIG,
 } from './config';
 import {
   Provider,
@@ -25,72 +25,69 @@ export class ProviderFactory {
 
   /**
    * 创建 DeepSeek 提供商
+   * 注意：必须提供 apiKey，不再从环境变量读取
    */
-  static createDeepSeek(config?: Partial<DeepSeekConfig>): DeepSeekProvider {
-    const fullConfig = config
-      ? { ...getDeepSeekConfigFromEnv(), ...config }
-      : getDeepSeekConfigFromEnv();
+  static createDeepSeek(config: Partial<DeepSeekConfig>): DeepSeekProvider {
+    if (!config?.apiKey) {
+      throw new Error('API Key is required. All API keys must be provided by user configuration.');
+    }
+    const fullConfig = {
+      ...DEFAULT_DEEPSEEK_CONFIG,
+      ...config,
+    } as DeepSeekConfig;
     return new DeepSeekProvider(fullConfig);
   }
 
   /**
    * 创建 OpenAI 提供商
+   * 注意：必须提供 apiKey，不再从环境变量读取
    */
-  static createOpenAI(config?: Partial<OpenAIConfig>): OpenAIProvider {
-    const fullConfig = config
-      ? { ...getOpenAIConfigFromEnv(), ...config }
-      : getOpenAIConfigFromEnv();
+  static createOpenAI(config: Partial<OpenAIConfig>): OpenAIProvider {
+    if (!config?.apiKey) {
+      throw new Error('API Key is required. All API keys must be provided by user configuration.');
+    }
+    const fullConfig = {
+      ...DEFAULT_OPENAI_CONFIG,
+      ...config,
+    } as OpenAIConfig;
     return new OpenAIProvider(fullConfig);
   }
 
   /**
    * 创建 Google 提供商
+   * 注意：必须提供 apiKey，不再从环境变量读取
    */
-  static createGoogle(config?: Partial<GoogleConfig>): GoogleProvider {
-    const fullConfig = config
-      ? { ...getGoogleConfigFromEnv(), ...config }
-      : getGoogleConfigFromEnv();
+  static createGoogle(config: Partial<GoogleConfig>): GoogleProvider {
+    if (!config?.apiKey) {
+      throw new Error('API Key is required. All API keys must be provided by user configuration.');
+    }
+    const fullConfig = {
+      ...DEFAULT_GOOGLE_CONFIG,
+      ...config,
+    } as GoogleConfig;
     return new GoogleProvider(fullConfig);
   }
 
   /**
    * 获取或创建提供商实例（单例模式）
+   * @deprecated 此方法已废弃，请使用 createProviderFromUserConfig(userId) 代替
+   * 所有 API Key 必须由用户配置提供，不再支持从环境变量读取
    */
   static getProvider(type: ProviderType): Provider {
-    if (!this.providers.has(type)) {
-      logger.info(`[ProviderFactory] Creating new provider: ${type}`);
-
-      switch (type) {
-        case ProviderType.DeepSeek:
-          this.providers.set(type, this.createDeepSeek());
-          break;
-        case ProviderType.OpenAI:
-          this.providers.set(type, this.createOpenAI());
-          break;
-        case ProviderType.Google:
-          this.providers.set(type, this.createGoogle());
-          break;
-        default:
-          throw new Error(`Unsupported provider type: ${type}`);
-      }
-    }
-
-    return this.providers.get(type)!;
+    throw new Error(
+      'getProvider() 已废弃。请使用 createProviderFromUserConfig(userId) 代替。所有 API Key 必须由用户在 /settings/llm 页面配置。'
+    );
   }
 
   /**
    * 根据模型名称自动选择提供商
+   * @deprecated 此方法已废弃，请使用 createProviderFromUserConfig(userId) 代替
+   * 所有 API Key 必须由用户配置提供，不再支持从环境变量读取
    */
   static getProviderByModel(modelName: string): Provider {
-    if (modelName.startsWith('deepseek')) {
-      return this.getProvider(ProviderType.DeepSeek);
-    } else if (modelName.startsWith('gpt-') || modelName.startsWith('o1-')) {
-      return this.getProvider(ProviderType.OpenAI);
-    } else if (modelName.startsWith('gemini')) {
-      return this.getProvider(ProviderType.Google);
-    } else {
-      throw new Error(`Cannot determine provider for model: ${modelName}`);
-    }
+    throw new Error(
+      'getProviderByModel() 已废弃。请使用 createProviderFromUserConfig(userId) 代替。所有 API Key 必须由用户在 /settings/llm 页面配置。'
+    );
   }
 
   /**

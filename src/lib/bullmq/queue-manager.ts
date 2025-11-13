@@ -38,7 +38,11 @@ const jobOptions: JobsOptions = {
         type: 'exponential' as const,
         delay: 1000,
     },
-    removeOnComplete: true,
+    // 保留最近 100 个已完成的任务，方便在 BullMQ Board 中查看历史
+    removeOnComplete: {
+        age: 3600, // 保留 1 小时
+        count: 100, // 最多保留 100 个
+    },
     removeOnFail: 1000,
 };
 
@@ -48,6 +52,20 @@ const queues: { [key: string]: Queue } = {
     [TaskType.CHUNK_VECTOR_INDEX]: new Queue(QUEUE_NAMES.CHUNK_VECTOR_INDEX, { connection }),
     [TaskType.DEEP_RESEARCH]: new Queue(QUEUE_NAMES.DEEP_RESEARCH, { connection }),
 };
+
+/**
+ * 获取任务队列名称
+ * @param type 任务类型
+ * @returns 对应的队列名称
+ */
+function getQueueName(type: TaskType): string {
+    const queueNameMap: { [key: string]: string } = {
+        [TaskType.DOCUMENT_CONVERT_TO_MD]: QUEUE_NAMES.DOCUMENT_TO_MARKDOWN,
+        [TaskType.CHUNK_VECTOR_INDEX]: QUEUE_NAMES.CHUNK_VECTOR_INDEX,
+        [TaskType.DEEP_RESEARCH]: QUEUE_NAMES.DEEP_RESEARCH,
+    };
+    return queueNameMap[type] || type;
+}
 
 /**
  * 获取任务队列
@@ -77,8 +95,9 @@ export const researchQueue = getQueue<any, any>(TaskType.DEEP_RESEARCH);
  */
 export async function addTask<TData = any>(type: TaskType, data: TData, name: string = 'process'): Promise<string> {
     const queue = getQueue<TData>(type);
-    const job = await queue.add(name, data as any, jobOptions);
-    console.log(`任务 '${name}' 已添加到队列 ${type} (Job ID: ${job.id})`);
+    const queueName = getQueueName(type);
+    const job = await queue.add(name as any, data as any, jobOptions);
+    console.log(`[${queueName}] 任务 '${name}' 已添加到队列 ${type} (Job ID: ${job.id})`);
     return job.id || '';
 }
 
@@ -91,11 +110,12 @@ export async function getTaskStatus(jobId: string): Promise<TaskStatus | null> {
     for (const type of Object.values(TaskType)) {
         const queue = queues[type];
         if (!queue) continue;
+        const queueName = getQueueName(type);
         try {
             const job = await queue.getJob(jobId);
             if (job) {
                 const state = await job.getState();
-                console.log(`找到任务 ${jobId} 在队列 ${type} 中，状态: ${state}`);
+                console.log(`[${queueName}] 找到任务 ${jobId} 在队列 ${type} 中，状态: ${state}`);
                 return {
                     state,
                     result: job.returnvalue,
@@ -103,10 +123,10 @@ export async function getTaskStatus(jobId: string): Promise<TaskStatus | null> {
                 };
             }
         } catch (error) {
-            console.error(`在队列 ${type} 中查找任务 ${jobId} 时出错:`, error);
+            console.error(`[${queueName}] 在队列 ${type} 中查找任务 ${jobId} 时出错:`, error);
         }
     }
-    console.log(`未在任何队列中找到任务 ${jobId}`);
+    console.log(`[QueueManager] 未在任何队列中找到任务 ${jobId}`);
     return null;
 }
 
@@ -176,35 +196,50 @@ export function createWorker<TData = any, TResult = any>(
     type: TaskType,
     processor: (job: Job<TData, TResult>) => Promise<TResult>
 ): Worker<TData, TResult> {
-    const queueNameMap: { [key: string]: string } = {
-        [TaskType.DOCUMENT_CONVERT_TO_MD]: QUEUE_NAMES.DOCUMENT_TO_MARKDOWN,
-        [TaskType.CHUNK_VECTOR_INDEX]: QUEUE_NAMES.CHUNK_VECTOR_INDEX,
-        [TaskType.DEEP_RESEARCH]: QUEUE_NAMES.DEEP_RESEARCH,
-    };
+    const actualQueueName = getQueueName(type);
 
-    const actualQueueName = queueNameMap[type];
-    if (!actualQueueName) {
-        throw new Error(`未找到 TaskType ${type} 对应的队列名称映射`);
+    console.log(`[${actualQueueName}] 创建 Worker 连接到队列: ${actualQueueName} (TaskType: ${type})`);
+
+    // 对于文档处理 Worker，显示可用的解析器服务
+    if (type === TaskType.DOCUMENT_CONVERT_TO_MD) {
+        const parsers = [];
+        if (process.env.MARKITDOWN_URL) {
+            parsers.push(`MarkItDown(${process.env.MARKITDOWN_URL})`);
+        }
+        if (process.env.MINERU_URL) {
+            parsers.push(`MinerU(${process.env.MINERU_URL})`);
+        }
+        // MinerU Cloud 不需要检查环境变量，API Key 从用户配置中读取
+        parsers.push('MinerU-Cloud(需用户配置)');
+
+        console.log(`[${actualQueueName}]   📄 可用的文档解析器服务: ${parsers.join(', ') || '默认(MarkItDown)'}`);
+        console.log(`[${actualQueueName}]   ℹ️  实际使用的解析器由用户在 /settings/document 页面配置`);
+        console.log(`[${actualQueueName}]   💡 提示: MinerU Cloud 的 API Key 从用户配置中读取（非环境变量）`);
+        // 调试信息：显示环境变量值
+        console.log(`[${actualQueueName}]   🔍 Docker 服务端点检查:`, {
+            MARKITDOWN_URL: process.env.MARKITDOWN_URL || '(未设置)',
+            MINERU_URL: process.env.MINERU_URL || '(未设置)',
+        });
     }
 
-    console.log(`创建 Worker 连接到队列: ${actualQueueName} (TaskType: ${type})`);
     const worker = new Worker<TData, TResult>(actualQueueName, processor, { connection });
 
     // 错误处理
     worker.on('error', (err) => {
-        console.error(`Worker for ${actualQueueName} error:`, err);
+        console.error(`[${actualQueueName}] Worker error:`, err);
     });
 
     worker.on('failed', (job, err) => {
-        console.error(`Job in ${actualQueueName} failed:`, job?.id || 'unknown', err);
+        console.error(`[${actualQueueName}] Job failed:`, job?.id || 'unknown', err);
     });
 
     worker.on('completed', (job, result) => {
-        console.log(`Job in ${actualQueueName} completed:`, job.id, 'Result:', result);
+        console.log(`[${actualQueueName}] Job completed:`, job.id, 'Result:', result);
     });
 
     worker.on('active', (job) => {
-        console.log(`Job in ${actualQueueName} started:`, job.id);
+        console.log(`[${actualQueueName}] Job started:`, job.id);
+        // 文档处理任务会在处理器中输出用户选择的解析器信息
     });
 
     return worker;
@@ -216,6 +251,7 @@ export async function getJobStatus(jobId: string): Promise<JobStatus> {
         for (const type of Object.values(TaskType)) {
             const queue = queues[type];
             if (!queue) continue;
+            const queueName = getQueueName(type);
             const job = await queue.getJob(jobId);
             if (job) {
                 const state = await job.getState();
@@ -232,7 +268,7 @@ export async function getJobStatus(jobId: string): Promise<JobStatus> {
             }
         }
     } catch (error) {
-        console.error(`获取任务 ${jobId} 状态失败:`, error);
+        console.error(`[QueueManager] 获取任务 ${jobId} 状态失败:`, error);
     }
 
     return {

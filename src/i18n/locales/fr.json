@@ -140,10 +140,11 @@
             "documentProcessingStatus": {
                 "title": "État du traitement",
                 "converting": "Conversion en cours",
+                "converted": "Conversion terminée (Prêt pour l'indexation)",
+                "indexing": "Indexation en cours",
                 "successed": "Traitement réussi",
                 "failed": "Échec du traitement",
-                "error": "Erreur",
-                "indexing": "Indexation en cours"
+                "error": "Erreur"
             },
             "documentEnable": "Activer",
             "viewDetails": "Voir les détails",
@@ -163,7 +164,16 @@
             "pageNumber": "Page {current}",
             "nextPage": "Suivant",
             "deleteDocSuccess": "Document supprimé avec succès",
-            "deleteDocError": "Échec de la suppression du document"
+            "deleteDocError": "Échec de la suppression du document",
+            "fileStatus": {
+                "title": "État du fichier",
+                "processing": "Traitement en cours",
+                "error": "Erreur",
+                "success": "Succès",
+                "pending": "En attente",
+                "toggleSuccess": "Statut du fichier mis à jour avec succès",
+                "toggleError": "Échec de la mise à jour du statut du fichier"
+            }
         },
         "settings": {
             "title": "Paramètres",
@@ -245,19 +255,14 @@
         "processingError": "Erreur de traitement",
         "changeChunkMethod": "Changer la méthode de découpage",
         "rename": "Renommer",
-        "fileStatus": {
-            "title": "État du fichier",
-            "processing": "Traitement en cours",
-            "error": "Erreur",
-            "success": "Succès",
-            "pending": "En attente"
-        },
         "options": {
             "title": "Actions",
             "delete": "Supprimer",
             "changeChunkMethod": "Changer la méthode de découpage",
             "rename": "Renommer",
-            "copyId": "Copier l'ID"
+            "copyId": "Copier l'ID",
+            "deleteDocSuccess": "Document supprimé avec succès",
+            "deleteDocError": "Échec de la suppression du document"
         },
         "docParser": {
             "methodTitle": "Configuration",

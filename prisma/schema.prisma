@@ -128,17 +128,22 @@ model LLMConfig {
 /// 搜索配置模型
 /// 存储用户的搜索 API 配置
 model SearchConfig {
-  id                String   @id @default(cuid()) // 配置唯一标识
-  tavilyApiKey      String? // Tavily API Key（加密）
-  jinaApiKey        String? // Jina API Key（加密）
-  ncbiApiKey        String? // NCBI API Key（加密）
-  mineruApiKey      String? // MinerU API Key（加密）
-  searchProvider    String   @default("jina") // 默认搜索提供商（tavily/jina）
-  documentParser    String   @default("markitdown-docker") // 文档解析器（markitdown-docker/mineru-docker/mineru-cloud）
-  userId            String   @unique // 用户ID（每个用户只有一个搜索配置）
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
-  createdAt         DateTime @default(now()) // 创建时间
-  updatedAt         DateTime @updatedAt // 更新时间
+  id                  String   @id @default(cuid()) // 配置唯一标识
+  tavilyApiKey        String? // Tavily API Key（加密）
+  jinaApiKey          String? // Jina API Key（加密）
+  ncbiApiKey          String? // NCBI API Key（加密）
+  mineruApiKey        String? // MinerU API Key（加密）
+  searchProvider      String   @default("jina") // 默认搜索提供商（tavily/jina）
+  documentParser      String   @default("markitdown-docker") // 文档解析器（markitdown-docker/mineru-docker/mineru-cloud）
+  embeddingProvider   String   @default("openai") // 嵌入服务提供商（openai/volcengine）
+  embeddingApiKey     String? // 嵌入服务 API Key（加密）
+  embeddingModel      String   @default("text-embedding-3-small") // 嵌入模型名称
+  embeddingBaseUrl    String? // 嵌入服务 Base URL（可选，用于自定义端点）
+  embeddingDimension  Int      @default(1536) // 嵌入向量维度
+  userId              String   @unique // 用户ID（每个用户只有一个搜索配置）
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade) // 用户关联
+  createdAt           DateTime @default(now()) // 创建时间
+  updatedAt           DateTime @updatedAt // 更新时间
 
   @@index([userId]) // 用户ID索引
 }
@@ -181,12 +186,14 @@ model KnowledgeBase {
 /// 文档处理状态枚举
 /// UNPROCESSED: 未处理
 /// CONVERTING: 转换中
+/// CONVERTED: 转换完成（可以开始索引）
 /// INDEXING: 向量索引中
 /// SUCCESSED: 处理完成
 /// FAILED: 处理失败
 enum DocumentProcessingStatus {
   UNPROCESSED
   CONVERTING
+  CONVERTED
   INDEXING
   SUCCESSED
   FAILED
