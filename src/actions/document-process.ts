@@ -12,7 +12,7 @@ import { DocumentProcessJobResult } from '@/lib/bullmq/document-worker/types';
 import { IDocumentProcessingStatus } from '@/types/enums';
 import { userDocumentContextStorage, UserDocumentContext } from '@/lib/document-parser/user-context';
 import { decryptApiKey } from '@/lib/crypto';
-import { normalizeLanguage } from '@/constants/language';
+import { getChunkingDefaultsForLanguage, normalizeLanguage } from '@/constants/language';
 import {
     updateDocumentProgress,
     updateDocumentStatus,
@@ -369,16 +369,16 @@ export async function convertDocumentAction(
             await prisma.document.update({
                 where: { id: documentId },
                 data: {
-                    markdown_content: markdown_content, // 如果上传成功，就不存在数据库里
+                    // markdown_content 不再存储在数据库，而是存储在 MinIO，URL 存储在 content_url
                     chunk_num: 0,
                     token_num: result.metadata?.inputTokens || 0,
-                    processing_status: IDocumentProcessingStatus.CONVERTING,
+                    processing_status: IDocumentProcessingStatus.CONVERTED, // 转换完成，可以开始索引
                     progress: 60,
                     progress_msg: '转换完成',
                     process_duation: Math.floor((Date.now() - startTime) / 1000),
                     process_begin_at: new Date(startTime),
                     file_url: result.metadata?.fileUrl || '',
-                    content_url: content_url || '',
+                    content_url: content_url || '', // 存储 markdown 的 URL
                     metadata: {
                         processingTime: Date.now() - startTime,
                         completionTime: result.metadata?.completionTime || 0,
@@ -438,6 +438,7 @@ export async function splitDocumentAction(
         maxChunkSize?: number;
         overlapSize?: number;
         splitByParagraph?: boolean;
+        language?: string;
     }
 ): Promise<ServerActionResponse<{ chunks: DocumentChunk[]; totalChunks: number }>> {
     try {
@@ -450,12 +451,20 @@ export async function splitDocumentAction(
         await updateDocumentProgress(documentId, 50, '开始分块...');
 
         // 创建文档分割器
-        // 使用传入的配置，如果没有则使用更大的默认值（2000字符）以减少分块数量
+        // 使用传入的配置与语言默认值
+        const normalizedLanguage = normalizeLanguage(options.language);
+        const languageDefaults = getChunkingDefaultsForLanguage(normalizedLanguage);
+        const maxChunkSize = options.maxChunkSize || languageDefaults.maxChunkSize;
+        const overlapSize = options.overlapSize ?? languageDefaults.overlapSize;
+        const splitByParagraph =
+            options.splitByParagraph !== undefined ? options.splitByParagraph : languageDefaults.splitByParagraph;
+
         const splitter = new DocumentSplitter({
-            maxChunkSize: options.maxChunkSize || 2000,
-            overlapSize: options.overlapSize || 200,
-            splitByParagraph: options.splitByParagraph !== undefined ? options.splitByParagraph : true,
-            preserveFormat: options.maintainFormat
+            maxChunkSize,
+            overlapSize,
+            splitByParagraph,
+            preserveFormat: options.maintainFormat,
+            parserMode: languageDefaults.parserMode,
         });
 
         // 处理每个页面
@@ -487,6 +496,7 @@ export async function splitDocumentAction(
                 metadata: {
                     ...chunk.metadata,
                     position: globalChunkIndex + localIndex, // 更新全局位置
+                    language: normalizedLanguage,
                 }
             }));
 
@@ -540,12 +550,11 @@ export async function indexDocumentChunksAction(
             logger.error('indexDocumentChunksAction 收到无效的 kbId', { documentId, receivedKbId: kbId });
             return { success: false, error: `内部错误：传递给索引操作的知识库 ID 无效 (received: ${kbId})` };
         }
-        // 更新状态并推送进度
+        // 更新进度（不更新状态，INDEXING 状态只通过 SSE 推送）
         await prisma.document.update({
             where: { id: documentId },
             data: {
                 chunk_num: chunks.length,
-                processing_status: IDocumentProcessingStatus.INDEXING,
                 progress: 60,
                 progress_msg: `开始索引 ${chunks.length} 个文档块...`
             }
@@ -822,21 +831,24 @@ export async function updateDocumentProcessingStatusAction(
         const progress = options?.progress ?? 0;
         const progressMsg = options?.progressMsg || '';
 
-        // 更新数据库
-        await prisma.document.update({
-            where: { id: documentId },
-            data: {
-                processing_status: {
-                    set: status
-                },
-                progress,
-                progress_msg: progressMsg,
-                processing_error: options?.error || null,
-                ...(status === IDocumentProcessingStatus.CONVERTING && {
-                    process_begin_at: new Date()
-                })
-            }
-        });
+        // CONVERTING 和 INDEXING 状态不写入数据库，只通过 SSE 推送
+        const isTemporaryStatus = status === IDocumentProcessingStatus.CONVERTING ||
+            status === IDocumentProcessingStatus.INDEXING;
+
+        // 如果不是临时状态，更新数据库
+        if (!isTemporaryStatus) {
+            await prisma.document.update({
+                where: { id: documentId },
+                data: {
+                    processing_status: {
+                        set: status
+                    },
+                    progress,
+                    progress_msg: progressMsg,
+                    processing_error: options?.error || null,
+                }
+            });
+        }
 
         // 推送进度事件到 Redis（SSE）
         try {

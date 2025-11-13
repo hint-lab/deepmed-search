@@ -32,7 +32,12 @@ export function DocumentOptionDropdownButton({
     const { t } = useTranslate('knowledgeBase.options');
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const { deleteDocument, deleteLoading } = useDeleteDocument();
-    const isProcessing = document.processing_status === IDocumentProcessingStatus.CONVERTING || document.processing_status === IDocumentProcessingStatus.INDEXING;
+    // 数据库状态只可能是：UNPROCESSED, CONVERTED, SUCCESSED, FAILED
+    // CONVERTED 状态表示转换完成，可能正在索引（INDEXING 状态只通过 SSE 推送）
+    // 所以如果状态是 CONVERTED，也应该视为处理中
+    const isProcessing = document.processing_status === IDocumentProcessingStatus.CONVERTED ||
+                         document.processing_status === IDocumentProcessingStatus.CONVERTING ||
+                         document.processing_status === IDocumentProcessingStatus.INDEXING;
 
     const handleRenameClick = useCallback(() => {
         setRenameDialogOpen(true);

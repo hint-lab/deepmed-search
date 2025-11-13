@@ -296,11 +296,13 @@ export async function processDocumentWithMinerU(
 ): Promise<MinerUProcessResult> {
   const startTime = Date.now();
   const documentId = uuidv4();
+  const normalizedLanguage = normalizeLanguage(options.language);
 
   try {
     logger.info('[MinerU] 开始处理文档', {
       documentId,
       filePathOrUrl,
+      language: normalizedLanguage,
     });
 
     // 从用户上下文获取 MinerU API Key
@@ -326,6 +328,7 @@ export async function processDocumentWithMinerU(
         metadata: {
           documentId,
           processingTime: Date.now() - startTime,
+          language: normalizedLanguage,
         },
       };
     }
@@ -363,6 +366,7 @@ export async function processDocumentWithMinerU(
           fileName: path.basename(filePathOrUrl),
           inputTokens: content.split(/\s+/).length,
           outputTokens: content.split(/\s+/).length,
+          language: normalizedLanguage,
         },
       };
     }
@@ -373,13 +377,16 @@ export async function processDocumentWithMinerU(
     });
 
     // 创建任务
+    const { language, ...restOptions } = options;
+
     const taskResponse = await client.createTask({
       fileUrl: filePathOrUrl,
       fileName: options.fileName || path.basename(filePathOrUrl),
       model: options.model,
       maintainFormat: options.maintainFormat ?? true,
       prompt: options.prompt,
-      ...options,
+      language,
+      ...restOptions,
     });
 
     if (!taskResponse.success || !taskResponse.data?.task_id) {
@@ -430,6 +437,7 @@ export async function processDocumentWithMinerU(
         fileName: path.basename(filePathOrUrl),
         inputTokens: extracted.split(/\s+/).length,
         outputTokens: extracted.split(/\s+/).length,
+        language: normalizedLanguage,
       },
     };
   } catch (error) {
@@ -438,6 +446,7 @@ export async function processDocumentWithMinerU(
       documentId,
       processingTime,
       error: error instanceof Error ? error.message : '未知错误',
+      language: normalizedLanguage,
     });
 
     return {
@@ -446,6 +455,7 @@ export async function processDocumentWithMinerU(
       metadata: {
         documentId,
         processingTime,
+        language: normalizedLanguage,
       },
     };
   }

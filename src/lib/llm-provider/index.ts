@@ -46,10 +46,29 @@ export class ProviderFactory {
     if (!config?.apiKey) {
       throw new Error('API Key is required. All API keys must be provided by user configuration.');
     }
+
+    // 处理 baseUrl：如果用户提供了有效的 baseUrl，使用它；否则使用默认值
+    // 空字符串、null 或 undefined 都视为未配置，使用默认值
+    const userBaseUrl = (config.baseUrl && typeof config.baseUrl === 'string' && config.baseUrl.trim())
+      ? config.baseUrl.trim()
+      : null;
+
+    // 如果用户提供了有效的 baseUrl，使用它；否则使用默认值
+    const finalBaseUrl = userBaseUrl || DEFAULT_OPENAI_CONFIG.baseUrl || 'https://api.openai.com/v1';
+
     const fullConfig = {
       ...DEFAULT_OPENAI_CONFIG,
       ...config,
+      baseUrl: finalBaseUrl, // 总是使用一个有效的 baseUrl
     } as OpenAIConfig;
+
+    logger.info('[ProviderFactory] Creating OpenAI provider', {
+      userProvidedBaseUrl: config.baseUrl || '(not provided)',
+      finalBaseUrl: finalBaseUrl,
+      willUseCustomBaseURL: !!userBaseUrl && userBaseUrl !== DEFAULT_OPENAI_CONFIG.baseUrl,
+      defaultBaseUrl: DEFAULT_OPENAI_CONFIG.baseUrl,
+    });
+
     return new OpenAIProvider(fullConfig);
   }
 
@@ -140,7 +159,13 @@ export async function createProviderFromUserConfig(userId: string): Promise<Prov
     if (activeConfig) {
       const decryptedApiKey = decryptApiKey(activeConfig.apiKey);
 
-      logger.info(`[ProviderFactory] Using user-configured provider: ${activeConfig.provider} (${activeConfig.name}) for user: ${userId}`);
+      // 记录配置信息，用于调试
+      logger.info(`[ProviderFactory] Using user-configured provider: ${activeConfig.provider} (${activeConfig.name}) for user: ${userId}`, {
+        provider: activeConfig.provider,
+        model: activeConfig.model,
+        baseUrl: activeConfig.baseUrl || '(not set, will use default)',
+        hasBaseUrl: !!activeConfig.baseUrl,
+      });
 
       switch (activeConfig.provider) {
         case 'deepseek':
@@ -151,9 +176,21 @@ export async function createProviderFromUserConfig(userId: string): Promise<Prov
             reasonModel: activeConfig.reasonModel || undefined,
           });
         case 'openai':
+          // 处理 baseUrl：如果数据库中是 null 或空字符串，使用 undefined
+          // ProviderFactory.createOpenAI 会正确处理，使用默认值
+          const baseUrl = (activeConfig.baseUrl && typeof activeConfig.baseUrl === 'string' && activeConfig.baseUrl.trim())
+            ? activeConfig.baseUrl.trim()
+            : undefined;
+
+          logger.info(`[ProviderFactory] Creating OpenAI provider for user ${userId}`, {
+            hasBaseUrlInDb: !!activeConfig.baseUrl,
+            baseUrlFromDb: activeConfig.baseUrl || '(null/empty)',
+            processedBaseUrl: baseUrl || '(will use default)',
+          });
+
           return ProviderFactory.createOpenAI({
             apiKey: decryptedApiKey,
-            baseUrl: activeConfig.baseUrl || undefined,
+            baseUrl: baseUrl, // 传递处理后的 baseUrl（可能是 undefined，ProviderFactory 会使用默认值）
             model: activeConfig.model || undefined,
           });
         case 'google':

@@ -154,7 +154,7 @@ export function useTableColumns({
       header: t('documentProcessingStatus.title'),
       cell: ({ row }) => {
         const document = row.original;
-        return <DocumentProcessingBadge document={document} />;
+        return <DocumentProcessingBadge document={document} onRefresh={refreshData} />;
       },
       meta: {
         cellClassName: 'w-32',
@@ -163,48 +163,48 @@ export function useTableColumns({
     {
       accessorKey: 'chunk_num',
       header: ({ column }) => (
-        <div className="text-right hidden md:table-cell">
+        <div className="hidden md:block">
           {t('documentChunkNum')}
         </div>
       ),
       cell: ({ row }) => {
         const chunk_count = row.getValue('chunk_num') as number;
-        return <div className="text-right">{chunk_count === undefined ? "-" : chunk_count}</div>;
+        return <div>{chunk_count === undefined ? "-" : chunk_count}</div>;
       },
       meta: {
-        headerClassName: 'hidden md:table-cell',
+        headerClassName: 'hidden md:table-cell text-right',
         cellClassName: 'w-48 hidden md:table-cell text-right',
       } as ColumnMeta,
     },
     {
       accessorKey: 'token_num',
       header: ({ column }) => (
-        <div className="text-right hidden md:table-cell">
+        <div className="hidden md:block">
           {t('documentWordCount')}
         </div>
       ),
       cell: ({ row }) => {
         const count = row.getValue('token_num') as number;
-        return <div className="text-right">{count === undefined ? "-" : count}</div>;
+        return <div>{count === undefined ? "-" : count}</div>;
       },
       meta: {
-        headerClassName: 'hidden md:table-cell',
+        headerClassName: 'hidden md:table-cell text-right',
         cellClassName: 'w-48 hidden md:table-cell text-right',
       } as ColumnMeta,
     },
     {
       accessorKey: 'size',
       header: ({ column }) => (
-        <div className="text-right hidden md:table-cell">
+        <div className="hidden md:block">
           {t('documentSize')}
         </div>
       ),
       cell: ({ row }) => {
         const size = row.getValue('size') as number;
-        return <div className="text-right">{formatBytes(size)}</div>;
+        return <div>{formatBytes(size)}</div>;
       },
       meta: {
-        headerClassName: 'hidden md:table-cell',
+        headerClassName: 'hidden md:table-cell text-right',
         cellClassName: 'w-48 hidden md:table-cell text-right',
       } as ColumnMeta,
     },

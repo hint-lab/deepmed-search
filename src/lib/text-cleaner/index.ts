@@ -1,6 +1,7 @@
 import logger from '@/utils/logger';
 import { createProviderFromUserConfig } from '@/lib/llm-provider';
 import { v4 as uuidv4 } from 'uuid';
+import { getTextCleanerPrompt, normalizeLanguage } from '@/constants/language';
 
 /**
  * 使用 LLM 清理文本中的多余换行
@@ -11,6 +12,7 @@ export async function cleanTextWithLLM(
   options: {
     model?: string;
     userId: string; // 用户ID（必需：使用用户配置的 LLM）
+    language?: string;
   }
 ): Promise<{ success: boolean; cleanedText?: string; error?: string }> {
   const startTime = Date.now();
@@ -47,26 +49,8 @@ export async function cleanTextWithLLM(
     // 生成一个临时的 dialogId 用于此次清理任务
     const dialogId = `text-cleaner-${uuidv4()}`;
 
-    const systemPrompt = `你是一个专业的文本清理助手。你的任务是清理PDF提取文本中的多余换行，使文本更易读。
-
-规则：
-1. **合并句子内的换行**：如果一个句子因为PDF排版被拆成多行，请将它们合并成一个完整的句子
-2. **保留段落换行**：保留段落之间的换行（通常是双换行或明显的段落结束）
-3. **保留表格结构**：如果是表格内容，保持表格的行列结构
-4. **保留列表结构**：保持编号列表、项目符号列表的结构
-5. **不要改变内容**：只修正换行，不要修改、删除或添加任何文字内容
-6. **保留专业术语**：医学术语、公式、数字保持原样
-
-示例：
-输入：
-"慢性髓性白血病（CML）是一种骨髓增殖性肿
-瘤，其特征是费城染色体阳性，导致BCR-ABL融
-合基因的形成。"
-
-输出：
-"慢性髓性白血病（CML）是一种骨髓增殖性肿瘤，其特征是费城染色体阳性，导致BCR-ABL融合基因的形成。"
-
-请直接返回清理后的文本，不要添加任何说明或额外内容。`;
+    const normalizedLanguage = options.language ? normalizeLanguage(options.language) : undefined;
+    const systemPrompt = getTextCleanerPrompt(normalizedLanguage);
 
     // 设置系统提示词
     provider.setSystemPrompt(dialogId, systemPrompt);
@@ -85,6 +69,7 @@ export async function cleanTextWithLLM(
       dialogId,
       timeoutMs,
       estimatedTimeout: `${Math.round(timeoutMs / 1000)}秒`,
+      language: normalizedLanguage,
     });
 
     // 调用 provider 进行文本清理（带超时保护）
@@ -148,6 +133,7 @@ export async function cleanLongText(
     model?: string;
     maxChunkSize?: number;
     userId: string; // 用户ID（必需：使用用户配置的 LLM）
+    language?: string;
   }
 ): Promise<{ success: boolean; cleanedText?: string; error?: string }> {
   const maxChunkSize = options.maxChunkSize || 8000; // 约8000字符一块
@@ -157,9 +143,12 @@ export async function cleanLongText(
     return cleanTextWithLLM(text, { model: options.model, userId: options.userId });
   }
 
+  const normalizedLanguage = options.language ? normalizeLanguage(options.language) : undefined;
+
   logger.info('[Text Cleaner] 文本较长，分批处理', {
     totalLength: text.length,
     chunkSize: maxChunkSize,
+    language: normalizedLanguage,
   });
 
   try {
@@ -199,7 +188,11 @@ export async function cleanLongText(
       });
 
       try {
-        const result = await cleanTextWithLLM(chunks[i], { model: options.model, userId: options.userId });
+        const result = await cleanTextWithLLM(chunks[i], {
+          model: options.model,
+          userId: options.userId,
+          language: options.language,
+        });
         const chunkTime = Date.now() - chunkStart;
         if (result.success && result.cleanedText) {
           cleanedChunks.push(result.cleanedText);

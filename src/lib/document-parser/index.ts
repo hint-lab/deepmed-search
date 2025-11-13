@@ -409,7 +409,7 @@ async function convertWithMinerUCloud(
       fileName: options.fileName,
       maintainFormat: options.maintainFormat,
       prompt: options.prompt,
-      language: mineruLanguage, // 传递映射后的语言代码
+      language: options.language,
     });
 
     if (!result.success) {

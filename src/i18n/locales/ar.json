@@ -224,7 +224,7 @@
             "descriptionDescription": "وصف موجز لغرض قاعدة المعرفة هذه",
             "language": "اللغة",
             "languagePlaceholder": "اختر لغة قاعدة المعرفة",
-            "languageDescription": "اختر اللغة الأساسية لقاعدة المعرفة",
+            "languageDescription": "اختر اللغة الأساسية لقاعدة المعرفة. سيتم استخدامها أثناء تحويل المستندات وتقسيمها وتنظيف النص.",
             "saveSettings": "حفظ الإعدادات",
             "chunkSize": "حجم الجزء",
             "chunkSizeDescription": "تعيين الحد الأقصى لعدد الأحرف لكل جزء نصي",

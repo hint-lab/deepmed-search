@@ -192,25 +192,9 @@ export function ChatProvider({ children }: { children: React.ReactNode; }) {
                                     };
                                 });
                             } else if (data.type === 'transition') {
-                                const message = typeof data.message === 'string' ? data.message : '';
-                                updateState(prev => {
-                                    const separator = prev.currentReasoning.length > 0 && message ? '\n' : '';
-                                    const nextReasoning = prev.currentReasoning + (message ? `${separator}${message}` : '');
-                                    return {
-                                        currentReasoning: nextReasoning,
-                                        isStreaming: true,
-                                        messages: prev.messages.map(msg =>
-                                            msg.id === prev.currentMessageId
-                                                ? {
-                                                    ...msg,
-                                                    thinkingContent: nextReasoning,
-                                                    isThinking: true,
-                                                    role: MessageType.ReasonReply
-                                                }
-                                                : msg
-                                        )
-                                    };
-                                });
+                                // 不再追加转换消息到 reasoning 内容中
+                                // 转换状态由前端 UI 自动检测（当有 reasoning 内容且开始接收 content 时）
+                                console.log('[ChatContext] Transition from reasoning to content');
                             } else if (data.type === 'content') {
                                 updateState(prev => ({
                                     currentContent: prev.currentContent + data.chunk,

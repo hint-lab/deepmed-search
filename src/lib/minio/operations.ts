@@ -344,4 +344,47 @@ export async function getReadableUrl(
         });
         throw error;
     }
+}
+
+/**
+ * 从 MinIO URL 读取文本内容（如 markdown）
+ * @param url MinIO URL（可以是直接 URL 或预签名 URL）
+ * @returns 文本内容
+ */
+export async function readTextFromUrl(url: string): Promise<string> {
+    try {
+        // 解析 URL，提取 bucket 和 object name
+        // URL 格式可能是：
+        // 1. http://endpoint:port/bucket/object/path
+        // 2. http://endpoint:port/bucket/object/path?signature=...
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/').filter(p => p);
+
+        if (pathParts.length < 2) {
+            throw new Error(`无效的 MinIO URL: ${url}`);
+        }
+
+        const bucketName = pathParts[0];
+        const objectName = pathParts.slice(1).join('/');
+
+        // 获取文件流
+        const stream = await getFileStream(bucketName, objectName);
+
+        // 将流转换为字符串
+        return new Promise((resolve, reject) => {
+            const chunks: Buffer[] = [];
+            stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+            stream.on('end', () => {
+                const content = Buffer.concat(chunks).toString('utf-8');
+                resolve(content);
+            });
+            stream.on('error', reject);
+        });
+    } catch (error) {
+        console.error('从 URL 读取文本内容失败', {
+            url,
+            error: error instanceof Error ? error.message : '未知错误'
+        });
+        throw error;
+    }
 } 

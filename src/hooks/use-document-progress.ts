@@ -91,10 +91,14 @@ export function useDocumentProgress(documentId: string | null) {
                 try {
                     const data = JSON.parse(event.data);
                     logger.info('[useDocumentProgress] Status event', { documentId, data });
+                    const newStatus = data.status;
                     setState((prev) => ({
                         ...prev,
-                        status: data.status || prev.status,
+                        status: newStatus || prev.status,
                         progressMsg: data.progressMsg || prev.progressMsg,
+                        // 如果状态是 SUCCESSED，标记为完成
+                        isComplete: newStatus === 'SUCCESSED' || prev.isComplete,
+                        progress: newStatus === 'SUCCESSED' ? 100 : prev.progress,
                     }));
                 } catch (error) {
                     logger.error('[useDocumentProgress] Failed to parse status event', { error });
@@ -134,6 +138,7 @@ export function useDocumentProgress(documentId: string | null) {
                         ...prev,
                         progress: 100,
                         progressMsg: '处理完成',
+                        status: 'SUCCESSED', // 设置状态为 SUCCESSED
                         isComplete: true,
                         isConnected: false,
                         metadata: data.metadata || prev.metadata,

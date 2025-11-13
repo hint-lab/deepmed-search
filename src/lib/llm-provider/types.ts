@@ -109,6 +109,7 @@ export interface DeepSeekConfig extends BaseProviderConfig {
  */
 export interface OpenAIConfig extends BaseProviderConfig {
   model?: string; // gpt-4o, gpt-4o-mini, etc.
+  project?: string; // OpenAI project ID
 }
 
 /**
@@ -145,12 +146,12 @@ export interface Provider {
   readonly type: ProviderType;
   readonly model: string;
   readonly reasonModel?: string;
-  
+
   chat(options: ChatOptions): Promise<ChatResponse>;
   chatStream(options: ChatOptions): Promise<ChatResponse>;
   chatWithTools(options: ChatOptions): Promise<ChatResponse>;
   chatWithToolsStream(options: ChatOptions): Promise<ChatResponse>;
-  
+
   clearHistory(dialogId: string): void;
   getHistory(dialogId: string): Message[];
   setSystemPrompt(dialogId: string, prompt: string): void;

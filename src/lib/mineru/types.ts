@@ -78,6 +78,7 @@ export interface MinerUProcessResult {
     fileName?: string;
     inputTokens?: number;
     outputTokens?: number;
+    language?: string;
   };
 }
 

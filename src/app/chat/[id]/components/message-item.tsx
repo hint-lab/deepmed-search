@@ -9,7 +9,7 @@ import { MessageType } from '@/constants/chat';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
-import { Brain, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Brain, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactDOM from 'react-dom';
 import { ReactElement, ReactNode } from 'react';
 
@@ -61,9 +61,10 @@ function ChatMessageItem({
 
     // Use message.content directly for the final content display logic
     // The [think] icon logic will be handled in the JSX
+    // 在思考模式下，优先使用流式传输的内容，否则使用消息内容
     const displayFinalContent = isStreaming && isThinkingModeRender
         ? streamingState.content
-        : message.content; // Reverted to use message.content directly
+        : (isThinkingModeRender ? (message.content || '') : message.content);
 
     const createdAt = message.createdAt;
     const messageId = message.id;
@@ -355,7 +356,11 @@ function ChatMessageItem({
                     <div className="flex flex-col gap-3">
                         {!displayReasoningContent && !displayFinalContent && isStreaming && (
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <div className="flex space-x-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                                </div>
                                 <span>{t('thinking')}</span>
                             </div>
                         )}
@@ -390,23 +395,42 @@ function ChatMessageItem({
                             </div>
                         )}
 
-                        {displayFinalContent && (
+                        {/* 显示最终答案：如果有内容，或者正在流式传输且有思考内容（说明可能正在生成最终答案） */}
+                        {(displayFinalContent || (isStreaming && displayReasoningContent)) && (
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="h-4 w-4 text-muted-foreground" />
                                     <h3 className="text-sm font-medium text-muted-foreground">{t('finalAnswer')}</h3>
                                 </div>
-                                <div className={cn(
-                                    "prose prose-sm dark:prose-invert max-w-none",
-                                    isStreaming && "animate-blinking-cursor"
-                                )}>
-                                    <ReactMarkdown>
-                                        {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
-                                    </ReactMarkdown>
-                                </div>
-                                {isStreaming && (
+                                {displayFinalContent ? (
+                                    <div className={cn(
+                                        "prose prose-sm dark:prose-invert max-w-none",
+                                        isStreaming && "animate-blinking-cursor"
+                                    )}>
+                                        <ReactMarkdown>
+                                            {typeof displayFinalContent === 'string' ? displayFinalContent : ''}
+                                        </ReactMarkdown>
+                                    </div>
+                                ) : (
+                                    // 如果内容为空但正在流式传输且有思考内容，显示加载动画
+                                    isStreaming && displayReasoningContent && (
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <div className="flex space-x-1.5">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                                <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                                <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                                            </div>
+                                            <span>{t('thinkingNow')}</span>
+                                        </div>
+                                    )
+                                )}
+                                {isStreaming && displayFinalContent && (
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        <div className="flex space-x-1.5">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                                        </div>
                                         <span>{t('thinkingNow')}</span>
                                     </div>
                                 )}
@@ -415,6 +439,17 @@ function ChatMessageItem({
                     </div>
                 ) : (
                     <div className="flex flex-col gap-1">
+                        {/* AI 正在回答但内容为空时，显示动画特效（类似 OpenAI/Grok） */}
+                        {isStreaming && !isUser && (!displayFinalContent || displayFinalContent.trim() === '') && message.role !== 'reason' && (
+                            <div className="flex items-center py-1">
+                                <div className="flex space-x-1.5">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                                </div>
+                            </div>
+                        )}
+
                         {message.role === 'reason' && (
                             <div className="flex items-center gap-1.5">
                                 <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
@@ -429,9 +464,8 @@ function ChatMessageItem({
                             </div>
                         )}
 
-                        {message.role !== 'reason' && (
+                        {message.role !== 'reason' && displayFinalContent && displayFinalContent.trim() !== '' && (
                             <>
-
                                 <div
                                     className={cn(
                                         "prose prose-sm dark:prose-invert max-w-none",

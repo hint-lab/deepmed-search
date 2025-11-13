@@ -354,7 +354,38 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
         // finalStatus is already set based on fetchError initially
         // finalStatus = initialStatus; // Keep track for KB update - REMOVED redundant assignment
 
-        // 4. Create the Document record
+        // 4. Upload markdown content to MinIO
+        let contentUrl: string | null = null;
+        if (markdownContent && !fetchError) {
+            try {
+                const { uploadFileStream, getFileUrl } = await import('@/lib/minio/operations');
+                const { Readable } = await import('stream');
+
+                const buffer = Buffer.from(markdownContent, 'utf8');
+                const stream = new Readable();
+                stream.push(buffer);
+                stream.push(null);
+
+                const objectName = `documents/pubmed/${pmid || Date.now()}/markdown.md`;
+                await uploadFileStream({
+                    bucketName: 'deepmed',
+                    objectName,
+                    stream,
+                    size: buffer.length,
+                    metaData: {
+                        'content-type': 'text/markdown; charset=utf-8'
+                    }
+                });
+
+                contentUrl = await getFileUrl('deepmed', objectName);
+                logger.info(`[Collect KB] Markdown content uploaded to MinIO: ${contentUrl}`);
+            } catch (error) {
+                logger.error(`[Collect KB] Failed to upload markdown to MinIO:`, error);
+                // 如果上传失败，仍然创建文档，但 content_url 为空
+            }
+        }
+
+        // 5. Create the Document record
         const newDocument = await prisma.document.create({
             data: {
                 name: title,
@@ -366,7 +397,7 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
                 progress_msg: initialProgressMsg,
                 knowledgeBaseId: knowledgeBaseId,
                 created_by: userId,
-                markdown_content: markdownContent,
+                content_url: contentUrl, // 存储 markdown 的 URL（不再存储 markdown_content）
                 size: byteSize,
                 token_num: 0, // Will be updated after successful processing
                 chunk_num: 0, // Will be updated after successful processing
@@ -417,6 +448,8 @@ export const collectPubMedToKnowledgeBaseAction = withAuth(async (
                         // 使用知识库的chunk_size字段，如果没有则使用更大的默认值2000
                         maxChunkSize: kb.chunk_size || 2000,
                         overlapSize: kb.overlap_size || 200,
+                        splitByParagraph: kb.split_by === 'paragraph' || kb.split_by === 'page',
+                        language: kb.language || undefined,
                     }
                 );
 

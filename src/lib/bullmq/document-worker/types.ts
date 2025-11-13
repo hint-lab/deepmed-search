@@ -26,6 +26,7 @@ export interface DocumentProcessJobResult extends ProcessJobResult {
         inputTokens?: number;
         outputTokens?: number;
         fileUrl?: string;
+        language?: string;
     };
     error?: string;
 }

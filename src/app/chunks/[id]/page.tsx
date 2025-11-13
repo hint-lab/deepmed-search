@@ -52,6 +52,8 @@ export default function ChunksPage() {
     const [loading, setLoading] = useState(true);
     const [document, setDocument] = useState<IDocument | null>(null);
     const [chunks, setChunks] = useState<IChunk[]>([]);
+    const [markdownContent, setMarkdownContent] = useState<string | null>(null);
+    const [loadingMarkdown, setLoadingMarkdown] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
@@ -76,6 +78,35 @@ export default function ChunksPage() {
 
         fetchChunks();
     }, [id, t]);
+
+    // 从 content_url 读取 markdown 内容
+    useEffect(() => {
+        const fetchMarkdown = async () => {
+            if (!document?.content_url) {
+                setMarkdownContent(null);
+                return;
+            }
+
+            setLoadingMarkdown(true);
+            try {
+                const response = await fetch(document.content_url);
+                if (response.ok) {
+                    const text = await response.text();
+                    setMarkdownContent(text);
+                } else {
+                    console.error('Failed to fetch markdown content:', response.statusText);
+                    setMarkdownContent(null);
+                }
+            } catch (error) {
+                console.error('Error fetching markdown content:', error);
+                setMarkdownContent(null);
+            } finally {
+                setLoadingMarkdown(false);
+            }
+        };
+
+        fetchMarkdown();
+    }, [document?.content_url]);
 
     const handleAvailabilityChange = (chunkId: string, currentAvailability: number) => {
         const newAvailable = currentAvailability === 1 ? 0 : 1;
@@ -156,13 +187,22 @@ export default function ChunksPage() {
             );
         }
 
-        // 2. 如果没有 file_url，但有 markdown_content，显示 Markdown（作为后备）
-        if (document.markdown_content) {
-            return (
-                <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify">
-                    <ReactMarkdown>{document.markdown_content}</ReactMarkdown>
-                </div>
-            );
+        // 2. 如果没有 file_url，但有 content_url（markdown URL），显示 Markdown（作为后备）
+        if (document.content_url) {
+            if (loadingMarkdown) {
+                return (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <p className="text-gray-500">{t('loading') || '加载中...'}</p>
+                    </div>
+                );
+            }
+            if (markdownContent) {
+                return (
+                    <div className="w-full h-full p-4 overflow-auto prose dark:prose-invert max-w-none text-justify">
+                        <ReactMarkdown>{markdownContent}</ReactMarkdown>
+                    </div>
+                );
+            }
         }
 
         // 3. Fallback: No specific preview available
@@ -171,7 +211,7 @@ export default function ChunksPage() {
                 <p className="text-center text-gray-500 mb-2">{t('noPreview')}</p>
                 <p className="text-xs text-gray-400">
                     file_url: {document.file_url || 'null'} | 
-                    markdown_content: {document.markdown_content ? 'exists' : 'null'}
+                    content_url: {document.content_url || 'null'}
                 </p>
             </div>
         );

@@ -239,7 +239,7 @@
             "descriptionDescription": "このナレッジベースの目的を簡単に説明してください",
             "language": "言語",
             "languagePlaceholder": "ナレッジベースの言語を選択",
-            "languageDescription": "ナレッジベースの主要言語を選択",
+            "languageDescription": "ナレッジベースの主要言語を選択してください。設定した言語は文書の解析・分割・テキスト整形に反映されます。",
             "saveSettings": "設定を保存",
             "chunkSize": "チャンクサイズ",
             "chunkSizeDescription": "テキストチャンクあたりの最大文字数を設定",

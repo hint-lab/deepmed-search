@@ -4,7 +4,7 @@ import { parseDocument } from '../../document-parser';
 import { TaskType } from '../types';
 import { Job } from 'bullmq';
 import logger from '@/utils/logger';
-import { getReadableUrl } from '../../minio/operations';
+import { getReadableUrl, uploadFileStream, getFileUrl } from '../../minio/operations';
 import { userDocumentContextStorage, UserDocumentContext } from '../../document-parser/user-context';
 import { decryptApiKey } from '@/lib/crypto';
 import { PrismaClient } from '@prisma/client';
@@ -16,6 +16,8 @@ import {
     reportDocumentComplete
 } from '@/lib/document-tracker';
 import { ChunkIndexJobData } from '../chunk-worker/types';
+import { normalizeLanguage } from '@/constants/language';
+import { Readable } from 'stream';
 
 const prisma = new PrismaClient();
 
@@ -74,6 +76,7 @@ export async function processDocument(data: DocumentProcessJobData): Promise<Doc
             metadata: {
                 ...result.metadata,
                 fileUrl,
+                language: options.language,
             },
         };
     } catch (error) {
@@ -121,16 +124,7 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
             // 推送进度：开始处理文档
             await updateDocumentProgress(documentId, 10, '开始处理文档...');
             await updateDocumentStatus(documentId, IDocumentProcessingStatus.CONVERTING, '正在转换文档');
-
-            // 更新数据库状态为转换中
-            await prisma.document.update({
-                where: { id: documentId },
-                data: {
-                    processing_status: IDocumentProcessingStatus.CONVERTING,
-                    progress: 10,
-                    progress_msg: '正在转换文档',
-                }
-            });
+            // 注意：CONVERTING 状态不写入数据库，只通过 SSE 推送
 
             // 使用 AsyncLocalStorage 在隔离的上下文中运行文档处理任务
             const result = await userDocumentContextStorage.run(documentContext, async () => {
@@ -173,16 +167,50 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
                         chunk_size: true,
                         overlap_size: true,
                         split_by: true,
+                        language: true,
                     }
                 });
+
+                const jobLanguage = job.data.options.language || knowledgeBase?.language || undefined;
+                const normalizedLanguage = normalizeLanguage(jobLanguage);
 
                 const startTime = doc?.process_begin_at?.getTime() || Date.now();
                 const duration = Math.floor((Date.now() - startTime) / 1000);
 
-                // 保存转换结果（markdown内容）
+                // 将 markdown 内容上传到 MinIO
+                let contentUrl: string | null = null;
+                const markdownContent = result.data.extracted || '';
+
+                if (markdownContent) {
+                    try {
+                        const buffer = Buffer.from(markdownContent, 'utf8');
+                        const stream = new Readable();
+                        stream.push(buffer);
+                        stream.push(null);
+
+                        const objectName = `documents/${documentId}/markdown.md`;
+                        await uploadFileStream({
+                            bucketName: 'deepmed',
+                            objectName,
+                            stream,
+                            size: buffer.length,
+                            metaData: {
+                                'content-type': 'text/markdown; charset=utf-8'
+                            }
+                        });
+
+                        contentUrl = await getFileUrl('deepmed', objectName);
+                        logger.info(`[Document Worker] Markdown 内容已上传至 MinIO: ${contentUrl}`);
+                    } catch (error) {
+                        logger.error(`[Document Worker] 上传 Markdown 内容到 MinIO 失败:`, error);
+                        throw error;
+                    }
+                }
+
+                // 保存转换结果（markdown URL 存储在 content_url）
                 // 如果 file_url 还没有设置，则从 metadata 中获取并保存
                 const updateData: any = {
-                    markdown_content: result.data.extracted || '',
+                    content_url: contentUrl, // 存储 markdown 的 URL
                     processing_status: IDocumentProcessingStatus.CONVERTED, // 转换完成，可以开始索引
                     progress: 50,
                     progress_msg: '转换完成，等待分块索引',
@@ -209,6 +237,7 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
                 await updateDocumentStatus(documentId, IDocumentProcessingStatus.CONVERTED, '转换完成，等待分块索引');
                 await updateDocumentProgress(documentId, 50, '转换完成，等待分块索引', {
                     converted: true,
+                    language: normalizedLanguage,
                 });
                 logger.info(`[Document Worker] 文档 ${documentId} 转换完成，已保存内容，准备添加到分块索引队列`);
 
@@ -225,7 +254,7 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
                         maxChunkSize: knowledgeBase?.chunk_size || 2000,
                         overlapSize: knowledgeBase?.overlap_size || 200,
                         splitByParagraph: knowledgeBase?.split_by === 'paragraph' || knowledgeBase?.split_by === 'page',
-                        language: job.data.options.language,
+                        language: jobLanguage,
                     }
                 };
 
@@ -241,6 +270,7 @@ export const documentWorker = createWorker<DocumentProcessJobData, DocumentProce
                 await updateDocumentProgress(documentId, 50, '转换完成，等待分块索引', {
                     converted: true,
                     chunkJobId,
+                    language: normalizedLanguage,
                 });
             } else {
                 // 转换失败

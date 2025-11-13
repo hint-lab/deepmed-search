@@ -73,7 +73,8 @@ export async function getDocumentListAction(kbId: string, page: number = 1, page
                     knowledgeBaseId: doc.knowledgeBaseId,
                     parser_id: doc.parser_id,
                     parser_config: doc.parser_config,
-                    markdown_content: doc.markdown_content,
+                    // markdown_content 不再存储在数据库，而是存储在 MinIO，URL 存储在 content_url
+                    markdown_content: undefined, // 已迁移到 MinIO，不再返回
                     summary: doc.summary,
                     metadata: doc.metadata,
                     processing_error: doc.processing_error,

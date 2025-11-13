@@ -224,7 +224,7 @@
             "descriptionDescription": "Décrivez brièvement l'objectif de cette base de connaissances",
             "language": "Langue",
             "languagePlaceholder": "Sélectionner la langue de la base de connaissances",
-            "languageDescription": "Sélectionnez la langue principale pour la base de connaissances",
+            "languageDescription": "Sélectionnez la langue principale de la base de connaissances. Elle sera utilisée pour l’analyse, le découpage et le nettoyage des documents.",
             "saveSettings": "Enregistrer les paramètres",
             "chunkSize": "Taille du segment",
             "chunkSizeDescription": "Définir le nombre maximum de caractères par segment de texte",

@@ -335,7 +335,7 @@
             "descriptionDescription": "Briefly describe the purpose of this knowledge base",
             "language": "Language",
             "languagePlaceholder": "Select knowledge base language",
-            "languageDescription": "Select the primary language for the knowledge base",
+            "languageDescription": "Select the primary language for the knowledge base. It will be used for document parsing, chunking, and text cleanup.",
             "saveSettings": "Save Settings",
             "chunkSize": "Chunk Size",
             "chunkSizeDescription": "Set the maximum number of characters per text chunk",

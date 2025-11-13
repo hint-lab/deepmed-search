@@ -14,6 +14,7 @@ import {
     reportDocumentComplete
 } from '@/lib/document-tracker';
 import { getChunkingDefaultsForLanguage, normalizeLanguage } from '@/constants/language';
+import { readTextFromUrl } from '@/lib/minio/operations';
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,7 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
             select: {
                 id: true,
                 name: true,
-                markdown_content: true,
+                content_url: true, // 改为读取 content_url（存储 markdown URL）
                 knowledgeBaseId: true,
                 processing_status: true,
                 knowledgeBase: {
@@ -55,10 +56,6 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
         // 检查文档状态是否为 CONVERTED，如果不是则记录警告
         if (document.processing_status !== IDocumentProcessingStatus.CONVERTED) {
             logger.warn(`[Chunk Worker] 文档 ${documentId} 的状态为 ${document.processing_status}，期望为 CONVERTED`);
-            // 如果状态是 CONVERTING，可能是转换还没完成，抛出错误
-            if (document.processing_status === IDocumentProcessingStatus.CONVERTING) {
-                throw new Error(`文档 ${documentId} 仍在转换中，无法开始索引`);
-            }
             // 如果状态是 SUCCESSED，说明已经处理完成，不需要再次索引
             if (document.processing_status === IDocumentProcessingStatus.SUCCESSED) {
                 logger.info(`[Chunk Worker] 文档 ${documentId} 已经处理完成，跳过索引`);
@@ -68,10 +65,22 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
                     totalChunks: 0,
                 };
             }
+            // 如果状态不是 CONVERTED 也不是 SUCCESSED，抛出错误
+            throw new Error(`文档 ${documentId} 的状态为 ${document.processing_status}，无法开始索引`);
         }
 
-        if (!document.markdown_content) {
-            throw new Error(`文档 ${documentId} 的 markdown_content 为空`);
+        // 从 MinIO 读取 markdown 内容
+        if (!document.content_url) {
+            throw new Error(`文档 ${documentId} 的 content_url 为空，无法读取 markdown 内容`);
+        }
+
+        let markdownContent: string;
+        try {
+            markdownContent = await readTextFromUrl(document.content_url);
+            logger.info(`[Chunk Worker] 成功从 MinIO 读取 markdown 内容，长度: ${markdownContent.length}`);
+        } catch (error) {
+            logger.error(`[Chunk Worker] 从 MinIO 读取 markdown 内容失败:`, error);
+            throw new Error(`无法从 MinIO 读取文档 ${documentId} 的 markdown 内容: ${error instanceof Error ? error.message : '未知错误'}`);
         }
 
         if (!kbId) {
@@ -81,14 +90,14 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
         const normalizedLanguage = normalizeLanguage(options.language || document.knowledgeBase?.language);
         const languageDefaults = getChunkingDefaultsForLanguage(normalizedLanguage);
 
-        // 更新状态为索引中
+        // 更新状态为索引中（只推送 SSE，不写入数据库）
         await updateDocumentStatus(documentId, IDocumentProcessingStatus.INDEXING, '开始分块...');
         await updateDocumentProgress(documentId, 50, '开始分块...');
 
         // 1. 分块文档
         logger.info('开始文档分割', {
             documentId,
-            contentLength: document.markdown_content.length,
+            contentLength: markdownContent.length,
             language: normalizedLanguage,
         });
 
@@ -131,7 +140,7 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
         });
 
         // 将markdown内容作为单页处理
-        const pages = [{ pageNumber: 1, content: document.markdown_content }];
+        const pages = [{ pageNumber: 1, content: markdownContent }];
         const allChunks: DocumentChunk[] = [];
         let globalChunkIndex = 0;
 
@@ -175,12 +184,11 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
             language: normalizedLanguage,
         });
 
-        // 2. 索引文档块（从 CONVERTED 状态转换到 INDEXING）
+        // 2. 索引文档块（只更新 chunk_num，不更新状态，INDEXING 状态只通过 SSE 推送）
         await prisma.document.update({
             where: { id: documentId },
             data: {
                 chunk_num: totalChunks,
-                processing_status: IDocumentProcessingStatus.INDEXING, // 从 CONVERTED 转换到 INDEXING
                 progress: 60,
                 progress_msg: `开始索引 ${totalChunks} 个文档块...`
             }
@@ -276,6 +284,7 @@ async function processChunkIndexJob(job: Job<ChunkIndexJobData, ChunkIndexJobRes
         await reportDocumentComplete(documentId, {
             chunksCount: totalChunks,
             totalTokens,
+            language: normalizedLanguage,
         });
 
         return {

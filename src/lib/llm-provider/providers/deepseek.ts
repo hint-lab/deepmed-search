@@ -182,130 +182,110 @@ export class DeepSeekProvider implements Provider {
         dialogId
       });
 
-      const { textStream, text, usage } = await streamText({
+      const { fullStream, text, usage, reasoning } = await streamText({
         model: this.provider(model),
         messages: convertToCoreMessages(messages),
         temperature: isReason ? undefined : this.config.temperature,
         maxTokens: this.config.maxTokens,
       });
-
-      let fullContent = '';
+      let accumulatedContent = '';
       let reasoningContent = '';
-      let inThinkTag = false;
-      let buffer = '';
+      let resolvedReasoning: string | undefined;
+      let hasReasoningStarted = false;
+      let hasTransitionedToContent = false;
 
-      for await (const chunk of textStream) {
-        fullContent += chunk;
-
-        // 如果是推理模式，需要解析 <think> 标签
-        if (isReason) {
-          buffer += chunk;
-
-          // 检查是否进入 <think> 标签
-          if (buffer.includes('<think>')) {
-            const parts = buffer.split('<think>');
-            if (parts[0]) {
-              // <think> 之前的内容作为普通内容
-              onChunk(parts[0]);
+      for await (const part of fullStream) {
+        switch (part.type) {
+          case 'reasoning': {
+            const delta = part.textDelta ?? '';
+            if (delta) {
+              hasReasoningStarted = true;
+              reasoningContent += delta;
+              onChunk('[REASONING]' + delta);
             }
-            inThinkTag = true;
-            buffer = parts.slice(1).join('<think>');
-            continue;
+            break;
           }
-
-          // 检查是否退出 </think> 标签
-          if (buffer.includes('</think>')) {
-            const parts = buffer.split('</think>');
-            if (inThinkTag && parts[0]) {
-              // </think> 之前的内容作为推理内容
-              reasoningContent += parts[0];
-              onChunk('[REASONING]' + parts[0]);
-            }
-            inThinkTag = false;
-            // 发送转换标记
-            onChunk('[END_REASONING][CONTENT]');
-            // 标签后的内容作为实际回复
-            const contentAfterTag = parts.slice(1).join('</think>');
-            buffer = contentAfterTag;
-
-            // 处理标签后的普通内容（实际回复）
-            if (buffer && buffer.trim()) {
-              logger.info('[DeepSeek] Sending content after reasoning tag', {
-                contentLength: buffer.length,
-                contentPreview: buffer.substring(0, 100)
-              });
-              onChunk(buffer);
-              buffer = '';
-            } else {
-              // 如果标签后没有内容，清空buffer，等待后续chunk
-              logger.info('[DeepSeek] No content immediately after reasoning tag, waiting for more chunks');
-              buffer = '';
-            }
-            // 注意：这里不continue，让后续chunk继续处理
+          case 'reasoning-signature':
+          case 'redacted-reasoning': {
+            // ignore metadata-only reasoning parts
+            break;
           }
-
-          // 如果在 <think> 标签内
-          if (inThinkTag) {
-            // 检查缓冲区是否足够大，可以确定不会再匹配到 </think>
-            if (buffer.length > 10) {
-              const safeContent = buffer.slice(0, -10);
-              if (safeContent) {
-                reasoningContent += safeContent;
-                onChunk('[REASONING]' + safeContent);
+          case 'text-delta': {
+            const delta = part.textDelta ?? '';
+            if (delta) {
+              // 只在第一次从 reasoning 转换到 text 时发送转换消息
+              if (isReason && hasReasoningStarted && !hasTransitionedToContent) {
+                logger.info('[DeepSeek] Sending transition from reasoning to content');
+                onChunk('[END_REASONING][CONTENT]');
+                hasTransitionedToContent = true;
               }
-              buffer = buffer.slice(-10);
+              accumulatedContent += delta;
+              onChunk(delta);
             }
-          } else {
-            // 不在标签内，检查缓冲区是否足够大
-            if (buffer.length > 10) {
-              const safeContent = buffer.slice(0, -10);
-              if (safeContent) {
-                onChunk(safeContent);
-              }
-              buffer = buffer.slice(-10);
-            }
+            break;
           }
-        } else {
-          // 非推理模式，直接发送
-          onChunk(chunk);
+          case 'tool-call-streaming-start':
+          case 'tool-call':
+          case 'tool-call-delta':
+          case 'source':
+          case 'file':
+          case 'step-start':
+          case 'step-finish':
+          case 'finish':
+          case 'error': {
+            logger.debug('[DeepSeek] Ignored fullStream part', {
+              type: part.type,
+            });
+            break;
+          }
+          default: {
+            logger.debug('[DeepSeek] Unhandled fullStream part', {
+              type: (part as any)?.type,
+            });
+            break;
+          }
         }
       }
 
-      // 处理剩余的缓冲区内容
-      if (isReason && buffer) {
-        if (inThinkTag) {
-          reasoningContent += buffer;
-          onChunk('[REASONING]' + buffer);
-        } else {
-          onChunk(buffer);
+      const finalText = accumulatedContent || await text;
+      const finalUsage = await usage;
+
+      // 如果流结束时还有 reasoning 但没有转换到 content，发送转换消息
+      if (isReason && hasReasoningStarted && !hasTransitionedToContent && accumulatedContent.length === 0) {
+        onChunk('[END_REASONING][CONTENT]');
+      }
+
+      if (isReason && reasoning) {
+        try {
+          resolvedReasoning = await reasoning;
+        } catch (reasonError) {
+          logger.warn('[DeepSeek] Failed to resolve reasoning promise', {
+            error: reasonError instanceof Error ? reasonError.message : String(reasonError),
+          });
         }
       }
 
-      const finalText = await text;
-
-      // 从最终文本中提取推理内容和实际内容
-      let finalReasoningContent = '';
+      let finalReasoningContent = reasoningContent || resolvedReasoning || '';
       let finalActualContent = finalText;
 
-      if (isReason && finalText.includes('<think>') && finalText.includes('</think>')) {
-        const thinkMatch = finalText.match(/<think>([\s\S]*?)<\/redacted_reasoning>/);
-        if (thinkMatch) {
-          finalReasoningContent = thinkMatch[1];
-          // 移除整个标签（包括开始和结束标签）及其内容
-          finalActualContent = finalText.replace(/<think>[\s\S]*?<\/redacted_reasoning>/, '').trim();
+      if (isReason && !finalReasoningContent) {
+        const trimmed = finalText ?? '';
+        const thinkPattern = /<think>([\s\S]*?)<\/think>/;
+        const match = trimmed.match(thinkPattern);
+        if (match && match[1]) {
+          finalReasoningContent = match[1];
+          finalActualContent = trimmed.replace(thinkPattern, '').trim();
         }
-        logger.info('[DeepSeek] Extracted reasoning content', {
-          reasoningLength: finalReasoningContent.length,
-          actualContentLength: finalActualContent.length,
+      }
+
+      if (isReason && !finalReasoningContent) {
+        logger.warn('[DeepSeek] No reasoning found after processing fullStream', {
           finalTextLength: finalText.length,
-          hasActualContent: finalActualContent.length > 0
         });
-      } else if (isReason) {
-        // 如果没有找到标签，记录警告
-        logger.warn('[DeepSeek] No reasoning tags found in response', {
-          finalTextLength: finalText.length,
-          finalTextPreview: finalText.substring(0, 200)
-        });
+      }
+
+      if (isReason && finalReasoningContent) {
+        finalReasoningContent = finalReasoningContent.trim();
       }
 
       const response: ChatResponse = {
@@ -315,11 +295,11 @@ export class DeepSeekProvider implements Provider {
           provider: this.type,
           timestamp: new Date().toISOString(),
           isReason,
-          reasoningContent: finalReasoningContent || undefined,
-          usage: (await usage) ? {
-            promptTokens: (await usage).promptTokens,
-            completionTokens: (await usage).completionTokens,
-            totalTokens: (await usage).totalTokens,
+          reasoningContent: isReason && finalReasoningContent ? finalReasoningContent : undefined,
+          usage: finalUsage ? {
+            promptTokens: finalUsage.promptTokens,
+            completionTokens: finalUsage.completionTokens,
+            totalTokens: finalUsage.totalTokens,
           } : undefined,
         },
       };
@@ -327,6 +307,9 @@ export class DeepSeekProvider implements Provider {
       history.addMessage({
         role: isReason ? MessageRole.ReasonReply : MessageRole.Assistant,
         content: response.content,
+        metadata: isReason && response.metadata.reasoningContent ? {
+          reasoningContent: response.metadata.reasoningContent,
+        } : undefined,
       });
 
       return response;

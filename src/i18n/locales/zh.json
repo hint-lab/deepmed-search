@@ -334,7 +334,7 @@
             "descriptionDescription": "简单描述这个知识库的用途",
             "language": "语言",
             "languagePlaceholder": "选择知识库语言",
-            "languageDescription": "选择知识库的主要语言",
+            "languageDescription": "选择知识库的主要语言，将影响文档解析、分块和文本清理流程。",
             "saveSettings": "保存设置",
             "chunkSize": "分块大小",
             "chunkSizeDescription": "设置每个文本块的最大字符数",

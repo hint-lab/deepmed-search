@@ -31,13 +31,13 @@ export async function GET(
             );
         }
 
-        // 查询文档
+        // 查询文档（markdown_content 已迁移到 MinIO，URL 存储在 content_url）
         const document = await prisma.document.findUnique({
             where: { id: documentId },
             select: {
                 id: true,
                 name: true,
-                markdown_content: true,
+                content_url: true, // markdown 的 URL（存储在 MinIO）
                 processing_status: true,
                 progress: true,
                 progress_msg: true,

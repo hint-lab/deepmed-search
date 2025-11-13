@@ -51,7 +51,7 @@ export default function AdvancedSettingForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      parser_id: currentKnowledgeBase?.parser_id || '',
+      parser_id: currentKnowledgeBase?.parser_id || 'rule_segmentation',
       chunk_size: currentKnowledgeBase?.chunk_size || 500,
       overlap_size: currentKnowledgeBase?.overlap_size || 100,
       separators: currentKnowledgeBase?.separators || [],

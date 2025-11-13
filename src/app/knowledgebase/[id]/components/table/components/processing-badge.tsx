@@ -88,6 +88,55 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
 
     // 监听 SSE 进度更新
     useEffect(() => {
+        // 优先检查状态更新（即使不在处理中，也要处理状态变化）
+        // 注意：progressState.status 可能为空字符串，需要检查是否为有效状态
+        if (progressState.status && progressState.status !== status && progressState.status.trim() !== '') {
+            const newStatus = progressState.status as IDocumentProcessingStatus;
+            console.log('[ProcessingBadge] SSE 状态更新', {
+                documentId: document.id,
+                oldStatus: status,
+                newStatus: newStatus,
+                dbStatus: document.processing_status
+            });
+            
+            // 如果状态变为 SUCCESSED，立即更新
+            if (newStatus === IDocumentProcessingStatus.SUCCESSED) {
+                setStatus(IDocumentProcessingStatus.SUCCESSED);
+                previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
+                setCurrentProgressMsg(progressState.progressMsg || '处理完成');
+                
+                toast.success(t('processingCompleted'), {
+                    description: `${document.name} ${t('documentProcessingStatus.successed')}`
+                });
+                
+                onRefresh?.();
+                return;
+            }
+            
+            // 如果状态变为 FAILED，立即更新
+            if (newStatus === IDocumentProcessingStatus.FAILED) {
+                setStatus(IDocumentProcessingStatus.FAILED);
+                previousStatusRef.current = IDocumentProcessingStatus.FAILED;
+                setCurrentProgressMsg(progressState.error || progressState.progressMsg || '处理失败');
+                
+                toast.error(t('documentProcessingStatus.failed'), {
+                    description: progressState.error || '处理失败'
+                });
+                
+                onRefresh?.();
+                return;
+            }
+            
+            // 其他状态更新（CONVERTING, INDEXING, CONVERTED）
+            // 优先使用 SSE 的实时状态，避免被数据库状态覆盖
+            setStatus(newStatus);
+            previousStatusRef.current = newStatus;
+            if (progressState.progressMsg) {
+                setCurrentProgressMsg(progressState.progressMsg);
+            }
+        }
+        
+        // 如果不在处理中，不再处理进度更新
         if (!isProcessing) return;
         
         // 更新进度消息
@@ -95,18 +144,22 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
             setCurrentProgressMsg(progressState.progressMsg);
         }
         
-        // 更新状态（从 SSE 接收）
-        if (progressState.status && progressState.status !== status) {
-            console.log('[ProcessingBadge] 状态更新', {
-                documentId: document.id,
-                oldStatus: status,
-                newStatus: progressState.status
+        // 处理完成 - 检查完成事件或进度达到100%
+        // 优先检查状态是否为 SUCCESSED（从后端接收到的状态更新）
+        if (progressState.status === IDocumentProcessingStatus.SUCCESSED && 
+            previousStatusRef.current !== IDocumentProcessingStatus.SUCCESSED) {
+            setStatus(IDocumentProcessingStatus.SUCCESSED);
+            previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
+            setCurrentProgressMsg(progressState.progressMsg || '处理完成');
+            
+            toast.success(t('processingCompleted'), {
+                description: `${document.name} ${t('documentProcessingStatus.successed')}`
             });
-            setStatus(progressState.status as IDocumentProcessingStatus);
-            previousStatusRef.current = progressState.status as IDocumentProcessingStatus;
+            
+            onRefresh?.();
+            return;
         }
         
-        // 处理完成 - 检查完成事件或进度达到100%
         const isComplete = progressState.isComplete || 
                           (progressState.progress >= 100 && 
                            (previousStatusRef.current === IDocumentProcessingStatus.CONVERTING || 
@@ -115,7 +168,8 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
         
         if (isComplete) {
             const wasProcessing = previousStatusRef.current === IDocumentProcessingStatus.CONVERTING || 
-                                 previousStatusRef.current === IDocumentProcessingStatus.INDEXING;
+                                 previousStatusRef.current === IDocumentProcessingStatus.INDEXING ||
+                                 previousStatusRef.current === IDocumentProcessingStatus.CONVERTED;
             
             if (wasProcessing) {
                 if (progressState.error) {
@@ -127,9 +181,26 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
                         description: progressState.error
                     });
                 } else {
-                    // 转换完成，document-worker 会自动添加索引任务到队列
-                    // 前端只需要等待索引完成即可（通过 SSE 监听进度）
-                    if (previousStatusRef.current === IDocumentProcessingStatus.CONVERTING && progressState.metadata?.converted) {
+                    // 检查状态更新（优先使用后端发送的状态）
+                    if (progressState.status === IDocumentProcessingStatus.SUCCESSED) {
+                        // 后端明确发送了 SUCCESSED 状态
+                        setStatus(IDocumentProcessingStatus.SUCCESSED);
+                        previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
+                        setCurrentProgressMsg('处理完成');
+                        
+                        toast.success(t('processingCompleted'), {
+                            description: `${document.name} ${t('documentProcessingStatus.successed')}`
+                        });
+                    } else if (previousStatusRef.current === IDocumentProcessingStatus.INDEXING && progressState.progress >= 100) {
+                        // 索引完成，进度100%，状态应该变为 SUCCESSED
+                        setStatus(IDocumentProcessingStatus.SUCCESSED);
+                        previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
+                        setCurrentProgressMsg('处理完成');
+                        
+                        toast.success(t('processingCompleted'), {
+                            description: `${document.name} ${t('documentProcessingStatus.successed')}`
+                        });
+                    } else if (previousStatusRef.current === IDocumentProcessingStatus.CONVERTING && progressState.metadata?.converted) {
                         // 转换完成，状态应该已经是 CONVERTED，等待索引开始
                         setCurrentProgressMsg('转换完成，等待分块索引...');
                         setStatus(IDocumentProcessingStatus.CONVERTED);
@@ -143,21 +214,23 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
                         setStatus(IDocumentProcessingStatus.INDEXING);
                         previousStatusRef.current = IDocumentProcessingStatus.INDEXING;
                     } else {
-                        // 完全处理完成
-                        setStatus(IDocumentProcessingStatus.SUCCESSED);
-                        previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
-                        setCurrentProgressMsg('处理完成');
-                        
-                        toast.success(t('processingCompleted'), {
-                            description: `${document.name} ${t('documentProcessingStatus.successed')}`
-                        });
+                        // 其他情况，如果进度100%且没有错误，应该完成
+                        if (progressState.progress >= 100 && !progressState.error) {
+                            setStatus(IDocumentProcessingStatus.SUCCESSED);
+                            previousStatusRef.current = IDocumentProcessingStatus.SUCCESSED;
+                            setCurrentProgressMsg('处理完成');
+                            
+                            toast.success(t('processingCompleted'), {
+                                description: `${document.name} ${t('documentProcessingStatus.successed')}`
+                            });
+                        }
                     }
                 }
                 
                 onRefresh?.();
             }
         }
-    }, [progressState, isProcessing, document.name, onRefresh, t]);
+    }, [progressState, isProcessing, status, document.id, document.name, onRefresh, t]);
 
     const handleClick = async () => {
         if (status === IDocumentProcessingStatus.CONVERTING ||
@@ -216,12 +289,41 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
 
     // SSE 会自动处理进度订阅，不再需要轮询
 
+    // 简化状态同步逻辑：数据库只记录4个状态（UNPROCESSED, CONVERTED, SUCCESSED, FAILED）
+    // CONVERTING 和 INDEXING 只从 SSE 获取，不写入数据库
     useEffect(() => {
-        const initialDocStatus = document.processing_status || IDocumentProcessingStatus.UNPROCESSED;
-        setStatus(initialDocStatus);
-        previousStatusRef.current = initialDocStatus; // 同步更新 ref
-        setCurrentProgressMsg(document.progress_msg);
-    }, [document.processing_status, document.progress_msg]);
+        const dbStatus = document.processing_status || IDocumentProcessingStatus.UNPROCESSED;
+        
+        // 数据库状态只可能是：UNPROCESSED, CONVERTED, SUCCESSED, FAILED
+        // 如果当前状态是 CONVERTING 或 INDEXING（来自 SSE），且数据库状态是 CONVERTED，不覆盖
+        // 如果当前状态是 CONVERTING 或 INDEXING，且数据库状态是 SUCCESSED 或 FAILED，使用数据库状态
+        // 如果当前状态不是处理中状态，使用数据库状态
+        
+        const isTemporaryStatus = status === IDocumentProcessingStatus.CONVERTING || 
+                                 status === IDocumentProcessingStatus.INDEXING;
+        
+        // 如果当前状态是临时状态（CONVERTING/INDEXING），且数据库状态是 CONVERTED，保持临时状态
+        if (isTemporaryStatus && dbStatus === IDocumentProcessingStatus.CONVERTED) {
+            return; // 保持 SSE 的临时状态
+        }
+        
+        // 如果当前状态是临时状态，但数据库状态是 SUCCESSED 或 FAILED，使用数据库状态
+        if (isTemporaryStatus && 
+            (dbStatus === IDocumentProcessingStatus.SUCCESSED || 
+             dbStatus === IDocumentProcessingStatus.FAILED)) {
+            setStatus(dbStatus);
+            previousStatusRef.current = dbStatus;
+            setCurrentProgressMsg(document.progress_msg);
+            return;
+        }
+        
+        // 如果当前状态不是临时状态，且与数据库状态不一致，使用数据库状态
+        if (!isTemporaryStatus && status !== dbStatus) {
+            setStatus(dbStatus);
+            previousStatusRef.current = dbStatus;
+            setCurrentProgressMsg(document.progress_msg);
+        }
+    }, [document.processing_status, document.progress_msg, status]);
 
     // showProgress 基于合并后的 currentProgress（已在上面定义）
     const showProgress = (status === IDocumentProcessingStatus.CONVERTING || 
