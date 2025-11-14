@@ -6,9 +6,9 @@
 </p>
 
 <!-- badges -->
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/deepmed-search?style=social)](https://github.com/yourusername/deepmed-search)
-[![GitHub forks](https://img.shields.io/github/forks/yourusername/deepmed-search?style=social)](https://github.com/yourusername/deepmed-search)
-[![GitHub issues](https://img.shields.io/github/issues/yourusername/deepmed-search)](https://github.com/yourusername/deepmed-search/issues)
+[![GitHub stars](https://img.shields.io/github/stars/hint-lab/deepmed-search?style=social)](https://github.com/hint-lab/deepmed-search)
+[![GitHub forks](https://img.shields.io/github/forks/hint-lab/deepmed-search?style=social)](https://github.com/hint-lab/deepmed-search)
+[![GitHub issues](https://img.shields.io/github/issues/hint-lab/deepmed-search)](https://github.com/hint-lab/deepmed-search/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
@@ -870,17 +870,17 @@ http://localhost:3000/research
 
 ## 感谢所有贡献者
 
-<a href="https://github.com/yourusername/deepmed-search/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=yourusername/deepmed-search" />
+<a href="https://github.com/hint-lab/deepmed-search/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=hint-lab/deepmed-search" />
 </a>
 
 ## ⭐ Star History
 
-<a href="https://star-history.com/#yourusername/deepmed-search&Date">
+<a href="https://star-history.com/#hint-lab/deepmed-search&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=hint-lab/deepmed-search&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=hint-lab/deepmed-search&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=hint-lab/deepmed-search&type=Date" />
  </picture>
 </a>
 
@@ -898,9 +898,8 @@ http://localhost:3000/research
 
 ## 📧 联系与支持
 
-- 💬 **问题反馈**: [GitHub Issues](https://github.com/yourusername/deepmed-search/issues)
-- 📧 **邮箱**: your-email@example.com
-- 🌐 **网站**: [Your Website]
+- 💬 **问题反馈**: [GitHub Issues](https://github.com/hint-lab/deepmed-search/issues)
+- 📧 **邮箱**: wang-hao@shu.edu.cn
 - 💼 **组织**: [H!NT Lab](https://hint-lab.github.io/)
 
 ---

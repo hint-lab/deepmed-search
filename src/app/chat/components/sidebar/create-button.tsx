@@ -42,13 +42,6 @@ import { useChatDialogContext } from '@/contexts/chat-dialog-context';
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 
 
-const CreateChatDialogFormSchema = (t: (key: string, defaultValue?: string) => string | any) => z.object({
-    name: z.string().min(1, { message: String(t('validation.chatNameRequired', 'Chat name cannot be empty')) }),
-    knowledgeBaseId: z.string().optional(),
-    description: z.string().optional(),
-});
-
-
 export function CreateChatDialogButton() {
     const { t } = useTranslate('chat');
     const router = useRouter();
@@ -57,7 +50,12 @@ export function CreateChatDialogButton() {
     const { data: session } = useSession();
     const { createChatDialog } = useChatDialogContext();
 
-    const schema = CreateChatDialogFormSchema(t);
+    // Define schema inside component to use t directly
+    const schema = z.object({
+        name: z.string().min(1, { message: String(t('validation.chatNameRequired', 'Chat name cannot be empty')) }),
+        knowledgeBaseId: z.string().optional(),
+        description: z.string().optional(),
+    });
 
     type CreateDialogFormValues = z.infer<typeof schema>;
     const form = useForm<CreateDialogFormValues>({

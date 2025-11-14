@@ -12,11 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { checkQueueHealthAction, addTaskAction, getTaskStatusAction } from '@/actions/queue';
 import { QUEUE_NAMES } from '@/lib/bullmq/queue-names';
+import { TaskType } from '@/lib/bullmq/types';
 import { toast } from 'sonner';
 
 export default function QueueTestPage() {
     const [queueNames, setQueueNames] = useState<typeof QUEUE_NAMES>(QUEUE_NAMES);
-    const [queueName, setQueueName] = useState<string>(QUEUE_NAMES.DOCUMENT_TO_MARKDOWN);
+    const [queueName, setQueueName] = useState<TaskType>(TaskType.DOCUMENT_CONVERT_TO_MD);
     const [documentId, setDocumentId] = useState('doc-123');
     const [status, setStatus] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);

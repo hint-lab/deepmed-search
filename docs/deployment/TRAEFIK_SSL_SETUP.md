@@ -61,7 +61,7 @@ nslookup www.deepmedsearch.cloud
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: your-email@example.com  # 修改这里
+      email: wang-hao@shu.edu.cn  # 修改这里
 ```
 
 ### 3. 启动服务

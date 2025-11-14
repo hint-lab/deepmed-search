@@ -48,7 +48,7 @@ https://www.deepmedsearch.cloud
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: your-email@example.com  # 改为您的邮箱
+      email: wang-hao@shu.edu.cn  # 改为您的邮箱
 ```
 
 ### 步骤 2: 配置环境变量

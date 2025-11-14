@@ -48,7 +48,7 @@ Edit `traefik/traefik.yml` file to update the Let's Encrypt notification email:
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: your-email@example.com  # Change to your email
+      email: wang-hao@shu.edu.cn  # Change to your email
 ```
 
 ### Step 2: Configure Environment Variables
