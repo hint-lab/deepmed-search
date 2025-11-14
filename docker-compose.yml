@@ -271,19 +271,7 @@ services:
       milvus:
         condition: service_healthy
     restart: unless-stopped
-
-  # RedisInsight - Redis GUI 管理工具（用于查看 BullMQ 队列）
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: deepmed-redisinsight
-    ports:
-      - "${REDISINSIGHT_PORT:-8002}:8001"
-    volumes:
-      - redisinsight-data:/data
-    depends_on:
-      - redis
-    restart: unless-stopped
-
+ 
   # BullMQ Board - BullMQ 队列监控界面
   bull-board:
     build:
