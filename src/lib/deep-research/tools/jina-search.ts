@@ -37,12 +37,14 @@ export async function search(
 
     console.log('Total URLs:', data.data.length);
 
-    const tokenTracker = tracker || new TokenTracker();
-    tokenTracker.trackUsage('search', {
-      totalTokens,
-      promptTokens: query.length,
-      completionTokens: totalTokens
-    });
+    // Track token usage if tracker is provided
+    if (tracker) {
+      tracker.trackUsage('search', {
+        totalTokens,
+        promptTokens: query.length,
+        completionTokens: totalTokens
+      });
+    }
 
     return { response: data };
   } catch (error) {

@@ -138,10 +138,16 @@ async function batchEvaluate(inputFile: string): Promise<void> {
 
     try {
       // Get response using the agent
+      const taskId = `eval-${Date.now()}-${i}`;
+      const userId = process.env.EVAL_USER_ID || 'eval-user'; // 评估时使用的用户ID
       const {
         result: response,
         context
-      } = await processResearchTask(question) as { result: AnswerAction; context: TrackerContext };
+      } = await processResearchTask(
+        taskId,
+        userId,
+        question // questionFromParam
+      ) as { result: AnswerAction; context: TrackerContext };
 
       // Get response using the streaming agent
       // const {

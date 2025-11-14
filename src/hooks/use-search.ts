@@ -1,9 +1,15 @@
 "use client"
 
-import { IAnswer } from '@/types/chat';
 import { get, isEmpty, trim } from 'lodash';
 import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
 import { useGetPaginationWithRouter } from '@/hooks/use-pagination';
+
+// Define IAnswer interface
+interface IAnswer {
+  answer?: string;
+  reference?: any[];
+  [key: string]: any;
+}
 
 interface TestChunkParams {
   kb_id: string[];

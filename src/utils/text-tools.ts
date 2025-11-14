@@ -1,4 +1,4 @@
-import { AnswerAction } from "@/deep-research/src/types";
+import { AnswerAction } from "@/lib/deep-research/types";
 
 /**
  * 将普通文本答案转换为 Markdown 格式

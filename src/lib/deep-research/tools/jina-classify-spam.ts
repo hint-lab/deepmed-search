@@ -34,6 +34,9 @@ export async function classifyText(
   tracker?: TokenTracker
 ): Promise<boolean> {
   try {
+    // Get Jina API key from user context
+    const JINA_API_KEY = getJinaApiKey();
+    
     if (!JINA_API_KEY) {
       throw new Error('JINA_API_KEY is not set');
     }

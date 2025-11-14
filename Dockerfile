@@ -3,6 +3,10 @@ FROM node:20-bookworm AS deps
 
 WORKDIR /app
 
+# 配置 Debian 国内镜像源（加速包下载）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources \
+ && sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
+
 # 启用 corepack 并配置 yarn
 RUN corepack enable \
  && corepack prepare yarn@1.22.22 --activate \
@@ -32,6 +36,10 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NODE_OPTIONS=--max-old-space-size=2048 \
     NEXT_TELEMETRY_DISABLED=1
+
+# 配置 Debian 国内镜像源（加速包下载）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources \
+ && sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
 
 # 安装 dumb-init 和 curl（用于健康检查）
 RUN apt-get update \

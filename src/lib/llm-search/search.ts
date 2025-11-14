@@ -72,6 +72,11 @@ export async function searchSimulator(query: string, model: string, llmConfig?: 
         console.log(`[LLM Search Lib] Received short model: ${model}, Mapped to modelId: ${modelId}`);
     }
 
+    // 确保 llmConfig 不为 undefined
+    if (!llmConfig) {
+        throw new Error('未提供 LLM 配置。请访问 /settings/llm 页面配置您的 API Key。');
+    }
+
     const { maxTokens, temperature } = getModelOptions(modelId);
     const modelInstance = getModelInstance(modelId, llmConfig);
     const objectGenerator = new ObjectGeneratorSafe();

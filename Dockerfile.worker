@@ -3,6 +3,10 @@ FROM node:20-bookworm AS deps
 
 WORKDIR /app
 
+# 配置 Debian 国内镜像源（加速包下载）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources \
+ && sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
+
 RUN corepack enable \
  && corepack prepare yarn@1.22.22 --activate \
  && yarn config set registry https://registry.npmmirror.com
@@ -25,6 +29,10 @@ RUN yarn prisma generate \
 FROM node:20-bookworm-slim
 
 WORKDIR /app
+
+# 配置 Debian 国内镜像源（加速包下载）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources \
+ && sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends dumb-init openssl libssl-dev \

@@ -160,19 +160,19 @@ export default function QueueTestPage() {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="queue">队列名称</Label>
-                                    <Select value={queueName} onValueChange={setQueueName}>
+                                    <Select value={queueName} onValueChange={(value) => setQueueName(value as TaskType)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="选择队列" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value={QUEUE_NAMES.DOCUMENT_TO_MARKDOWN}>
+                                            <SelectItem value={TaskType.DOCUMENT_CONVERT_TO_MD}>
                                                 文档转Markdown
                                             </SelectItem>
-                                            <SelectItem value={QUEUE_NAMES.DOCUMENT_SPLIT_TO_CHUNKS}>
-                                                文档分块
-                                            </SelectItem>
-                                            <SelectItem value={QUEUE_NAMES.CHUNK_VECTOR_INDEX}>
+                                            <SelectItem value={TaskType.CHUNK_VECTOR_INDEX}>
                                                 块向量索引
+                                            </SelectItem>
+                                            <SelectItem value={TaskType.DEEP_RESEARCH}>
+                                                深度研究
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>

@@ -10,11 +10,7 @@ async function main() {
                 name: '不可见测试知识库',
                 description: '这是一个不可见的测试知识库，用于测试知识库可见性功能',
                 visible: false,
-                create_date: new Date(),
-                create_time: BigInt(Date.now()),
                 created_by: 'system',
-                update_date: new Date(),
-                update_time: BigInt(Date.now()),
                 similarity_threshold: 0.7,
                 vector_similarity_weight: 0.5,
                 status: 'active',
@@ -22,7 +18,8 @@ async function main() {
                 doc_num: 0,
                 chunk_num: 0,
                 token_num: 0,
-                operator_permission: 0
+                operator_permission: 0,
+                // created_at 和 updated_at 会自动设置（在 schema 中有 @default(now()) 和 @updatedAt）
             }
         });
 
