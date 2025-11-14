@@ -1,12 +1,12 @@
-import {BoostedSearchSnippet, KnowledgeItem, SearchSnippet, TrackerContext, VisitAction, WebContent} from "../types";
-import {getI18nText, smartMergeStrings} from "./text-tools";
-import {rerankDocuments} from "../tools/jina-rerank";
-import {readUrl} from "../tools/jina-read";
-import {Schemas} from "./schemas";
-import {cherryPick} from "../tools/jina-latechunk";
-import {formatDateBasedOnType} from "./date-tools";
-import {classifyText} from "../tools/jina-classify-spam";
-import {segmentText} from "../tools/jina-segment";
+import { BoostedSearchSnippet, KnowledgeItem, SearchSnippet, TrackerContext, VisitAction, WebContent } from "../types";
+import { getI18nText, smartMergeStrings } from "./text-tools";
+import { rerankDocuments } from "../tools/jina-rerank";
+import { readUrl } from "../tools/jina-read";
+import { Schemas } from "./schemas";
+import { cherryPick } from "../tools/jina-latechunk";
+import { formatDateBasedOnType } from "./date-tools";
+import { classifyText } from "../tools/jina-classify-spam";
+import { segmentText } from "../tools/jina-segment";
 
 export function normalizeUrl(urlString: string, debug = false, options = {
   removeAnchors: true,
@@ -34,7 +34,7 @@ export function normalizeUrl(urlString: string, debug = false, options = {
     if (options.removeXAnalytics) {
       // Match with or without query parameters and fragments
       const xComPattern = /^(https?:\/\/(www\.)?(x\.com|twitter\.com)\/([^/]+)\/status\/(\d+))\/analytics(\/)?(\?.*)?(#.*)?$/i;
-      const xMatch = urlString.match(xComPattern);
+      const xMatch = xComPattern.exec(urlString);
       if (xMatch) {
         // Preserve query parameters and fragments if present
         let cleanUrl = xMatch[1]; // Base URL without /analytics
@@ -178,7 +178,7 @@ const extractUrlParts = (urlStr: string) => {
     };
   } catch (e) {
     console.error(`Error parsing URL: ${urlStr}`, e);
-    return {hostname: "", path: ""};
+    return { hostname: "", path: "" };
   }
 };
 
@@ -193,7 +193,7 @@ export const countUrlParts = (urlItems: SearchSnippet[]) => {
     if (!item || !item.url) return; // Skip invalid items
 
     totalUrls++;
-    const {hostname, path} = extractUrlParts(item.url);
+    const { hostname, path } = extractUrlParts(item.url);
 
     // Count hostnames
     hostnameCount[hostname] = (hostnameCount[hostname] || 0) + 1;
@@ -206,7 +206,7 @@ export const countUrlParts = (urlItems: SearchSnippet[]) => {
     });
   });
 
-  return {hostnameCount, pathPrefixCount, totalUrls};
+  return { hostnameCount, pathPrefixCount, totalUrls };
 };
 
 // Calculate normalized frequency for boosting
@@ -231,7 +231,7 @@ export const rankURLs = async (urlItems: SearchSnippet[], options: any = {}, tra
 
   // Count URL parts first
   const counts = countUrlParts(urlItems);
-  const {hostnameCount, pathPrefixCount, totalUrls} = counts;
+  const { hostnameCount, pathPrefixCount, totalUrls } = counts;
 
   if (question.trim().length > 0) {
     // Step 1: Create a record to track unique content with their original indices
@@ -251,12 +251,12 @@ export const rankURLs = async (urlItems: SearchSnippet[], options: any = {}, tra
     const uniqueContents = Object.keys(uniqueContentMap);
     const uniqueIndicesMap = Object.values(uniqueContentMap);
     console.log(`rerank URLs: ${urlItems.length}->${uniqueContents.length}`)
-    
+
     try {
-      const {results} = await rerankDocuments(question, uniqueContents, trackers.tokenTracker);
+      const { results } = await rerankDocuments(question, uniqueContents, trackers.tokenTracker);
       if (results && results.length > 0) {
         // Step 3: Map the scores back to all original items
-        results.forEach(({index, relevance_score}) => {
+        results.forEach(({ index, relevance_score }) => {
           const originalIndices = uniqueIndicesMap[index];
           if (originalIndices && originalIndices.length > 0) {
             const boost = relevance_score * jinaRerankFactor;
@@ -284,7 +284,7 @@ export const rankURLs = async (urlItems: SearchSnippet[], options: any = {}, tra
       return item; // Return unchanged
     }
 
-    const {hostname, path} = extractUrlParts(item.url);
+    const { hostname, path } = extractUrlParts(item.url);
 
     // Base weight from original
     const freq = item.weight || 0; // Default to 1 if weight is missing
@@ -470,7 +470,7 @@ export async function processURLs(
 ): Promise<{ urlResults: any[], success: boolean }> {
   // Skip if no URLs to process
   if (urls.length === 0) {
-    return {urlResults: [], success: false};
+    return { urlResults: [], success: false };
   }
 
   const badHostnames: string[] = [];
@@ -478,10 +478,10 @@ export async function processURLs(
   // Track the reading action
   const thisStep: VisitAction = {
     action: 'visit',
-    think: getI18nText('read_for', schemaGen.languageCode, {urls: urls.join(', ')}),
+    think: getI18nText('read_for', schemaGen.languageCode, { urls: urls.join(', ') }),
     URLTargets: urls
   }
-  context.actionTracker.trackAction({thisStep})
+  context.actionTracker.trackAction({ thisStep })
 
   // Process each URL in parallel
   const urlResults = await Promise.all(
@@ -495,8 +495,8 @@ export async function processURLs(
         // Store normalized URL for consistent reference
         url = normalizedUrl;
 
-        const {response} = await readUrl(url, true, context);
-        const {data} = response;
+        const { response } = await readUrl(url, true, context);
+        const { data } = response;
         const guessedTime = await getLastModified(url);
         if (guessedTime) {
           console.log('Guessed time for', url, guessedTime);
@@ -522,7 +522,7 @@ export async function processURLs(
         }
 
         // add to web contents
-        const {chunks, chunk_positions } = await segmentText(data.content, context)
+        const { chunks, chunk_positions } = await segmentText(data.content, context)
         webContents[data.url] = {
           full: data.content,
           chunks,
@@ -554,7 +554,7 @@ export async function processURLs(
           }
         });
 
-        return {url, result: response};
+        return { url, result: response };
       } catch (error: any) {
         console.error('Error reading URL:', url, error);
         badURLs.push(url);
@@ -601,11 +601,11 @@ export async function processURLs(
   // remove any URL with bad hostnames from allURLs
   if (badHostnames.length > 0) {
     Object.keys(allURLs).forEach(url => {
-        if (badHostnames.includes(extractUrlParts(url).hostname)) {
-          delete allURLs[url];
-          console.log(`Removed ${url} from allURLs`);
-        }
+      if (badHostnames.includes(extractUrlParts(url).hostname)) {
+        delete allURLs[url];
+        console.log(`Removed ${url} from allURLs`);
       }
+    }
     )
   }
 
@@ -666,7 +666,7 @@ export function extractUrlsWithDescription(text: string, contextWindowSize: numb
   const urlPattern = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&//=]*)/g;
 
   // Find all matches
-  const matches: Array<{url: string, index: number, length: number}> = [];
+  const matches: Array<{ url: string, index: number, length: number }> = [];
   let match: RegExpExecArray | null;
 
   while ((match = urlPattern.exec(text)) !== null) {
@@ -705,14 +705,14 @@ export function extractUrlsWithDescription(text: string, contextWindowSize: numb
 
     // Adjust boundaries to avoid overlapping with other URLs
     if (i > 0) {
-      const prevUrl = matches[i-1];
+      const prevUrl = matches[i - 1];
       if (startPos < prevUrl.index + prevUrl.length) {
         startPos = prevUrl.index + prevUrl.length;
       }
     }
 
     if (i < matches.length - 1) {
-      const nextUrl = matches[i+1];
+      const nextUrl = matches[i + 1];
       if (endPos > nextUrl.index) {
         endPos = nextUrl.index;
       }

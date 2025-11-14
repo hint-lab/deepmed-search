@@ -216,7 +216,7 @@ export default function ResearchPage() {
                                 {stepDetails.map((step) => (
                                     <div key={step.step} className="border-b border-border/40 pb-2 last:border-b-0 last:pb-0">
                                         <p><strong className="font-medium">{t('stepLabel')} {step.step}:</strong> <span className="text-primary font-semibold">{step.action}</span></p>
-                                        <p className="text-muted-foreground pl-2">{t('questionLabel')}: "{step.question}"</p>
+                                        <p className="text-muted-foreground pl-2">{t('questionLabel')}: &ldquo;{step.question}&rdquo;</p>
                                         {step.think && <p className="text-muted-foreground pl-2 mt-1">{t('thinkLabel')}: {step.think}</p>}
                                         {/* 可选：显示更详细的步骤信息 */}
                                         {/* {step.details && <pre className="mt-1 pl-2 text-muted-foreground/80 text-[0.7rem] whitespace-pre-wrap break-all">{JSON.stringify(step.details, null, 2)}</pre>} */}

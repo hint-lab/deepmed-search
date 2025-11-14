@@ -137,8 +137,7 @@ export class JinaSegmenter {
         const allChunks: DocumentChunk[] = [];
         let chunkIndex = 0;
 
-        for (let i = 0; i < batchResults.length; i++) {
-            const result = batchResults[i];
+        for (const result of batchResults) {
             const positions = result.positions;
 
             for (let j = 0; j < result.chunks.length; j++) {

@@ -20,6 +20,7 @@ import {
     reportDocumentError,
     reportDocumentComplete
 } from '@/lib/document-tracker';
+import { Readable } from 'stream';
 
 
 /**
@@ -333,7 +334,6 @@ export async function convertDocumentAction(
         let markdown_url: string | null = null;
         try {
             // 创建一个 Readable 流
-            const { Readable } = require('stream');
             const buffer = Buffer.from(markdown_content, 'utf8');
             const stream = new Readable();
             stream.push(buffer);

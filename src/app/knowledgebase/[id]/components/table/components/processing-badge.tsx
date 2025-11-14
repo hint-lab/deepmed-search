@@ -108,7 +108,7 @@ export function DocumentProcessingBadge({ document, onRefresh }: DocumentProcess
         // 优先检查状态更新（即使不在处理中，也要处理状态变化）
         // 注意：progressState.status 可能为空字符串，需要检查是否为有效状态
         // 使用 previousStatusRef 而不是 status 来避免无限循环
-        if (progressState.status && progressState.status !== previousStatusRef.current && progressState.status.trim() !== '') {
+        if (progressState.status && progressState.status !== previousStatusRef.current.toString() && progressState.status.trim() !== '') {
             const newStatus = progressState.status as IDocumentProcessingStatus;
             console.log('[ProcessingBadge] SSE 状态更新', {
                 documentId: document.id,

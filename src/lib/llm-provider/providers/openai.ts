@@ -200,8 +200,9 @@ export class OpenAIProvider implements Provider {
       for await (const part of fullStream) {
         if (typeof part === 'string') {
           // 字符串类型的 chunk，直接作为文本内容
-          accumulatedContent += part;
-          onChunk(part);
+          const stringPart: string = part;
+          accumulatedContent += stringPart;
+          onChunk(stringPart);
           continue;
         }
 
@@ -210,18 +211,20 @@ export class OpenAIProvider implements Provider {
           case 'reasoning': {
             // reasoning 事件：推理内容（可能包含 textDelta 属性）
             isProcessingReasoning = true;
-            if ('textDelta' in part && part.textDelta) {
-              reasoningContent += part.textDelta;
-              onChunk('[REASONING]' + part.textDelta);
+            if ('textDelta' in part && part.textDelta && typeof part.textDelta === 'string') {
+              const textDelta: string = part.textDelta;
+              reasoningContent += textDelta;
+              onChunk('[REASONING]' + textDelta);
             }
             break;
           }
           case 'redacted-reasoning': {
             // redacted-reasoning 事件：隐藏的推理内容
             isProcessingReasoning = true;
-            if ('textDelta' in part && part.textDelta) {
-              reasoningContent += part.textDelta;
-              onChunk('[REASONING]' + part.textDelta);
+            if ('textDelta' in part && part.textDelta && typeof part.textDelta === 'string') {
+              const textDelta: string = part.textDelta;
+              reasoningContent += textDelta;
+              onChunk('[REASONING]' + textDelta);
             }
             break;
           }
@@ -232,9 +235,10 @@ export class OpenAIProvider implements Provider {
               isProcessingReasoning = false;
               onChunk('[END_REASONING][CONTENT]');
             }
-            if ('textDelta' in part && part.textDelta) {
-              accumulatedContent += part.textDelta;
-              onChunk(part.textDelta);
+            if ('textDelta' in part && part.textDelta && typeof part.textDelta === 'string') {
+              const textDelta: string = part.textDelta;
+              accumulatedContent += textDelta;
+              onChunk(textDelta);
             }
             break;
           }

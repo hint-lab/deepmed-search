@@ -289,12 +289,12 @@ export default function McpTestPage() {
                                     <Label htmlFor="request-payload">请求数据</Label>
                                     {testType === 'completion' && (
                                         <p className="text-xs text-muted-foreground mb-2">
-                                            以下是文本补全的示例JSON。修改"prompt"字段中的文本以更改请求。
+                                            以下是文本补全的示例JSON。修改&ldquo;prompt&rdquo;字段中的文本以更改请求。
                                         </p>
                                     )}
                                     {testType === 'tavily_search' && (
                                         <p className="text-xs text-muted-foreground mb-2">
-                                            这是Tavily搜索API的示例请求。修改"query"字段以更改搜索内容。
+                                            这是Tavily搜索API的示例请求。修改&ldquo;query&rdquo;字段以更改搜索内容。
                                         </p>
                                     )}
                                     <Textarea

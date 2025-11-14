@@ -1,0 +1,57 @@
+# Traefik 静态配置文件
+
+# API 和仪表板配置
+api:
+  dashboard: true
+  insecure: false  # 通过 HTTPS 访问仪表板
+
+# 入口点配置
+entryPoints:
+  web:
+    address: ":80"
+    # HTTP 到 HTTPS 的重定向
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+
+# 证书解析器配置
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Let's Encrypt 邮箱（用于证书过期提醒）
+      email: admin@deepmedsearch.cloud
+      # 证书存储路径
+      storage: /letsencrypt/acme.json
+      # 使用 HTTP-01 挑战
+      httpChallenge:
+        entryPoint: web
+
+# 提供者配置
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false  # 默认不暴露服务，需要显式标记
+    network: traefik-public
+
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# 日志配置
+log:
+  level: INFO
+  filePath: /var/log/traefik/traefik.log
+
+# 访问日志
+accessLog:
+  filePath: /var/log/traefik/access.log
+

@@ -58,7 +58,7 @@ export async function executeWithRetry<T>(operation: (client: Client) => Promise
         }
     }
 
-    throw lastError;
+    throw lastError || new Error('MinIO operation failed after all retries');
 }
 
 // 导出并发限制器供其他模块使用

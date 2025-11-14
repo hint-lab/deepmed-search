@@ -13,9 +13,7 @@ if (!ENCRYPTION_KEY) {
 }
 
 // 确保密钥长度为 32 字节（256 位）
-const KEY_LENGTH = 32;
 const IV_LENGTH = 16; // AES 块大小
-const AUTH_TAG_LENGTH = 16; // GCM 认证标签长度
 
 /**
  * 获取加密密钥（确保长度为 32 字节）
@@ -115,7 +113,7 @@ export function validateEncryptionKey(): boolean {
         const encrypted = encryptApiKey(testString);
         const decrypted = decryptApiKey(encrypted);
         return testString === decrypted;
-    } catch (error) {
+    } catch {
         return false;
     }
 }

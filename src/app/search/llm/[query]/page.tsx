@@ -224,7 +224,7 @@ export default function LlmSearchResultsPage() {
 
             {/* No Results State */}
             {!isLoading && !error && allResults.length === 0 && (
-                <p className="text-center text-muted-foreground my-10 p-10">未能生成与"{query}"相关的模拟搜索结果。</p>
+                <p className="text-center text-muted-foreground my-10 p-10">未能生成与&quot;{query}&quot;相关的模拟搜索结果。</p>
             )}
 
             {/* Results List */}

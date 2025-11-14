@@ -114,6 +114,9 @@ export class DocumentSplitter {
         const isSmartSegmentation = options.parserMode === 'llm_segmentation' || options.parserMode === 'jina_segmentation';
         const effectiveOverlapSize = isSmartSegmentation ? 0 : (options.overlapSize || 200);
 
+        this.userId = options.userId;
+        this.parserConfig = options.parserConfig;
+
         this.options = {
             // 增大默认分块大小到2000字符，减少分块数量
             maxChunkSize: options.maxChunkSize || 2000,
@@ -121,10 +124,9 @@ export class DocumentSplitter {
             splitByParagraph: options.splitByParagraph !== undefined ? options.splitByParagraph : true,
             preserveFormat: options.preserveFormat !== undefined ? options.preserveFormat : false,
             parserMode: options.parserMode || 'rule_segmentation',
+            userId: options.userId || '',
+            parserConfig: options.parserConfig || {},
         };
-
-        this.userId = options.userId;
-        this.parserConfig = options.parserConfig;
     }
 
     /**
@@ -179,7 +181,8 @@ export class DocumentSplitter {
         const closedAngle = beforeContent.lastIndexOf('>');
         if (unclosedAngle > closedAngle) {
             const hasClosingAngle = afterContent.includes('>');
-            const isUrl = beforeContent.substring(unclosedAngle).match(/^<https?:\/\//);
+            const urlRegex = /^<https?:\/\//;
+            const isUrl = urlRegex.exec(beforeContent.substring(unclosedAngle));
             if (hasClosingAngle && isUrl) return true;
         }
 
@@ -481,8 +484,7 @@ export class DocumentSplitter {
         let chunkStartPosition = 0;
         let chunkIndex = 0;
 
-        for (let i = 0; i < paragraphs.length; i++) {
-            const paragraph = paragraphs[i];
+        for (const paragraph of paragraphs) {
 
             // 如果当前块加上新段落超过最大块大小，创建新块
             if (currentChunk.length + paragraph.length > this.options.maxChunkSize && currentChunk.length > 0) {

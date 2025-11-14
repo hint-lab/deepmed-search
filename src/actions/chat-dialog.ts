@@ -1,7 +1,6 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
 import { withAuth } from '@/lib/auth-utils';
 import { APIResponse } from '@/types/api';
 

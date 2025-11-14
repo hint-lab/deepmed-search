@@ -1,5 +1,6 @@
 import { createOpenAI, OpenAIProviderSettings } from '@ai-sdk/openai';
 import logger from '@/utils/logger';
+import { hasUserContext, getLLMConfig } from './user-context';
 
 // ========== API 密钥配置 ==========
 // 注意：所有 API keys 都从用户配置（AsyncLocalStorage）获取
@@ -71,8 +72,6 @@ export function getModel(toolName: ToolName) {
     const opt: OpenAIProviderSettings = {};
 
     // 尝试从用户上下文获取配置（AsyncLocalStorage）
-    const { hasUserContext, getLLMConfig } = require('./user-context');
-
     if (!hasUserContext()) {
         throw new Error('未找到用户上下文。所有 LLM 调用必须在用户上下文中执行。请确保已在 /settings/llm 页面配置 API Key');
     }

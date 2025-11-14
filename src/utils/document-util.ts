@@ -1,4 +1,4 @@
-import { IChunk } from "@/types/knowledgebase";
+import { IChunk } from "@/types/chunk";
 import { IHighlight } from "react-pdf-highlighter";
 
 export function getExtension(filename: string): string {
@@ -8,7 +8,8 @@ export function getExtension(filename: string): string {
 
 export function getUnSupportedFilesCount(message: string): number {
     try {
-        const match = message.match(/(\d+)\s+files?\s+not\s+supported/i);
+        const regex = /(\d+)\s+files?\s+not\s+supported/i;
+        const match = regex.exec(message);
         return match ? parseInt(match[1], 10) : 0;
     } catch (error) {
         return 0;

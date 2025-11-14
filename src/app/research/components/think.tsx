@@ -914,8 +914,7 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                     "before:bg-gradient-to-b before:from-blue-500 before:to-purple-500",
                                     "hover:before:opacity-100 before:opacity-50",
                                     "rounded-r-lg hover:bg-muted/30",
-                                    "border border-transparent hover:cyan-200 dark:hover:cyan-800",
-                                    isLatest && isConnected && "animate-pulse-soft bg-blue-50/30 dark:bg-blue-900/10"
+                                    "border border-transparent hover:cyan-200 dark:hover:cyan-800"
                                 )}
                             >
                                 <div className="flex items-start gap-3">
@@ -939,7 +938,12 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                     {/* 思考内容 */}
                                     <div className="flex-1 min-w-0">
                                         <div className="prose dark:prose-invert max-w-none">
-                                            <p className="text-sm leading-relaxed m-0 font-medium">{step.think}</p>
+                                            <p className="text-sm leading-relaxed m-0 font-medium inline-flex items-center">
+                                                {step.think}
+                                                {isLatest && isConnected && (
+                                                    <span className="inline-block w-0.5 h-4 ml-1 bg-blue-600 dark:bg-blue-400 animate-pulse" />
+                                                )}
+                                            </p>
                                         </div>
                                         
                                         {/* 详情展开/收起 */}
@@ -991,11 +995,6 @@ export default function ThinkStatusDisplay({ taskId }: ThinkStatusDisplayProps) 
                                         {/* 最新步骤的动态指示器 */}
                                         {isLatest && isConnected && (
                                             <div className="flex items-center gap-2 mt-3 text-xs text-blue-600 dark:text-blue-400">
-                                                <div className="flex gap-1">
-                                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                                </div>
                                                 <span className="font-medium">{t('deepThinking')}</span>
                                             </div>
                                         )}

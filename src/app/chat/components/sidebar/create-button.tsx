@@ -42,8 +42,8 @@ import { useChatDialogContext } from '@/contexts/chat-dialog-context';
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context';
 
 
-const CreateChatDialogFormSchema = (t: Function) => z.object({
-    name: z.string().min(1, { message: t('validation.chatNameRequired', 'Chat name cannot be empty') }),
+const CreateChatDialogFormSchema = (t: (key: string, defaultValue?: string) => string | any) => z.object({
+    name: z.string().min(1, { message: String(t('validation.chatNameRequired', 'Chat name cannot be empty')) }),
     knowledgeBaseId: z.string().optional(),
     description: z.string().optional(),
 });

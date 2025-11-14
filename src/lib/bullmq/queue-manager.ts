@@ -1,6 +1,6 @@
-import { Queue, Worker, Job, QueueOptions, WorkerOptions, JobsOptions, ConnectionOptions } from 'bullmq';
+import { Queue, Worker, Job, JobsOptions, ConnectionOptions } from 'bullmq';
 import { Redis, RedisOptions } from 'ioredis';
-import { TaskType, QueueHealthStatus, TaskStatus, ProcessJobData, JobStatus } from './types';
+import { TaskType, QueueHealthStatus, TaskStatus, JobStatus } from './types';
 import { QUEUE_NAMES } from './queue-names';
 
 

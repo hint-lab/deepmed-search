@@ -60,7 +60,7 @@ function ChatMessageItem({
     const [referenceDocError, setReferenceDocError] = useState<string | null>(null);
 
     const normalizedRole =
-        message.role === MessageType.User || message.role === 'reason'
+        message.role === MessageType.User.toString() || message.role === MessageType.Reason.toString()
             ? MessageType.User
             : MessageType.Assistant;
     const isUser = normalizedRole === MessageType.User;

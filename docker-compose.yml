@@ -1,4 +1,33 @@
 services:
+  # Traefik 反向代理和负载均衡器
+  traefik:
+    image: traefik:v2.10
+    container_name: deepmed-traefik
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik 仪表板（可选）
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - traefik-certificates:/letsencrypt
+      - traefik-logs:/var/log/traefik
+    labels:
+      - "traefik.enable=true"
+      # Traefik 仪表板
+      - "traefik.http.routers.traefik.rule=Host(`www.deepmedsearch.cloud`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      # 仪表板认证（建议配置）
+      # - "traefik.http.routers.traefik.middlewares=auth"
+      # - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$..."  # 使用 htpasswd 生成
+    networks:
+      - traefik-public
+      - default
+
   # PostgreSQL 数据库服务（仅用于结构化数据）
   postgres:
     image: postgres:16-alpine
@@ -133,8 +162,31 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: deepmed-app
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    # 端口配置说明：
+    # - 生产环境：推荐只通过 Traefik (HTTPS) 访问，注释掉下面的 ports
+    # - 开发/调试：如需直接访问 3000 端口，可取消注释下面的 ports
+    # ports:
+    #   - "${APP_PORT:-3000}:3000"
+    expose:
+      - "3000"  # 仅在 Docker 网络内暴露，供 Traefik 使用
+    labels:
+      - "traefik.enable=true"
+      # HTTP 路由
+      - "traefik.http.routers.app.rule=Host(`www.deepmedsearch.cloud`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+      # 安全头
+      - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
+      - "traefik.http.routers.app.middlewares=security-headers"
+    networks:
+      - traefik-public
+      - default
     environment:
       NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=2048
@@ -142,6 +194,8 @@ services:
       # 数据库连接
       DATABASE_URL: ${DATABASE_URL}
       # NextAuth 配置
+      # 注意：使用 Traefik + SSL 时，请在 .env 中设置：
+      # NEXTAUTH_URL=https://www.deepmedsearch.cloud
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       # 加密密钥（用于解密用户配置的 API keys）
@@ -303,3 +357,10 @@ volumes:
   redis-data:
   milvus-data:
   redisinsight-data:
+  traefik-certificates:
+  traefik-logs:
+
+networks:
+  traefik-public:
+    name: traefik-public
+    driver: bridge

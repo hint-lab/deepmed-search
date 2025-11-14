@@ -120,7 +120,7 @@ function CollectPubMedButton({ article }: { article: PubMedArticle }) {
                     <DialogTitle>收藏到知识库</DialogTitle>
                     <DialogDescription className="break-words">
                         选择一个知识库来保存这篇文章: <br />
-                        <strong className="break-words">"{article.title}"</strong>
+                        <strong className="break-words">{article.title}</strong>
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">

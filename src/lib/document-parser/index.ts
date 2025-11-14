@@ -12,6 +12,7 @@ import path from 'path';
 import os from 'os';
 import axios from 'axios';
 import FormData from 'form-data';
+import { getDocumentParser, hasUserDocumentContext } from './user-context';
 
 export type ParserType = 'markitdown-docker' | 'mineru-docker' | 'mineru-cloud';
 
@@ -470,8 +471,6 @@ export async function parseDocument(
   options: DocumentParseOptions = {}
 ): Promise<DocumentParseResult> {
   // 从用户上下文获取解析器类型，如果没有则使用默认值
-  const { getDocumentParser, hasUserDocumentContext } = require('./user-context');
-
   const parserType: ParserType =
     options.parserType ||
     (hasUserDocumentContext() ? getDocumentParser() : 'markitdown-docker');
@@ -531,7 +530,6 @@ export async function parseDocument(
  * 获取当前配置的解析器类型
  */
 export function getCurrentParserType(): ParserType {
-  const { getDocumentParser, hasUserDocumentContext } = require('./user-context');
   return hasUserDocumentContext() ? getDocumentParser() : 'markitdown-docker';
 }
 

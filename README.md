@@ -1,10 +1,33 @@
-# DeepMed Search
+<div align="center">
 
-> **Note:** This project is still a work in progress. Some features may be incomplete or subject to change.
+<!-- logo -->
+<p align="center">
+  <h1>🔬 DeepMed Search</h1>
+</p>
 
-English | [中文](./README.zh-CN.md)
+<!-- badges -->
+[![GitHub stars](https://img.shields.io/github/stars/yourusername/deepmed-search?style=social)](https://github.com/yourusername/deepmed-search)
+[![GitHub forks](https://img.shields.io/github/forks/yourusername/deepmed-search?style=social)](https://github.com/yourusername/deepmed-search)
+[![GitHub issues](https://img.shields.io/github/issues/yourusername/deepmed-search)](https://github.com/yourusername/deepmed-search/issues)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen)](https://www.docker.com/)
 
-DeepMed Search is a versatile search application built with the Next.js App Router, featuring a unified interface for Web Search, LLM Introspection, and Knowledge Base (KB) Search.
+<!-- language -->
+[English](./README.md) | [简体中文](./README.zh-CN.md) | 📚 [Documentation Center](./docs/README.en.md)
+
+</div>
+
+> **⚠️ Development Notice:** This project is actively under development. Some features may be incomplete or subject to change.
+
+## 📖 Introduction
+
+DeepMed Search is a comprehensive AI-powered search application built with Next.js App Router, providing a unified interface for:
+- 🌐 **Web Search** - Multi-engine web content retrieval
+- 🤖 **LLM Q&A** - Direct answers from large language models  
+- 📚 **Knowledge Base** - Semantic vector search in your documents
+- 🔬 **Deep Research** - Autonomous AI research agent
 
 ## 🎬 Product Demo
 
@@ -839,28 +862,59 @@ The system includes a built-in queue monitoring dashboard powered by BullMQ Boar
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+We welcome contributions from the community! Here's how you can help:
 
-1. Fork this repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** to the branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+## All Thanks To Our Contributors
+
+<a href="https://github.com/yourusername/deepmed-search/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=yourusername/deepmed-search" />
+</a>
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#yourusername/deepmed-search&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date" />
+ </picture>
+</a>
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
 
-## 📧 Contact
+## 🔗 Related Projects
 
-For questions or suggestions, feel free to open an Issue or Pull Request.
+- [MinerU](https://github.com/opendatalab/MinerU) - High-quality PDF document parsing
+- [PDF-Extract-Kit](https://github.com/opendatalab/PDF-Extract-Kit) - Comprehensive PDF content extraction toolkit
+- [Next.js](https://nextjs.org/) - The React framework for production
+- [Milvus](https://milvus.io/) - Vector database for AI applications
+- [BullMQ](https://docs.bullmq.io/) - Premium message queue for NodeJS
+
+## 📧 Contact & Support
+
+- 💬 **Issues**: [GitHub Issues](https://github.com/yourusername/deepmed-search/issues)
+- 📧 **Email**: your-email@example.com
+- 🌐 **Website**: [Your Website]
+- 💼 **Organization**: [H!NT Lab](https://hint-lab.github.io/)
 
 ---
 
 <div align="center">
 
-**Built with ❤️ by [H!NT Lab](https://hint-lab.github.io/)**
+### Built with ❤️ by the DeepMed Team
+
+**Powered by Next.js, TypeScript, and AI**
 
 © 2025 DeepMed Search. All rights reserved.
+
+[⬆ Back to top](#-deepmed-search)
 
 </div>

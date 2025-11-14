@@ -72,7 +72,7 @@ export default function ProgressTestPage() {
                   <li>1. 在知识库中上传一个文档</li>
                   <li>2. 复制文档 ID（从表格或数据库）</li>
                   <li>3. 粘贴到上面的输入框</li>
-                  <li>4. 点击"开始监控"按钮</li>
+                  <li>4. 点击&ldquo;开始监控&rdquo;按钮</li>
                   <li>5. 点击文档的处理按钮，观察实时进度</li>
                 </ul>
               </div>
@@ -144,7 +144,7 @@ export default function ProgressTestPage() {
                   <li>1. 在研究页面创建一个研究任务</li>
                   <li>2. 任务 ID 会显示在 URL 或界面中</li>
                   <li>3. 粘贴到上面的输入框</li>
-                  <li>4. 点击"开始监控"按钮</li>
+                  <li>4. 点击&ldquo;开始监控&rdquo;按钮</li>
                   <li>5. 观察实时思考过程和进度</li>
                 </ul>
               </div>

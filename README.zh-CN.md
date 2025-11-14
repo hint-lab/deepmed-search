@@ -1,10 +1,33 @@
-# DeepMed Search
+<div align="center">
 
-> **注意：** 本项目仍在开发中，部分功能可能不完整或将来会有变更。
+<!-- logo -->
+<p align="center">
+  <h1>🔬 DeepMed Search</h1>
+</p>
 
-[English](./README.md) | 中文
+<!-- badges -->
+[![GitHub stars](https://img.shields.io/github/stars/yourusername/deepmed-search?style=social)](https://github.com/yourusername/deepmed-search)
+[![GitHub forks](https://img.shields.io/github/forks/yourusername/deepmed-search?style=social)](https://github.com/yourusername/deepmed-search)
+[![GitHub issues](https://img.shields.io/github/issues/yourusername/deepmed-search)](https://github.com/yourusername/deepmed-search/issues)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen)](https://www.docker.com/)
 
-DeepMed Search 是一个基于 Next.js App Router 构建的智能搜索应用，提供统一的网页搜索、大语言模型问答和知识库检索功能。
+<!-- language -->
+[English](./README.md) | [简体中文](./README.zh-CN.md) | 📚 [文档中心](./docs/README.md)
+
+</div>
+
+> **⚠️ 开发提示：** 本项目正在积极开发中，部分功能可能不完整或将来会有变更。
+
+## 📖 项目简介
+
+DeepMed Search 是一个全面的 AI 驱动搜索应用，基于 Next.js App Router 构建，提供统一界面支持：
+- 🌐 **网页搜索** - 多引擎网络内容检索
+- 🤖 **LLM 问答** - 大语言模型直接回答问题
+- 📚 **知识库** - 文档语义向量搜索
+- 🔬 **深度研究** - 自主 AI 研究代理
 
 ## 🎬 产品演示
 
@@ -837,29 +860,60 @@ http://localhost:3000/research
 
 ## 🤝 贡献指南
 
-欢迎贡献代码！请遵循以下步骤：
+我们欢迎社区贡献！您可以这样帮助我们：
 
-1. Fork 本仓库
-2. 创建特性分支（`git checkout -b feature/AmazingFeature`）
-3. 提交更改（`git commit -m 'Add some AmazingFeature'`）
-4. 推送到分支（`git push origin feature/AmazingFeature`）
-5. 开启 Pull Request
+1. **Fork** 本仓库
+2. **创建** 特性分支（`git checkout -b feature/AmazingFeature`）
+3. **提交** 更改（`git commit -m 'Add some AmazingFeature'`）
+4. **推送** 到分支（`git push origin feature/AmazingFeature`）
+5. **开启** Pull Request
+
+## 感谢所有贡献者
+
+<a href="https://github.com/yourusername/deepmed-search/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=yourusername/deepmed-search" />
+</a>
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#yourusername/deepmed-search&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=yourusername/deepmed-search&type=Date" />
+ </picture>
+</a>
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+本项目采用 [MIT 许可证](LICENSE)。详见 LICENSE 文件。
 
-## 📧 联系方式
+## 🔗 相关项目
 
-如有问题或建议，欢迎提出 Issue 或 Pull Request。
+- [MinerU](https://github.com/opendatalab/MinerU) - 高质量 PDF 文档解析
+- [PDF-Extract-Kit](https://github.com/opendatalab/PDF-Extract-Kit) - 综合 PDF 内容提取工具包
+- [Next.js](https://nextjs.org/) - 用于生产的 React 框架
+- [Milvus](https://milvus.io/) - AI 应用向量数据库
+- [BullMQ](https://docs.bullmq.io/) - NodeJS 高级消息队列
+
+## 📧 联系与支持
+
+- 💬 **问题反馈**: [GitHub Issues](https://github.com/yourusername/deepmed-search/issues)
+- 📧 **邮箱**: your-email@example.com
+- 🌐 **网站**: [Your Website]
+- 💼 **组织**: [H!NT Lab](https://hint-lab.github.io/)
 
 ---
 
 <div align="center">
 
-**用 ❤️ 构建，由 [H!NT Lab](https://hint-lab.github.io/) 开发**
+### 用 ❤️ 构建，由 DeepMed 团队开发
+
+**基于 Next.js、TypeScript 和 AI 技术**
 
 © 2025 DeepMed Search. 保留所有权利。
+
+[⬆ 回到顶部](#-deepmed-search)
 
 </div>
 

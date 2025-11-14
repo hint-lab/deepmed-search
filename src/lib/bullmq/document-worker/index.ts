@@ -12,8 +12,7 @@ import { IDocumentProcessingStatus } from '@/types/enums';
 import {
     updateDocumentProgress,
     updateDocumentStatus,
-    reportDocumentError,
-    reportDocumentComplete
+    reportDocumentError
 } from '@/lib/document-tracker';
 import { ChunkIndexJobData } from '../chunk-worker/types';
 import { normalizeLanguage } from '@/constants/language';

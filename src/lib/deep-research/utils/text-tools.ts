@@ -192,8 +192,9 @@ export function repairMarkdownFootnotesOuter(markdownString: string): string {
   let footnotesPart = '';
 
   // Try to find where footnote definitions start
-  const firstFootnoteMatch = markdownString.match(/\[\^(\d+)]:/);
-  if (firstFootnoteMatch) {
+  const firstFootnoteRegex = /\[\^(\d+)]:/;
+  const firstFootnoteMatch = firstFootnoteRegex.exec(markdownString);
+  if (firstFootnoteMatch && firstFootnoteMatch.index !== undefined) {
     const footnoteStartIndex = firstFootnoteMatch.index;
     if (footnoteStartIndex !== undefined) {
       contentPart = markdownString.substring(0, footnoteStartIndex);
@@ -209,7 +210,8 @@ export function repairMarkdownFootnotesOuter(markdownString: string): string {
 
     // Extract URL and title if present
     // Looking for [domain.com](url) pattern at the end of the content
-    const urlMatch = content.match(/\s*\[([^\]]+)]\(([^)]+)\)\s*$/);
+    const urlRegex = /\s*\[([^\]]+)]\(([^)]+)\)\s*$/;
+    const urlMatch = urlRegex.exec(content);
 
     let url = '';
     let title = '';
@@ -362,7 +364,8 @@ export function fixCodeBlockIndentation(markdownText: string): string {
             // Check for list markers like *, -, 1., etc.
             if (/^\s*(?:[*\-+]|\d+\.)\s/.test(prevLine)) {
               // Extract the list's base indentation
-              const match = prevLine.match(/^(\s*)/);
+              const indentRegex = /^(\s*)/;
+              const match = indentRegex.exec(prevLine);
               if (match) {
                 listIndent = match[1];
                 break;
@@ -401,7 +404,8 @@ export function fixCodeBlockIndentation(markdownText: string): string {
         }
 
         // Get the indentation of this specific line
-        const lineIndentMatch = line.match(/^(\s*)/);
+        const lineIndentRegex = /^(\s*)/;
+        const lineIndentMatch = lineIndentRegex.exec(line);
         const lineIndent = lineIndentMatch ? lineIndentMatch[0] : '';
 
         // Find the common prefix between the line's indent and the opening block's indent
@@ -579,7 +583,8 @@ function convertSingleHtmlTableToMd(htmlTable: string): string | null {
                 const lines = cellContent.split('\n');
                 for (const line of lines) {
                   const trimmedLine = line.trim();
-                  if (trimmedLine.match(/^\s*\*\s+/)) {
+                  const listItemRegex = /^\s*\*\s+/;
+                  if (listItemRegex.exec(trimmedLine)) {
                     listItems.push(trimmedLine.replace(/^\s*\*\s+/, ''));
                   }
                 }

@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 
 export interface Pagination {
     current: number;

@@ -306,7 +306,7 @@ export async function processDocumentWithMinerU(
     });
 
     // 从用户上下文获取 MinerU API Key
-    const { getMineruApiKey, hasUserDocumentContext } = require('../document-parser/user-context');
+    const { getMineruApiKey, hasUserDocumentContext } = await import('../document-parser/user-context');
 
     let apiKey: string;
     try {

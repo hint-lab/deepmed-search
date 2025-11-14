@@ -190,7 +190,7 @@ export default function WebSearchResultsPage() {
 
             {/* No Results State */}
             {!isLoading && !error && allResults.length === 0 && (
-                <p className="text-center text-muted-foreground my-10 p-10">未能找到与"{query}"相关的任何网页结果。</p>
+                <p className="text-center text-muted-foreground my-10 p-10">未能找到与{query}相关的任何网页结果。</p>
             )}
 
             {/* Results List and Pagination */}

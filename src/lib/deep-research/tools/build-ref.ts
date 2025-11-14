@@ -1,8 +1,8 @@
-import {segmentText} from './jina-segment';
-import {Reference, TrackerContext, WebContent} from "../types";
-import {Schemas} from "../utils/schemas";
-import {cosineSimilarity, jaccardRank} from "./cosine";
-import {getEmbeddings} from "./jina-embeddings";
+import { segmentText } from './jina-segment';
+import { Reference, TrackerContext, WebContent } from "../types";
+import { Schemas } from "../utils/schemas";
+import { cosineSimilarity, jaccardRank } from "./cosine";
+import { getEmbeddings } from "./jina-embeddings";
 
 export async function buildReferences(
   answer: string,
@@ -18,7 +18,7 @@ export async function buildReferences(
 
   // Step 1: Chunk the answer
   console.log(`[buildReferences] Step 1: Chunking answer text`);
-  const {chunks: answerChunks, chunk_positions: answerChunkPositions} = await segmentText(answer, context);
+  const { chunks: answerChunks, chunk_positions: answerChunkPositions } = await segmentText(answer, context);
   console.log(`[buildReferences] Answer segmented into ${answerChunks.length} chunks`);
 
   // Step 2: Prepare all web content chunks, filtering out those below minimum length
@@ -31,8 +31,7 @@ export async function buildReferences(
   for (const [url, content] of Object.entries(webContents)) {
     if (!content.chunks || content.chunks.length === 0) continue;
 
-    for (let i = 0; i < content.chunks.length; i++) {
-      const chunk = content.chunks[i];
+    for (const chunk of content.chunks) {
       allWebContentChunks.push(chunk);
       chunkToSourceMap[chunkIndex] = {
         url,
@@ -53,7 +52,7 @@ export async function buildReferences(
 
   if (allWebContentChunks.length === 0) {
     console.log(`[buildReferences] No web content chunks available, returning without references`);
-    return {answer, references: []};
+    return { answer, references: [] };
   }
 
   // Step 3: Filter answer chunks by minimum length
@@ -80,7 +79,7 @@ export async function buildReferences(
 
   if (validAnswerChunks.length === 0) {
     console.log(`[buildReferences] No valid answer chunks, returning without references`);
-    return {answer, references: []};
+    return { answer, references: [] };
   }
 
   // Step 4: Get embeddings for BOTH answer chunks and valid web chunks in a single request
@@ -95,7 +94,7 @@ export async function buildReferences(
   // Add answer chunks first
   validAnswerChunks.forEach((chunk, index) => {
     allChunks.push(chunk);
-    chunkIndexMap.set(allChunks.length - 1, {type: 'answer', originalIndex: index});
+    chunkIndexMap.set(allChunks.length - 1, { type: 'answer', originalIndex: index });
   });
 
   // Then add web chunks that meet minimum length requirement
@@ -103,7 +102,7 @@ export async function buildReferences(
     // Only include valid web chunks (those above minimum length)
     if (validWebChunkIndices.has(i)) {
       allChunks.push(allWebContentChunks[i]);
-      chunkIndexMap.set(allChunks.length - 1, {type: 'web', originalIndex: i});
+      chunkIndexMap.set(allChunks.length - 1, { type: 'web', originalIndex: i });
     }
   }
 
@@ -319,7 +318,8 @@ function buildFinalResult(
 
     // Look ahead to check if there's a list item coming next
     const textAfterInsert = modifiedAnswer.substring(insertPosition);
-    const nextListItemMatch = textAfterInsert.match(/^\s*\n\s*\*/);
+    const nextListItemRegex = /^\s*\n\s*\*/;
+    const nextListItemMatch = nextListItemRegex.exec(textAfterInsert);
 
     // If we're at a position where the next content is a list item,
     // we need to adjust WHERE we place the footnote
@@ -327,7 +327,8 @@ function buildFinalResult(
       // Move the marker to right after the last content character,
       // but INSIDE any punctuation at the end of the content
       const beforeText = modifiedAnswer.substring(Math.max(0, insertPosition - 30), insertPosition);
-      const lastPunctuation = beforeText.match(/[！。？!.?]$/);
+      const lastPunctuationRegex = /[！。？!.?]$/;
+      const lastPunctuation = lastPunctuationRegex.exec(beforeText);
 
       if (lastPunctuation) {
         // If there's punctuation at the end, insert the marker before it
@@ -336,8 +337,10 @@ function buildFinalResult(
     } else {
       // The original conditions for newlines and table pipes can remain
       const chunkEndText = modifiedAnswer.substring(Math.max(0, insertPosition - 5), insertPosition);
-      const newlineMatch = chunkEndText.match(/\n+$/);
-      const tableEndMatch = chunkEndText.match(/\s*\|\s*$/);
+      const newlineRegex = /\n+$/;
+      const tableEndRegex = /\s*\|\s*$/;
+      const newlineMatch = newlineRegex.exec(chunkEndText);
+      const tableEndMatch = tableEndRegex.exec(chunkEndText);
 
       if (newlineMatch) {
         // Move the insertion position before the newline(s)

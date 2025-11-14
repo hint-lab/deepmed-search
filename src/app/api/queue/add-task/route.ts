@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
     };
 
     // 添加任务到队列
-    const job = await addTask(taskType, taskPayload);
+    const jobId = await addTask(taskType, taskPayload);
 
     return NextResponse.json({
       success: true,
       data: {
-        jobId: job.id,
+        jobId,
         taskType,
         timestamp: new Date().toISOString(),
       },

@@ -119,7 +119,8 @@ export class DeepSeekProvider implements Provider {
       let actualContent = text;
 
       if (isReason && text.includes('<think>') && text.includes('</think>')) {
-        const thinkMatch = text.match(/<think>([\s\S]*?)<\/redacted_reasoning>/);
+        const thinkPattern = /<think>([\s\S]*?)<\/redacted_reasoning>/;
+        const thinkMatch = thinkPattern.exec(text);
         if (thinkMatch) {
           reasoningContent = thinkMatch[1];
           actualContent = text.replace(/<think>[\s\S]*?<\/redacted_reasoning>/, '').trim();
@@ -216,14 +217,14 @@ export class DeepSeekProvider implements Provider {
               // 只在第一次从 reasoning 转换到 text 时发送转换消息
               if (isReason && hasReasoningStarted && !hasTransitionedToContent) {
                 logger.debug('[DeepSeek] Sending transition from reasoning to content');
-            onChunk('[END_REASONING][CONTENT]');
+                onChunk('[END_REASONING][CONTENT]');
                 hasTransitionedToContent = true;
               }
               accumulatedContent += delta;
               onChunk(delta);
             }
             break;
-            }
+          }
           case 'tool-call-streaming-start':
           case 'tool-call':
           case 'tool-call-delta':
@@ -253,7 +254,7 @@ export class DeepSeekProvider implements Provider {
       // 如果流结束时还有 reasoning 但没有转换到 content，发送转换消息
       if (isReason && hasReasoningStarted && !hasTransitionedToContent && accumulatedContent.length === 0) {
         onChunk('[END_REASONING][CONTENT]');
-        }
+      }
 
       if (isReason && reasoning) {
         try {
@@ -271,7 +272,7 @@ export class DeepSeekProvider implements Provider {
       if (isReason && !finalReasoningContent) {
         const trimmed = finalText ?? '';
         const thinkPattern = /<think>([\s\S]*?)<\/think>/;
-        const match = trimmed.match(thinkPattern);
+        const match = thinkPattern.exec(trimmed);
         if (match && match[1]) {
           finalReasoningContent = match[1];
           finalActualContent = trimmed.replace(thinkPattern, '').trim();

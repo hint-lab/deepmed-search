@@ -391,7 +391,7 @@ export default function LLMSettingsPage() {
               <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
                 <li>您可以创建多个 LLM 配置</li>
                 <li>只有激活的配置会被使用</li>
-                <li>点击"激活"按钮可切换配置</li>
+                <li>点击&quot;激活&quot;按钮可切换配置</li>
                 <li>API Key 会被加密存储，确保安全</li>
               </ul>
             </div>
@@ -491,7 +491,7 @@ export default function LLMSettingsPage() {
               </Select>
               {provider === 'deepseek' && (
                 <p className="text-xs text-muted-foreground">
-                  用于普通对话的模型，推荐使用 deepseek-chat。思考模式使用下面的"推理模型"。
+                  用于普通对话的模型，推荐使用 deepseek-chat。思考模式使用下面的&quot;推理模型&quot;。
                 </p>
               )}
             </div>
@@ -510,7 +510,7 @@ export default function LLMSettingsPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  用于思考模式的模型，留空将使用 deepseek-reasoner。普通对话使用上面的"模型"字段。
+                  用于思考模式的模型，留空将使用 deepseek-reasoner。普通对话使用上面的&quot;模型&quot;字段。
                 </p>
               </div>
             )}

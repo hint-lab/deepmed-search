@@ -5,23 +5,18 @@ import { Message, MessageRole } from './types';
  * 将自定义消息类型转换为标准角色
  */
 export function convertToStandardRole(role: string): 'system' | 'user' | 'assistant' | 'tool' {
+  // 使用字符串字面量进行比较，避免枚举类型不匹配问题
   switch (role) {
-    case MessageRole.Reason:
     case 'reason':
       return 'user';
-    case MessageRole.ReasonReply:
     case 'reasonReply':
       return 'assistant';
-    case MessageRole.User:
     case 'user':
       return 'user';
-    case MessageRole.Assistant:
     case 'assistant':
       return 'assistant';
-    case MessageRole.System:
     case 'system':
       return 'system';
-    case MessageRole.Tool:
     case 'tool':
       return 'tool';
     default:
@@ -44,10 +39,11 @@ export function convertToCoreMessages(messages: Message[]): CoreMessage[] {
  */
 export function filterReasonMessages(messages: Message[]): Message[] {
   const filteredMessages = messages.filter(
-    msg =>
-      msg.role === 'system' ||
-      msg.role === MessageRole.Reason ||
-      msg.role === 'reason'
+    msg => {
+      const role = msg.role;
+      return role === 'system' ||
+        role === 'reason';
+    }
   );
 
   const result: Message[] = [];
@@ -87,11 +83,11 @@ export function filterReasonMessages(messages: Message[]): Message[] {
 export function filterNonReasonMessages(messages: Message[]): Message[] {
   return messages
     .filter(
-      msg =>
-        msg.role !== MessageRole.Reason &&
-        msg.role !== MessageRole.ReasonReply &&
-        msg.role !== 'reason' &&
-        msg.role !== 'reasonReply'
+      msg => {
+        const role = msg.role as string;
+        return role !== 'reason' &&
+          role !== 'reasonReply';
+      }
     )
     .map(msg => {
       if (msg.metadata?.reasoningContent) {
