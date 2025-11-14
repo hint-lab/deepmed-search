@@ -125,7 +125,6 @@ services:
       - redis
       - postgres
       - markitdown
-      - mineru
       - milvus
     environment:
       NODE_ENV: production
@@ -147,10 +146,8 @@ services:
       
       # 文档解析器服务端点配置（容器内使用服务名）
       # 注意：实际使用的解析器由用户在 /settings/document 页面配置
+      # Demo 分支：仅支持 Markitdown（不需要 GPU）
       MARKITDOWN_URL: http://markitdown:5000
-      MINERU_URL: http://mineru:8000
-      MINERU_API_KEY: ${MINERU_API_KEY:-}
-      MINERU_BASE_URL: ${MINERU_BASE_URL:-}
       
       # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
       # 用户需在 /settings/llm 和 /settings/search 页面配置
@@ -202,10 +199,8 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
       # 以下是解析器服务的端点配置，非解析器选择
+      # Demo 分支：仅支持 Markitdown（不需要 GPU）
       MARKITDOWN_URL: ${MARKITDOWN_URL:-http://markitdown:5000}
-      MINERU_URL: ${MINERU_URL:-http://mineru:8000}
-      MINERU_API_KEY: ${MINERU_API_KEY:-}
-      MINERU_BASE_URL: ${MINERU_BASE_URL:-}
       # MinIO 配置
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
@@ -289,56 +284,13 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
-  # MinerU 文档转换服务（开源自托管版本）
-  # 基于官方 vLLM 镜像，支持 GPU 加速
-  # 参考：https://opendatalab.github.io/MinerU/zh/quick_start/docker_deployment/
-  mineru:
-    build:
-      context: ./docker/mineru
-      # 使用 Dockerfile（GPU 版本，推荐）或 Dockerfile.cpu（CPU 版本）
-      # dockerfile: Dockerfile.cpu
-      dockerfile: Dockerfile
-    container_name: deepmed-mineru
-    restart: always
-    ports:
-      - "${MINERU_DOCKER_PORT:-8000}:8000"
-    environment:
-      PORT: 8000
-      MINERU_MODEL_SOURCE: local
-      # MinerU 后端模式：pipeline (推荐/稳定), vlm-vllm-engine, magic-pdf 等
-      # 注意：vlm-vllm-engine 可能存在兼容性问题，推荐使用 pipeline
-      MINERU_BACKEND: ${MINERU_BACKEND:-pipeline}
-      # MinIO 配置（用于图片上传）
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-      MINIO_SECURE: ${MINIO_USE_SSL:-false}
-      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-deepmed}
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
-    depends_on:
-      - minio
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    # 如果使用 GPU 版本（Dockerfile），需要启用 GPU 支持
-    # 并将上面的 dockerfile: Dockerfile.cpu 改为 dockerfile: Dockerfile
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+
+  # ==========================================
+  # Demo 分支说明：
+  # 此分支移除了 MinerU 服务（需要 GPU）
+  # 仅使用 Markitdown 作为文档解析器
+  # ==========================================
+
 volumes:
   postgres-data:
   minio-data:
