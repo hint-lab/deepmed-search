@@ -21,6 +21,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group"
 import { useKnowledgeBaseContext } from '@/contexts/knowledgebase-context'
 import { SearchSuggestions } from '@/components/search-suggestions' 
 import { Slider } from "@/components/ui/slider"
@@ -48,6 +49,8 @@ interface SearchInputFormProps {
     onLLMSelect: (model: LlmModelType) => void;
     onWebEngineSelect: (engine: SearchEngineType) => void;
     onKbSelect: (kbId: string) => void;
+    onKbSelectOnly?: (kbId: string) => void;
+    onKbSearchClick?: () => void;
     availableKbs: KnowledgeBase[];
     t: TFunction; // Uses TFunction from i18next
     isKbListLoading: boolean;
@@ -60,8 +63,11 @@ interface SearchInputFormProps {
     availableLLMModels: LlmModelType[];
     selectedSearchEngine: SearchEngineType | null;
     selectedLLMModel: LlmModelType | null;
+    selectedKbId: string | null;
     isSubmitting: boolean;
     isPending: boolean;
+    onModelSelectOnly?: (model: LlmModelType) => void;
+    onEngineSelectOnly?: (engine: SearchEngineType) => void;
 }
 
 const SearchInputForm: React.FC<SearchInputFormProps> = ({
@@ -75,6 +81,8 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
     onLLMSelect,
     onWebEngineSelect,
     onKbSelect,
+    onKbSelectOnly,
+    onKbSearchClick,
     availableKbs,
     t,
     isKbListLoading,
@@ -87,8 +95,11 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
     availableLLMModels = [],
     selectedSearchEngine,
     selectedLLMModel,
+    selectedKbId,
     isSubmitting,
-    isPending
+    isPending,
+    onModelSelectOnly,
+    onEngineSelectOnly
 }) => {
     // 获取显示名称的辅助函数
     const getEngineDisplayName = (engine: SearchEngineType) => {
@@ -99,15 +110,33 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
         return model === 'gemini' ? 'Gemini' : model === 'gpt' ? 'GPT' : 'DeepSeek';
     };
 
-    // 处理表单提交（按 Enter 键时使用默认配置）
-    const handleFormSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    // 处理搜索按钮点击
+    const handleSearchClick = () => {
         if (isSearchStrEmpty || disableInteractions) return;
         
         if (searchType === 'web' && selectedSearchEngine) {
             onWebEngineSelect(selectedSearchEngine);
         } else if (searchType === 'llm' && selectedLLMModel) {
             onLLMSelect(selectedLLMModel);
+        }
+    };
+
+    // 处理表单提交（按 Enter 键时使用默认配置）
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSearchClick();
+    };
+
+    // 处理模型/引擎选择（只选择，不触发搜索）
+    const handleModelSelectOnly = (model: LlmModelType) => {
+        if (onModelSelectOnly) {
+            onModelSelectOnly(model);
+        }
+    };
+
+    const handleEngineSelectOnly = (engine: SearchEngineType) => {
+        if (onEngineSelectOnly) {
+            onEngineSelectOnly(engine);
         }
     };
 
@@ -126,168 +155,231 @@ const SearchInputForm: React.FC<SearchInputFormProps> = ({
                     />
                 </div>
                 {searchType === 'web' ? (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                disabled={disableInteractions || isSearchStrEmpty || availableSearchEngines.length === 0}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
-                            >
-                                {isSubmittingWebOrLLM ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        <Search className="h-5 w-5 mr-1" />
-                                        {selectedSearchEngine ? (
-                                            <span className="mr-1 text-sm">{getEngineDisplayName(selectedSearchEngine)}</span>
-                                        ) : null}
-                                        <ChevronDown className="h-4 w-4 ml-1" />
-                                    </>
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{t('selectSearchEngine', '选择搜索引擎')}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {availableSearchEngines.map((engine) => (
-                                <DropdownMenuItem 
-                                    key={engine} 
-                                    onSelect={() => onWebEngineSelect(engine)}
-                                    className={selectedSearchEngine === engine ? 'bg-accent' : ''}
+                    <ButtonGroup className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg border-y border-r border-border/80 bg-cyan-600">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    disabled={disableInteractions || availableSearchEngines.length === 0}
+                                    variant="outline"
+                                    className="h-12 rounded-l-none rounded-r-none border-0 bg-transparent text-white hover:bg-white/20 disabled:opacity-50 disabled:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
                                 >
-                                    {selectedSearchEngine === engine && <Check className="mr-2 h-4 w-4" />}
-                                    {getEngineDisplayName(engine)}
-                                </DropdownMenuItem>
-                            ))}
-                            {availableSearchEngines.length === 0 && (
-                                <DropdownMenuItem disabled>
-                                    请先配置搜索引擎 API Key
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                ) : searchType === 'llm' ? (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                disabled={disableInteractions || isSearchStrEmpty || availableLLMModels.length === 0}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-blue-600 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
-                            >
-                                {isSubmittingWebOrLLM ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        <Search className="h-5 w-5 mr-1" />
-                                        {selectedLLMModel ? (
-                                            <span className="mr-1 text-sm">{getModelDisplayName(selectedLLMModel)}</span>
-                                        ) : null}
-                                        <ChevronDown className="h-4 w-4 ml-1" />
-                                    </>
+                                    {selectedSearchEngine ? (
+                                        <span className="text-sm font-medium">{getEngineDisplayName(selectedSearchEngine)}</span>
+                                    ) : (
+                                        <span className="text-sm font-medium">选择引擎</span>
+                                    )}
+                                    <ChevronDown className="h-4 w-4 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={4}>
+                                <DropdownMenuLabel>{t('selectSearchEngine', '选择搜索引擎')}</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {availableSearchEngines.map((engine) => (
+                                    <DropdownMenuItem 
+                                        key={engine} 
+                                        onSelect={() => handleEngineSelectOnly(engine)}
+                                        className={`flex items-center justify-between ${selectedSearchEngine === engine ? 'bg-accent' : ''}`}
+                                    >
+                                        <span>{getEngineDisplayName(engine)}</span>
+                                        {selectedSearchEngine === engine && (
+                                            <Check className="h-4 w-4 ml-2" />
+                                        )}
+                                    </DropdownMenuItem>
+                                ))}
+                                {availableSearchEngines.length === 0 && (
+                                    <DropdownMenuItem disabled>
+                                        请先配置搜索引擎 API Key
+                                    </DropdownMenuItem>
                                 )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{t('selectLlmModel', '选择 LLM 模型')}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {availableLLMModels.map((model) => (
-                                <DropdownMenuItem 
-                                    key={model} 
-                                    onSelect={() => onLLMSelect(model)}
-                                    className={selectedLLMModel === model ? 'bg-accent' : ''}
-                                >
-                                    {selectedLLMModel === model && <Check className="mr-2 h-4 w-4" />}
-                                    {getModelDisplayName(model)}
-                                </DropdownMenuItem>
-                            ))}
-                            {availableLLMModels.length === 0 && (
-                                <DropdownMenuItem disabled>
-                                    请先配置 LLM API Key
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                ) : ( // searchType === 'kb'
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                disabled={isKbListLoading || disableInteractions || isSearchStrEmpty}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-green-500 to-blue-500 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
-                            >
-                                {isKbSearching ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        <Search className="h-5 w-5 mr-1" />
-                                        <ChevronDown className="h-4 w-4 ml-1" />
-                                    </>
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-96">
-                            {isKbListLoading ? (
-                                <DropdownMenuItem disabled>{t('loadingKnowledgeBases')}</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <ButtonGroupSeparator className="bg-white/30" />
+                        <Button
+                            type="button"
+                            onClick={handleSearchClick}
+                            disabled={disableInteractions || isSearchStrEmpty || availableSearchEngines.length === 0 || !selectedSearchEngine}
+                            className="h-12 rounded-l-none rounded-r-lg border-0 bg-transparent text-white hover:bg-white/20 disabled:opacity-50 disabled:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        >
+                            {isSubmittingWebOrLLM ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
                             ) : (
-                                <div className="flex">
-                                    <div className="w-1/2 pr-2 border-r">
-                                        <DropdownMenuLabel>{t('selectKnowledgeBase')}</DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
+                                <Search className="h-5 w-5" />
+                            )}
+                        </Button>
+                    </ButtonGroup>
+                ) : searchType === 'llm' ? (
+                    <ButtonGroup className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg border-y border-r border-border/80 bg-cyan-600">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    disabled={disableInteractions || availableLLMModels.length === 0}
+                                    variant="outline"
+                                    className="h-12 rounded-l-none rounded-r-none border-0 bg-transparent text-white hover:bg-white/20 disabled:opacity-50 disabled:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                >
+                                    {selectedLLMModel ? (
+                                        <span className="text-sm font-medium">{getModelDisplayName(selectedLLMModel)}</span>
+                                    ) : (
+                                        <span className="text-sm font-medium">选择模型</span>
+                                    )}
+                                    <ChevronDown className="h-4 w-4 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={4}>
+                                <DropdownMenuLabel>{t('selectLlmModel', '选择 LLM 模型')}</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {availableLLMModels.map((model) => (
+                                    <DropdownMenuItem 
+                                        key={model} 
+                                        onSelect={() => handleModelSelectOnly(model)}
+                                        className={`flex items-center justify-between ${selectedLLMModel === model ? 'bg-accent' : ''}`}
+                                    >
+                                        <span>{getModelDisplayName(model)}</span>
+                                        {selectedLLMModel === model && (
+                                            <Check className="h-4 w-4 ml-2" />
+                                        )}
+                                    </DropdownMenuItem>
+                                ))}
+                                {availableLLMModels.length === 0 && (
+                                    <DropdownMenuItem disabled>
+                                        请先配置 LLM API Key
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <ButtonGroupSeparator className="bg-white/30" />
+                        <Button
+                            type="button"
+                            onClick={handleSearchClick}
+                            disabled={disableInteractions || isSearchStrEmpty || availableLLMModels.length === 0 || !selectedLLMModel}
+                            className="h-12 rounded-l-none rounded-r-lg border-0 bg-transparent text-white hover:bg-white/20 disabled:opacity-50 disabled:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        >
+                            {isSubmittingWebOrLLM ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Search className="h-5 w-5" />
+                            )}
+                        </Button>
+                    </ButtonGroup>
+                ) : ( // searchType === 'kb'
+                    <ButtonGroup className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg border-y border-r border-border/80 bg-cyan-600">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    disabled={isKbListLoading || disableInteractions}
+                                    variant="outline"
+                                    className="h-12 rounded-l-none rounded-r-none border-0 bg-transparent text-white hover:bg-white/20 disabled:opacity-50 disabled:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                >
+                                    {selectedKbId ? (
+                                        <span className="text-sm font-medium">
+                                            {availableKbs.find(kb => kb.id === selectedKbId)?.name || '选择知识库'}
+                                        </span>
+                                    ) : (
+                                        <span className="text-sm font-medium">选择知识库</span>
+                                    )}
+                                    <ChevronDown className="h-4 w-4 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={4} className="w-96">
+                                {isKbListLoading ? (
+                                    <DropdownMenuItem disabled>{t('loadingKnowledgeBases')}</DropdownMenuItem>
+                                ) : (
+                                    <div className="flex">
+                                        <div className="w-1/2 pr-2 border-r">
+                                            <DropdownMenuLabel>{t('selectKnowledgeBase')}</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
                                         {availableKbs.length > 0 ? (
                                             availableKbs.map((kb) => (
-                                                <DropdownMenuItem key={kb.id} onSelect={() => onKbSelect(kb.id)}>
-                                                    {kb.name}
+                                                <DropdownMenuItem 
+                                                    key={kb.id} 
+                                                    onSelect={() => {
+                                                        if (onKbSelectOnly) {
+                                                            onKbSelectOnly(kb.id);
+                                                        }
+                                                    }}
+                                                    className="flex items-center justify-between"
+                                                >
+                                                    <span>{kb.name}</span>
+                                                    {selectedKbId === kb.id && (
+                                                        <Check className="h-4 w-4 ml-2" />
+                                                    )}
                                                 </DropdownMenuItem>
                                             ))
                                         ) : (
                                             <DropdownMenuItem disabled>{t('noKnowledgeBases')}</DropdownMenuItem>
                                         )}
-                                    </div>
-                                    <div className="w-1/2 pl-2">
-                                        <DropdownMenuLabel>{t('selectSearchMode')}</DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('vector')}>
-                                            {kbSearchMode === 'vector' && <Check className="mr-2 h-4 w-4" />}
-                                            {t('vectorSearch')}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('bm25')}>
-                                            {kbSearchMode === 'bm25' && <Check className="mr-2 h-4 w-4" />}
-                                            {t('bm25Search')}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="w-full justify-end" onSelect={() => onKbModeChange('hybrid')}>
-                                            {kbSearchMode === 'hybrid' && <Check className="mr-2 h-4 w-4" />}
-                                            {t('hybridSearch')}
-                                        </DropdownMenuItem>
-                                        {kbSearchMode === 'hybrid' && (
-                                            <div className="flex flex-col gap-2 mt-2 w-full items-end">
-                                                <div className="w-full flex flex-col items-end">
-                                                    <div className="flex items-center justify-between w-full mb-1">
-                                                        <span className="text-xs text-muted-foreground">{t('bm25Weight')}</span>
-                                                        <span className="text-xs text-muted-foreground">{t('vectorWeight')}</span>
-                                                    </div>
-                                                    <Slider
-                                                        min={0}
-                                                        max={1}
-                                                        step={0.01}
-                                                        value={[bm25Weight]}
-                                                        onValueChange={([val]) => {
-                                                            onKbModeWeightChange('bm25', val)
-                                                            onKbModeWeightChange('vector', 1 - val)
-                                                        }}
-                                                        className="w-full"
-                                                    />
-                                                    <div className="flex justify-between w-full mt-1">
-                                                        <span className="text-xs">{bm25Weight.toFixed(2)}</span>
-                                                        <span className="text-xs">{(1 - bm25Weight).toFixed(2)}</span>
+                                        </div>
+                                        <div className="w-1/2 pl-2">
+                                            <DropdownMenuLabel>{t('selectSearchMode')}</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="flex items-center justify-between" onSelect={() => onKbModeChange('vector')}>
+                                                <span>{t('vectorSearch')}</span>
+                                                {kbSearchMode === 'vector' && (
+                                                    <Check className="h-4 w-4 ml-2" />
+                                                )}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="flex items-center justify-between" onSelect={() => onKbModeChange('bm25')}>
+                                                <span>{t('bm25Search')}</span>
+                                                {kbSearchMode === 'bm25' && (
+                                                    <Check className="h-4 w-4 ml-2" />
+                                                )}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="flex items-center justify-between" onSelect={() => onKbModeChange('hybrid')}>
+                                                <span>{t('hybridSearch')}</span>
+                                                {kbSearchMode === 'hybrid' && (
+                                                    <Check className="h-4 w-4 ml-2" />
+                                                )}
+                                            </DropdownMenuItem>
+                                            {kbSearchMode === 'hybrid' && (
+                                                <div className="flex flex-col gap-2 mt-2 w-full items-end">
+                                                    <div className="w-full flex flex-col items-end">
+                                                        <div className="flex items-center justify-between w-full mb-1">
+                                                            <span className="text-xs text-muted-foreground">{t('bm25Weight')}</span>
+                                                            <span className="text-xs text-muted-foreground">{t('vectorWeight')}</span>
+                                                        </div>
+                                                        <Slider
+                                                            min={0}
+                                                            max={1}
+                                                            step={0.01}
+                                                            value={[bm25Weight]}
+                                                            onValueChange={([val]) => {
+                                                                onKbModeWeightChange('bm25', val)
+                                                                onKbModeWeightChange('vector', 1 - val)
+                                                            }}
+                                                            className="w-full"
+                                                        />
+                                                        <div className="flex justify-between w-full mt-1">
+                                                            <span className="text-xs">{bm25Weight.toFixed(2)}</span>
+                                                            <span className="text-xs">{(1 - bm25Weight).toFixed(2)}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <ButtonGroupSeparator className="bg-white/30" />
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                if (onKbSearchClick) {
+                                    onKbSearchClick();
+                                }
+                            }}
+                            disabled={isKbListLoading || disableInteractions || isSearchStrEmpty || !selectedKbId}
+                            className="h-12 rounded-l-none rounded-r-lg border-0 bg-transparent text-white hover:bg-white/20 disabled:opacity-50 disabled:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        >
+                            {isKbSearching ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Search className="h-5 w-5" />
                             )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        </Button>
+                    </ButtonGroup>
                 )}
             </div>
         </form>
@@ -334,11 +426,10 @@ export default function SearchPage() {
                 const searchConfigResult = await getUserSearchConfig();
                 if (searchConfigResult.success && searchConfigResult.data) {
                     const engines: SearchEngineType[] = [];
-                    if (searchConfigResult.data.hasTavilyApiKey) {
-                        engines.push('tavily');
-                    }
                     if (searchConfigResult.data.hasJinaApiKey) {
                         engines.push('jina');
+                    }if (searchConfigResult.data.hasTavilyApiKey) {
+                        engines.push('tavily');
                     }
                     // DuckDuckGo 不需要 API Key，始终可用
                     engines.push('duckduckgo');
@@ -416,6 +507,11 @@ export default function SearchPage() {
         // Don't reset isSubmitting here, let navigation complete or fail
     };
 
+    // 只选择模型，不触发搜索
+    const handleModelSelectOnly = (model: LlmModelType) => {
+        setSelectedLLMModel(model);
+    };
+
     const handleWebEngineSelect = (engine: SearchEngineType) => {
         if (isSearchStrEmpty || isSubmitting || isPending) return;
         // 更新选中的搜索引擎
@@ -430,24 +526,34 @@ export default function SearchPage() {
         }
     };
 
+    // 只选择引擎，不触发搜索
+    const handleEngineSelectOnly = (engine: SearchEngineType) => {
+        setSelectedSearchEngine(engine);
+    };
+
     const handleKbSelect = (kbId: string) => {
         if (isSearchStrEmpty || isSubmitting || isPending) return;
-        // Trigger the actual KB search using useSendQuestion's mechanism
-        // (Assuming useSendQuestion needs kbId and searchStr)
-        // This might involve calling a function returned by useSendQuestion
-        // For now, let's keep the navigation logic if that was intended, but ideally
-        // this should trigger the search *within* this page using isPending state.
-        // --- Keeping original navigation logic for now ---
+        // 更新选中的知识库
+        setSelectedKbId(kbId);
         setIsSubmitting(true);
         try {
             const encodedQuery = encodeURIComponent(searchStr);
-            // If useSendQuestion handles KB search, remove router.push
             router.push(`/search/kb/${encodedQuery}?kbId=${kbId}&mode=${kbSearchMode}`);
         } catch (e) {
             console.error("KB Navigation failed:", e);
             setIsSubmitting(false);
         }
-        // --- End original navigation logic ---
+    };
+
+    // 只选择知识库，不触发搜索
+    const handleKbSelectOnly = (kbId: string) => {
+        setSelectedKbId(kbId);
+    };
+
+    // 知识库搜索按钮点击处理
+    const handleKbSearchClick = () => {
+        if (isSearchStrEmpty || isSubmitting || isPending || !selectedKbId) return;
+        handleKbSelect(selectedKbId);
     };
 
     const handlePubMedSubmit = () => {
@@ -475,6 +581,7 @@ export default function SearchPage() {
     const [kbSearchMode, setKbSearchMode] = useState<'vector' | 'bm25' | 'hybrid'>('vector');
     const [bm25Weight, setBm25Weight] = useState(0.5);
     const [vectorWeight, setVectorWeight] = useState(0.5);
+    const [selectedKbId, setSelectedKbId] = useState<string | null>(null);
 
     const onKbModeChange = (mode: 'vector' | 'bm25' | 'hybrid') => {
         setKbSearchMode(mode);
@@ -529,6 +636,8 @@ export default function SearchPage() {
                                 onLLMSelect={handleLLMSelect}
                                 onWebEngineSelect={handleWebEngineSelect}
                                 onKbSelect={handleKbSelect}
+                                onKbSelectOnly={handleKbSelectOnly}
+                                onKbSearchClick={handleKbSearchClick}
                                 availableKbs={knowledgeBases.map(kb => ({ id: kb.id, name: kb.name || `KB ${kb.id}` }))}
                                 t={t}
                                 // Pass KB list loading state specifically for KB dropdown disabling
@@ -542,8 +651,11 @@ export default function SearchPage() {
                                 availableLLMModels={availableLLMModels}
                                 selectedSearchEngine={selectedSearchEngine}
                                 selectedLLMModel={selectedLLMModel}
+                                selectedKbId={selectedKbId}
                                 isSubmitting={isSubmitting}
                                 isPending={isPending}
+                                onModelSelectOnly={handleModelSelectOnly}
+                                onEngineSelectOnly={handleEngineSelectOnly}
                             />
                         )}
                         {/* Render PubMed form only for its tab */}
@@ -571,7 +683,7 @@ export default function SearchPage() {
                                     <Button
                                         type="submit"
                                         disabled={isSubmitting || isSearchStrEmpty}
-                                        className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-gradient-to-r from-teal-500 to-cyan-600 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                        className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-4 border-y border-border/80 bg-cyan-600 text-white hover:bg-cyan-700 transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                                     >
                                         {isSubmitting ? (
                                             <Loader2 className="h-5 w-5 animate-spin" />

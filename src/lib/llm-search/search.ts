@@ -9,6 +9,14 @@ import { ObjectGeneratorSafe } from './tools';
 import { getModelInstance, getModelOptions, KNOWLEDGE_CUTOFF } from './config';
 import { generateId } from 'ai';
 
+// LLM 配置类型
+export interface LLMConfig {
+    provider: 'deepseek' | 'openai' | 'google';
+    apiKey: string;
+    baseUrl?: string;
+    model?: string;
+}
+
 // Helper function to get model instance based on name and env vars
 // This function *must* run server-side only.
 
@@ -34,21 +42,38 @@ const LlmOutputSchema = z.object({
 });
 
 // --- searchSimulator Function ---
-export async function searchSimulator(query: string, model: string): Promise<SearchResult[]> {
-    // Map the short model name from options to the full model ID
-    const modelMapping: { [key: string]: string } = {
-        'gemini': 'gemini-2.5-flash-preview-04-17-nothinking',
-        'gpt': 'gpt-4o',
-        'deepseek': 'deepseek-chat'
-    };
+export async function searchSimulator(query: string, model: string, llmConfig?: LLMConfig): Promise<SearchResult[]> {
+    // 确定使用的 modelId
+    let modelId: string;
 
-    // Use the provided model short name to get the full ID, or use a default if not found/invalid
-    // Choose a sensible default, maybe Gemini?
-    const modelId = (model && modelMapping[model]) ? modelMapping[model] : 'gemini-2.5-flash-preview-04-17-nothinking';
-    console.log(`[LLM Search Lib] Received short model: ${model}, Mapped to modelId: ${modelId}`); // Add logging
+    if (llmConfig) {
+        // 如果提供了用户配置，优先使用配置中的 model
+        if (llmConfig.model) {
+            modelId = llmConfig.model;
+            console.log(`[LLM Search Lib] Using model from user config: ${modelId}`);
+        } else {
+            // 否则根据 provider 推断默认 model
+            const providerModelMapping: { [key: string]: string } = {
+                'google': 'gemini-2.5-flash-nothinking',
+                'openai': 'gpt-4o',
+                'deepseek': 'deepseek-chat'
+            };
+            modelId = providerModelMapping[llmConfig.provider] || 'gemini-2.5-flash-nothinking';
+            console.log(`[LLM Search Lib] Using default model for provider ${llmConfig.provider}: ${modelId}`);
+        }
+    } else {
+        // 回退到原有的映射逻辑（使用环境变量）
+        const modelMapping: { [key: string]: string } = {
+            'gemini': 'gemini-2.5-flash-preview-04-17-nothinking',
+            'gpt': 'gpt-4o',
+            'deepseek': 'deepseek-chat'
+        };
+        modelId = (model && modelMapping[model]) ? modelMapping[model] : 'gemini-2.5-flash-preview-04-17-nothinking';
+        console.log(`[LLM Search Lib] Received short model: ${model}, Mapped to modelId: ${modelId}`);
+    }
 
     const { maxTokens, temperature } = getModelOptions(modelId);
-    const modelInstance = getModelInstance(modelId);
+    const modelInstance = getModelInstance(modelId, llmConfig);
     const objectGenerator = new ObjectGeneratorSafe();
 
     const systemPrompt = `You are an advanced AI search engine simulator. Your task is to generate a realistic search engine results page (SERP) for a given query. Generate a list of search results based on the query: "${query}".

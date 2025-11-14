@@ -29,29 +29,44 @@ export async function performWebSearch(
     console.log(`ACTION: Performing web search for "${query}" using engine: ${engine}`);
 
     try {
+        // 获取当前登录用户
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: '请先登录后再使用搜索功能。' };
+        }
+
         let results: StandardSearchResult[] = [];
 
         switch (engine) {
             case 'tavily':
-                const tavilyApiKey = process.env.TAVILY_API_KEY;
-                if (!tavilyApiKey) {
-                    console.error('ACTION: TAVILY_API_KEY is not configured.');
-                    return { success: false, error: 'Tavily search service is not configured.' };
+                try {
+                    const tavilyApiKey = await getSearchApiKey('tavily', session.user.id);
+                    results = await searchTavily(query, tavilyApiKey);
+                } catch (error: any) {
+                    console.error('ACTION: Failed to get Tavily API key:', error);
+                    return {
+                        success: false,
+                        error: error.message || 'Tavily search service is not configured. Please configure your Tavily API Key in settings.'
+                    };
                 }
-                results = await searchTavily(query, tavilyApiKey);
                 break;
 
             case 'duckduckgo':
+                // DuckDuckGo 不需要 API Key，可以直接使用
                 results = await searchDuckDuckGo(query);
                 break;
 
             case 'jina':
-                const jinaApiKey = process.env.JINA_API_KEY; // Optional Jina key
-                if (!jinaApiKey) {
-                    console.error('ACTION: JINA_API_KEY is not configured.');
-                    return { success: false, error: 'JINA search service is not configured.' };
+                try {
+                    const jinaApiKey = await getSearchApiKey('jina', session.user.id);
+                    results = await searchJina(query, jinaApiKey);
+                } catch (error: any) {
+                    console.error('ACTION: Failed to get Jina API key:', error);
+                    return {
+                        success: false,
+                        error: error.message || 'Jina search service is not configured. Please configure your Jina API Key in settings.'
+                    };
                 }
-                results = await searchJina(query, jinaApiKey);
                 break;
 
             default:

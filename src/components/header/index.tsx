@@ -112,7 +112,7 @@ export default function Header() {
 
     return (
         <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center w-full px-4">
+            <div className="flex h-14 items-center w-full px-4 flex-nowrap overflow-hidden">
                 {/* 移动端菜单按钮 */}
                 <Sheet>
                     <SheetTrigger asChild className="lg:hidden">
@@ -131,9 +131,10 @@ export default function Header() {
                                 <Image
                                     src={logoSrc}
                                     alt="DeepMed Search"
-                                    width={100}
-                                    height={26}
-                                    className="h-6 w-auto"
+                                    width={105}
+                                    height={6}
+                                    className="h-7 w-auto"
+                                    style={{ height: 'auto', width: 'auto' }}
                                 />
                             </SheetTitle>
                             {/* <SheetDescription>网站导航菜单</SheetDescription> */}
@@ -198,22 +199,22 @@ export default function Header() {
                         <Image
                             src={logoSrc}
                             alt="DeepMed Search"
-                            width={120}
-                            height={32}
-                            className="h-8 w-auto"
+                            width="220"
+                            height="12"
                             priority
+                            style={{ height: 'auto' }}
                         />
                     </Link>
                 </div>
 
                 {/* 桌面端导航 */}
-                <nav className="hidden lg:flex items-center ml-6 space-x-4">
+                <nav className="hidden lg:flex items-center ml-6 space-x-4 flex-nowrap overflow-hidden">
                     {navItems.map((item, index) => (
                         item.dropdown ? (
                             <DropdownMenu key={`dropdown-${index}`}>
                                 <DropdownMenuTrigger asChild>
                                     <div className={cn(
-                                        "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                        "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer whitespace-nowrap shrink-0",
                                         pathname === item.href ? "bg-accent text-accent-foreground" : ""
                                     )}>
                                         {item.icon}
@@ -243,7 +244,7 @@ export default function Header() {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground",
+                                    "flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground whitespace-nowrap shrink-0",
                                     pathname === item.href ? "bg-accent text-accent-foreground" : ""
                                 )}
                             >

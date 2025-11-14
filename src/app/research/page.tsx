@@ -108,7 +108,7 @@ export default function ResearchPage() {
                             <Button
                                 type="submit"
                                 disabled={isPending}
-                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border-y border-r-0 border-border/80 bg-gradient-to-r from-blue-500 to-cyan-600 text-white  transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="flex-shrink-0 h-12 rounded-l-none rounded-r-lg px-6 border-y border-r-0 border-border/80 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white transition-all focus-visible:ring-0 focus-visible:ring-offset-0"
                             >
                                 {isPending ? (
                                     <>

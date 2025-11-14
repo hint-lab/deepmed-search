@@ -1,8 +1,11 @@
 'use server';
 
-import { searchSimulator, SearchResult } from '@/lib/llm-search';
+import { searchSimulator, SearchResult, LLMConfig } from '@/lib/llm-search';
 import { ServerActionResponse } from '@/types/actions';
 import { z } from 'zod';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { decryptApiKey } from '@/lib/crypto';
 
 // Define the Action's specific response structure if needed, or reuse SearchResult
 export interface LlmSearchActionResult extends SearchResult {
@@ -29,11 +32,40 @@ export async function performLlmSearchAction(
 ): Promise<ServerActionResponse<LlmSearchActionResult[]>> {
 
     try {
-        const modelToUse = options?.model; // Get modelId from options
-        console.log(`ACTION: Calling LLM Search Simulator for query: "${query}" ${modelToUse ? `with model: ${modelToUse}` : 'using default model'}`);
+        // 获取用户 session
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: '未登录或用户信息不完整' };
+        }
 
-        // Pass the query and the options object (which might contain modelId)
-        const simResponse: SearchResult[] = await searchSimulator(query, modelToUse || 'default');
+        // 获取用户的激活 LLM 配置
+        const activeConfig = await prisma.lLMConfig.findFirst({
+            where: {
+                userId: session.user.id,
+                isActive: true,
+            },
+        });
+
+        if (!activeConfig) {
+            return { success: false, error: '未找到激活的 LLM 配置，请前往设置页面配置' };
+        }
+
+        // 解密 API Key
+        const decryptedApiKey = decryptApiKey(activeConfig.apiKey);
+
+        // 构建用户配置
+        const llmConfig: LLMConfig = {
+            provider: activeConfig.provider as 'deepseek' | 'openai' | 'google',
+            apiKey: decryptedApiKey,
+            baseUrl: activeConfig.baseUrl || undefined,
+            model: activeConfig.model || undefined,
+        };
+
+        const modelToUse = options?.model; // Get modelId from options
+        console.log(`ACTION: Calling LLM Search Simulator for query: "${query}" ${modelToUse ? `with model: ${modelToUse}` : 'using default model'}, provider: ${llmConfig.provider}`);
+
+        // 直接传递配置执行搜索
+        const simResponse: SearchResult[] = await searchSimulator(query, modelToUse || 'default', llmConfig);
 
         // simResponse is already SearchResult[], no need to access .results
         const actionResults: LlmSearchActionResult[] = simResponse; // Assuming LlmSearchActionResult is compatible

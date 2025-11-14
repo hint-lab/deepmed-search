@@ -6,6 +6,14 @@ import { createDeepSeek } from '@ai-sdk/deepseek';
 // import { createVertex } from '@ai-sdk/google-vertex';
 import { LanguageModelV1 } from '@ai-sdk/provider';
 
+// LLM 配置类型
+export interface LLMConfig {
+    provider: 'deepseek' | 'openai' | 'google';
+    apiKey: string;
+    baseUrl?: string;
+    model?: string;
+}
+
 
 // --- Define Provider Types ---
 type GoogleProviderType = ReturnType<typeof createGoogleGenerativeAI>;
@@ -13,98 +21,50 @@ type OpenAIProviderType = ReturnType<typeof createOpenAI>;
 type DeepSeekProviderType = ReturnType<typeof createDeepSeek>;
 // Define types for other providers if needed
 
-// --- Provider Instances (Lazy initialization might be better if many providers) ---
-// We create them here but only if the corresponding API key exists.
-
-let google: GoogleProviderType | null = null;
-if (process.env.GEMINI_API_KEY) {
-    google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY, baseURL: process.env.GEMINI_BASE_URL });
-    console.log('[LLM Config] Google AI Provider initialized.');
-} else {
-    console.warn('[LLM Config] GEMINI_API_KEY not found, Google AI Provider not initialized.');
-}
-
-let openai: OpenAIProviderType | null = null;
-if (process.env.OPENAI_API_KEY) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    // Use OPENAI_API_BASE from environment, fallback to default OpenAI URL is handled by the SDK if undefined
-    const baseURL = process.env.OPENAI_API_BASE;
-    console.log(`[LLM Config] Initializing OpenAI Provider with baseURL: ${baseURL || 'Default (api.openai.com/v1)'}`);
-    openai = createOpenAI({
-        apiKey: apiKey,
-        baseURL: baseURL, // Pass the baseURL (SDK handles default if undefined)
-    });
-    console.log('[LLM Config] OpenAI Provider initialized.');
-} else {
-    console.warn('[LLM Config] OPENAI_API_KEY not found, OpenAI Provider not initialized.');
-}
-
-// --- Add DeepSeek Provider ---
-let deepseek: DeepSeekProviderType | null = null; // Reuse OpenAI provider type
-if (process.env.DEEPSEEK_API_KEY) {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    // Default DeepSeek API Base URL (ensure this is correct)
-    const baseURL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
-    console.log(`[LLM Config] Initializing DeepSeek Provider (via OpenAI SDK) with baseURL: ${baseURL}`);
-    deepseek = createDeepSeek({ // Use createOpenAI
-        apiKey: apiKey,
-        baseURL: baseURL,
-        // You might need to add compatibility headers if required by DeepSeek
-        // headers: { 'Your-Custom-Header': 'value' }
-    });
-    console.log('[LLM Config] DeepSeek Provider initialized.');
-} else {
-    console.warn('[LLM Config] DEEPSEEK_API_KEY not found, DeepSeek Provider not initialized.');
-}
-
-
-// Add other providers similarly...
-// let anthropic: Anthropic | null = null;
-// if (process.env.ANTHROPIC_API_KEY) { ... }
-
 // --- Get Model Instance Function ---
 /**
  * Gets an initialized AI SDK LanguageModelV1 instance based on the model ID.
- * Reads required API keys from environment variables.
- * Throws an error if the required provider/key is not configured.
+ * 必须提供用户配置，不再支持环境变量回退。
  * @param modelId - The identifier for the model (e.g., 'gemini-1.5-flash-latest', 'gpt-4o-mini', 'deepseek-chat').
+ * @param llmConfig - 用户 LLM 配置（API key, provider, etc.），必需参数
  * @returns An initialized LanguageModelV1 instance.
+ * @throws Error if llmConfig is not provided or provider doesn't match model ID
  */
-export function getModelInstance(modelId: string): LanguageModelV1 {
+export function getModelInstance(modelId: string, llmConfig: LLMConfig): LanguageModelV1 {
     console.log(`[LLM Config] Requesting model instance for: ${modelId}`);
 
-    if (modelId.startsWith('gemini')) {
-        if (!google) {
-            throw new Error('GEMINI_API_KEY is not set for Google AI, cannot get Gemini model instance.');
-        }
-        // Add specific logic for Vertex AI if needed, checking for GCLOUD_PROJECT etc.
-        // if (process.env.GCLOUD_PROJECT && modelId.includes('vertex-specific-name?')) { ... }
-        console.log(`[LLM Config] Providing Google AI model: ${modelId}`);
-        return google(modelId as any); // Cast needed for specific IDs
-    } else if (modelId.startsWith('gpt-')) {
-        if (!openai) {
-            throw new Error('OPENAI_API_KEY is not set, cannot get OpenAI model instance.');
-        }
-        console.log(`[LLM Config] Providing OpenAI model: ${modelId}`);
-        return openai(modelId as any); // Cast needed
-    } else if (modelId.startsWith('deepseek')) { // Handle DeepSeek models
-        if (!deepseek) {
-            throw new Error('DEEPSEEK_API_KEY is not set, cannot get DeepSeek model instance.');
-        }
-        console.log(`[LLM Config] Providing DeepSeek model: ${modelId}`);
-        return deepseek(modelId as any); // Cast needed
+    // 必须提供用户配置
+    if (!llmConfig) {
+        throw new Error('未提供用户 LLM 配置。请访问 /settings/llm 页面配置您的 API Key。');
     }
-    // Add cases for other providers based on modelId prefixes or names
-    /* else if (modelId.startsWith('claude-')) {
-        if (!anthropic) {
-            throw new Error('ANTHROPIC_API_KEY is not set, cannot get Anthropic model instance.');
-        }
-        console.log(`[LLM Config] Providing Anthropic model: ${modelId}`);
-        return anthropic(modelId as any);
-    } */
-    else {
-        console.error(`[LLM Config] No configured provider found for model ID: ${modelId}`);
-        throw new Error(`Unsupported or unconfigured model ID: ${modelId}. Ensure the correct API key environment variable is set.`);
+
+    console.log(`[LLM Config] Using user config for model: ${modelId}, provider: ${llmConfig.provider}`);
+
+    if (modelId.startsWith('gemini') && llmConfig.provider === 'google') {
+        const userGoogle = createGoogleGenerativeAI({
+            apiKey: llmConfig.apiKey,
+            baseURL: llmConfig.baseUrl,
+        });
+        console.log(`[LLM Config] Providing Google AI model from user config: ${modelId}`);
+        return userGoogle(modelId as any);
+    } else if (modelId.startsWith('gpt-') && llmConfig.provider === 'openai') {
+        const userOpenAI = createOpenAI({
+            apiKey: llmConfig.apiKey,
+            baseURL: llmConfig.baseUrl,
+        });
+        console.log(`[LLM Config] Providing OpenAI model from user config: ${modelId}`);
+        return userOpenAI(modelId as any);
+    } else if (modelId.startsWith('deepseek') && llmConfig.provider === 'deepseek') {
+        const userDeepSeek = createDeepSeek({
+            apiKey: llmConfig.apiKey,
+            baseURL: llmConfig.baseUrl || 'https://api.deepseek.com/v1',
+        });
+        console.log(`[LLM Config] Providing DeepSeek model from user config: ${modelId}`);
+        return userDeepSeek(modelId as any);
+    } else {
+        const errorMsg = `用户配置的 provider (${llmConfig.provider}) 与模型 ID (${modelId}) 不匹配。请检查配置。`;
+        console.error(`[LLM Config] ${errorMsg}`);
+        throw new Error(errorMsg);
     }
 }
 
@@ -156,5 +116,3 @@ export function getModelOptions(modelId: string): { maxTokens: number; temperatu
  * Note: This might need adjustment depending on the actual model used.
  */
 export const KNOWLEDGE_CUTOFF = process.env.LLM_SEARCH_KNOWLEDGE_CUTOFF || 'October 2023'; // Default cutoff - Update if using models with different cutoffs
-
-console.log(`[LLM Config] Default knowledge cutoff set to: ${KNOWLEDGE_CUTOFF}`);

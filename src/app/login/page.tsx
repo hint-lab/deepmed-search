@@ -61,10 +61,10 @@ const LeftPanel = () => {
                             <h3 className="font-semibold mb-2 text-blue-600 dark:text-blue-400">{t('features.ai.title')}</h3>
                             <p className="text-sm text-muted-foreground">{t('features.ai.description')}</p>
                         </div>
-                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-purple-200 dark:border-purple-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+                        <div className="relative p-6 rounded-lg bg-card/70 backdrop-blur-sm border border-cyan-200 dark:border-cyan-800 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
                             <div className="absolute -top-3 -left-3">
-                                <div className="h-6 w-6 rounded-full bg-purple-400/30 flex items-center justify-center">
-                                    <div className="h-3 w-3 rounded-full bg-purple-400 animate-pulse" />
+                                <div className="h-6 w-6 rounded-full bg-cyan-400/30 flex items-center justify-center">
+                                    <div className="h-3 w-3 rounded-full bg-cyan-400 animate-pulse" />
                                 </div>
                             </div>
                             <h3 className="font-semibold mb-2 text-cyan-600 dark:text-cyan-400">{t('features.security.title')}</h3>
@@ -300,7 +300,7 @@ const Login = () => {
                                 />
                                 <Button
                                     type="submit"
-                                    className="w-full h-11 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all"
+                                    className="w-full h-11 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white border-0 shadow-md hover:shadow-lg transition-all"
                                     disabled={loading}
                                 >
                                     {t('login')}

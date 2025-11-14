@@ -1,7 +1,9 @@
 'use server';
 
 import { searchPubMed, PubMedSearchResult } from '@/lib/pubmed';
-import { ProviderFactory, ProviderType } from '@/lib/llm-provider';
+import { createProviderFromUserConfig } from '@/lib/llm-provider';
+import { withAuth } from '@/lib/auth-utils';
+import { Session } from 'next-auth';
 
 /**
  * Server Action用于从服务器端执行PubMed搜索
@@ -42,7 +44,7 @@ export async function searchPubMedAction(
  * 
  * 功能说明：
  * 1. 接收用户的中文查询
- * 2. 使用 DeepSeek 模型来：
+ * 2. 使用用户配置的 LLM 模型来：
  *    - 翻译成英文
  *    - 添加医学术语
  *    - 包含 MeSH 术语
@@ -52,9 +54,10 @@ export async function searchPubMedAction(
  * @param query - 用户输入的中文搜索查询
  * @returns 包含搜索建议的响应对象
  */
-export async function getPubMedSuggestionsAction(
+export const getPubMedSuggestionsAction = withAuth(async (
+    session: Session,
     query: string
-): Promise<{ success: boolean; data?: string[]; error?: string }> {
+): Promise<{ success: boolean; data?: string[]; error?: string }> => {
     if (!query.trim()) {
         return {
             success: false,
@@ -64,7 +67,7 @@ export async function getPubMedSuggestionsAction(
 
     try {
         console.log(`[Server Action] 获取PubMed搜索建议: "${query}"`);
-        
+
         const prompt = `Given the following Chinese medical research query: "${query}"
         Please provide 3-5 optimized search queries in English that would be effective for searching PubMed.
         Format: Return only the queries, one per line, without any additional text or numbering.
@@ -74,12 +77,13 @@ export async function getPubMedSuggestionsAction(
         3. Adding common variations or synonyms
         4. Maintaining the core research intent`;
 
-        const provider = ProviderFactory.getProvider(ProviderType.DeepSeek);
+        // 使用用户配置的 LLM Provider
+        const provider = await createProviderFromUserConfig(session.user.id);
         const response = await provider.chat({
             dialogId: 'pubmed_suggestions',
             input: prompt,
         });
-        
+
         if (!response.content) {
             throw new Error('Failed to get suggestions from LLM');
         }
@@ -101,4 +105,4 @@ export async function getPubMedSuggestionsAction(
             error: error.message || '获取搜索建议失败'
         };
     }
-} 
+}); 

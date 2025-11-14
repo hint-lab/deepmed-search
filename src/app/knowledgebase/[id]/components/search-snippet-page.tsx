@@ -20,6 +20,14 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Markdown } from '@/components/markdown';
+import { ButtonGroup } from '@/components/ui/button-group';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface SnippetResult {
     id: string;
@@ -89,6 +97,7 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
     const [selectedSnippet, setSelectedSnippet] = useState<SnippetResult | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('text-embedding-3-small');
 
     const terms = useMemo(
         () => query.trim().split(/\s+/).filter(Boolean),
@@ -116,7 +125,7 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
         try {
             // 传递当前用户的 userId 以使用用户配置的 embedding 服务
             const userId = session?.user?.id;
-            const response = await searchKnowledgeBaseSnippetsAction(kbId, trimmed, 20, userId);
+            const response = await searchKnowledgeBaseSnippetsAction(kbId, trimmed, 20, userId, selectedModel);
             if (response.success) {
                 setResults(response.data || []);
             } else {
@@ -172,33 +181,45 @@ export function SearchSnippetPage({ kbId }: SearchSnippetPageProps) {
                             autoFocus
                         />
                     </div>
-                        <div className="flex gap-2">
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={showFilters ? 'bg-accent' : ''}
+                        >
+                            <SlidersHorizontal className="h-4 w-4" />
+                        </Button>
+                        <ButtonGroup orientation="horizontal">
+                            <Select value={selectedModel} onValueChange={setSelectedModel}>
+                                <SelectTrigger className="w-[180px] h-10 rounded-r-none border-r-0">
+                                    <SelectValue placeholder="选择模型" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="text-embedding-3-small">text-embedding-3-small</SelectItem>
+                                    <SelectItem value="text-embedding-3-large">text-embedding-3-large</SelectItem>
+                                    <SelectItem value="text-embedding-ada-002">text-embedding-ada-002</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={showFilters ? 'bg-accent' : ''}
+                                onClick={handleSearch}
+                                disabled={loading}
+                                className="rounded-l-none h-10"
                             >
-                                <SlidersHorizontal className="h-4 w-4" />
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        {t('snippetSearch.searching')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search className="mr-2 h-4 w-4" />
+                                        {t('snippetSearch.search')}
+                                    </>
+                                )}
                             </Button>
-                    <Button
-                        onClick={handleSearch}
-                        disabled={loading}
-                        className="md:w-auto"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                {t('snippetSearch.searching')}
-                            </>
-                        ) : (
-                            <>
-                                <Search className="mr-2 h-4 w-4" />
-                                {t('snippetSearch.search')}
-                            </>
-                        )}
-                    </Button>
-                        </div>
+                        </ButtonGroup>
+                    </div>
                     </div>
 
                     {showFilters && (

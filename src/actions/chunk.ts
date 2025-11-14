@@ -134,7 +134,8 @@ export async function searchKnowledgeBaseSnippetsAction(
     kbId: string,
     keyword: string,
     limit: number = 20,
-    userId?: string // 添加 userId 参数
+    userId?: string, // 添加 userId 参数
+    model?: string // 添加 model 参数
 ): Promise<ServerActionResponse<any>> {
     try {
         const trimmedKeyword = keyword?.trim();
@@ -218,8 +219,9 @@ export async function searchKnowledgeBaseSnippetsAction(
 
         try {
             // 1. 生成查询向量（用于向量搜索），传递 userId 以使用用户配置
-            console.log('[searchKnowledgeBaseSnippetsAction] Generating embedding...');
-            const queryEmbedding = await getEmbedding(trimmedKeyword, 'text-embedding-3-small', userId);
+            const embeddingModel = model || 'text-embedding-3-small';
+            console.log('[searchKnowledgeBaseSnippetsAction] Generating embedding...', { model: embeddingModel });
+            const queryEmbedding = await getEmbedding(trimmedKeyword, embeddingModel, userId);
             console.log('[searchKnowledgeBaseSnippetsAction] Embedding generated, vector length:', queryEmbedding.length);
 
             // 2. 使用混合搜索（BM25 + 向量搜索）
