@@ -11,6 +11,7 @@ import { initializeServer } from '@/lib/init-server';
 
 // 初始化服务器端服务
 // 这只会在服务器端执行一次
+// MinIO 初始化会在构建时自动跳过，在运行时才会真正连接
 initializeServer();
 
 const inter = Inter({

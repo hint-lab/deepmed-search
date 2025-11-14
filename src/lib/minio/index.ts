@@ -17,6 +17,18 @@ declare global {
  */
 export async function initMinio() {
     try {
+        // 在构建时跳过 MinIO 初始化
+        // 检测方法：
+        // 1. NEXT_PHASE 为 phase-production-build 时是构建阶段
+        // 2. 或者没有配置 MINIO_ENDPOINT/MINIO_ACCESS_KEY 时（构建时通常没有这些变量）
+        const isBuilding = process.env.NEXT_PHASE === 'phase-production-build';
+        const hasMinioConfig = process.env.MINIO_ENDPOINT || process.env.MINIO_ACCESS_KEY;
+
+        if (isBuilding || !hasMinioConfig) {
+            logger.info('⏭️  构建阶段或无 MinIO 配置，跳过初始化');
+            return { success: true };
+        }
+
         const client = await getMinioClient();
         const bucketName = process.env.MINIO_BUCKET_NAME || 'deepmed';
 
