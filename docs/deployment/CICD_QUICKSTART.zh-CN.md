@@ -82,7 +82,11 @@ https://github.com/your-org/deepmed-search/actions
 
 ## 🎯 完成！
 
-现在每次推送到 `main` 或 `demo-without-gpu` 分支，都会自动部署到服务器。
+现在每次推送到 `demo-without-gpu` 分支，都会自动部署到服务器。
+
+**注意**：
+- `main` 分支：日常开发，推送不触发部署
+- `demo-without-gpu` 分支：演示环境，推送时自动部署
 
 ## 📊 查看部署日志
 

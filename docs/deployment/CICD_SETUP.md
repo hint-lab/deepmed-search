@@ -2,6 +2,20 @@
 
 本文档介绍如何为 DeepMed Search 项目设置完整的 CI/CD 流程。
 
+> **📌 当前项目配置**  
+> 本项目当前使用**双分支部署架构**：
+> - `main` 分支：日常开发，推送不触发部署
+> - `demo-without-gpu` 分支：演示环境，推送时自动部署
+> - 服务器使用 `docker-compose.demo.yml`（无需编译，拉取预构建镜像）
+> - 镜像从腾讯云容器镜像服务拉取
+> 
+> 详细配置请查看：
+> - [分支策略说明](../../BRANCHING_STRATEGY.md)
+> - [部署快速开始](../../DEPLOYMENT_QUICKSTART.md)
+> - [腾讯云配置](./TENCENT_CLOUD_REGISTRY.md)
+> 
+> 以下内容作为参考文档，介绍多种 CI/CD 方案。
+
 ## 🏗️ 架构概览
 
 ```

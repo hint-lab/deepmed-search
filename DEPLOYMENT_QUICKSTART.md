@@ -4,9 +4,10 @@
 
 ## 📋 部署架构
 
-**当前部署方式**（简化架构）：
-- GitHub 仓库：只有 `main` 分支
-- 服务器：只有 `main` 分支 + `docker-compose.demo.yml`
+**当前部署方式**（双分支架构）：
+- **main 分支**：日常开发，推送不触发部署，用户本地使用
+- **demo-without-gpu 分支**：演示环境，推送时自动部署到服务器
+- 服务器：运行 `demo-without-gpu` 分支 + `docker-compose.demo.yml`
 - 镜像来源：腾讯云 TCR（预构建镜像）
 - 服务器要求：小内存（2GB+）即可
 
@@ -15,7 +16,7 @@
 - ✅ **无需编译**：服务器端只拉取镜像，节省内存和 CPU
 - ✅ **快速部署**：几分钟内完成部署
 - ✅ **国内友好**：使用腾讯云，访问速度快
-- ✅ **自动化**：推送代码自动触发部署
+- ✅ **避免频繁部署**：main 推送不触发部署，只有 demo 分支推送才部署
 - ✅ **轻量配置**：无需 GPU，使用 Markitdown 解析文档
 
 ---
@@ -69,7 +70,7 @@ docker login jpccr.ccs.tencentyun.com -u <账号ID> -p <TCR密码>
 cd /home/deploy
 git clone https://github.com/your-org/deepmed-search.git
 cd deepmed-search
-git checkout demo-without-gpu
+# 默认就是 main 分支
 
 # 6. 配置环境变量
 cp .env.example .env
@@ -84,24 +85,42 @@ docker compose -f docker-compose.demo.yml ps
 docker compose -f docker-compose.demo.yml logs -f app
 ```
 
-### 3️⃣ 自动部署
+### 3️⃣ 日常开发
 
-推送代码到 `main` 分支会自动触发部署：
+**在 main 分支开发**（不触发部署）：
 
 ```bash
+git checkout main
 git add .
 git commit -m "feat: 添加新功能"
 git push origin main
+# main 分支推送不触发自动部署
+```
+
+**更新演示环境**（触发自动部署）：
+
+```bash
+# 将 main 的更新合并到 demo 分支
+git checkout demo-without-gpu
+git merge main
+git push origin demo-without-gpu
+# demo 分支推送触发自动部署
 ```
 
 GitHub Actions 会自动：
 1. 构建镜像并推送到腾讯云
 2. SSH 到服务器
-3. 拉取最新代码（main 分支）
+3. 拉取最新代码（demo-without-gpu 分支）
 4. 拉取最新镜像（从腾讯云）
 5. 重启服务
 
 **完成！** 🎉
+
+---
+
+## 📖 分支策略说明
+
+详细的分支使用策略请查看：[分支策略文档](BRANCHING_STRATEGY.md)
 
 ---
 
@@ -268,14 +287,12 @@ sudo systemctl stop apache2
 **快速命令参考**
 
 ```bash
-# Demo 分支快速部署
-git checkout demo-without-gpu
+# 快速部署（使用预构建镜像）
+cd /home/deploy/deepmed-search
+git checkout main
+git pull origin main
 docker compose -f docker-compose.demo.yml pull
 docker compose -f docker-compose.demo.yml up -d
-
-# Main 分支快速部署
-git checkout main
-bash scripts/deploy.sh
 
 # 查看日志
 docker compose logs -f app

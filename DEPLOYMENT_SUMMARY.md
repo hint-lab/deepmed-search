@@ -2,25 +2,28 @@
 
 ## 🎯 最终架构
 
-### 简化架构（已实施）
+### 双分支架构（已实施）
 
 ```
 GitHub 仓库
-    └── main 分支（唯一分支）
+    ├── main 分支（开发）
+    │   └── 频繁推送，不自动部署，用户本地使用
+    └── demo-without-gpu 分支（演示环境）
+        └── 不常更新，推送时自动部署到服务器
 
 服务器
-    └── main 分支（唯一分支）
+    └── demo-without-gpu 分支
         └── 使用 docker-compose.demo.yml
             └── 拉取腾讯云预构建镜像
 ```
 
 ### 核心特点
 
-- ✅ **单分支策略**：GitHub 和服务器都只有 main 分支
+- ✅ **双分支策略**：main 日常开发（不部署），demo 演示环境（自动部署）
 - ✅ **预构建镜像**：在 GitHub Actions 中构建，推送到腾讯云
 - ✅ **无需编译**：服务器端只需拉取镜像（适合小内存服务器）
 - ✅ **轻量配置**：使用 docker-compose.demo.yml（无 GPU 依赖）
-- ✅ **全自动化**：推送代码即自动部署
+- ✅ **避免频繁部署**：main 推送不触发部署，只有 demo 分支推送才部署
 
 ## 📊 部署流程
 
@@ -147,18 +150,30 @@ git commit -m "feat: 新功能"
 git push origin main
 ```
 
-### 日常开发
+### 日常开发（main 分支）
 
 ```bash
-# 开发 → 提交 → 推送
+# 在 main 分支开发
 git add .
 git commit -m "feat: 添加功能"
 git push origin main
 
+# main 分支不触发自动部署
+# 开发者本地运行：docker compose up -d
+```
+
+### 更新演示环境（触发部署）
+
+```bash
+# 合并 main 到 demo 分支
+git checkout demo-without-gpu
+git merge main
+git push origin demo-without-gpu
+
 # GitHub Actions 自动：
 # 1. 构建镜像
 # 2. 推送到腾讯云
-# 3. 部署到服务器
+# 3. 部署到演示服务器
 
 # 查看部署状态
 # https://github.com/your-org/deepmed-search/actions

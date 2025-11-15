@@ -99,7 +99,7 @@ function handleWebhook(req, res) {
                 const branch = ref.replace('refs/heads/', '');
                 
                 // 只部署指定分支
-                const DEPLOY_BRANCHES = ['main', 'demo-without-gpu'];
+                const DEPLOY_BRANCHES = ['demo-without-gpu'];
                 
                 if (DEPLOY_BRANCHES.includes(branch)) {
                     log(`✓ 分支 ${branch} 触发部署`);

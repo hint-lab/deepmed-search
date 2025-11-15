@@ -3,8 +3,8 @@ name: Build and Deploy (Tencent Cloud)
 on:
   push:
     branches:
-      - main  # 主分支自动部署
-  workflow_dispatch:  # 手动触发
+      - demo-without-gpu  # 只有演示分支自动部署
+  workflow_dispatch:  # 手动触发（可用于 main 分支）
 
 env:
   REGISTRY: jpccr.ccs.tencentyun.com
@@ -93,10 +93,10 @@ jobs:
             
             echo "📥 拉取最新配置文件..."
             git fetch origin
-            git checkout main
-            git pull origin main
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
             
-            # 使用预构建镜像部署（无需本地编译）
+            # Demo 分支：使用预构建镜像（演示环境）
             export COMPOSE_FILE="docker-compose.demo.yml"
             echo "📦 使用 Demo 配置（无 GPU，使用腾讯云预构建镜像）"
             

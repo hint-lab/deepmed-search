@@ -13,13 +13,14 @@
 
 ## 🌿 部署架构
 
-### 当前架构（简化版）
+### 当前架构（双分支版）
 
 **GitHub 仓库**:
-- 只有 `main` 分支
+- `main` 分支：日常开发，推送不触发部署
+- `demo-without-gpu` 分支：演示环境，推送时自动部署
 
 **服务器**:
-- 只有 `main` 分支
+- 运行 `demo-without-gpu` 分支
 - 使用 `docker-compose.demo.yml`（轻量配置）
 - **使用腾讯云预构建镜像（无需本地编译）**
 
@@ -31,7 +32,11 @@
 
 **部署流程**:
 ```
-开发者推送代码到 main 分支
+开发者在 main 分支开发
+    ↓ （不触发部署）
+合并到 demo-without-gpu 分支
+    ↓
+推送 demo-without-gpu 分支
     ↓
 GitHub Actions 自动触发
     ↓
@@ -41,7 +46,7 @@ GitHub Actions 自动触发
     ↓
 SSH 连接到服务器
     ↓
-拉取最新代码（main 分支）
+拉取最新代码（demo-without-gpu 分支）
     ↓
 拉取最新镜像（从腾讯云）
     ↓
@@ -54,18 +59,19 @@ SSH 连接到服务器
 - ✅ 服务器无需编译，节省内存和 CPU（适合小服务器）
 - ✅ 部署速度快（只需拉取镜像）
 - ✅ 国内访问腾讯云速度快
+- ✅ 避免频繁部署（main 推送不触发）
 - ✅ 无需 GPU 支持（使用 Markitdown 解析文档）
 
 **部署命令** (在服务器上手动部署):
 ```bash
 cd /home/deploy/deepmed-search
-git checkout main
-git pull origin main
+git checkout demo-without-gpu
+git pull origin demo-without-gpu
 docker compose -f docker-compose.demo.yml pull
 docker compose -f docker-compose.demo.yml up -d
 ```
 
-**注意**：通常不需要手动部署，推送代码到 GitHub 会自动触发部署。
+**注意**：通常不需要手动部署，推送代码到 demo-without-gpu 分支会自动触发部署。
 
 ## 🔐 GitHub Secrets 配置
 
@@ -113,21 +119,16 @@ SSH_PRIVATE_KEY=你的SSH私钥内容
    - 推送到腾讯云容器镜像服务
    - 使用 GitHub Actions 缓存加速构建
 
-2. **deploy 任务**（根据分支不同）:
-   - **demo-without-gpu 分支**: 
-     - SSH 到服务器
-     - 拉取最新配置
-     - 执行 `docker compose pull` 拉取镜像
-     - 执行 `docker compose up -d` 启动服务
-   
-   - **main 分支**:
-     - SSH 到服务器
-     - 拉取最新代码
-     - 执行 `scripts/deploy.sh` 本地编译部署
+2. **deploy 任务**:
+   - SSH 到服务器
+   - 拉取最新代码（main 分支）
+   - 执行 `docker compose -f docker-compose.demo.yml pull` 拉取镜像
+   - 执行 `docker compose -f docker-compose.demo.yml up -d` 启动服务
 
 ### 触发方式
 
-- **自动触发**: 推送代码到 `main` 或 `demo-without-gpu` 分支
+- **自动触发**: 推送代码到 `demo-without-gpu` 分支
+- **不触发**: 推送代码到 `main` 分支（用于日常开发）
 - **手动触发**: GitHub Actions 页面 → Run workflow
 
 ## 🖥️ 服务器端配置
@@ -162,17 +163,12 @@ nano .env
 
 ### 4. 首次部署
 
-**Demo 分支** (使用预构建镜像):
+**使用预构建镜像部署**:
 ```bash
-git checkout demo-without-gpu
+# 默认就是 main 分支
+git pull origin main
 docker compose -f docker-compose.demo.yml pull
 docker compose -f docker-compose.demo.yml up -d
-```
-
-**Main 分支** (本地编译):
-```bash
-git checkout main
-bash scripts/deploy.sh
 ```
 
 ## 📊 查看和管理
@@ -242,7 +238,7 @@ docker pull jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:latest --debug
 
 ### 问题 4: 服务器内存不足
 
-demo-without-gpu 分支使用预构建镜像，已经不需要在服务器编译了。如果还是内存不足：
+当前配置使用预构建镜像，已经不需要在服务器编译了。如果还是内存不足：
 
 ```bash
 # 停止不必要的服务
