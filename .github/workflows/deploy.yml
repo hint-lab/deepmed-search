@@ -44,9 +44,9 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:latest
-            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:${{ github.ref_name }}
-            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:${{ steps.meta.outputs.sha_short }}
+            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:latest
+            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:${{ github.ref_name }}
+            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:${{ steps.meta.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -122,11 +122,81 @@ jobs:
             echo "❌ 部署失败！"
           fi
 
-      # 可选：发送通知到 Slack/Discord/钉钉等
-      # - name: Send notification
-      #   if: always()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: ${{ job.status }}
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      # 飞书通知
+      - name: Send Feishu notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS_COLOR="green"
+            STATUS_TEXT="✅ 部署成功"
+            STATUS_EMOJI="✅"
+          else
+            STATUS_COLOR="red"
+            STATUS_TEXT="❌ 部署失败"
+            STATUS_EMOJI="❌"
+          fi
+          
+          curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"msg_type\": \"interactive\",
+              \"card\": {
+                \"header\": {
+                  \"title\": {
+                    \"content\": \"$STATUS_EMOJI DeepMed Search 部署通知\",
+                    \"tag\": \"plain_text\"
+                  },
+                  \"template\": \"$STATUS_COLOR\"
+                },
+                \"elements\": [
+                  {
+                    \"tag\": \"div\",
+                    \"fields\": [
+                      {
+                        \"is_short\": true,
+                        \"text\": {
+                          \"tag\": \"lark_md\",
+                          \"content\": \"**状态**\\n$STATUS_TEXT\"
+                        }
+                      },
+                      {
+                        \"is_short\": true,
+                        \"text\": {
+                          \"tag\": \"lark_md\",
+                          \"content\": \"**分支**\\n\`${{ github.ref_name }}\`\"
+                        }
+                      },
+                      {
+                        \"is_short\": true,
+                        \"text\": {
+                          \"tag\": \"lark_md\",
+                          \"content\": \"**提交者**\\n${{ github.actor }}\"
+                        }
+                      },
+                      {
+                        \"is_short\": true,
+                        \"text\": {
+                          \"tag\": \"lark_md\",
+                          \"content\": \"**提交信息**\\n${{ github.event.head_commit.message }}\"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    \"tag\": \"action\",
+                    \"actions\": [
+                      {
+                        \"tag\": \"button\",
+                        \"text\": {
+                          \"tag\": \"plain_text\",
+                          \"content\": \"查看详情\"
+                        },
+                        \"type\": \"primary\",
+                        \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }"
 
