@@ -1,0 +1,22 @@
+[Unit]
+Description=DeepMed Search Webhook Server
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/deepmed-search
+Environment="NODE_ENV=production"
+Environment="WEBHOOK_PORT=9000"
+Environment="WEBHOOK_SECRET=your-webhook-secret-here"
+Environment="PROJECT_DIR=/home/deploy/deepmed-search"
+ExecStart=/usr/bin/node /home/deploy/deepmed-search/scripts/webhook-server.js
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/deploy/deepmed-search/webhook.log
+StandardError=append:/home/deploy/deepmed-search/webhook-error.log
+
+[Install]
+WantedBy=multi-user.target
+
