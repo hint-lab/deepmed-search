@@ -58,7 +58,8 @@ sudo usermod -aG docker deploy
 # 3. 配置 SSH 密钥
 sudo su - deploy
 mkdir -p ~/.ssh
-echo "你的公钥" >> ~/.ssh/authorized_keys
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy
+cat ~/.ssh/github_actions_deploy.pub >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 
 # 4. 登录腾讯云容器镜像服务
