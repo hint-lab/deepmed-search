@@ -44,9 +44,9 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:latest
-            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:${{ github.ref_name }}
-            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:${{ steps.meta.outputs.sha_short }}
+            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:latest
+            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:${{ github.ref_name }}
+            jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:${{ steps.meta.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
