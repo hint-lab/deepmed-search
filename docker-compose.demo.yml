@@ -136,9 +136,11 @@ services:
       retries: 5
 
   queue-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
+    # 使用腾讯云预构建镜像（无需本地编译）
+    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-worker:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.worker
     container_name: deepmed-queue-worker
     depends_on:
       - redis
@@ -174,9 +176,11 @@ services:
 
   # Next.js 主应用服务
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # 使用腾讯云预构建镜像（无需本地编译）
+    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: deepmed-app
     # 端口配置说明：
     # - 生产环境：推荐只通过 Traefik (HTTPS) 访问，注释掉下面的 ports
@@ -243,9 +247,11 @@ services:
       retries: 3
       start_period: 40s
   markitdown:
-    build:
-      context: ./docker/markitdown
-      dockerfile: Dockerfile
+    # 使用腾讯云预构建镜像（无需本地编译）
+    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-markitdown:latest
+    # build:
+    #   context: ./docker/markitdown
+    #   dockerfile: Dockerfile
     container_name: deepmed-markitdown
     restart: always
     ports:
