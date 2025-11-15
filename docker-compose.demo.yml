@@ -177,7 +177,7 @@ services:
   # Next.js 主应用服务
   app:
     # 使用腾讯云预构建镜像（无需本地编译）
-    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search:latest
+    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:latest
     # build:
     #   context: .
     #   dockerfile: Dockerfile

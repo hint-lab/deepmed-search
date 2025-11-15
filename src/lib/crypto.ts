@@ -5,24 +5,24 @@ import crypto from 'crypto';
  * 使用 AES-256-GCM 加密算法
  */
 
-// 从环境变量获取加密密钥，如果没有则抛出错误
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-
-if (!ENCRYPTION_KEY) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
-}
-
 // 确保密钥长度为 32 字节（256 位）
 const IV_LENGTH = 16; // AES 块大小
 
 /**
  * 获取加密密钥（确保长度为 32 字节）
+ * 延迟检查环境变量，避免构建时报错
  */
 function getEncryptionKey(): Buffer {
+    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+
+    if (!ENCRYPTION_KEY) {
+        throw new Error('ENCRYPTION_KEY environment variable is not set');
+    }
+
     // 使用 SHA-256 将密钥哈希为固定长度
     return crypto
         .createHash('sha256')
-        .update(ENCRYPTION_KEY!)
+        .update(ENCRYPTION_KEY)
         .digest();
 }
 

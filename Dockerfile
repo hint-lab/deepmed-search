@@ -21,10 +21,18 @@ RUN yarn install --frozen-lockfile --ignore-scripts
 ##### builder #####
 FROM deps AS builder
 
-# 复制所有源代码
-COPY . .
+# 只复制构建 Next.js 应用需要的文件，而不是整个项目
+# Next.js 构建需要：源代码、配置文件、Prisma schema
+COPY src ./src
+COPY public ./public
+COPY prisma ./prisma
+COPY next.config.ts ./
+COPY postcss.config.mjs ./
+COPY tsconfig.json ./
+COPY package.json yarn.lock ./
 
 # 生成 Prisma Client 并构建 Next.js 应用
+# 注意：使用 lazyConnect 和延迟加载，构建时不会连接外部服务
 RUN yarn prisma generate \
  && yarn build
 
@@ -60,7 +68,8 @@ COPY package.json yarn.lock ./
 RUN corepack enable \
  && corepack prepare yarn@1.22.22 --activate \
  && yarn config set registry https://registry.npmmirror.com \
- && yarn install --frozen-lockfile --ignore-scripts --production=true
+ && yarn install --frozen-lockfile --ignore-scripts --production=true \
+ && yarn cache clean
 
 # 从 builder 阶段复制构建产物
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

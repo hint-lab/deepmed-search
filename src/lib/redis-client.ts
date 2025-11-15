@@ -12,6 +12,7 @@ function getRedisConnectionOptions(): RedisOptions {
             password: url.password || process.env.REDIS_PASSWORD,
             maxRetriesPerRequest: null, // 推荐用于 BullMQ 兼容性
             enableReadyCheck: true,     // 启用就绪检查
+            lazyConnect: true,          // 延迟连接，避免构建时立即连接
         };
         logger.info(`初始化 Redis 客户端（从 REDIS_URL），连接至: ${options.host}:${options.port}`);
         return options;
@@ -30,6 +31,7 @@ function getRedisConnectionOptions(): RedisOptions {
         password: redisPassword,
         maxRetriesPerRequest: null, // 推荐用于 BullMQ 兼容性
         enableReadyCheck: true,     // 启用就绪检查
+        lazyConnect: true,          // 延迟连接，避免构建时立即连接
         // 如果需要 TLS，请添加 TLS 选项，例如:
         // tls: process.env.REDIS_TLS_ENABLED === 'true' ? {} : undefined,
     };
