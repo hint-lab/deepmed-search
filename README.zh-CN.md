@@ -868,21 +868,6 @@ http://localhost:3000/research
 4. **推送** 到分支（`git push origin feature/AmazingFeature`）
 5. **开启** Pull Request
 
-## 感谢所有贡献者
-
-<a href="https://github.com/hint-lab/deepmed-search/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=hint-lab/deepmed-search" />
-</a>
-
-## ⭐ Star History
-
-<a href="https://star-history.com/#hint-lab/deepmed-search&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=hint-lab/deepmed-search&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=hint-lab/deepmed-search&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=hint-lab/deepmed-search&type=Date" />
- </picture>
-</a>
 
 ## 📄 许可证
 
