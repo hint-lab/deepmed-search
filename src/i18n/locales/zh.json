@@ -462,7 +462,13 @@
             "signUp": "注册"
         },
         "errors": {
-            "loginFailed": "登录失败"
+            "loginFailed": "登录失败",
+            "loginFailedDescription": "邮箱或密码错误",
+            "serverError": "服务器错误，请稍后重试"
+        },
+        "success": {
+            "loginSuccess": "登录成功",
+            "loginSuccessDescription": "欢迎回来，{{name}}！"
         },
         "login": "登录",
         "loginDescription": "欢迎回来！请登录您的账号。",

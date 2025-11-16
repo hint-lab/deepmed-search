@@ -352,7 +352,13 @@
             "signUp": "S'inscrire"
         },
         "errors": {
-            "loginFailed": "Échec de la connexion"
+            "loginFailed": "Échec de la connexion",
+            "loginFailedDescription": "L'email ou le mot de passe est incorrect",
+            "serverError": "Erreur serveur, veuillez réessayer plus tard"
+        },
+        "success": {
+            "loginSuccess": "Connexion réussie",
+            "loginSuccessDescription": "Bon retour, {{name}} !"
         },
         "login": "Connexion",
         "loginDescription": "Bienvenue ! Veuillez vous connecter à votre compte.",
