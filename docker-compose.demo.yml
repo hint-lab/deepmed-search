@@ -233,6 +233,11 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       # Milvus 配置
       MILVUS_ADDRESS: ${MILVUS_ADDRESS:-milvus:19530}
+      # OAuth 配置（添加这些行）
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
     depends_on:
       - postgres
       - redis
