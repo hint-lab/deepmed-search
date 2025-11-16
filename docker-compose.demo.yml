@@ -245,6 +245,8 @@ services:
       - minio
       - markitdown
     restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
       interval: 30s
