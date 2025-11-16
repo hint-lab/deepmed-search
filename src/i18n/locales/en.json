@@ -463,7 +463,13 @@
             "signUp": "Sign Up"
         },
         "errors": {
-            "loginFailed": "Login failed"
+            "loginFailed": "Login failed",
+            "loginFailedDescription": "Email or password is incorrect",
+            "serverError": "Server error, please try again later"
+        },
+        "success": {
+            "loginSuccess": "Login successful",
+            "loginSuccessDescription": "Welcome back, {{name}}!"
         },
         "login": "Login",
         "loginDescription": "Welcome back! Please log in to your account.",

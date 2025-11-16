@@ -352,7 +352,13 @@
             "signUp": "التسجيل"
         },
         "errors": {
-            "loginFailed": "فشل تسجيل الدخول"
+            "loginFailed": "فشل تسجيل الدخول",
+            "loginFailedDescription": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+            "serverError": "خطأ في الخادم، يرجى المحاولة مرة أخرى لاحقًا"
+        },
+        "success": {
+            "loginSuccess": "تم تسجيل الدخول بنجاح",
+            "loginSuccessDescription": "مرحبًا بعودتك، {{name}}!"
         },
         "login": "تسجيل الدخول",
         "loginDescription": "مرحبًا بعودتك! يرجى تسجيل الدخول إلى حسابك.",

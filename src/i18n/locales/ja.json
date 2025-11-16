@@ -367,7 +367,13 @@
             "signUp": "登録"
         },
         "errors": {
-            "loginFailed": "ログインに失敗しました"
+            "loginFailed": "ログインに失敗しました",
+            "loginFailedDescription": "メールアドレスまたはパスワードが正しくありません",
+            "serverError": "サーバーエラーが発生しました。後でもう一度お試しください"
+        },
+        "success": {
+            "loginSuccess": "ログイン成功",
+            "loginSuccessDescription": "おかえりなさい、{{name}}さん！"
         },
         "login": "ログイン",
         "loginDescription": "おかえりなさい！アカウントにログインしてください。",

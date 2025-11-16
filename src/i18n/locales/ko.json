@@ -367,7 +367,13 @@
             "signUp": "가입하기"
         },
         "errors": {
-            "loginFailed": "로그인 실패"
+            "loginFailed": "로그인 실패",
+            "loginFailedDescription": "이메일 또는 비밀번호가 올바르지 않습니다",
+            "serverError": "서버 오류가 발생했습니다. 나중에 다시 시도해 주세요"
+        },
+        "success": {
+            "loginSuccess": "로그인 성공",
+            "loginSuccessDescription": "돌아오신 것을 환영합니다, {{name}}님!"
         },
         "login": "로그인",
         "loginDescription": "돌아오신 것을 환영합니다! 계정에 로그인하세요.",

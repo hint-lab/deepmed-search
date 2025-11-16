@@ -146,8 +146,8 @@ const Login = () => {
             });
 
             if (result?.error) {
-                toast.error("登录失败", {
-                    description: "邮箱或密码错误",
+                toast.error(t('errors.loginFailed'), {
+                    description: t('errors.loginFailedDescription'),
                 });
                 return;
             }
@@ -167,8 +167,8 @@ const Login = () => {
             }
 
             // 显示成功提示
-            toast.success("登录成功", {
-                description: `欢迎回来，${user?.name || user?.email || ''}！`,
+            toast.success(t('success.loginSuccess'), {
+                description: t('success.loginSuccessDescription', { name: user?.name || user?.email || '' }),
             });
 
             // 延迟跳转，让用户看到成功提示
@@ -177,8 +177,8 @@ const Login = () => {
             }, 800);
         } catch (error) {
             console.error('登录失败:', error);
-            toast.error("登录失败", {
-                description: "服务器错误，请稍后重试",
+            toast.error(t('errors.loginFailed'), {
+                description: t('errors.serverError'),
             });
         } finally {
             setLoading(false);
