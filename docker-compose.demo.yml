@@ -204,6 +204,8 @@ services:
       - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
       - "traefik.http.routers.app.middlewares=security-headers"
+    volumes:
+      - ./logs:/app/logs  # 挂载日志目录，解决权限问题
     networks:
       - traefik-public
       - default
@@ -220,6 +222,11 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       # 加密密钥（用于解密用户配置的 API keys）
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # OAuth 配置（Google 和 GitHub 登录）
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       # 注意：所有 LLM 和搜索 API Keys 从用户配置中读取（数据库）
       # 以下是解析器服务的端点配置，非解析器选择
       # Demo 分支：仅支持 Markitdown（不需要 GPU）
