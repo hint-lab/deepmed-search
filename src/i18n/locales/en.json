@@ -37,7 +37,9 @@
         "search": "Search",
         "research": "Research",
         "fileManagement": "File Management",
-        "development-tools": "Development Tools"
+        "development-tools": "Development Tools",
+        "login": "Login",
+        "signOut": "Sign Out"
     },
     "home": {
         "badge": "Intelligent Search Platform for Medical Researchers",

@@ -10,8 +10,8 @@
 > - 镜像从腾讯云容器镜像服务拉取
 > 
 > 详细配置请查看：
-> - [分支策略说明](../../BRANCHING_STRATEGY.md)
-> - [部署快速开始](../../DEPLOYMENT_QUICKSTART.md)
+> - [分支策略说明](./BRANCHING_STRATEGY.md)
+> - [部署快速开始](./QUICKSTART.zh-CN.md)
 > - [腾讯云配置](./TENCENT_CLOUD_REGISTRY.md)
 > 
 > 以下内容作为参考文档，介绍多种 CI/CD 方案。
