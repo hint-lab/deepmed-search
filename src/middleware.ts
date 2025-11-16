@@ -7,14 +7,15 @@ const protectedRoutes = [
     '/chat',
     '/search',
     '/research',
-    '/knowledgebase',
-    '/chunks'
+    '/chunks',
+    '/settings'
 ];
 
 // 公开路由
 const publicRoutes = [
     '/',
     '/login',
+    '/register',
     '/api/auth',
 ];
 
@@ -44,8 +45,8 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
     }
 
-    // 如果已登录且访问登录页，重定向到主页
-    if (token && pathname === '/login') {
+    // 如果已登录且访问登录或注册页，重定向到知识库
+    if (token && (pathname === '/login' || pathname === '/register')) {
         return NextResponse.redirect(new URL('/knowledgebase', request.url));
     }
 
@@ -60,8 +61,11 @@ export const config = {
         '/chat/:path*',
         '/research/:path*',
         '/search/:path*',
-        // 匹配登录和注册页面
+        '/settings/:path*',
+        '/chunks/:path*',
+        // 匹配认证相关页面
         '/login',
+        '/register',
         // 匹配根路径
         '/',
     ]

@@ -37,7 +37,9 @@
         "search": "搜索",
         "research": "研究",
         "fileManagement": "文件管理",
-        "development-tools": "开发工具"
+        "development-tools": "开发工具",
+        "login": "登录",
+        "signOut": "退出登录"
     },
     "home": {
         "badge": "为医学研究者打造的智能检索平台",
