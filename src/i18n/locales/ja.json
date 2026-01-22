@@ -37,7 +37,9 @@
         "search": "検索",
         "research": "研究",
         "fileManagement": "ファイル管理",
-        "development-tools": "開発ツール"
+        "development-tools": "開発ツール",
+        "login": "ログイン",
+        "signOut": "ログアウト"
     },
     "home": {
         "title": "DeepMed Search",

@@ -265,9 +265,10 @@ git push origin main
 
 ## 📚 相关文档
 
-- [部署快速开始](DEPLOYMENT_QUICKSTART.md)
-- [腾讯云配置](docs/deployment/TENCENT_CLOUD_REGISTRY.md)
-- [CI/CD 详细指南](docs/deployment/CICD_SETUP.md)
+- [部署快速开始](./QUICKSTART.zh-CN.md)
+- [生产环境部署](./PRODUCTION.zh-CN.md)
+- [CI/CD 自动部署](./CICD.zh-CN.md)
+- [腾讯云配置](./TENCENT_CLOUD_REGISTRY.md)
 
 ---
 

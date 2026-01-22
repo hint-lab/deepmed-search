@@ -2,8 +2,9 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { User, Lock, Bot, Settings as SettingsIcon, Search, FileText, Layers } from 'lucide-react';
+import { User, Lock, Bot, Settings as SettingsIcon, Search, FileText, Layers, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useEffect } from 'react';
 
 const SETTINGS_NAVIGATION = [
   {
@@ -52,8 +53,25 @@ export default function SettingsLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
+  // 如果未登录，重定向到登录页
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+    }
+  }, [status, router, pathname]);
+
+  // 加载中状态
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // 未登录，不显示内容（会被重定向）
   if (!session) {
     return null;
   }

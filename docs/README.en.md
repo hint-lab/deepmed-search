@@ -2,213 +2,154 @@
 
 > English | [中文](./README.md)
 
-Welcome to DeepMed Search Documentation Center! Here you'll find all project documentation to help you get started quickly and understand the system in depth.
+Welcome to the DeepMed Search Documentation Center! Find all project documentation here to help you get started quickly and understand the system in depth.
+
+## 🚀 Quick Navigation
+
+### Just Getting Started?
+
+- **[Quick Start](../README.md#quick-start)** - Get up and running in 5 minutes locally
+- **[Quick Deployment](./deployment/QUICKSTART.md)** - Deploy to server in 5-10 minutes
+
+### Ready for Production?
+
+- **[Production Deployment](./deployment/PRODUCTION.md)** - Complete production environment setup guide
+- **[CI/CD Automation](./deployment/CICD.md)** - GitHub Actions automated deployment
+
+### Need Help?
+
+- **[Troubleshooting](./troubleshooting/)** - Common issues and solutions
+- **[GitHub Issues](https://github.com/hint-lab/deepmed-search/issues)** - Submit issues and suggestions
 
 ## 📚 Documentation Categories
 
-### 🚀 Deployment
+### 🚢 Deployment
 
 Quick deployment and production environment configuration guides.
 
-- **[SSL Quick Start Guide](./deployment/SSL_QUICKSTART.en.md)** ([中文](./deployment/SSL_QUICKSTART.md))
-  - Enable HTTPS in 3 steps
-  - Let's Encrypt automatic certificates
-  - Quick configuration script
+| Document | Description | Level |
+|----------|-------------|-------|
+| **[Quick Deployment](./deployment/QUICKSTART.md)** | Deploy to server in 5-10 minutes | ⭐ Easy |
+| **[Production Deployment](./deployment/PRODUCTION.md)** | Complete production setup with security hardening | ⭐⭐ Medium |
+| **[CI/CD Automation](./deployment/CICD.md)** | GitHub Actions automated deployment | ⭐⭐⭐ Advanced |
+| [Branching Strategy](./deployment/BRANCHING_STRATEGY.en.md) | Development and deployment branch management | ⭐ Easy |
+| [Deployment Checklist](./deployment/DEPLOYMENT_CHECKLIST.md) | Pre-production deployment checklist | ⭐⭐ Medium |
+| [SSL/HTTPS Quick Setup](./deployment/SSL_QUICKSTART.en.md) | Enable HTTPS in 3 steps | ⭐ Easy |
+| [Traefik SSL Setup](./deployment/TRAEFIK_SSL_SETUP.md) | Traefik reverse proxy and SSL configuration | ⭐⭐ Medium |
+| [Docker Compose Usage](./deployment/DOCKER_COMPOSE_USAGE.zh-CN.md) | Docker Compose configuration guide | ⭐⭐ Medium |
+| [Tencent Cloud Registry](./deployment/TENCENT_CLOUD_REGISTRY.md) | TCR setup and usage | ⭐⭐ Medium |
 
-- **[Traefik SSL Detailed Setup](./deployment/TRAEFIK_SSL_SETUP.md)**
-  - Traefik configuration guide
-  - Certificate management
-  - Security best practices
-
-- **[Deployment Checklist](./deployment/DEPLOYMENT_CHECKLIST.md)**
-  - Pre-deployment checklist
-  - Environment variables configuration
-  - Security hardening recommendations
-  - Monitoring and maintenance
-
-- **[SSL Setup Script](./deployment/setup-ssl.sh)**
-  - Automated configuration tool
-  - DNS and firewall checks
-  - One-click deployment
-
-### ⚙️ Setup Guides
+### ⚙️ Setup
 
 System component configuration and feature setup.
 
-- **[OAuth Authentication Setup](./setup/OAUTH_SETUP.md)**
-  - Google OAuth configuration
-  - Authentication flow explanation
-  - Environment variables setup
-
-- **[Document Parser Setup](./setup/DOCUMENT_PARSER_SETUP.md)**
-  - Markitdown configuration
-  - MinerU configuration
-  - GPU support
-
-- **[Encryption Key Setup](./setup/ENCRYPTION_KEY_SETUP.md)**
-  - Key generation
-  - Secure storage
-  - Key management
-
-- **[Real-time Progress Configuration](./setup/REALTIME_PROGRESS.md)**
-  - WebSocket configuration
-  - Progress tracking setup
-
-- **[Progress Feature Quick Start](./setup/PROGRESS_QUICKSTART.md)**
-  - Progress bar integration
-  - Usage examples
-
-- **[BullMQ Board Usage](./setup/BULLMQ_BOARD_USAGE.md)**
-  - Queue monitoring
-  - Task management
-
-- **[Attu Usage Guide](./setup/ATTU_USAGE.md)**
-  - Milvus management interface
-  - Vector database operations
-
-- **[Redis Queue Viewing](./setup/REDIS_QUEUE_VIEWING.md)**
-  - RedisInsight usage
-  - Queue debugging
+| Document | Description |
+|----------|-------------|
+| **[OAuth Setup](./setup/OAUTH_SETUP.md)** | Google/GitHub OAuth configuration |
+| **[Document Parser Setup](./setup/DOCUMENT_PARSER_SETUP.md)** | MarkItDown and MinerU configuration |
+| [Encryption Key Setup](./setup/ENCRYPTION_KEY_SETUP.md) | API key encryption setup |
+| [BullMQ Board Usage](./setup/BULLMQ_BOARD_USAGE.md) | Queue monitoring dashboard |
+| [Attu Usage Guide](./setup/ATTU_USAGE.md) | Milvus vector database management |
+| [Redis Queue Viewing](./setup/REDIS_QUEUE_VIEWING.md) | RedisInsight usage guide |
+| [Real-time Progress](./setup/REALTIME_PROGRESS.md) | WebSocket progress configuration |
+| [Progress Quick Start](./setup/PROGRESS_QUICKSTART.md) | Progress bar usage examples |
 
 ### 🛠️ Development
 
 Developer guides and technical implementation details.
 
-- **[Queue Service Migration Guide](./development/QUEUE_SERVICE_MIGRATION.md)**
-  - Queue system architecture
-  - Migration steps
-
-- **[Search Configuration Implementation](./development/SEARCH_CONFIG_IMPLEMENTATION.md)**
-  - Search engine integration
-  - Configuration management
-
-- **[Multi-LLM Configuration Update](./development/MULTI_LLM_CONFIG_UPDATE.md)**
-  - Multi-model support
-  - Configuration system
-
-- **[User LLM Configuration Implementation](./development/USER_LLM_CONFIG_IMPLEMENTATION.md)**
-  - User-level configuration
-  - API key management
-
-- **[Tools Analysis](./development/TOOLS_ANALYSIS.md)**
-  - System tools analysis
-  - Performance optimization
-
-- **[Project Summary](./development/SUMMARY.md)**
-  - Project overview
-  - Technology stack
-  - Architecture design
+| Document | Description |
+|----------|-------------|
+| [Queue Service Migration](./development/QUEUE_SERVICE_MIGRATION.md) | BullMQ queue system architecture |
+| [Search Config Implementation](./development/SEARCH_CONFIG_IMPLEMENTATION.md) | User-level search configuration |
+| [Multi-LLM Config Update](./development/MULTI_LLM_CONFIG_UPDATE.md) | LLM configuration system |
+| [User LLM Config](./development/USER_LLM_CONFIG_IMPLEMENTATION.md) | User-level LLM configuration |
+| [Tools Analysis](./development/TOOLS_ANALYSIS.md) | Project tools and libraries analysis |
+| [Development Summary](./development/SUMMARY.md) | Development history and architecture evolution |
 
 ### 🔧 Troubleshooting
 
 Common issues and solutions.
 
-- **[Google OAuth Fix Guide](./troubleshooting/GOOGLE_OAUTH_FIX.md)**
-  - OAuth login issues
-  - Network problem resolution
-  - Common errors
+| Document | Description |
+|----------|-------------|
+| [Google OAuth Fix](./troubleshooting/GOOGLE_OAUTH_FIX.md) | OAuth authentication common issues |
 
-## 🎯 Quick Navigation
+### 📖 Other Documentation
 
-### I Want To...
+| Document | Description |
+|----------|-------------|
+| [Documentation Guide](./DOCUMENTATION_GUIDE.en.md) | How to write and maintain documentation |
+| [Migration Summary](./MIGRATION_SUMMARY.md) | Project migration records |
 
-- **Deploy to Production Quickly**
-  1. [Deployment Checklist](./deployment/DEPLOYMENT_CHECKLIST.md)
-  2. [SSL Quick Start](./deployment/SSL_QUICKSTART.en.md)
+## 🎯 Use Case Navigation
 
-- **Configure OAuth Login**
-  - [OAuth Setup Guide](./setup/OAUTH_SETUP.md)
+### Scenario 1: Local Development
 
-- **Configure Document Parsing**
-  - [Document Parser Setup](./setup/DOCUMENT_PARSER_SETUP.md)
+1. Read [Main README](../README.md)
+2. Follow quick start steps to set up local environment
+3. Refer to [OAuth Setup](./setup/OAUTH_SETUP.md) for authentication
+4. Refer to [Document Parser Setup](./setup/DOCUMENT_PARSER_SETUP.md) for document processing
 
-- **Monitor Queue Tasks**
-  - [BullMQ Board Usage](./setup/BULLMQ_BOARD_USAGE.md)
-  - [Redis Queue Viewing](./setup/REDIS_QUEUE_VIEWING.md)
+### Scenario 2: Quick Demo
 
-- **Develop New Features**
-  - [Development Documentation](./development/)
+1. Use [Quick Deployment Guide](./deployment/QUICKSTART.md)
+2. Complete deployment in 5-10 minutes
+3. Access application and test features
 
-- **Solve Problems**
-  - [Troubleshooting](./troubleshooting/)
+### Scenario 3: Production Launch
 
-## 📖 By Role
+1. Prepare: Review [Deployment Checklist](./deployment/DEPLOYMENT_CHECKLIST.md)
+2. Deploy: Follow [Production Deployment Guide](./deployment/PRODUCTION.md)
+3. Configure SSL: Refer to [SSL Quick Setup](./deployment/SSL_QUICKSTART.en.md)
+4. Automate: Set up [CI/CD](./deployment/CICD.md)
 
-### System Administrator
+### Scenario 4: Team Collaboration
 
-1. **Deployment and Maintenance**
-   - [Deployment Checklist](./deployment/DEPLOYMENT_CHECKLIST.md)
-   - [Traefik SSL Setup](./deployment/TRAEFIK_SSL_SETUP.md)
-   
-2. **Monitoring and Management**
-   - [BullMQ Board](./setup/BULLMQ_BOARD_USAGE.md)
-   - [Attu Management Interface](./setup/ATTU_USAGE.md)
+1. Understand [Branching Strategy](./deployment/BRANCHING_STRATEGY.en.md)
+2. Configure [CI/CD Automation](./deployment/CICD.md)
+3. Set up code review process
 
-### Developer
+## 💡 Tips
 
-1. **Getting Started**
-   - [Project Summary](./development/SUMMARY.md)
-   - [Architecture Documentation](./development/)
+- **First Time**: Recommend running locally first, deploy to server after familiar with features
+- **Production**: Must configure HTTPS and security hardening
+- **Issues**: Check corresponding troubleshooting docs first
+- **Updates**: Follow [GitHub Releases](https://github.com/hint-lab/deepmed-search/releases)
 
-2. **Feature Integration**
-   - [Search Configuration](./development/SEARCH_CONFIG_IMPLEMENTATION.md)
-   - [LLM Configuration](./development/MULTI_LLM_CONFIG_UPDATE.md)
+## 🔗 External Resources
 
-### User
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Docker Documentation](https://docs.docker.com/)
+- [Milvus Documentation](https://milvus.io/docs)
+- [BullMQ Documentation](https://docs.bullmq.io/)
+- [Prisma Documentation](https://www.prisma.io/docs)
 
-1. **Feature Configuration**
-   - [OAuth Login Setup](./setup/OAUTH_SETUP.md)
-   - [Document Parser Configuration](./setup/DOCUMENT_PARSER_SETUP.md)
+## 📧 Get Help
 
-## 📦 Module Documentation
+- 💬 **Questions**: [GitHub Discussions](https://github.com/hint-lab/deepmed-search/discussions)
+- 🐛 **Report Issues**: [GitHub Issues](https://github.com/hint-lab/deepmed-search/issues)
+- 📧 **Email**: wang-hao@shu.edu.cn
+- 💼 **Organization**: [H!NT Lab](https://hint-lab.github.io/)
 
-Documentation for individual project modules:
+## 🤝 Contribute Documentation
 
-- [Document Parser](../src/lib/document-parser/README.md)
-- [Document Tracker](../src/lib/document-tracker/README.md)
-- [Text Cleaner](../src/lib/text-cleaner/README.md)
-- [LLM Provider](../src/lib/llm-provider/README.md)
-- [Markitdown Integration](../src/lib/markitdown/README.md)
-- [MinerU Integration](../src/lib/mineru/README.md)
+Found documentation issues or want to improve documentation?
 
-## 🐳 Docker Related
+1. Fork the repository
+2. Edit relevant documentation
+3. Submit Pull Request
 
-- [Docker Mirror Setup](../docker/MIRROR_SETUP.md)
-- [MinerU Optimization Guide](../docker/mineru/OPTIMIZATION.md)
-- [MinerU Docker Guide](../docker/mineru/README.md)
-
-## 🌐 Language Support
-
-This documentation is available in both Chinese and English:
-
-- Chinese: `*.md`
-- English: `*.en.md`
-
-Some documents are still being translated. Contributions are welcome!
-
-## 🤝 Contributing to Documentation
-
-To improve documentation:
-
-1. Fork the project
-2. Create a documentation branch
-3. Submit improvements
-4. Create a Pull Request
-
-Documentation guidelines:
-- Use Markdown format
-- Provide bilingual versions (Chinese & English) when applicable
-- Include clear examples and screenshots
-- Keep directory structure clean
-
-## 📮 Feedback
-
-For documentation issues or suggestions:
-- Submit an Issue
-- Contact project maintainers
-- Join discussions
+See [Documentation Contribution Guide](./DOCUMENTATION_GUIDE.en.md)
 
 ---
 
-**Last Updated**: 2024-11-14
+<div align="center">
 
+**Welcome to DeepMed Search!**
+
+If this project helps you, please give us a ⭐️
+
+[⬆ Back to top](#deepmed-search-documentation-center)
+
+</div>
