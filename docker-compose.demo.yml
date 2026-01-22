@@ -35,8 +35,8 @@ services:
       - traefik-logs:/var/log/traefik
     labels:
       - "traefik.enable=true"
-      # Traefik 仪表板
-      - "traefik.http.routers.traefik.rule=Host(`www.deepmedsearch.cloud`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      # Traefik 仪表板（仅匹配仪表板路径，不拦截应用 API）
+      - "traefik.http.routers.traefik.rule=Host(`www.deepmedsearch.cloud`) && PathPrefix(`/dashboard`)"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
@@ -137,10 +137,10 @@ services:
 
   queue-worker:
     # 使用腾讯云预构建镜像（无需本地编译）
-    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-worker:latest
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.worker
+    # image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-worker:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
     container_name: deepmed-queue-worker
     depends_on:
       - redis
@@ -157,8 +157,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       # 数据库连接：在容器内必须使用 postgres 服务名而不是 localhost
       # 从环境变量提取数据库凭证，但使用 postgres 作为主机名
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-deepmed}
-      
+      DATABASE_URL: ${DATABASE_URL}
       # 加密密钥（必需：用于解密用户配置的 API keys）
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       
@@ -177,10 +176,10 @@ services:
   # Next.js 主应用服务
   app:
     # 使用腾讯云预构建镜像（无需本地编译）
-    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:latest
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: deepmed-app
     # 端口配置说明：
     # - 生产环境：推荐只通过 Traefik (HTTPS) 访问，注释掉下面的 ports
@@ -255,10 +254,10 @@ services:
       start_period: 40s
   markitdown:
     # 使用腾讯云预构建镜像（无需本地编译）
-    image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-markitdown:latest
-    # build:
-    #   context: ./docker/markitdown
-    #   dockerfile: Dockerfile
+    # image: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-markitdown:latest
+    build:
+      context: ./docker/markitdown
+      dockerfile: Dockerfile
     container_name: deepmed-markitdown
     restart: always
     ports:
