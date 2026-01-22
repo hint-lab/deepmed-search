@@ -10,8 +10,10 @@
 [![GitHub forks](https://img.shields.io/github/forks/hint-lab/deepmed-search?style=social)](https://github.com/hint-lab/deepmed-search)
 [![GitHub issues](https://img.shields.io/github/issues/hint-lab/deepmed-search)](https://github.com/hint-lab/deepmed-search/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-brightgreen)](https://www.docker.com/)
 
 <!-- language -->
@@ -45,7 +47,9 @@ DeepMed Search 是一个全面的 AI 驱动医学研究平台，基于 Next.js �
 
 ## 🛠 技术栈
 
-**前端：** Next.js 14+ (App Router)、TypeScript、React 19、Tailwind CSS、shadcn/ui
+**前端：** Next.js 15.2.4 (App Router)、TypeScript 5.x、React 19.0.0、Tailwind CSS 4.x、shadcn/ui
+
+**运行时：** Node.js 20.x (Bookworm)
 
 **后端：** Next.js Server Actions、Prisma ORM、NextAuth.js v5、BullMQ + Redis
 
@@ -59,7 +63,9 @@ DeepMed Search 是一个全面的 AI 驱动医学研究平台，基于 Next.js �
 
 ### 前置要求
 
-- Node.js 18+
+- **Node.js 20.x** (推荐：20.12.0 或更高版本)
+- **React 19.0.0**
+- **Next.js 15.2.4**
 - Docker 和 Docker Compose
 - Git
 

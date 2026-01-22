@@ -21,11 +21,11 @@ export default function Footer() {
                     <div className="text-sm text-muted-foreground text-center md:text-right">
                         <Trans
                             i18nKey="footer.developedBy"
-                            values={{ organization: 'H!NT Lab' }}
+                            values={{ organization: 'DeepMed Search' }}
                             components={{
                                 link: (
                                     <Link
-                                        href="https://hint-lab.github.io/"
+                                        href="https://www.deepmedsearch.cloud/"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="font-medium text-foreground hover:text-primary transition-colors underline decoration-primary/30 hover:decoration-primary"
