@@ -100,18 +100,161 @@ jobs:
             export COMPOSE_FILE="docker-compose.demo.yml"
             echo "📦 使用 Demo 配置（无 GPU，使用腾讯云预构建镜像）"
             
+            # 检查 .env 文件
+            echo ""
+            echo "🔍 检查环境变量配置..."
+            if [ ! -f .env ]; then
+              echo "❌ 错误: .env 文件不存在！"
+              echo ""
+              echo "📝 请在服务器上创建 .env 文件，包含以下必需的环境变量："
+              echo "   - POSTGRES_USER"
+              echo "   - POSTGRES_PASSWORD"
+              echo "   - POSTGRES_DB"
+              echo "   - DATABASE_URL"
+              echo "   - NEXTAUTH_URL"
+              echo "   - NEXTAUTH_SECRET"
+              echo "   - ENCRYPTION_KEY"
+              echo ""
+              echo "📚 参考文档: docs/deployment/DEPLOYMENT_CHECKLIST.md"
+              echo ""
+              echo "💡 快速创建 .env 文件："
+              echo "   cd /home/deploy/deepmed-search"
+              echo "   # 生成密钥:"
+              echo "   NEXTAUTH_SECRET=\$(openssl rand -base64 32)"
+              echo "   ENCRYPTION_KEY=\$(openssl rand -base64 32)"
+              echo "   POSTGRES_PASSWORD=\$(openssl rand -base64 16)"
+              echo "   # 然后创建 .env 文件并填入这些值"
+              exit 1
+            else
+              echo "✅ .env 文件存在"
+              # 检查关键环境变量是否设置
+              MISSING_VARS=""
+              source .env 2>/dev/null || true
+              
+              if [ -z "${POSTGRES_USER:-}" ]; then
+                MISSING_VARS="${MISSING_VARS} POSTGRES_USER"
+              fi
+              if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+                MISSING_VARS="${MISSING_VARS} POSTGRES_PASSWORD"
+              fi
+              if [ -z "${POSTGRES_DB:-}" ]; then
+                MISSING_VARS="${MISSING_VARS} POSTGRES_DB"
+              fi
+              if [ -z "${NEXTAUTH_SECRET:-}" ]; then
+                MISSING_VARS="${MISSING_VARS} NEXTAUTH_SECRET"
+              fi
+              if [ -z "${ENCRYPTION_KEY:-}" ]; then
+                MISSING_VARS="${MISSING_VARS} ENCRYPTION_KEY"
+              fi
+              
+              if [ -n "$MISSING_VARS" ]; then
+                echo "⚠️  警告: 以下环境变量未设置:$MISSING_VARS"
+                echo "   容器可能无法正常启动"
+              else
+                echo "✅ 关键环境变量已配置"
+              fi
+            fi
+            
+            # 验证 Docker Compose 配置
+            echo ""
+            echo "🔍 验证 Docker Compose 配置..."
+            if ! docker compose -f $COMPOSE_FILE config > /dev/null 2>&1; then
+              echo "❌ Docker Compose 配置无效！"
+              echo "查看详细错误："
+              docker compose -f $COMPOSE_FILE config
+              exit 1
+            else
+              echo "✅ Docker Compose 配置有效"
+            fi
+            
+            # 检查并登录腾讯云容器镜像服务
+            echo ""
+            echo "🔐 检查腾讯云容器镜像服务登录状态..."
+            # 检查是否已经登录（检查 ~/.docker/config.json）
+            if [ -f ~/.docker/config.json ] && grep -q "jpccr.ccs.tencentyun.com" ~/.docker/config.json 2>/dev/null; then
+              echo "✅ 检测到已有登录凭证"
+            else
+              echo "⚠️  未检测到登录凭证，需要手动登录"
+              echo ""
+              echo "📝 请在服务器上执行以下命令登录："
+              echo "   docker login jpccr.ccs.tencentyun.com -u <你的腾讯云账号ID> -p <你的TCR密码>"
+              echo ""
+              echo "💡 获取凭证："
+              echo "   1. 访问: https://console.cloud.tencent.com/tcr"
+              echo "   2. 进入「访问管理」→「访问凭证」"
+              echo "   3. 生成临时登录密码或使用长期密码"
+              echo "   4. 用户名通常是你的腾讯云账号 ID（一串数字）"
+              echo ""
+              echo "⚠️  如果已登录但仍有问题，请检查凭证是否过期"
+              echo ""
+              echo "⏭️  继续尝试拉取镜像（如果已登录但检测失败）..."
+            fi
+            
+            echo ""
             echo "📥 拉取最新镜像..."
-            docker compose -f $COMPOSE_FILE pull
+            if ! docker compose -f $COMPOSE_FILE pull; then
+              echo "❌ 镜像拉取失败！"
+              echo ""
+              echo "请检查："
+              echo "  1. 腾讯云容器镜像服务登录状态"
+              echo "  2. 镜像是否存在: jpccr.ccs.tencentyun.com/deepmedsearch/deepmed-search-*"
+              echo "  3. 网络连接是否正常"
+              echo ""
+              echo "💡 手动登录命令："
+              echo "   docker login jpccr.ccs.tencentyun.com -u <账号ID> -p <密码>"
+              exit 1
+            fi
             
-            echo "🚀 重启服务..."
-            docker compose -f $COMPOSE_FILE up -d
+            echo ""
+            echo "🚀 启动服务..."
+            if ! docker compose -f $COMPOSE_FILE up -d; then
+              echo "❌ 服务启动失败！"
+              echo ""
+              echo "查看容器状态："
+              docker compose -f $COMPOSE_FILE ps -a
+              echo ""
+              echo "查看最近日志："
+              docker compose -f $COMPOSE_FILE logs --tail=50
+              exit 1
+            fi
             
+            echo ""
+            echo "⏳ 等待服务启动（10秒）..."
+            sleep 10
+            
+            echo ""
+            echo "📊 服务状态:"
+            docker compose -f $COMPOSE_FILE ps
+            
+            # 检查是否有容器退出
+            echo ""
+            echo "🔍 检查容器健康状态..."
+            EXITED_COUNT=$(docker compose -f $COMPOSE_FILE ps | grep -c "Exit" || echo "0")
+            if [ "$EXITED_COUNT" -gt 0 ]; then
+              echo "⚠️  警告: 有 $EXITED_COUNT 个容器已退出！"
+              echo ""
+              echo "已退出的容器："
+              docker compose -f $COMPOSE_FILE ps | grep "Exit" || true
+              echo ""
+              echo "查看退出容器的日志："
+              docker compose -f $COMPOSE_FILE ps | grep "Exit" | awk '{print $1}' | while read container; do
+                if [ -n "$container" ]; then
+                  echo "--- $container 日志 ---"
+                  docker logs --tail=30 "$container" 2>&1 || true
+                fi
+              done
+              echo ""
+              echo "💡 提示: 检查日志以了解容器退出的原因"
+            else
+              echo "✅ 所有容器运行中"
+            fi
+            
+            echo ""
             echo "🧹 清理未使用的镜像..."
             docker image prune -f
             
+            echo ""
             echo "✅ 部署完成！使用配置: $COMPOSE_FILE"
-            echo "📊 服务状态:"
-            docker compose -f $COMPOSE_FILE ps
 
       - name: Notify deployment status
         if: always()
@@ -123,80 +266,80 @@ jobs:
           fi
 
       # 飞书通知
-      - name: Send Feishu notification
-        if: always()
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            STATUS_COLOR="green"
-            STATUS_TEXT="✅ 部署成功"
-            STATUS_EMOJI="✅"
-          else
-            STATUS_COLOR="red"
-            STATUS_TEXT="❌ 部署失败"
-            STATUS_EMOJI="❌"
-          fi
+      # - name: Send Feishu notification
+      #   if: always()
+      #   run: |
+      #     if [ "${{ job.status }}" == "success" ]; then
+      #       STATUS_COLOR="green"
+      #       STATUS_TEXT="✅ 部署成功"
+      #       STATUS_EMOJI="✅"
+      #     else
+      #       STATUS_COLOR="red"
+      #       STATUS_TEXT="❌ 部署失败"
+      #       STATUS_EMOJI="❌"
+      #     fi
           
-          curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"msg_type\": \"interactive\",
-              \"card\": {
-                \"header\": {
-                  \"title\": {
-                    \"content\": \"$STATUS_EMOJI DeepMed Search 部署通知\",
-                    \"tag\": \"plain_text\"
-                  },
-                  \"template\": \"$STATUS_COLOR\"
-                },
-                \"elements\": [
-                  {
-                    \"tag\": \"div\",
-                    \"fields\": [
-                      {
-                        \"is_short\": true,
-                        \"text\": {
-                          \"tag\": \"lark_md\",
-                          \"content\": \"**状态**\\n$STATUS_TEXT\"
-                        }
-                      },
-                      {
-                        \"is_short\": true,
-                        \"text\": {
-                          \"tag\": \"lark_md\",
-                          \"content\": \"**分支**\\n\`${{ github.ref_name }}\`\"
-                        }
-                      },
-                      {
-                        \"is_short\": true,
-                        \"text\": {
-                          \"tag\": \"lark_md\",
-                          \"content\": \"**提交者**\\n${{ github.actor }}\"
-                        }
-                      },
-                      {
-                        \"is_short\": true,
-                        \"text\": {
-                          \"tag\": \"lark_md\",
-                          \"content\": \"**提交信息**\\n${{ github.event.head_commit.message }}\"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    \"tag\": \"action\",
-                    \"actions\": [
-                      {
-                        \"tag\": \"button\",
-                        \"text\": {
-                          \"tag\": \"plain_text\",
-                          \"content\": \"查看详情\"
-                        },
-                        \"type\": \"primary\",
-                        \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
-                      }
-                    ]
-                  }
-                ]
-              }
-            }"
+      #     curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
+      #       -H "Content-Type: application/json" \
+      #       -d "{
+      #         \"msg_type\": \"interactive\",
+      #         \"card\": {
+      #           \"header\": {
+      #             \"title\": {
+      #               \"content\": \"$STATUS_EMOJI DeepMed Search 部署通知\",
+      #               \"tag\": \"plain_text\"
+      #             },
+      #             \"template\": \"$STATUS_COLOR\"
+      #           },
+      #           \"elements\": [
+      #             {
+      #               \"tag\": \"div\",
+      #               \"fields\": [
+      #                 {
+      #                   \"is_short\": true,
+      #                   \"text\": {
+      #                     \"tag\": \"lark_md\",
+      #                     \"content\": \"**状态**\\n$STATUS_TEXT\"
+      #                   }
+      #                 },
+      #                 {
+      #                   \"is_short\": true,
+      #                   \"text\": {
+      #                     \"tag\": \"lark_md\",
+      #                     \"content\": \"**分支**\\n\`${{ github.ref_name }}\`\"
+      #                   }
+      #                 },
+      #                 {
+      #                   \"is_short\": true,
+      #                   \"text\": {
+      #                     \"tag\": \"lark_md\",
+      #                     \"content\": \"**提交者**\\n${{ github.actor }}\"
+      #                   }
+      #                 },
+      #                 {
+      #                   \"is_short\": true,
+      #                   \"text\": {
+      #                     \"tag\": \"lark_md\",
+      #                     \"content\": \"**提交信息**\\n${{ github.event.head_commit.message }}\"
+      #                   }
+      #                 }
+      #               ]
+      #             },
+      #             {
+      #               \"tag\": \"action\",
+      #               \"actions\": [
+      #                 {
+      #                   \"tag\": \"button\",
+      #                   \"text\": {
+      #                     \"tag\": \"plain_text\",
+      #                     \"content\": \"查看详情\"
+      #                   },
+      #                   \"type\": \"primary\",
+      #                   \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+      #                 }
+      #               ]
+      #             }
+      #           ]
+      #         }
+      #       }"
 
