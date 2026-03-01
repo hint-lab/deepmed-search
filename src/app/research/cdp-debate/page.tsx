@@ -61,7 +61,7 @@ export default function CDPDebatePage() {
                     is_rare_cue: false,
                 })),
                 graph_data: { nodes: [], edges: [] },
-                mode: 'deepmed',
+                mode: 'deepmed' as const,
                 step_time: (result.timing?.hybrid_seconds || 0) + (result.timing?.graph_seconds || 0) + (result.timing?.reasoning_seconds || 0),
             };
             setRetrievalData(mappedResult);
