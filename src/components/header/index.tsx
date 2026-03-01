@@ -72,6 +72,11 @@ export default function Header() {
             href: "/research",
             icon: <Microscope className="h-5 w-5" />
         },
+        {
+            name: "诊断",
+            href: "/research/cdp-debate",
+            icon: <Brain className="h-5 w-5" />
+        },
         // {
         //     name: "开发工具",
         //     icon: <Beaker className="h-5 w-5" />,
