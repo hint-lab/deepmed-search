@@ -5,7 +5,6 @@ import type { RetrievalResponse, EvidenceItem } from "@/lib/cdp-api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface EvidenceTableProps {
   data: RetrievalResponse;
@@ -57,8 +56,8 @@ export function EvidenceTable({ data }: EvidenceTableProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* 这里保留 ScrollArea，因为证据表不需要太长 */}
-        <ScrollArea className="w-full max-h-[420px] rounded-md border bg-card/40">
+        {/* 让表格根据内容自动扩展高度 */}
+        <div className="w-full rounded-md border bg-card/40">
           <Table>
             <TableHeader>
               <TableRow>
@@ -104,7 +103,7 @@ export function EvidenceTable({ data }: EvidenceTableProps) {
               ))}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

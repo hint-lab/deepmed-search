@@ -109,7 +109,61 @@ export default function CDPDebatePage() {
                 }),
             });
             const result = await response.json();
-            setDebateData(result);
+            
+            // 映射后端响应到前端期望的格式
+            const debateResults = result?.debate_result?.debate_results ?? [];
+            // 获取 judgment_results 做映射
+            const judgmentResults = result?.debate_result?.judgment_results ?? [];
+            const judgmentMap = new Map(
+                judgmentResults.map((j: any) => [j.path, j.judgment.llm_judgment.confidence])
+            );
+
+            const debateLogs = debateResults.map((item: any) => {
+                // 优先用 judgment_results 里的 confidence
+                const pathText = item.path;
+                const judgmentConfidence = judgmentMap.get(pathText);
+                const finalConfidence = judgmentConfidence ?? item?.debate?.proponent_confidence ?? 0;
+
+                return {
+                    path_id: item.path_index,
+                    history: (item?.debate?.rounds ?? []).map((round: any) => ({
+                        proponent: round?.proponent ?? '',
+                        opponent: round?.opponent ?? '',
+                    })),
+                    final_confidence: finalConfidence,
+                };
+            });
+
+            const maxConfidence = debateLogs.length > 0 
+                ? Math.max(...debateLogs.map((log: any) => log.final_confidence)) 
+                : 0;
+
+            // 解析 final_answer
+            let diagnosis = '';
+            let reasoningTrace: string[] = [];
+            try {
+                if (result?.final_answer) {
+                    const parsed = JSON.parse(result.final_answer);
+                    diagnosis = parsed.answer_choice || '';
+                    // step_by_step_thinking 是用 "1. ", "2. " 这种格式分隔的
+                    reasoningTrace = parsed.step_by_step_thinking 
+                        ? parsed.step_by_step_thinking.split(/(?=\d+\.\s)/).filter(Boolean)
+                        : [];
+                }
+            } catch (e) {
+                console.error('Failed to parse final_answer', e);
+            }
+
+            const mappedResult: DebateResponse = {
+                debate_logs: debateLogs,
+                diagnosis: diagnosis,
+                confidence: maxConfidence,
+                reasoning_trace: reasoningTrace,
+                mode: 'deepmed',
+                step_time: 0,
+            };
+            
+            setDebateData(mappedResult);
         } catch (err: any) {
             setError(err.message || 'Debate generation failed.');
             setDebateData(null);
