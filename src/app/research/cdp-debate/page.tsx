@@ -43,8 +43,13 @@ export default function CDPDebatePage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     endpoint: 'retrieve/context',
-                    case_report: caseReport,
-                    topK: 5,
+                    query: caseReport,
+                    top_k_pseudo: 16,
+                    top_k_hybrid: 16,
+                    use_graph_retrieval: true,
+                    top_k_graph: 1,
+                    top_k_reranked: 5,
+                    num_pseudo_questions: 0,
                 }),
             });
             const result = await response.json();
@@ -98,8 +103,9 @@ export default function CDPDebatePage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     endpoint: 'debate/validate',
-                    case_report: caseReport,
-                    topK: 5,
+                    query: caseReport,
+                    paths: retrievalData.evidence_panel.map(item => item.text),
+                    judgment_mode: 'llm',
                 }),
             });
             const result = await response.json();
