@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchCDPRetrieval, fetchCDPDebate } from '@/lib/cdp-api/client';
 import type { RetrievalResponse, DebateResponse } from '@/lib/cdp-api/types';
 import { EvidenceTable } from './components/evidence-table';
 import { DebateVisualization } from './components/debate-visualization';
@@ -38,11 +37,34 @@ export default function CDPDebatePage() {
         setRetrievalData(null);
 
         try {
-            const result = await fetchCDPRetrieval(caseReport, {
-                topK: 5,
-                timeout: 30000,
+            // 使用代理 API 调用 CDP，避免混合内容问题
+            const response = await fetch('/api/cdp-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: 'retrieve/context',
+                    case_report: caseReport,
+                    topK: 5,
+                }),
             });
-            setRetrievalData(result);
+            const result = await response.json();
+            
+            // 转换响应格式以匹配预期
+            const mappedResult = {
+                pseudo_questions: [],
+                evidence_panel: (result.results?.reranked?.results || []).map((item: any, index: number) => ({
+                    id: `${item.file || 'path'}_${index}`,
+                    text: item.document || '',
+                    score: item.score || 0,
+                    source: item.file || 'unknown',
+                    is_generic_noise: false,
+                    is_rare_cue: false,
+                })),
+                graph_data: { nodes: [], edges: [] },
+                mode: 'deepmed',
+                step_time: (result.timing?.hybrid_seconds || 0) + (result.timing?.graph_seconds || 0) + (result.timing?.reasoning_seconds || 0),
+            };
+            setRetrievalData(mappedResult);
         } catch (err: any) {
             setError(err.message || 'Retrieval failed.');
             setRetrievalData(null);
@@ -70,10 +92,17 @@ export default function CDPDebatePage() {
         setDebateData(null);
 
         try {
-            const result = await fetchCDPDebate(caseReport, {
-                topK: 5,
-                timeout: 30000,
+            // 使用代理 API 调用 CDP，避免混合内容问题
+            const response = await fetch('/api/cdp-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: 'debate/validate',
+                    case_report: caseReport,
+                    topK: 5,
+                }),
             });
+            const result = await response.json();
             setDebateData(result);
         } catch (err: any) {
             setError(err.message || 'Debate generation failed.');
