@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 
 interface DebateVisualizationProps {
   data: DebateResponse;
+  selectedPathIndex?: number;
 }
 
-export function DebateVisualization({ data }: DebateVisualizationProps) {
+export function DebateVisualization({ data, selectedPathIndex }: DebateVisualizationProps) {
   const { debate_logs, diagnosis, confidence, reasoning_trace } = data;
 
   const sortedLogs: DebateLog[] = React.useMemo(() => {
@@ -19,7 +20,10 @@ export function DebateVisualization({ data }: DebateVisualizationProps) {
     );
   }, [debate_logs]);
 
-  const mainLog = sortedLogs[0];
+  // 如果指定了 selectedPathIndex，则显示对应的辩论；否则显示置信度最高的
+  const mainLog = selectedPathIndex !== undefined 
+    ? sortedLogs.find(log => log.path_id === selectedPathIndex) ?? sortedLogs[0]
+    : sortedLogs[0];
 
   return (
     <Card>

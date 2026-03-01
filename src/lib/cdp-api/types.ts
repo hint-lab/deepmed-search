@@ -149,6 +149,7 @@ export interface EvidenceItem {
   source: string;
   is_generic_noise: boolean;  // 是否置灰（通用噪声）
   is_rare_cue: boolean;       // 是否高亮（罕见线索）
+  originalIndex?: number;    // 原始索引，用于关联辩论路径
 }
 
 /**

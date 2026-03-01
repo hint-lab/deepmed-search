@@ -20,10 +20,15 @@ export default function CDPDebatePage() {
     
     // Debate State
     const [debateData, setDebateData] = useState<DebateResponse | null>(null);
+    const [selectedPathIndex, setSelectedPathIndex] = useState<number | undefined>(undefined);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setCaseReport(event.target.value);
         setError(null);
+    };
+
+    const handleEvidenceSelect = (index: number) => {
+        setSelectedPathIndex(index);
     };
 
     const handleRetrieve = async () => {
@@ -58,7 +63,10 @@ export default function CDPDebatePage() {
             const mappedResult = {
                 pseudo_questions: [],
                 evidence_panel: (result.results?.reranked?.results || []).map((item: any, index: number) => ({
-                    id: `${item.file || 'path'}_${index}`,
+                    // 将 path_id 编码进 id 里，方便传递。这里用 "path_{index}" 前缀。
+                    id: `path_${index}_${item.file || 'doc'}`,
+                    // 保存原始索引以便追踪辩论路径
+                    originalIndex: index, 
                     text: item.document || '',
                     score: item.score || 0,
                     source: item.file || 'unknown',
@@ -147,7 +155,7 @@ export default function CDPDebatePage() {
                     diagnosis = parsed.answer_choice || '';
                     // step_by_step_thinking 是用 "1. ", "2. " 这种格式分隔的
                     reasoningTrace = parsed.step_by_step_thinking 
-                        ? parsed.step_by_step_thinking.split(/(?=\d+\.\s)/).filter(Boolean)
+                        ? parsed.step_by_step_thinking.split(/(?=\d+\.\s)/).filter(Boolean).map(s => s.replace(/^\d+\.\s*/, ''))
                         : [];
                 }
             } catch (e) {
@@ -326,7 +334,7 @@ export default function CDPDebatePage() {
                             </CardContent>
                         </Card>
                         {retrievalData.evidence_panel.length > 0 ? (
-                            <EvidenceTable data={retrievalData} />
+                            <EvidenceTable data={retrievalData} onEvidenceSelect={handleEvidenceSelect} />
                         ) : (
                             <Card>
                                 <CardContent className="pt-6">
@@ -341,7 +349,7 @@ export default function CDPDebatePage() {
 
                 {/* Debate Visualization */}
                 {debateData && (
-                    <DebateVisualization data={debateData} />
+                    <DebateVisualization data={debateData} selectedPathIndex={selectedPathIndex} />
                 )}
             </div>
         </main>

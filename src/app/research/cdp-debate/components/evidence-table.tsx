@@ -8,13 +8,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface EvidenceTableProps {
   data: RetrievalResponse;
+  onEvidenceSelect?: (index: number) => void;
 }
 
-export function EvidenceTable({ data }: EvidenceTableProps) {
+export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
   const { evidence_panel } = data;
 
   const sortedEvidence = React.useMemo(() => {
-    return [...evidence_panel].sort((a, b) => b.score - a.score);
+    return [...evidence_panel]
+      .filter(item => item.score >= 0.2)
+      .sort((a, b) => b.score - a.score);
   }, [evidence_panel]);
 
   const renderScoreBadge = (item: EvidenceItem) => {
@@ -51,7 +54,7 @@ export function EvidenceTable({ data }: EvidenceTableProps) {
         <CardTitle className="flex items-center justify-between gap-4">
           <span>Evidence Panel</span>
           <span className="text-xs font-normal text-muted-foreground">
-            Total {evidence_panel.length} items
+            Total {sortedEvidence.length} items
           </span>
         </CardTitle>
       </CardHeader>
@@ -67,15 +70,23 @@ export function EvidenceTable({ data }: EvidenceTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedEvidence.map((item) => (
+              {sortedEvidence.map((item, index) => (
                 <TableRow
                   key={item.id}
+                  onClick={() => {
+                    // 使用原始索引 (originalIndex) 来对应后端的 path_id
+                    const pathId = item.originalIndex ?? index;
+                    onEvidenceSelect?.(pathId);
+                  }}
                   className={
-                    item.is_generic_noise
-                      ? "opacity-55 hover:opacity-80 transition-opacity"
-                      : item.is_rare_cue
-                      ? "bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40"
-                      : ""
+                    "cursor-pointer transition-colors hover:bg-muted/50 " +
+                    (
+                      item.is_generic_noise
+                        ? "opacity-55 hover:opacity-80 transition-opacity"
+                        : item.is_rare_cue
+                        ? "bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40"
+                        : ""
+                    )
                   }
                 >
                   <TableCell className="align-top">
