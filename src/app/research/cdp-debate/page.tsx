@@ -155,7 +155,7 @@ export default function CDPDebatePage() {
                     diagnosis = parsed.answer_choice || '';
                     // step_by_step_thinking 是用 "1. ", "2. " 这种格式分隔的
                     reasoningTrace = parsed.step_by_step_thinking 
-                        ? parsed.step_by_step_thinking.split(/(?=\d+\.\s)/).filter(Boolean).map(s => s.replace(/^\d+\.\s*/, ''))
+                        ? parsed.step_by_step_thinking.split(/(?=\d+\.\s)/).filter(Boolean).map((s: string) => s.replace(/^\d+\.\s*/, ''))
                         : [];
                 }
             } catch (e) {
