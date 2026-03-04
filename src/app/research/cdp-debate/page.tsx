@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RetrievalResponse, DebateResponse } from '@/lib/cdp-api/types';
 import { EvidenceTable } from './components/evidence-table';
 import { DebateVisualization } from './components/debate-visualization';
-import { useTranslation } from 'react-i18next';
+import { useTranslate } from '@/contexts/language-context';
 
 export default function CDPDebatePage() {
-    const { t } = useTranslation("cdp-debate");
+    const { t } = useTranslate('cdp-debate');
     const [caseReport, setCaseReport] = useState<string>('');
     const [isLoadingRetrieval, setIsLoadingRetrieval] = useState<boolean>(false);
     const [isLoadingDebate, setIsLoadingDebate] = useState<boolean>(false);
@@ -223,10 +223,10 @@ export default function CDPDebatePage() {
                                     {isLoadingRetrieval ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Retrieving...
+                                            {t('retrieving')}
                                         </>
                                     ) : (
-                                        'Retrieve Evidence'
+                                        t('retrieveEvidence')
                                     )}
                                 </Button>
                                 <Button
@@ -238,10 +238,10 @@ export default function CDPDebatePage() {
                                     {isLoadingDebate ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Generating...
+                                            {t('generating')}
                                         </>
                                     ) : (
-                                        'Generate Debate'
+                                        t('generateDebate')
                                     )}
                                 </Button>
                             </div>
@@ -269,7 +269,7 @@ export default function CDPDebatePage() {
                                 </Button>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Flow: Retrieve Evidence first, then Generate Debate.
+                                {t('flowHint')}
                             </p>
                         </form>
                     </CardContent>
@@ -302,7 +302,7 @@ export default function CDPDebatePage() {
                                     {/* Text Info */}
                                     <div className="text-center space-y-2">
                                         <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">
-                                            {isLoadingRetrieval ? 'Retrieving Evidence...' : 'Generating Debate...'}
+                                            {isLoadingRetrieval ? t('retrieving') : t('generating')}
                                         </h3>
                                         <p className="text-sm text-muted-foreground max-w-md">
                                             Please wait while we process your request.

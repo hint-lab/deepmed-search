@@ -5,7 +5,7 @@ import type { RetrievalResponse, EvidenceItem } from "@/lib/cdp-api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTranslation } from "react-i18next";
+import { useTranslate } from "@/contexts/language-context";
 
 interface EvidenceTableProps {
   data: RetrievalResponse;
@@ -13,7 +13,7 @@ interface EvidenceTableProps {
 }
 
 export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
-  const { t } = useTranslation("cdp-debate");
+  const { t } = useTranslate("cdp-debate");
   const { evidence_panel } = data;
 
   const sortedEvidence = React.useMemo(() => {

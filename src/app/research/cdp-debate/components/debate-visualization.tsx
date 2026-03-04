@@ -4,7 +4,7 @@ import * as React from "react";
 import type { DebateResponse, DebateLog } from "@/lib/cdp-api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useTranslation } from "react-i18next";
+import { useTranslate } from "@/contexts/language-context";
 // 注意：删除了 ScrollArea 的引用，因为我们要用原生 div 做弹性容器
 
 interface DebateVisualizationProps {
@@ -13,7 +13,7 @@ interface DebateVisualizationProps {
 }
 
 export function DebateVisualization({ data, selectedPathIndex }: DebateVisualizationProps) {
-  const { t } = useTranslation("cdp-debate");
+  const { t } = useTranslate("cdp-debate");
   const { debate_logs, diagnosis, confidence, reasoning_trace } = data;
 
   const sortedLogs: DebateLog[] = React.useMemo(() => {
@@ -103,7 +103,7 @@ export function DebateVisualization({ data, selectedPathIndex }: DebateVisualiza
                   variant="outline"
                   className="border-emerald-500/70 text-emerald-600 dark:text-emerald-300"
                 >
-                  Path Confidence: {(mainLog.final_confidence * 100).toFixed(1)}%
+                  {t('pathConfidence')}: {(mainLog.final_confidence * 100).toFixed(1)}%
                 </Badge>
               </div>
             )}
