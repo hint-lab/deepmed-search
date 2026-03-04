@@ -73,7 +73,7 @@ export default function Header() {
             icon: <Microscope className="h-5 w-5" />
         },
         {
-            name: "诊断",
+            name: t('diagnosis'),
             href: "/research/cdp-debate",
             icon: <Brain className="h-5 w-5" />
         },

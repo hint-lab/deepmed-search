@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RetrievalResponse, DebateResponse } from '@/lib/cdp-api/types';
 import { EvidenceTable } from './components/evidence-table';
 import { DebateVisualization } from './components/debate-visualization';
+import { useTranslation } from 'react-i18next';
 
 export default function CDPDebatePage() {
+    const { t } = useTranslation("cdp-debate");
     const [caseReport, setCaseReport] = useState<string>('');
     const [isLoadingRetrieval, setIsLoadingRetrieval] = useState<boolean>(false);
     const [isLoadingDebate, setIsLoadingDebate] = useState<boolean>(false);
@@ -186,17 +188,17 @@ export default function CDPDebatePage() {
                 {/* Header */}
                 <div className="text-center space-y-3 my-6 sm:my-8">
                     <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-700 to-blue-600 dark:from-cyan-300 dark:to-blue-400">
-                        CDP Debate & Evidence
+                        {t('pageTitle')}
                     </h1>
                     <p className="text-muted-foreground">
-                        Evidence Retrieval & Debate Visualization based on CDP Backend
+                        {t('pageSubtitle')}
                     </p>
                 </div>
 
                 {/* Input Form */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Case Report Input</CardTitle>
+                        <CardTitle>{t('caseReportInput')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={(e) => { e.preventDefault(); handleRetrieve(); }} className="space-y-4">
@@ -207,7 +209,7 @@ export default function CDPDebatePage() {
                                         type="text"
                                         value={caseReport}
                                         onChange={handleInputChange}
-                                        placeholder="Enter patient symptoms or clinical presentation..."
+                                        placeholder={t('enterSymptoms')}
                                         disabled={isLoadingRetrieval || isLoadingDebate}
                                         className="h-12 text-base rounded-l-lg rounded-r-none border-r-0 border border-border/80 px-5 w-full focus-visible:ring-0 focus-visible:ring-offset-0"
                                     />
@@ -246,7 +248,7 @@ export default function CDPDebatePage() {
                             
                             {/* Quick Examples */}
                             <div className="flex gap-2 flex-wrap items-center">
-                                <span className="text-sm text-muted-foreground">Examples:</span>
+                                <span className="text-sm text-muted-foreground">{t('examples')}:</span>
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -254,7 +256,7 @@ export default function CDPDebatePage() {
                                     onClick={() => setCaseReport("Patient presents with episodic headaches, sweating, and palpitations. Blood pressure is elevated during episodes.")}
                                     className="text-xs"
                                 >
-                                    Example 1
+                                    {t('example1')}
                                 </Button>
                                 <Button
                                     type="button"
@@ -263,7 +265,7 @@ export default function CDPDebatePage() {
                                     onClick={() => setCaseReport("Patient with paroxysmal hypertension, headache, and sweating triad.")}
                                     className="text-xs"
                                 >
-                                    Example 2
+                                    {t('example2')}
                                 </Button>
                             </div>
                             <p className="text-xs text-muted-foreground">

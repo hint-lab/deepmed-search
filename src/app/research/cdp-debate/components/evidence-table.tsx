@@ -5,6 +5,7 @@ import type { RetrievalResponse, EvidenceItem } from "@/lib/cdp-api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
 
 interface EvidenceTableProps {
   data: RetrievalResponse;
@@ -12,6 +13,7 @@ interface EvidenceTableProps {
 }
 
 export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
+  const { t } = useTranslation("cdp-debate");
   const { evidence_panel } = data;
 
   const sortedEvidence = React.useMemo(() => {
@@ -24,7 +26,7 @@ export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
     if (item.is_rare_cue) {
       return (
         <Badge className="bg-emerald-500/90 text-white hover:bg-emerald-600">
-          Rare Cue · {item.score.toFixed(2)}
+          {t('rareCue')} · {item.score.toFixed(2)}
         </Badge>
       );
     }
@@ -34,7 +36,7 @@ export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
           variant="outline"
           className="border-dashed border-muted-foreground/40 text-muted-foreground"
         >
-          Noise · {item.score.toFixed(2)}
+          {t('noise')} · {item.score.toFixed(2)}
         </Badge>
       );
     }
@@ -43,7 +45,7 @@ export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
         variant="secondary"
         className="bg-blue-500/10 text-blue-700 dark:text-blue-300"
       >
-        Relevant · {item.score.toFixed(2)}
+        {t('relevant')} · {item.score.toFixed(2)}
       </Badge>
     );
   };
@@ -52,9 +54,9 @@ export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-4">
-          <span>Evidence Panel</span>
+          <span>{t('evidencePanel')}</span>
           <span className="text-xs font-normal text-muted-foreground">
-            Total {sortedEvidence.length} items
+            {t('totalItems', { count: sortedEvidence.length })}
           </span>
         </CardTitle>
       </CardHeader>
@@ -64,9 +66,9 @@ export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[96px]">Score</TableHead>
-                <TableHead className="w-[140px]">Source</TableHead>
-                <TableHead>Content</TableHead>
+                <TableHead className="w-[96px]">{t('score')}</TableHead>
+                <TableHead className="w-[140px]">{t('source')}</TableHead>
+                <TableHead>{t('content')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -81,11 +83,11 @@ export function EvidenceTable({ data, onEvidenceSelect }: EvidenceTableProps) {
                   className={
                     "cursor-pointer transition-colors hover:bg-muted/50 " +
                     (
-                      item.is_generic_noise
-                        ? "opacity-55 hover:opacity-80 transition-opacity"
-                        : item.is_rare_cue
-                        ? "bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40"
-                        : ""
+                    item.is_generic_noise
+                      ? "opacity-55 hover:opacity-80 transition-opacity"
+                      : item.is_rare_cue
+                      ? "bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40"
+                      : ""
                     )
                   }
                 >
