@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const CDP_API_BASE = process.env.CDP_API_URL || 'http://162.14.139.81:37777';
+const CDP_API_BASE = process.env.CDP_API_URL || 'http://localhost:7777';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const { endpoint, ...params } = body;
 
     let url = `${CDP_API_BASE}`;
-    
+
     if (endpoint === 'retrieve/context') {
       url += '/retrieve/context';
     } else if (endpoint === 'debate/validate') {

@@ -19,9 +19,9 @@ import {
  */
 const getCDPApiBase = (): string => {
   if (typeof window !== 'undefined') {
-    return process.env.NEXT_PUBLIC_CDP_API_URL || 'http://162.14.139.81:37777';
+    return process.env.NEXT_PUBLIC_CDP_API_URL || 'http://localhost:7777';
   }
-  return process.env.CDP_API_URL || process.env.NEXT_PUBLIC_CDP_API_URL || 'http://162.14.139.81:37777';
+  return process.env.CDP_API_URL || process.env.NEXT_PUBLIC_CDP_API_URL || 'http://localhost:7777';
 };
 
 const CDP_API_BASE = getCDPApiBase();
