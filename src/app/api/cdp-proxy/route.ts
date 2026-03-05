@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const CDP_API_BASE = process.env.CDP_API_URL || 'http://localhost:7777';
+const CDP_API_BASE = process.env.CDP_API_URL || 'http://10.7.4.6:7777';
 
 export async function POST(request: NextRequest) {
   try {
